@@ -106,6 +106,23 @@ html,body{width:100%;height:100%;overflow:hidden;background:#06060e;font-family:
 #err{display:none;position:fixed;bottom:14px;left:10px;right:10px;background:#3a1020;border:1px solid #ff4466;color:#ffccdd;padding:10px;border-radius:8px;font-size:12px;z-index:100}
 #dbg{position:fixed;left:6px;bottom:6px;z-index:90;font:11px/1.35 monospace;color:#b8ffb8;background:rgba(0,0,0,.7);padding:6px 8px;border-radius:6px;pointer-events:auto;display:none;max-width:60vw}
 #dbg button{font:11px monospace;margin:3px 3px 0 0;padding:3px 6px;border-radius:4px;border:1px solid #5a8;background:#123;color:#cfc}
+/* M5: smoother UI — eased bars with a trailing damage ghost, fading overlays, springy cards, banner pop */
+.bar-bg,#bossBg{position:relative}
+.bar-fill,#bossF{position:relative;z-index:1;transition:width .16s ease-out}
+.bar-fill.ghost{position:absolute;left:0;top:0;bottom:0;z-index:0;background:rgba(255,236,236,.55);transition:width .55s ease-in .22s}
+#bossF{box-shadow:0 0 10px rgba(255,80,80,.6)}
+#hpF{box-shadow:0 0 8px rgba(255,70,110,.55)}#xpF{box-shadow:0 0 8px rgba(90,170,255,.55)}
+@keyframes ovIn{from{opacity:0}to{opacity:1}}
+@keyframes cardIn{from{opacity:0;transform:translateY(18px) scale(.94)}to{opacity:1;transform:none}}
+@keyframes pop{0%{transform:scale(.8)}60%{transform:scale(1.06)}100%{transform:scale(1)}}
+.ov{animation:ovIn .22s ease-out}
+.ov h1{animation:pop .35s ease-out}
+.uc{animation:cardIn .3s cubic-bezier(.2,.9,.3,1.15) both;transition:transform .12s,border-color .12s}
+.uc:nth-child(2){animation-delay:.06s}.uc:nth-child(3){animation-delay:.12s}
+.uc:active{transform:scale(.97)}
+.btn{transition:transform .12s,filter .12s}.btn:active{transform:scale(.96);filter:brightness(1.15)}
+#banner.pop{animation:pop .32s ease-out}
+.rbtn,.abt{transition:transform .1s}
 </style>
 </head>
 <body>
@@ -113,7 +130,7 @@ html,body{width:100%;height:100%;overflow:hidden;background:#06060e;font-family:
 <div id="ui">
   <div id="touch"></div>
   <div class="hud" id="hud">
-    <div class="bar-row"><span class="stat" id="hpT">100</span><div class="bar-bg"><div class="bar-fill" id="hpF"></div></div></div>
+    <div class="bar-row"><span class="stat" id="hpT">100</span><div class="bar-bg"><div class="bar-fill ghost" id="hpG"></div><div class="bar-fill" id="hpF"></div></div></div>
     <div class="bar-row"><span class="stat" id="xpT">LV 1</span><div class="bar-bg"><div class="bar-fill" id="xpF"></div></div></div>
   </div>
   <div id="pl">PL 1,200</div>
@@ -121,7 +138,7 @@ html,body{width:100%;height:100%;overflow:hidden;background:#06060e;font-family:
   <div id="tm">5:00</div>
   <div id="sigs"></div>
   <div id="st">Training Rift</div>
-  <div id="bossBar"><div id="bossName"></div><div id="bossBg"><div id="bossF"></div></div></div>
+  <div id="bossBar"><div id="bossName"></div><div id="bossBg"><div class="bar-fill ghost" id="bossG"></div><div id="bossF"></div></div></div>
   <div id="banner"></div>
   <div id="combo"></div>
   <div id="mission"></div>
@@ -139,10 +156,11 @@ html,body{width:100%;height:100%;overflow:hidden;background:#06060e;font-family:
   <button class="btn" id="go">TAP TO BEGIN</button>
   <button class="btn alt" id="altarBtn">✦ RESONANCE ALTAR</button>
   <button class="btn alt" id="shakeBtn2">📳 Screen shake: ON</button>
+  <button class="btn alt" id="gfxBtn2">✨ Graphics: HIGH</button>
 </div>
 <div class="ov" id="lvlUp"><h1 id="lvlTitle" style="font-size:22px;margin-bottom:4px">POWER UP</h1><p id="lvlSub" style="font-size:12px;margin-bottom:10px"></p><div class="ug" id="ug"></div><button class="btn alt" id="reroll">↻ REROLL</button></div>
 <div class="ov" id="end"><h1 id="endT">DEFEATED</h1><div id="endRec">★ NEW RECORD ★</div><div class="stats" id="endS"></div><div id="endM"></div><button class="btn" id="doubleBtn" style="display:none;background:linear-gradient(135deg,#1a8a8a,#0f5a6a);border-color:#9affe0">✦ DOUBLE MOTES (Watch Ad)</button><button class="btn" id="reviveBtn" style="display:none;background:linear-gradient(135deg,#22a05a,#157a3f);border-color:#8affc0">▶ REVIVE (Watch Ad)</button><button class="btn" id="nx">PLAY AGAIN</button><button class="btn alt" id="menuBtn">MENU</button></div>
-<div class="ov" id="pause"><h1 style="font-size:26px">PAUSED</h1><div id="pauseInv"></div><button class="btn" id="resumeBtn">RESUME</button><button class="btn alt" id="shakeBtn">📳 Screen shake: ON</button><button class="btn" id="quitBtn" style="background:linear-gradient(135deg,#7a2a2a,#4a1a1a);border-color:#ff8a8a">QUIT RUN</button></div>
+<div class="ov" id="pause"><h1 style="font-size:26px">PAUSED</h1><div id="pauseInv"></div><button class="btn" id="resumeBtn">RESUME</button><button class="btn alt" id="shakeBtn">📳 Screen shake: ON</button><button class="btn alt" id="gfxBtn">✨ Graphics: HIGH</button><button class="btn" id="quitBtn" style="background:linear-gradient(135deg,#7a2a2a,#4a1a1a);border-color:#ff8a8a">QUIT RUN</button></div>
 <div class="ov" id="altar"><h1 style="font-size:24px">RESONANCE ALTAR</h1><p style="margin-bottom:6px">Permanent upgrades. Refund any time.</p><div id="altarMotes"></div><div id="altarList"></div><button class="btn alt" id="refundBtn">REFUND ALL</button><button class="btn" id="altarBack">BACK</button></div>
 <div id="dbg"></div>
 <div id="err"></div>

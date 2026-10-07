@@ -53,51 +53,57 @@ AS.ELITE_MODS=[
 
 // Spawn schedule by elapsed run time (s). rate = spawns/sec, hp = HP multiplier, spd = speed multiplier and
 // dmg = contact/shot damage multiplier are interpolated between rows; mix (weights) switches at each row.
+// M5: denser + steeper scaling (M4 was too easy for a skilled player)
 AS.SCHEDULE=[
-  {t:0,   rate:2.0, hp:1.00, spd:1.00, dmg:1.00, mix:{swarmer:6,scout:5}},
-  {t:25,  rate:2.8, hp:1.05, spd:1.01, dmg:1.04, mix:{swarmer:6,scout:4,raider:2}},
-  {t:50,  rate:3.8, hp:1.15, spd:1.03, dmg:1.08, mix:{swarmer:5,scout:3,raider:4,caster:2}},
-  {t:85,  rate:4.8, hp:1.30, spd:1.05, dmg:1.14, mix:{swarmer:5,scout:2,raider:4,caster:3,splitter:2}},
-  {t:120, rate:6.0, hp:1.55, spd:1.07, dmg:1.22, mix:{swarmer:6,raider:4,caster:3,splitter:3,brute:2}},
-  {t:160, rate:7.6, hp:1.90, spd:1.09, dmg:1.32, mix:{swarmer:6,raider:5,caster:3,splitter:3,brute:2,shielder:1.5}},
-  {t:210, rate:10,  hp:2.40, spd:1.14, dmg:1.55, mix:{swarmer:6,raider:5,caster:4,splitter:3,brute:3,shielder:2,bulwark:1,warlord:0.4}},
-  {t:250, rate:13.5,hp:3.20, spd:1.20, dmg:1.80, mix:{swarmer:7,raider:5,caster:4,splitter:3,brute:4,shielder:2.5,bulwark:2,warlord:0.8}},
-  {t:300, rate:7,   hp:3.50, spd:1.22, dmg:1.90, mix:{swarmer:6,raider:4,caster:3,brute:3,shielder:2}}
+  {t:0,   rate:2.1, hp:1.00, spd:1.00, dmg:1.00, mix:{swarmer:6,scout:5}},
+  {t:25,  rate:2.9, hp:1.05, spd:1.01, dmg:1.04, mix:{swarmer:6,scout:4,raider:3}},
+  {t:50,  rate:3.9, hp:1.15, spd:1.03, dmg:1.08, mix:{swarmer:5,scout:3,raider:4,caster:3}},
+  {t:85,  rate:5.0, hp:1.32, spd:1.05, dmg:1.15, mix:{swarmer:5,scout:2,raider:5,caster:3,splitter:2,brute:1}},
+  {t:120, rate:6.4, hp:1.55, spd:1.09, dmg:1.28, mix:{swarmer:6,raider:5,caster:4,splitter:3,brute:2,shielder:1}},
+  {t:160, rate:8.6, hp:2.02, spd:1.12, dmg:1.40, mix:{swarmer:6,raider:5,caster:4,splitter:3,brute:3,shielder:1.5,bulwark:0.8}},
+  {t:210, rate:11.4,hp:2.60, spd:1.16, dmg:1.64, mix:{swarmer:6,raider:6,caster:4,splitter:3,brute:3,shielder:2,bulwark:1.5,warlord:0.6}},
+  {t:250, rate:15,  hp:3.45, spd:1.22, dmg:1.90, mix:{swarmer:7,raider:6,caster:5,splitter:3,brute:4,shielder:2.5,bulwark:2,warlord:1}},
+  {t:300, rate:8,   hp:3.80, spd:1.24, dmg:2.00, mix:{swarmer:6,raider:5,caster:4,brute:3,shielder:2,warlord:0.6}}
 ];
 
 // Timeline events (elapsed seconds). Timer shows time LEFT, e.g. t:45 = 4:15 left.
 AS.EVENTS=[
   {t:18,  kind:"cache"},                       // floor Sigil Cache near the player
   {t:35,  kind:"swarm", pattern:"ring"},
-  {t:45,  kind:"elite"},
+  {t:55,  kind:"elite"},
   {t:75,  kind:"swarm", pattern:"spiral"},
-  {t:95,  kind:"elite"},
+  {t:92,  kind:"elite"},
   {t:110, kind:"boss",  boss:"warden"},
+  {t:128, kind:"elite"},
   {t:130, kind:"swarm", pattern:"ring"},
-  {t:145, kind:"elite"},
+  {t:148, kind:"elite"},
   {t:165, kind:"swarm", pattern:"spiral"},
   {t:185, kind:"boss",  boss:"tyrant"},
-  {t:200, kind:"elite"},
+  {t:198, kind:"elite"},
+  {t:215, kind:"elite"},
   {t:220, kind:"swarm", pattern:"ring"},
+  {t:234, kind:"elite"},
   {t:240, kind:"swarm", pattern:"spiral"},
-  {t:250, kind:"elite", count:2},
+  {t:256, kind:"elite", count:2},
   {t:268, kind:"swarm", pattern:"ring"},
+  {t:276, kind:"elite"},
   {t:285, kind:"swarm", pattern:"spiral"},
   {t:300, kind:"boss",  boss:"sentinel"}
 ];
-AS.ELITE={hpX:5.5,xpX:4,dmgX:1.45,scale:1.45};
+AS.ELITE={hpX:4.8,xpX:4,dmgX:1.4,scale:1.45};
 
 // Bosses: moves are telegraphed attack patterns (see bossAI in game.js)
 AS.BOSSES={
   // phases: hp fraction where the phase starts, its telegraphed move rotation, cooldown and elite summons on entry
-  warden:  {n:"Grove Warden",   hp:850,  spd:68,r:28,c:"#40c060",d:16,xp:70,
-    phases:[{at:1,moves:["dash","slam","burst"],cd:2.1},{at:0.5,moves:["slam3","dash","burst","slam"],cd:1.6}]},
-  tyrant:  {n:"Crystal Tyrant", hp:2000, spd:64,r:30,c:"#c060ff",d:24,xp:110,
-    phases:[{at:1,moves:["burst","lances","dash"],cd:1.9},{at:0.5,moves:["lances","spiral","dash","burst"],cd:1.5}]},
-  sentinel:{n:"Rift Sentinel",  hp:11000,spd:78,r:36,c:"#ff5050",d:30,xp:0,final:true,
-    phases:[{at:1,moves:["dash","burst","slam","burst"],cd:1.55},
-            {at:0.66,moves:["lances","spiral","dash","slam3"],cd:1.35},
-            {at:0.33,moves:["spiral","slam3","lances","dash","burst"],cd:1.15,summon:2}]}
+  // M5: tougher, faster rotations, new moves (rain = scattered slams, cross = lanes through you, volley = double lance)
+  warden:  {n:"Grove Warden",   hp:950,  spd:72,r:28,c:"#40c060",d:18,xp:70,
+    phases:[{at:1,moves:["dash","slam","burst"],cd:1.8},{at:0.5,moves:["slam3","dash","rain","burst","slam"],cd:1.35}]},
+  tyrant:  {n:"Crystal Tyrant", hp:2500, spd:70,r:30,c:"#c060ff",d:27,xp:110,
+    phases:[{at:1,moves:["burst","lances","dash","cross"],cd:1.5},{at:0.5,moves:["volley","spiral","dash","cross","burst"],cd:1.15,summon:1}]},
+  sentinel:{n:"Rift Sentinel",  hp:11000,spd:84,r:36,c:"#ff5050",d:34,xp:0,final:true,
+    phases:[{at:1,moves:["dash","burst","slam","cross","burst"],cd:1.25},
+            {at:0.66,moves:["volley","spiral","dash","rain","slam3"],cd:1.05,summon:1},
+            {at:0.33,moves:["spiral","cross","slam3","volley","dash","rain","burst"],cd:0.9,summon:3}]}
 };
 
 // XP needed for next level (tuned so a good 5:00 run ends around Lv 25-30)
@@ -111,7 +117,7 @@ AS.UPGRADES=[
   {id:"rapid",tg:["Blast"], n:"Rapid Surge",    i:"🔥",max:5,pl:1.07,d:function(){return "-12% fire interval";},f:function(P){P.blast.rate*=0.88;}},
   {id:"split",tg:["Blast"], n:"Split Blast",    i:"✦",max:5,pl:1.12,d:function(){return "+1 projectile";},f:function(P){P.blast.cnt+=1;}},
   {id:"swift",tg:["Speed"], n:"Swift Step",     i:"💨",max:5,pl:1.04,d:function(){return "+10% move speed";},f:function(P){P.spdM*=1.10;}},
-  {id:"core",tg:["Guard"],  n:"Core Harden",    i:"♥",max:5,pl:1.06,d:function(){return "+20 max HP, heal 30";},f:function(P){P.baseMaxHp+=20;P.maxHp+=20;P.hp=Math.min(P.maxHp,P.hp+30);}},
+  {id:"core",tg:["Guard"],  n:"Core Harden",    i:"♥",max:5,pl:1.06,d:function(){return "+20 max HP, heal 20";},f:function(P){P.baseMaxHp+=20;P.maxHp+=20;P.hp=Math.min(P.maxHp,P.hp+20);}},
   {id:"orbit",tg:["Orbs"], n:"Orbiting Orbs",  i:"◎",max:5,pl:1.12,weapon:true,
     d:function(r){return r===0?"Unlock 2 orbs that circle you":"+1 orb, +25% orb damage";},
     f:function(P,r){if(r===1){P.orbit.on=true;}else{P.orbit.cnt+=1;P.orbit.dmg*=1.25;}}},
@@ -127,7 +133,7 @@ AS.UPGRADES=[
 ];
 AS.ASCENSION={id:"asc",n:"AETHER ASCENSION",i:"🌟",d:function(){return "Transform — 20s gold form";}};
 AS.FILLERS=[
-  {id:"mend", n:"Aether Mend", i:"✚",d:function(){return "Restore 40% HP";}},
+  {id:"mend", n:"Aether Mend", i:"✚",d:function(){return "Restore 28% HP";}},
   {id:"spark",n:"Power Spark", i:"★",d:function(){return "+8% Power Level";}}
 ];
 AS.ASC_MIN_LV=5;      // Ascension can be offered from this level
@@ -212,17 +218,17 @@ AS.LV_TIERS=[1,5,10,15];   // visible player evolution (aura + trails)
 // Arena shifts over the 5:00 run (elapsed seconds); each phase spawns its hazard near the player every ~"every" s
 AS.ARENA=[
   {t:0,  id:"calm",    n:"",                          tint:null},
-  {t:70, id:"ember",   n:"🔥 Ember Vents erupt",      tint:"rgba(255,90,30,.06)",  every:5.5},
-  {t:150,id:"frost",   n:"❄ A Frost Storm rolls in",  tint:"rgba(120,200,255,.07)",every:5},
-  {t:225,id:"void",    n:"🌀 Void Rifts tear open",    tint:"rgba(170,80,255,.08)", every:6},
-  {t:300,id:"collapse",n:"☄ The Rift is collapsing",  tint:"rgba(255,40,60,.07)",  every:4.2}
+  {t:70, id:"ember",   n:"🔥 Ember Vents erupt",      tint:"rgba(255,90,30,.06)",  every:4.6},
+  {t:150,id:"frost",   n:"❄ A Frost Storm rolls in",  tint:"rgba(120,200,255,.07)",every:3.7},
+  {t:225,id:"void",    n:"🌀 Void Rifts tear open",    tint:"rgba(170,80,255,.08)", every:4.3},
+  {t:300,id:"collapse",n:"☄ The Rift is collapsing",  tint:"rgba(255,40,60,.07)",  every:3.0}
 ];
 AS.WORLD={chunk:520};
 // pickup roles (from destructibles, elites, missions); w = drop weight from destructibles
 AS.PICKUPS={
-  heart: {n:"Heartshard",   i:"♥", c:"#ff5070",w:10},
-  magnet:{n:"Lodestar",     i:"🧲",c:"#60c0ff",w:14},
-  bomb:  {n:"Aether Bomb",  i:"✹", c:"#ffb040",w:9},
+  heart: {n:"Heartshard",   i:"♥", c:"#ff5070",w:7},
+  magnet:{n:"Lodestar",     i:"🧲",c:"#60c0ff",w:12},
+  bomb:  {n:"Aether Bomb",  i:"✹", c:"#ffb040",w:7},
   haste: {n:"Quickening",   i:"»", c:"#7affc0",w:10},
   motes: {n:"Mote Cluster", i:"✦", c:"#9affe0",w:30},
   core:  {n:"Legendary Core",i:"◆",c:"#ffd040",w:0.35}
@@ -236,6 +242,8 @@ AS.CORES=[
 ];
 AS.MAX_CORES=1;
 AS.MISSION_TIMES=[25,105,185];   // one mission at a time; rewards scale with order
+// M5 healing / pickup generosity (lower = harder)
+AS.HEAL={heart:0.18,elite:0.12,mini:0.25,lsPerSec:12,dropChance:0.33,killHeart:0.0012,secondWind:0.3};
 
 /* ---------------- M3 slice: Aether Motes + Resonance Altar (permanent, refundable) ---------------- */
 AS.ALTAR=[

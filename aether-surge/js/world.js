@@ -45,17 +45,17 @@ function breakDes(d){
 /* ---------- pickups ---------- */
 function rollRole(luck){
   var R=AS.PICKUPS,tot=0,k,canCore=C.G.coreDrops<AS.MAX_CORES;
-  if(Math.random()>0.38*luck)return null; // not every pot drops something
+  if(Math.random()>AS.HEAL.dropChance*luck)return null; // not every pot drops something
   for(k in R){if(k==="core"&&!canCore)continue;tot+=R[k].w;}
   var x=Math.random()*tot;for(k in R){if(k==="core"&&!canCore)continue;x-=R[k].w;if(x<=0)return k;}return "motes";
 }
 function drop(role,x,y){if(role==="core")C.G.coreDrops++;if(W.pk.length<30)W.pk.push({role:role,x:x,y:y,t:0});}
 function collect(p){
   var G=C.G,P=C.P,R=AS.PICKUPS[p.role];
-  if(p.role==="heart"){var h=P.maxHp*0.2;P.hp=Math.min(P.maxHp,P.hp+h);}
+  if(p.role==="heart"){var h=P.maxHp*AS.HEAL.heart;P.hp=Math.min(P.maxHp,P.hp+h);}
   else if(p.role==="magnet")C.vacuum();
   else if(p.role==="bomb"){C.aoe(P.x,P.y,240,160*P.eff.dmg,420,"charge");aoeDes(P.x,P.y,240,999);AS.FX.novas.push({x:P.x,y:P.y,r:240,life:0.5,max:0.5,c:"#ffb040",w:10});C.shake(0.45);}
-  else if(p.role==="haste")P.hasteT=12;
+  else if(p.role==="haste")P.hasteT=10;
   else if(p.role==="motes")G.bonusMotes+=15;
   else if(p.role==="core"){G.queue.push({k:"core"});C.banner("◆ LEGENDARY CORE ◆",false);}
   G.pickups++;C.addFt(P.x,P.y-30,R.i+" "+R.n,R.c,1);AS.sfx.lvl();AS.native.haptic("LIGHT");
@@ -97,24 +97,25 @@ function arena(dt){
 function spawnZone(id){
   var G=C.G,P=C.P,j=AS.input.joy,a=(j.x||j.y)&&Math.random()<0.7?Math.atan2(j.y,j.x)+(Math.random()-0.5)*1.4:Math.random()*TAU,r=70+Math.random()*170;
   var x=P.x+Math.cos(a)*r,y=P.y+Math.sin(a)*r,dm=G.dmgMul;
-  if(id==="ember")W.zones.push({k:"ember",x:x,y:y,R:68,warm:1.0,life:3.6,tick:0});
-  else if(id==="frost"){W.zones.push({k:"ice",x:x,y:y,R:95,warm:0.6,life:6,tick:0});if(Math.random()<0.6)G.haz.push({x:P.x,y:P.y,R:46,t:0.95,max:0.95,dmg:12*dm,c:"#a8e8ff"});}
-  else if(id==="void")W.zones.push({k:"void",x:x,y:y,R:85,warm:0.8,life:5,tick:0});
-  else if(id==="collapse"){G.haz.push({x:P.x+j.x*60,y:P.y+j.y*60,R:62,t:1.0,max:1.0,dmg:18*dm,c:"#ff5050"});if(Math.random()<0.5)W.zones.push({k:"ember",x:x,y:y,R:68,warm:1.0,life:3.6,tick:0});}
+  // M5: bigger, longer-lived, more damaging hazards; ember vents come in pairs
+  if(id==="ember"){W.zones.push({k:"ember",x:x,y:y,R:76,warm:0.9,life:4.2,tick:0});if(Math.random()<(G.runT>200?0.6:0.3)){var a2=a+(Math.random()<0.5?1:-1)*(0.8+Math.random()*0.6);W.zones.push({k:"ember",x:P.x+Math.cos(a2)*r,y:P.y+Math.sin(a2)*r,R:64,warm:1.1,life:3.8,tick:0});}}
+  else if(id==="frost"){W.zones.push({k:"ice",x:x,y:y,R:105,warm:0.6,life:6.5,tick:0});if(Math.random()<0.8)G.haz.push({x:P.x+j.x*30,y:P.y+j.y*30,R:52,t:0.85,max:0.85,dmg:17*dm,c:"#a8e8ff"});}
+  else if(id==="void")W.zones.push({k:"void",x:x,y:y,R:92,warm:0.75,life:5.5,tick:0});
+  else if(id==="collapse"){G.haz.push({x:P.x+j.x*60,y:P.y+j.y*60,R:66,t:0.9,max:0.9,dmg:24*dm,c:"#ff5050"});if(Math.random()<0.6)W.zones.push({k:"ember",x:x,y:y,R:72,warm:0.9,life:4,tick:0});}
 }
 function drain(d){var G=C.G,P=C.P;if(G.god||P.inv>90||d<=0)return;d*=(1-(P.eff.armor||0));P.hp-=d;G.dmgTaken+=d;G.hurtFx=Math.max(G.hurtFx,0.35);onHurt();C.checkDeath();}
 function zones(dt){
   var G=C.G,P=C.P,E=C.E,QB=C.QB;P.slowZ=false;
   for(var i=W.zones.length-1;i>=0;i--){var z=W.zones[i];
-    if(z.warm>0){z.warm-=dt;if(z.warm<=0&&z.k==="ember"){C.boom(z.x,z.y,"#ff7a30",12);var ex=P.x-z.x,ey=P.y-z.y;if(ex*ex+ey*ey<z.R*z.R)C.hurtPlayer(14*G.dmgMul,null);}continue;}
+    if(z.warm>0){z.warm-=dt;if(z.warm<=0&&z.k==="ember"){C.boom(z.x,z.y,"#ff7a30",12);var ex=P.x-z.x,ey=P.y-z.y;if(ex*ex+ey*ey<z.R*z.R)C.hurtPlayer(17*G.dmgMul,null);}continue;}
     z.life-=dt;if(z.life<=0){W.zones.splice(i,1);continue;}
     var dx=P.x-z.x,dy=P.y-z.y,d2=dx*dx+dy*dy,inside=d2<z.R*z.R;z.tick-=dt;
-    if(z.k==="ember"){if(inside)drain(9*G.dmgMul*dt);
+    if(z.k==="ember"){if(inside)drain(13*G.dmgMul*dt);
       if(z.tick<=0){z.tick=0.5;var n=C.gridQuery(z.x,z.y,z.R+20);for(var q=0;q<n;q++){var e=E[QB[q]];if(!e.dead&&(e.x-z.x)*(e.x-z.x)+(e.y-z.y)*(e.y-z.y)<z.R*z.R)C.ignite(e,8);}}}
     else if(z.k==="ice"){if(inside)P.slowZ=true;
       if(z.tick<=0){z.tick=0.3;var n2=C.gridQuery(z.x,z.y,z.R+20);for(var q2=0;q2<n2;q2++){var e2=E[QB[q2]];if(!e2.dead&&(e2.x-z.x)*(e2.x-z.x)+(e2.y-z.y)*(e2.y-z.y)<z.R*z.R){e2.slowT=0.4;e2.slowF=0.45;}}}}
     else if(z.k==="void"){var pr=z.R*1.8;
-      if(d2<pr*pr){var d=Math.sqrt(d2)||1;P.x-=dx/d*85*dt;P.y-=dy/d*85*dt;if(d<z.R*0.4)drain(10*G.dmgMul*dt);}
+      if(d2<pr*pr){var d=Math.sqrt(d2)||1;P.x-=dx/d*105*dt;P.y-=dy/d*105*dt;if(d<z.R*0.45)drain(16*G.dmgMul*dt);}
       if(z.tick<=0){z.tick=0.2;var n3=C.gridQuery(z.x,z.y,pr);for(var q3=0;q3<n3;q3++){var e3=E[QB[q3]];if(e3.dead||e3.boss)continue;var fx=z.x-e3.x,fy=z.y-e3.y,fd=Math.sqrt(fx*fx+fy*fy)||1;if(fd<pr&&fd>8){e3.x+=fx/fd*18;e3.y+=fy/fd*18;}if(fd<z.R*0.4)C.dmgE(e3,6,e3.x,e3.y,null,"sigil");}}}
   }
 }
@@ -156,7 +157,7 @@ function onKill(e){
   var m=W.mission;if(m&&m.k==="kill")m.prog++;
   if(e.boss&&!e.boss.final&&C.G.coreDrops<AS.MAX_CORES&&Math.random()<0.2)drop("core",e.x+30,e.y+30);
   else if(e.el&&!e.boss){var r=rollRole(2);if(r&&r!=="core")drop(r,e.x-30,e.y);}
-  else if(!e.el&&Math.random()<0.002)drop("heart",e.x,e.y);
+  else if(!e.el&&Math.random()<AS.HEAL.killHeart)drop("heart",e.x,e.y);
 }
 function onHurt(){var m=W.mission;if(m&&m.k==="nodmg"){m.t=0;m.prog=0;}}
 function onDash(){if(W.cores.chrono)chronoT=AS.COMBAT.dash.dur;}
@@ -203,7 +204,6 @@ function drawUnder(ox,oy){
 }
 function drawOver(ox,oy){
   if(!C)return;var Wd=V.W,H=V.H,m=W.mission;
-  if(W.tint){ctx.fillStyle=W.tint;ctx.fillRect(0,0,Wd,H);}
   var tx=null,ty=null;
   if(m&&m.k==="zone"){tx=m.x;ty=m.y;}else if(m&&m.target&&!m.target.dead){tx=m.target.x;ty=m.target.y;ctx.font="bold 16px system-ui";ctx.textAlign="center";ctx.fillText("🎯",tx+ox,ty+oy-m.target.r-26);}
   else{for(var i=0;i<W.pk.length;i++)if(W.pk[i].role==="core"){tx=W.pk[i].x;ty=W.pk[i].y;}}
