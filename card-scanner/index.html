@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#0d1117"><title>Card Scanner</title>
+<link rel="icon" href="icon.svg"><link rel="stylesheet" href="styles.css">
+</head><body>
+<header><img src="icon.svg" alt="" width="28"><h1>Card Scanner</h1><button id="settingsBtn" class="ghost" aria-label="Settings">⚙</button></header>
+<nav><button data-tab="scan" class="on">Scan</button><button data-tab="collection">Collection <span id="colCount"></span></button><button data-tab="grade">Pre-Grade</button></nav>
+<main>
+<section id="tab-scan">
+  <div class="row"><label>Game</label><select id="game">
+    <option value="pokemon">Pokémon</option><option value="magic">Magic</option><option value="yugioh">Yu-Gi-Oh</option><option value="sports">Sports</option></select></div>
+  <div class="camwrap"><video id="video" autoplay playsinline muted></video><img id="shot" alt="" hidden></div>
+  <div class="btns"><button id="camBtn">Start camera</button><button id="snapBtn" disabled>Snap</button>
+    <label class="file">Upload photo<input type="file" id="fileIn" accept="image/*" capture="environment"></label></div>
+  <button id="idBtn" class="primary" disabled>Identify card</button>
+  <p id="idStatus" class="muted"></p>
+  <details id="manualBox" open><summary>Search by name (no key needed)</summary>
+    <div class="row"><input id="q" placeholder="Card name, e.g. Charizard"><input id="qnum" placeholder="# (optional)" size="5"></div>
+    <div id="sportsFields" hidden><div class="row"><input id="sYear" placeholder="Year" size="5"><input id="sBrand" placeholder="Brand/set, e.g. Topps Chrome"></div>
+      <div class="row"><input id="sPar" placeholder="Parallel, e.g. Refractor /99"><input id="sGrade" placeholder="Grade (opt.)" size="6"></div></div>
+    <button id="searchBtn">Search</button></details>
+  <div id="results"></div>
+  <div id="detail"></div>
+</section>
+<section id="tab-collection" hidden>
+  <div class="total">Total value: <b id="total">$0.00</b><small id="totalNote"></small></div>
+  <div id="colList"></div>
+  <div class="btns"><button id="exportBtn">Export JSON</button></div>
+</section>
+<section id="tab-grade" hidden>
+  <p class="step" id="stepText">Step 1/6 – Front of card</p>
+  <div class="camwrap"><video id="gvideo" autoplay playsinline muted></video></div>
+  <div class="btns"><button id="gcamBtn">Start camera</button><button id="captureBtn" disabled>Capture</button>
+    <label class="file">Upload<input type="file" id="gfileIn" accept="image/*"></label></div>
+  <div class="preview-row" id="previews"></div>
+  <button id="analyzeBtn" class="primary" hidden>Analyze centering</button>
+  <div id="gradeOut"></div>
+</section>
+</main>
+<dialog id="settings"><form method="dialog">
+  <h3>Settings</h3>
+  <label>Proxy URL (Vercel or Firebase function)<input id="proxyUrl" placeholder="https://your-proxy.vercel.app"></label>
+  <p class="muted">The proxy holds API keys (xAI vision, eBay, SportsCardsPro). Keys are never stored in this app. Leave blank to use free sources only.</p>
+  <label><input type="checkbox" id="ocrOn" checked> Free on-device text reading (OCR) when no proxy is set</label>
+  <p><a href="privacy.html" target="_blank">Privacy policy</a></p>
+  <button id="saveSettings" class="primary">Save</button></form></dialog>
+<dialog id="listDlg"><form method="dialog"><h3>Draft listing</h3><div id="listBody"></div><div class="btns"><button id="copyList">Copy text</button><button>Close</button></div></form></dialog>
+<canvas id="canvas" hidden></canvas>
+<script src="pricing.js"></script><script src="centering.js"></script><script src="app.js"></script>
+</body></html>

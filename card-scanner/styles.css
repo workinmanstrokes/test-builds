@@ -1,0 +1,18 @@
+*{box-sizing:border-box;margin:0}body{font-family:-apple-system,system-ui,sans-serif;background:#0d1117;color:#e6edf3;padding:env(safe-area-inset-top) 0 40px}
+header{display:flex;align-items:center;gap:8px;padding:10px 12px}h1{font-size:1.2rem;flex:1}
+nav{display:flex;gap:4px;padding:0 8px;position:sticky;top:0;background:#0d1117;z-index:2}nav button{flex:1;background:#161b22;border-radius:8px 8px 0 0}nav .on{background:#1f6feb}
+main{padding:12px}section{display:flex;flex-direction:column;gap:10px}
+button,.file{padding:11px 12px;border:0;border-radius:8px;background:#21262d;color:#e6edf3;font-size:1rem;text-align:center}
+button:disabled{opacity:.45}.primary{background:#238636}.ghost{background:none;font-size:1.3rem}.file input{display:none}
+.btns{display:flex;gap:8px;flex-wrap:wrap}.btns>*{flex:1}.row{display:flex;gap:8px;align-items:center}.row>input,.row>select{flex:1;min-width:0}
+input,select{padding:10px;border-radius:8px;border:1px solid #30363d;background:#0d1117;color:#e6edf3;font-size:1rem}
+.camwrap{background:#000;border-radius:10px;overflow:hidden;aspect-ratio:3/4;display:flex;align-items:center;justify-content:center}
+.camwrap video,.camwrap img{width:100%;height:100%;object-fit:contain}.muted{color:#8b949e;font-size:.85rem}
+.card{display:flex;gap:10px;background:#161b22;border-radius:10px;padding:8px;align-items:center}.card img{width:64px;border-radius:4px}.card div{flex:1}
+.card b{display:block}.price{background:#161b22;border-radius:8px;padding:8px;margin:4px 0}.price b{color:#3fb950;font-size:1.1rem}
+.good{color:#3fb950}.bad{color:#f85149}.total{font-size:1.1rem;background:#161b22;padding:12px;border-radius:10px}.total small{display:block;color:#8b949e}
+.preview-row{display:flex;gap:6px;overflow-x:auto}.preview-row img{height:70px;border-radius:4px}.step{color:#58a6ff}
+dialog{background:#161b22;color:#e6edf3;border:1px solid #30363d;border-radius:12px;width:92vw;max-width:420px}dialog form{display:flex;flex-direction:column;gap:10px}dialog label{display:flex;flex-direction:column;gap:4px}
+#detail h2{font-size:1.1rem}#detail .big{width:100%;max-width:260px;align-self:center;border-radius:10px}#detail{display:flex;flex-direction:column;gap:8px}
+a{color:#58a6ff}details summary{padding:6px 0}
+[hidden]{display:none!important}
