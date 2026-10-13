@@ -16,3 +16,6 @@ dialog{background:#161b22;color:#e6edf3;border:1px solid #30363d;border-radius:1
 #detail h2{font-size:1.1rem}#detail .big{width:100%;max-width:260px;align-self:center;border-radius:10px}#detail{display:flex;flex-direction:column;gap:8px}
 a{color:#58a6ff}details summary{padding:6px 0}
 [hidden]{display:none!important}
+.side{flex:0 0 auto;display:flex;flex-direction:column;gap:4px}.side button{padding:6px 8px;font-size:.85rem}.tag{background:#1f6feb33;color:#58a6ff;border-radius:6px;padding:1px 6px;font-size:.75rem}
+#alertBar{border:1px solid #d29922}nav button{font-size:.9rem;padding:10px 4px}textarea{padding:10px;border-radius:8px;border:1px solid #30363d;background:#0d1117;color:#e6edf3;font:inherit}
+@media (prefers-color-scheme: light){body,nav,input,select,textarea{background:#f6f8fa;color:#1f2328}.card,.price,.total,dialog,button,.file{background:#fff;color:#1f2328;border-color:#d0d7de}nav button,.side button{background:#eaeef2;color:#1f2328}nav .on,.primary{background:#1f6feb;color:#fff}.muted{color:#59636e}}

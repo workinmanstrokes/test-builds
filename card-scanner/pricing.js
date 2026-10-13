@@ -35,7 +35,7 @@ const Adapters = {
       const d = c._raw || await j(`https://api.scryfall.com/cards/${c.id}`), pr = [], dt = today();
       const map = { usd: ['nonfoil', 'USD'], usd_foil: ['foil', 'USD'], usd_etched: ['etched', 'USD'], eur: ['nonfoil', 'EUR'], eur_foil: ['foil', 'EUR'] };
       for (const [k, [lab, cur]] of Object.entries(map)) if (d.prices?.[k]) pr.push(P('Scryfall (TCGplayer/Cardmarket, daily)', lab, d.prices[k], cur, dt + ' (fetched)', d.purchase_uris?.tcgplayer));
-      const { _raw, ...rest } = c; return { ...rest, prices: pr };
+      const { _raw, ...rest } = c; return { ...rest, setCode: d.set, prices: pr };
     }
   },
   yugioh: {
@@ -48,11 +48,25 @@ const Adapters = {
       return out.slice(0, 20);
     },
     async detail(c) {
-      const d = c._raw, pr = [], dt = today(), cp = d.card_prices?.[0] || {};
+      const d = c._raw || (await j(`https://db.ygoprodeck.com/api/v7/cardinfo.php?id=${String(c.id).split('|')[0]}`)).data[0], pr = [], dt = today(), cp = d.card_prices?.[0] || {};
+      if (!c._set && c.number) c._set = (d.card_sets || []).find(s => s.set_code === c.number);
       if (c._set?.set_price && +c._set.set_price > 0) pr.push(P('YGOPRODeck (set print)', c._set.set_code + ' ' + (c._set.set_rarity || ''), c._set.set_price, 'USD', dt + ' (fetched)'));
       for (const [k, lab] of [['tcgplayer_price', 'TCGplayer'], ['cardmarket_price', 'Cardmarket'], ['ebay_price', 'eBay']])
         if (+cp[k] > 0) pr.push(P('YGOPRODeck → ' + lab, 'lowest print', cp[k], k === 'cardmarket_price' ? 'EUR' : 'USD', dt + ' (fetched)'));
       const { _raw, _set, ...rest } = c; return { ...rest, img: d.card_images?.[0]?.image_url || c.img, prices: pr };
+    }
+  },
+  lorcana: {
+    async search(q, num) {
+      const d = await j(`https://api.lorcast.com/v0/cards/search?q=${encodeURIComponent(q)}`);
+      let l = d.results || []; if (num) { const f = l.filter(c => String(c.collector_number) === String(+num)); if (f.length) l = f; }
+      return l.slice(0, 20).map(c => ({ game: 'lorcana', id: c.id, name: c.name + (c.version ? ' – ' + c.version : ''), number: c.collector_number, set: c.set?.name, setCode: c.set?.code, rarity: c.rarity, img: c.image_uris?.digital?.small || '', _raw: c }));
+    },
+    async detail(c) {
+      const d = c._raw || await j(`https://api.lorcast.com/v0/cards/${c.id}`), pr = [], dt = today();
+      if (d.prices?.usd) pr.push(P('Lorcast (TCGplayer)', 'normal', d.prices.usd, 'USD', dt + ' (fetched)'));
+      if (d.prices?.usd_foil) pr.push(P('Lorcast (TCGplayer)', 'foil', d.prices.usd_foil, 'USD', dt + ' (fetched)'));
+      const { _raw, ...rest } = c; return { ...rest, img: d.image_uris?.digital?.normal || c.img, prices: pr };
     }
   },
   sports: {
@@ -72,4 +86,16 @@ const Adapters = {
 function sportsQuery(c) { return [c.set, c.name, c.number && '#' + c.number, c.variant, c.grade].filter(Boolean).join(' '); }
 function sportsLinks(c) { const q = encodeURIComponent(sportsQuery(c));
   return [['eBay sold listings', `https://www.ebay.com/sch/i.html?_nkw=${q}&LH_Sold=1&LH_Complete=1`], ['130point sales', `https://130point.com/sales/?q=${q}`], ['SportsCardsPro', `https://www.sportscardspro.com/search-products?q=${q}&type=prices`]]; }
-function bestPrice(card) { const ps = (card.prices || []).filter(p => p.currency === 'USD' && p.value > 0); return ps.length ? ps[0] : null; }
+function bestPrice(card) { const ps = (card.prices || []).filter(p => p.value > 0); const u = ps.find(p => p.currency === 'USD');
+  if (u) return u; const e = ps.find(p => p.currency === 'EUR'), r = FX.rate('EUR');
+  return e && r ? { ...e, value: e.value * r, currency: 'USD', label: e.label + ` (€${e.value.toFixed(2)} → USD @${r.toFixed(3)})` } : null; }
+// Free FX (open.er-api.com, no key), cached 24h
+const FX = { d: JSON.parse(localStorage.getItem('fx') || 'null'),
+  async load() { if (this.d && Date.now() - this.d.t < 864e5) return; try { const r = await j('https://open.er-api.com/v6/latest/USD'); this.d = { t: Date.now(), rates: r.rates, date: r.time_last_update_utc }; localStorage.setItem('fx', JSON.stringify(this.d)); } catch {} },
+  rate(cur) { return this.d?.rates?.[cur] ? 1 / this.d.rates[cur] : null; } };
+// Set size for completion tracking (free APIs), cached
+async function setTotal(c) { const k = 'set:' + c.game + ':' + (c.setCode || c.set); const hit = localStorage.getItem(k); if (hit) return +hit; let n = null;
+  try { if (c.game === 'pokemon') n = (await j(`https://api.tcgdex.net/v2/en/sets/${c.id.split('-').slice(0, -1).join('-')}`)).cardCount.official;
+    else if (c.game === 'magic' && c.setCode) n = (await j(`https://api.scryfall.com/sets/${c.setCode}`)).card_count;
+    else if (c.game === 'yugioh') n = ((await j('https://db.ygoprodeck.com/api/v7/cardsets.php')).find(s => s.set_name === c.set) || {}).num_of_cards; } catch {}
+  if (n) localStorage.setItem(k, n); return n; }

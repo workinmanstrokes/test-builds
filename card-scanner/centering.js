@@ -24,3 +24,18 @@ async function measureCentering(src) {
 function centeringGrade(front, back) { // PSA-style centering caps
   const caps = [[55, 75, 10], [60, 90, 9], [65, 90, 8], [70, 90, 7], [80, 90, 6], [85, 90, 5], [90, 100, 4]];
   for (const [f, b, gr] of caps) if (front.max <= f && (!back?.ok || back.max <= b)) return gr; return 3; }
+// Condition ESTIMATES from photos (not a real grade): edge/corner whitening and surface glare/scratch proxies.
+async function conditionEstimate(front, corners) {
+  const stat = async (src, region) => { const i = await loadImg(src), W = 400, H = Math.round(i.height * W / i.width), c = document.createElement('canvas'); c.width = W; c.height = H;
+    const x = c.getContext('2d', { willReadFrequently: true }); x.drawImage(i, 0, 0, W, H); const b = cardBox(x, W, H), r = region(b, W, H);
+    const d = x.getImageData(Math.max(0, r.x), Math.max(0, r.y), Math.max(1, r.w), Math.max(1, r.h)).data; let white = 0, glare = 0, n = d.length / 4, lap = 0;
+    for (let k = 0; k < d.length; k += 4) { const v = (d[k] + d[k + 1] + d[k + 2]) / 3, sat = Math.max(d[k], d[k + 1], d[k + 2]) - Math.min(d[k], d[k + 1], d[k + 2]);
+      if (v > 225 && sat < 20) white++; if (v > 248) glare++; if (k > 4 * r.w && k % (4 * r.w)) lap += Math.abs(v - (d[k - 4] + d[k - 3] + d[k - 2]) / 3); }
+    return { white: white / n, glare: glare / n, tex: lap / n }; };
+  const band = 0.03, score = f => Math.max(1, Math.min(10, Math.round(10 - f * 60)));
+  const edges = await stat(front, b => ({ x: b.x, y: b.y, w: b.w, h: Math.round(b.h * band) }));
+  const edgesB = await stat(front, b => ({ x: b.x, y: b.y + Math.round(b.h * (1 - band)), w: b.w, h: Math.round(b.h * band) }));
+  const surf = await stat(front, b => ({ x: b.x + b.w * .15, y: b.y + b.h * .15, w: b.w * .7, h: b.h * .7 }));
+  const cs = []; for (const s of corners) cs.push(score((await stat(s, (b, W, H) => ({ x: 0, y: 0, w: W, h: H }))).white * 0.5));
+  return { edges: score((edges.white + edgesB.white) / 2), corners: cs.length ? Math.min(...cs) : null, cornerScores: cs, surface: Math.max(1, Math.min(10, Math.round(10 - surf.glare * 80))), glare: surf.glare > 0.02 };
+}

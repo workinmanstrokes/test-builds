@@ -2,14 +2,14 @@
 <html lang="en"><head>
 <meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#0d1117"><title>Card Scanner</title>
-<link rel="icon" href="icon.svg"><link rel="stylesheet" href="styles.css">
+<link rel="icon" href="icon.svg"><link rel="stylesheet" href="styles.css"><link rel="manifest" href="manifest.webmanifest">
 </head><body>
 <header><img src="icon.svg" alt="" width="28"><h1>Card Scanner</h1><button id="settingsBtn" class="ghost" aria-label="Settings">⚙</button></header>
-<nav><button data-tab="scan" class="on">Scan</button><button data-tab="collection">Collection <span id="colCount"></span></button><button data-tab="grade">Pre-Grade</button></nav>
-<main>
+<nav><button data-tab="scan" class="on">Scan</button><button data-tab="collection">Collection <span id="colCount"></span></button><button data-tab="grade">Grade</button><button data-tab="wish">Wishlist</button></nav>
+<main><div id="alertBar" class="price" hidden></div>
 <section id="tab-scan">
   <div class="row"><label>Game</label><select id="game">
-    <option value="pokemon">Pokémon</option><option value="magic">Magic</option><option value="yugioh">Yu-Gi-Oh</option><option value="sports">Sports</option></select></div>
+    <option value="pokemon">Pokémon</option><option value="magic">Magic</option><option value="yugioh">Yu-Gi-Oh</option><option value="lorcana">Lorcana</option><option value="sports">Sports</option></select></div>
   <div class="camwrap"><video id="video" autoplay playsinline muted></video><img id="shot" alt="" hidden></div>
   <div class="btns"><button id="camBtn">Start camera</button><button id="snapBtn" disabled>Snap</button>
     <label class="file">Upload photo<input type="file" id="fileIn" accept="image/*" capture="environment"></label></div>
@@ -24,9 +24,10 @@
   <div id="detail"></div>
 </section>
 <section id="tab-collection" hidden>
+  <div class="row"><input id="colQ" placeholder="Search name, set, tag…"><select id="colGame"><option value="">All</option><option value="pokemon">Pokémon</option><option value="magic">Magic</option><option value="yugioh">Yu-Gi-Oh</option><option value="lorcana">Lorcana</option><option value="sports">Sports</option></select><select id="colSort"><option value="added">Newest</option><option value="value">Value</option><option value="name">Name</option><option value="set">Set #</option></select></div>
   <div class="total">Total value: <b id="total">$0.00</b><small id="totalNote"></small></div>
   <div id="colList"></div>
-  <div class="btns"><button id="exportBtn">Export JSON</button></div>
+  <div class="btns"><button id="csvBtn">Export CSV</button><button id="exportBtn">Export JSON</button><label class="file">Import CSV/JSON<input type="file" id="importIn" accept=".csv,.json,text/csv,application/json"></label></div>
 </section>
 <section id="tab-grade" hidden>
   <p class="step" id="stepText">Step 1/6 – Front of card</p>
@@ -37,15 +38,21 @@
   <button id="analyzeBtn" class="primary" hidden>Analyze centering</button>
   <div id="gradeOut"></div>
 </section>
+<section id="tab-wish" hidden><p class="muted">Prices are re-checked once a day when you open the app. You get an alert when one drops to your target.</p><div id="wishList"></div></section>
 </main>
+<dialog id="onboard"><form method="dialog"><h3>Welcome to Card Scanner</h3>
+  <p>1. Pick the game, then <b>Snap</b> or <b>Upload</b> the card front, flat on a plain background.</p><p>2. Tap <b>Identify</b>. Text is read on your phone, offline. Then tap the exact print.</p>
+  <p>3. Check the dated market prices and <b>Add to collection</b> or ♡ Wishlist.</p><p>4. <b>Grade</b> tab: 6 photos give you centering plus corner, edge and surface estimates.</p>
+  <p class="muted">Free and no account. Everything stays on this device.</p><button id="onboardGo" class="primary">Let's go</button></form></dialog>
 <dialog id="settings"><form method="dialog">
   <h3>Settings</h3>
   <label>Proxy URL (Vercel or Firebase function)<input id="proxyUrl" placeholder="https://your-proxy.vercel.app"></label>
   <p class="muted">The proxy holds API keys (xAI vision, eBay, SportsCardsPro). Keys are never stored in this app. Leave blank to use free sources only.</p>
   <label><input type="checkbox" id="ocrOn" checked> Free on-device text reading (OCR) when no proxy is set</label>
+  <button type="button" id="replayOnboard">Show intro again</button>
   <p><a href="privacy.html" target="_blank">Privacy policy</a></p>
   <button id="saveSettings" class="primary">Save</button></form></dialog>
 <dialog id="listDlg"><form method="dialog"><h3>Draft listing</h3><div id="listBody"></div><div class="btns"><button id="copyList">Copy text</button><button>Close</button></div></form></dialog>
 <canvas id="canvas" hidden></canvas>
-<script src="pricing.js"></script><script src="centering.js"></script><script src="app.js"></script>
+<script src="pricing.js"></script><script src="ocr.js"></script><script src="centering.js"></script><script src="app.js"></script>
 </body></html>
