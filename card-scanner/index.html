@@ -10,11 +10,11 @@
 <main><div id="alertBar" class="price" hidden></div>
 <section id="tab-scan">
   <div class="row"><label for="game">Game</label><select id="game">
-    <option value="pokemon">Pokémon</option><option value="magic">Magic</option><option value="yugioh">Yu-Gi-Oh</option><option value="lorcana">Lorcana</option><option value="sports">Sports</option></select></div>
-  <div class="camwrap"><video id="video" autoplay playsinline muted aria-label="Camera viewfinder"></video><div id="frame" class="frame" hidden aria-hidden="true"></div><img id="shot" alt="Captured card photo" hidden></div>
-  <div class="row"><label class="chk"><input type="checkbox" id="autoCap" checked> Auto-capture when steady</label><span id="vfHint" class="muted" aria-live="polite"></span></div>
-  <div class="btns"><button id="camBtn">Start camera</button><button id="snapBtn" disabled>Snap</button>
-    <label class="file">Upload photo<input type="file" id="fileIn" accept="image/*" capture="environment"></label></div>
+    <option value="auto">Auto-detect (AI)</option><option value="pokemon">Pokémon</option><option value="magic">Magic</option><option value="yugioh">Yu-Gi-Oh</option><option value="lorcana">Lorcana</option><option value="sports">Sports</option></select></div>
+  <div id="cropWrap" class="cropwrap" hidden><img id="shot" alt="Card photo"><svg aria-hidden="true"><polygon id="cropPoly"/></svg>
+    <button class="handle" aria-label="Top-left corner"></button><button class="handle" aria-label="Top-right corner"></button><button class="handle" aria-label="Bottom-right corner"></button><button class="handle" aria-label="Bottom-left corner"></button></div>
+  <div class="btns"><button id="camBtn" class="primary">📷 Take photo</button><button id="galBtn">🖼 Gallery</button><button id="resetCrop" class="ghost2">Whole photo</button>
+    <input type="file" id="fileIn" accept="image/*" hidden aria-hidden="true"></div>
   <button id="idBtn" class="primary" disabled>Identify card</button>
   <p id="idStatus" class="muted" role="status" aria-live="polite"></p>
   <details id="manualBox" open><summary>Search by name (no key needed)</summary>
@@ -33,8 +33,7 @@
 </section>
 <section id="tab-grade" hidden>
   <p class="step" id="stepText">Step 1/6 – Front of card</p>
-  <div class="camwrap"><video id="gvideo" autoplay playsinline muted></video></div>
-  <div class="btns"><button id="gcamBtn">Start camera</button><button id="captureBtn" disabled>Capture</button>
+    <div class="btns"><button id="captureBtn" class="primary">📷 Take photo</button>
     <label class="file">Upload<input type="file" id="gfileIn" accept="image/*"></label></div>
   <div class="preview-row" id="previews"></div>
   <button id="analyzeBtn" class="primary" hidden>Analyze centering</button>
@@ -51,11 +50,10 @@
   <label>Proxy URL (Vercel or Firebase function)<input id="proxyUrl" placeholder="https://your-proxy.vercel.app"></label>
   <p class="muted">The proxy holds API keys (xAI vision, eBay, SportsCardsPro). Keys are never stored in this app. Leave blank to use free sources only.</p>
   <label class="chk"><input type="checkbox" id="ocrOn" checked> On-device identification (free, private)</label>
-  <label class="chk"><input type="checkbox" id="aiAssist"> Ask AI vision for hard cases (needs proxy + xAI key; off by default)</label>
   <button type="button" id="replayOnboard">Show intro again</button>
   <p><a href="privacy.html" target="_blank">Privacy policy</a></p>
   <button id="saveSettings" class="primary">Save</button></form></dialog>
 <dialog id="listDlg"><form method="dialog"><h3>Draft listing</h3><div id="listBody"></div><div class="btns"><button id="copyList">Copy text</button><button>Close</button></div></form></dialog>
 <canvas id="canvas" hidden></canvas>
-<script src="net.js"></script><script src="pricing.js"></script><script src="ocr.js"></script><script src="identify.js"></script><script src="centering.js"></script><script src="app.js"></script>
+<script src="net.js"></script><script src="pricing.js"></script><script src="ocr.js"></script><script src="identify.js"></script><script src="ai.js"></script><script src="centering.js"></script><script src="app.js"></script>
 </body></html>

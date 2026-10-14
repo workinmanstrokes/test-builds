@@ -35,18 +35,19 @@ const ID = (() => {
       for (let r = 0; r < 8; r++) if (r !== c) { const f = A[r][c] / A[c][c]; for (let k = c; k < 8; k++) A[r][k] -= f * A[c][k]; B[r] -= f * B[c]; } }
     return B.map((b, i) => b / A[i][i]);
   }
-  async function rectify(src) {
-    const img = await loadImg(src), sc = Math.min(1, 1600 / Math.max(img.width, img.height)), W = img.width * sc | 0, H = img.height * sc | 0;
+  // quad: optional [[x,y]x4] normalized 0..1 (TL,TR,BR,BL) from the manual crop editor
+  async function rectify(src, quad) {
+    const img = typeof src === 'string' ? await loadImg(src) : src, sc = Math.min(1, 1600 / Math.max(img.width, img.height)), W = img.width * sc | 0, H = img.height * sc | 0;
     const full = document.createElement('canvas'); full.width = W; full.height = H; const fx = full.getContext('2d', { willReadFrequently: true }); fx.drawImage(img, 0, 0, W, H);
     const s2 = 360 / W, w2 = 360, h2 = H * s2 | 0, sm = document.createElement('canvas'); sm.width = w2; sm.height = h2; const sx = sm.getContext('2d', { willReadFrequently: true }); sx.drawImage(full, 0, 0, w2, h2);
-    let q = findQuad(sx, w2, h2), found = !!q; q = q ? q.map(([x, y]) => [x / s2, y / s2]) : [[0, 0], [W, 0], [W, H], [0, H]];
+    let q = quad ? null : findQuad(sx, w2, h2), found = !!(q || quad); q = quad ? quad.map(([x, y]) => [x * W, y * H]) : q ? q.map(([x, y]) => [x / s2, y / s2]) : [[0, 0], [W, 0], [W, H], [0, H]];
     const h = homography(q, [[0, 0], [CW, 0], [CW, CH], [0, CH]]), sd = fx.getImageData(0, 0, W, H).data;
     const out = document.createElement('canvas'); out.width = CW; out.height = CH; const ox = out.getContext('2d'), od = ox.createImageData(CW, CH);
     for (let y = 0; y < CH; y++) for (let x = 0; x < CW; x++) { const z = h[6] * x + h[7] * y + 1, u = (h[0] * x + h[1] * y + h[2]) / z, v = (h[3] * x + h[4] * y + h[5]) / z;
       const ui = u | 0, vi = v | 0, o = (y * CW + x) * 4; if (ui < 0 || vi < 0 || ui >= W - 1 || vi >= H - 1) continue;
       const fu = u - ui, fv = v - vi, i0 = (vi * W + ui) * 4, i1 = i0 + 4, i2 = i0 + W * 4, i3 = i2 + 4;
       for (let k = 0; k < 3; k++) od.data[o + k] = (sd[i0 + k] * (1 - fu) + sd[i1 + k] * fu) * (1 - fv) + (sd[i2 + k] * (1 - fu) + sd[i3 + k] * fu) * fv; od.data[o + 3] = 255; }
-    ox.putImageData(od, 0, 0); return { canvas: out, found };
+    ox.putImageData(od, 0, 0); return { canvas: out, found, quad: q.map(([x, y]) => [x / W, y / H]) };
   }
   function binarize(c) { // Otsu threshold
     const g = c.getContext('2d', { willReadFrequently: true }), im = g.getImageData(0, 0, c.width, c.height), d = im.data, hist = new Array(256).fill(0);
@@ -165,9 +166,14 @@ const ID = (() => {
     for (let i = 1; i <= a.length; i++) for (let j = 1; j <= b.length; j++) m[i][j] = Math.min(m[i - 1][j] + 1, m[i][j - 1] + 1, m[i - 1][j - 1] + (a[i - 1] !== b[j - 1]));
     return 1 - m[a.length][b.length] / Math.max(a.length, b.length); }
   // ---------- main ----------
-  async function run(photo, game, step = () => {}) {
-    const t0 = performance.now(); step('Finding the card…'); const { canvas, found } = await rectify(photo);
-    const cv0 = () => canvas; step('Reading text…'); const p = parse(await ocrAll(canvas, game), game);
+  async function detect(src) { const r = await rectify(src); return { quad: r.quad, found: r.found }; }
+  // hint: AI-vision result {name, number, setCode, total} – skips OCR and goes straight to database confirmation + visual ranking
+  async function run(photo, game, step = () => {}, hint = null, quad = null) {
+    const t0 = performance.now(); step('Finding the card…'); const { canvas, found } = await rectify(photo, quad);
+    const cv0 = () => canvas; let p;
+    if (hint) { p = { names: [hint.name, ...(hint.altNames || [])].filter(Boolean), number: hint.number, total: hint.total, setCode: hint.setCode, words: 9, raw: [hint.name] }; fixNames.best = 1; }
+    else { step('Reading text…'); p = parse(await ocrAll(canvas, game), game); }
+    if (!hint) {
     if (!p.names.length || !found) { try { const r = await readCard(photo); const more = parse({ name: r.nameLines.join('\n'), top: r.lines.slice(0, 4).join('\n'), bottom: r.lines.slice(-3).join('\n') }, game);
       p.names = [...new Set([...p.names, ...more.names])]; p.number ||= more.number; p.total ||= more.total; p.setCode ||= more.setCode; p.words += more.words; } catch {} }
     if (p.words < 1 && !p.names.length && !p.number && !p.setCode) return { back: true, rect: canvas, parsed: p, ranked: [] };
@@ -175,7 +181,7 @@ const ID = (() => {
     if (fixNames.best < 0.85) { step('Re-reading the name…'); const w = await ocrWorker(), extra = [];
       for (const [r, sc] of [[game === 'yugioh' ? [0.05, 0.03, 0.78, 0.08] : ROI.name, 3], [ROI.top, 2.5]]) { extra.push((await w.recognize(binarize(region(cv0(), r, sc, 1.4)).toDataURL('image/png'))).data.text); }
       const more = parse({ name: extra.join('\n'), bottom: '' }, game).names, b0 = fixNames.best, fixed = await fixNames(game, [...p.raw, ...more]);
-      if (fixNames.best >= b0) p.names = fixed; } step('Searching databases…'); let cands = await candidates(game, p);
+      if (fixNames.best >= b0) p.names = fixed; } } step('Searching databases…'); let cands = await candidates(game, p);
     step(`Comparing artwork with ${Math.min(cands.length, 40)} prints…`);
     // pre-rank by text so the visual pass spends time on the likeliest prints
     const nameScore = c => Math.max(0, ...p.names.map(n => sim(n, c.name)), p.codeName ? sim(p.codeName, c.name) : 0);
@@ -194,5 +200,5 @@ const ID = (() => {
     const conf = cands.length ? Math.max(0, Math.min(1, (cands[0].score - (cands[1]?.score ?? 0)) * 2 + cands[0]._name * 0.3 + (cands[0]._num ? 0.2 : 0))) : 0;
     return { rect: canvas, found, parsed: p, ranked: cands, confidence: conf, ms: performance.now() - t0, visual: !!pe };
   }
-  return { run, rectify, embed, loadModel };
+  return { run, rectify, detect, embed, loadModel };
 })();
