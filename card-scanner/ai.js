@@ -8,7 +8,7 @@ const AI = (() => {
   async function shrink(src, max = 1600) { const i = await loadImg(src), s = Math.min(1, max / Math.max(i.width, i.height)), c = document.createElement('canvas');
     c.width = i.width * s; c.height = i.height * s; c.getContext('2d').drawImage(i, 0, 0, c.width, c.height); return c.toDataURL('image/jpeg', 0.88); }
   async function post(url, headers, body) {
-    if (native()) { const H = Capacitor.registerPlugin('CapacitorHttp'); const r = await H.request({ url, method: 'POST', headers: { 'Content-Type': 'application/json', ...headers }, data: body, connectTimeout: 30000, readTimeout: 60000 });
+    if (native()) { const H = Capacitor.Plugins?.CapacitorHttp || Capacitor.registerPlugin('CapacitorHttp'); const r = await H.request({ url, method: 'POST', headers: { 'Content-Type': 'application/json', ...headers }, data: body, connectTimeout: 30000, readTimeout: 60000 });
       return { ok: r.status < 300, status: r.status, json: async () => typeof r.data === 'string' ? JSON.parse(r.data) : r.data }; }
     return Net.raw(url, { method: 'POST', headers: { 'Content-Type': 'application/json', ...headers }, body: JSON.stringify(body), timeout: 60000 }, 2);
   }

@@ -29,20 +29,40 @@ function readFile(f, max = 1280) { return new Promise(r => { const fr = new File
 const thumb = src => readFileFromUrl(src, 320);
 async function readFileFromUrl(src, max) { const i = await loadImg(src), c = document.createElement('canvas'), s = Math.min(1, max / Math.max(i.width, i.height)); c.width = i.width * s; c.height = i.height * s; c.getContext('2d').drawImage(i, 0, 0, c.width, c.height); return c.toDataURL('image/jpeg', .8); }
 // ---- Photo capture: native camera / gallery (Capacitor) with browser file-input fallback ----
-const Cam = () => (AI.native() ? Capacitor.registerPlugin('Camera') : null);
-async function takePhoto(source) { // source: 'CAMERA' | 'PHOTOS'
-  const c = Cam();
-  if (c) { try { const p = await c.getPhoto({ quality: 92, resultType: 'dataUrl', source, correctOrientation: true, saveToGallery: false, width: 4000 }); return p.dataUrl; }
-    catch (e) { if (!/cancel/i.test(e.message || '')) alert('Camera: ' + (e.message || e)); return null; } }
+// window.Capacitor from the native bridge has no registerPlugin; vendor/capacitor.js (@capacitor/core) adds it. Never throw here.
+const Cam = () => { if (!AI.native()) return null; try { return Capacitor.Plugins?.Camera || Capacitor.registerPlugin?.('Camera') || null; } catch { return null; } };
+// Photo capture. Native Camera plugin first; if it throws or never opens a system screen (WebView not paused within ~1.5s),
+// fall back to a file input (camera capture / Android photo picker, handled by Capacitor's WebChromeClient) and say so.
+function pickWithInput(source) {
   return new Promise(res => { const i = document.createElement('input'); i.type = 'file'; i.accept = 'image/*'; if (source === 'CAMERA') i.capture = 'environment';
-    i.onchange = async () => res(i.files[0] ? await readFile(i.files[0], 4000) : null); i.click(); });
+    i.style.display = 'none'; document.body.appendChild(i);
+    i.onchange = async () => { const f = i.files[0]; i.remove(); res(f ? await readFile(f, 4000) : null); };
+    i.oncancel = () => { i.remove(); res(null); }; i.click(); });
+}
+function photoError(msg, source) { showStage(true); $('cropWrap').hidden = true; showError(msg); const b = $('retryBtn'); b.textContent = source === 'CAMERA' ? '📷 Open camera' : '🖼️ Open gallery';
+  b.dataset.retake = ''; b.onclick = async () => { const p = await pickWithInput(source); b.onclick = retryHandler; if (p) { $('cropWrap').hidden = false; await setPhoto(p); } }; }
+addEventListener('error', e => console.error('JS error', e.message, e.filename, e.lineno)); addEventListener('unhandledrejection', e => console.error('Unhandled', e.reason?.message || e.reason));
+async function takePhoto(source) { // source: 'CAMERA' | 'PHOTOS'
+  const c = Cam(); if (!c || localStorage.getItem('nativeCam') === 'off') return pickWithInput(source);
+  let left = false; const onHide = () => { if (document.hidden) left = true; }; document.addEventListener('visibilitychange', onHide); addEventListener('pause', onHide);
+  const call = c.getPhoto({ quality: 92, resultType: 'dataUrl', source, correctOrientation: true, saveToGallery: false, width: 4000 }).then(p => ({ p: p.dataUrl }), e => ({ e }));
+  const r = await Promise.race([call, new Promise(r => setTimeout(() => r(left ? null : { stuck: true }), 1500))]).then(x => x || call);
+  document.removeEventListener('visibilitychange', onHide);
+  if (r.p) return r.p;
+  if (r.e && /cancel/i.test(r.e.message || '')) return null;
+  console.warn('native camera failed', r.e || 'did not open');
+  left = false; document.addEventListener('visibilitychange', onHide); // usually still allowed (within the tap's activation window)
+  const alt = pickWithInput(source), r2 = await Promise.race([alt, new Promise(r => setTimeout(() => r(left ? null : 'stuck'), 1500))]).then(x => x === null && left ? alt : x);
+  document.removeEventListener('visibilitychange', onHide);
+  if (r2 !== 'stuck') return r2;
+  { photoError((source === 'CAMERA' ? 'The camera didn’t open.' : 'The gallery didn’t open.') + ' Tap the button below to try another way.' + (tech() ? ` (${r.e?.message || 'native camera did not respond'})` : ''), source); return null; }
 }
 let quad = null;
 const busy = t => { $('busy').hidden = !t; if (t) $('busyText').textContent = t; };
 function showStage(on) { $('home').hidden = on; $('stage').hidden = !on; if (!on) { $('detail').innerHTML = ''; $('altBox').hidden = true; } }
 function setAdjust(on) { $('adjustBar').hidden = !on; $('cropWrap').classList.toggle('adjust', on); }
 async function setPhoto(src) {
-  photo = src; quad = null; $('idBtn').disabled = false; $('results').innerHTML = ''; $('detail').innerHTML = ''; $('altBox').hidden = true; $('errBox').hidden = true;
+  photo = src; quad = null; $('cropWrap').hidden = false; $('idBtn').disabled = false; $('results').innerHTML = ''; $('detail').innerHTML = ''; $('altBox').hidden = true; $('errBox').hidden = true;
   showStage(true); setAdjust(false); $('stageTitle').textContent = 'Your card'; $('idStatus').textContent = '';
   const img = $('shot'); img.src = src; img.hidden = false; $('cropWrap').hidden = false; busy('Finding your card…');
   await new Promise(r => img.complete && img.naturalWidth ? r() : (img.onload = r));
@@ -52,7 +72,8 @@ async function setPhoto(src) {
   $('idStatus').textContent = 'Found your card ✓'; await new Promise(r => setTimeout(r, 700)); identify();
 }
 $('backHome').onclick = () => { showStage(false); $('manualBox').open = false; };
-$('retryBtn').onclick = async () => { if ($('retryBtn').dataset.retake) { const p = await takePhoto('CAMERA'); if (p) await setPhoto(p); } else identify(); };
+const retryHandler = async () => { if ($('retryBtn').dataset.retake) { const p = await takePhoto('CAMERA'); if (p) await setPhoto(p); } else identify(); };
+$('retryBtn').onclick = retryHandler;
 $('errSearch').onclick = () => { $('errBox').hidden = true; openSearch(); };
 $('openSearch').onclick = () => openSearch();
 function openSearch() { $('manualBox').open = true; $('q').focus(); $('manualBox').scrollIntoView({ behavior: 'smooth' }); }
@@ -71,8 +92,8 @@ document.querySelectorAll('#cropWrap .handle').forEach((h, i) => {
 });
 addEventListener('resize', drawCrop);
 $('resetCrop').onclick = () => { quad = [[0, 0], [1, 0], [1, 1], [0, 1]]; drawCrop(); };
-$('camBtn').onclick = async () => { const p = await takePhoto('CAMERA'); if (p) await setPhoto(p); };
-$('galBtn').onclick = async () => { const p = await takePhoto('PHOTOS'); if (p) await setPhoto(p); };
+const photoBtn = source => async () => { try { const p = await takePhoto(source); if (p) await setPhoto(p); } catch (e) { photoError('Something went wrong opening the ' + (source === 'CAMERA' ? 'camera' : 'gallery') + '. Tap below to try again.' + (tech() ? ` (${e.message})` : ''), source); } };
+$('camBtn').onclick = photoBtn('CAMERA'); $('galBtn').onclick = photoBtn('PHOTOS');
 $('fileIn').onchange = async e => { if (!e.target.files[0]) return; await setPhoto(await readFile(e.target.files[0], 4000)); e.target.value = ''; };
 
 // ---- Identification: AI vision (proxy) first → confirm against card databases + artwork; on-device fallback ----
