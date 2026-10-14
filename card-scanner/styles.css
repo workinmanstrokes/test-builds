@@ -19,3 +19,7 @@ a{color:#58a6ff}details summary{padding:6px 0}
 .side{flex:0 0 auto;display:flex;flex-direction:column;gap:4px}.side button{padding:6px 8px;font-size:.85rem}.tag{background:#1f6feb33;color:#58a6ff;border-radius:6px;padding:1px 6px;font-size:.75rem}
 #alertBar{border:1px solid #d29922}nav button{font-size:.9rem;padding:10px 4px}textarea{padding:10px;border-radius:8px;border:1px solid #30363d;background:#0d1117;color:#e6edf3;font:inherit}
 @media (prefers-color-scheme: light){body,nav,input,select,textarea{background:#f6f8fa;color:#1f2328}.card,.price,.total,dialog,button,.file{background:#fff;color:#1f2328;border-color:#d0d7de}nav button,.side button{background:#eaeef2;color:#1f2328}nav .on,.primary{background:#1f6feb;color:#fff}.muted{color:#59636e}}
+.camwrap{position:relative}.frame{position:absolute;left:12%;right:12%;top:50%;transform:translateY(-50%);aspect-ratio:63/88;border:3px dashed #fff9;border-radius:14px;box-shadow:0 0 0 999px #0007;pointer-events:none}.frame.ready{border-color:#3fb950;border-style:solid}
+.chk{display:flex!important;flex-direction:row!important;gap:8px;align-items:center}.plain{list-style:none;padding:0;display:flex;flex-direction:column;gap:6px}button.card{width:100%;text-align:left}
+#offline{border:1px solid #d29922;margin:0 12px}:focus-visible{outline:3px solid #58a6ff;outline-offset:2px}button[aria-busy=true]{opacity:.6}
+@media (prefers-reduced-motion: reduce){*{transition:none!important;animation:none!important}}

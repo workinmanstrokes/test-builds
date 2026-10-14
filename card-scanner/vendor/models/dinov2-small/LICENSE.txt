@@ -1,0 +1,1 @@
+Apache-2.0 DINOv2 (Meta) via Xenova/dinov2-small ONNX

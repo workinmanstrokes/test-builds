@@ -5,26 +5,28 @@
 <link rel="icon" href="icon.svg"><link rel="stylesheet" href="styles.css"><link rel="manifest" href="manifest.webmanifest">
 </head><body>
 <header><img src="icon.svg" alt="" width="28"><h1>Card Scanner</h1><button id="settingsBtn" class="ghost" aria-label="Settings">⚙</button></header>
-<nav><button data-tab="scan" class="on">Scan</button><button data-tab="collection">Collection <span id="colCount"></span></button><button data-tab="grade">Grade</button><button data-tab="wish">Wishlist</button></nav>
+<nav role="tablist" aria-label="Sections"><button role="tab" data-tab="scan" class="on">Scan</button><button role="tab" data-tab="collection">Collection <span id="colCount"></span></button><button role="tab" data-tab="grade">Grade</button><button role="tab" data-tab="wish">Wishlist</button></nav>
+<div id="offline" class="price" role="alert" hidden>You are offline. Saved cards and cached prices still work; identification needs internet for the card databases.</div>
 <main><div id="alertBar" class="price" hidden></div>
 <section id="tab-scan">
-  <div class="row"><label>Game</label><select id="game">
+  <div class="row"><label for="game">Game</label><select id="game">
     <option value="pokemon">Pokémon</option><option value="magic">Magic</option><option value="yugioh">Yu-Gi-Oh</option><option value="lorcana">Lorcana</option><option value="sports">Sports</option></select></div>
-  <div class="camwrap"><video id="video" autoplay playsinline muted></video><img id="shot" alt="" hidden></div>
+  <div class="camwrap"><video id="video" autoplay playsinline muted aria-label="Camera viewfinder"></video><div id="frame" class="frame" hidden aria-hidden="true"></div><img id="shot" alt="Captured card photo" hidden></div>
+  <div class="row"><label class="chk"><input type="checkbox" id="autoCap" checked> Auto-capture when steady</label><span id="vfHint" class="muted" aria-live="polite"></span></div>
   <div class="btns"><button id="camBtn">Start camera</button><button id="snapBtn" disabled>Snap</button>
     <label class="file">Upload photo<input type="file" id="fileIn" accept="image/*" capture="environment"></label></div>
   <button id="idBtn" class="primary" disabled>Identify card</button>
-  <p id="idStatus" class="muted"></p>
+  <p id="idStatus" class="muted" role="status" aria-live="polite"></p>
   <details id="manualBox" open><summary>Search by name (no key needed)</summary>
-    <div class="row"><input id="q" placeholder="Card name, e.g. Charizard"><input id="qnum" placeholder="# (optional)" size="5"></div>
-    <div id="sportsFields" hidden><div class="row"><input id="sYear" placeholder="Year" size="5"><input id="sBrand" placeholder="Brand/set, e.g. Topps Chrome"></div>
-      <div class="row"><input id="sPar" placeholder="Parallel, e.g. Refractor /99"><input id="sGrade" placeholder="Grade (opt.)" size="6"></div></div>
+    <div class="row"><input id="q" aria-label="Card name" placeholder="Card name, e.g. Charizard"><input id="qnum" aria-label="Card number" placeholder="# (optional)" size="5"></div>
+    <div id="sportsFields" hidden><div class="row"><input id="sYear" aria-label="Year" placeholder="Year" size="5"><input id="sBrand" aria-label="Brand or set" placeholder="Brand/set, e.g. Topps Chrome"></div>
+      <div class="row"><input id="sPar" aria-label="Parallel" placeholder="Parallel, e.g. Refractor /99"><input id="sGrade" aria-label="Grade" placeholder="Grade (opt.)" size="6"></div></div>
     <button id="searchBtn">Search</button></details>
   <div id="results"></div>
   <div id="detail"></div>
 </section>
 <section id="tab-collection" hidden>
-  <div class="row"><input id="colQ" placeholder="Search name, set, tag…"><select id="colGame"><option value="">All</option><option value="pokemon">Pokémon</option><option value="magic">Magic</option><option value="yugioh">Yu-Gi-Oh</option><option value="lorcana">Lorcana</option><option value="sports">Sports</option></select><select id="colSort"><option value="added">Newest</option><option value="value">Value</option><option value="name">Name</option><option value="set">Set #</option></select></div>
+  <div class="row"><input id="colQ" aria-label="Search collection" placeholder="Search name, set, tag…"><select id="colGame" aria-label="Filter by game"><option value="">All</option><option value="pokemon">Pokémon</option><option value="magic">Magic</option><option value="yugioh">Yu-Gi-Oh</option><option value="lorcana">Lorcana</option><option value="sports">Sports</option></select><select id="colSort" aria-label="Sort"><option value="added">Newest</option><option value="value">Value</option><option value="name">Name</option><option value="set">Set #</option></select></div>
   <div class="total">Total value: <b id="total">$0.00</b><small id="totalNote"></small></div>
   <div id="colList"></div>
   <div class="btns"><button id="csvBtn">Export CSV</button><button id="exportBtn">Export JSON</button><label class="file">Import CSV/JSON<input type="file" id="importIn" accept=".csv,.json,text/csv,application/json"></label></div>
@@ -48,11 +50,12 @@
   <h3>Settings</h3>
   <label>Proxy URL (Vercel or Firebase function)<input id="proxyUrl" placeholder="https://your-proxy.vercel.app"></label>
   <p class="muted">The proxy holds API keys (xAI vision, eBay, SportsCardsPro). Keys are never stored in this app. Leave blank to use free sources only.</p>
-  <label><input type="checkbox" id="ocrOn" checked> Free on-device text reading (OCR) when no proxy is set</label>
+  <label class="chk"><input type="checkbox" id="ocrOn" checked> On-device identification (free, private)</label>
+  <label class="chk"><input type="checkbox" id="aiAssist"> Ask AI vision for hard cases (needs proxy + xAI key; off by default)</label>
   <button type="button" id="replayOnboard">Show intro again</button>
   <p><a href="privacy.html" target="_blank">Privacy policy</a></p>
   <button id="saveSettings" class="primary">Save</button></form></dialog>
 <dialog id="listDlg"><form method="dialog"><h3>Draft listing</h3><div id="listBody"></div><div class="btns"><button id="copyList">Copy text</button><button>Close</button></div></form></dialog>
 <canvas id="canvas" hidden></canvas>
-<script src="pricing.js"></script><script src="ocr.js"></script><script src="centering.js"></script><script src="app.js"></script>
+<script src="net.js"></script><script src="pricing.js"></script><script src="ocr.js"></script><script src="identify.js"></script><script src="centering.js"></script><script src="app.js"></script>
 </body></html>

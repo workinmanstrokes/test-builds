@@ -1,16 +1,16 @@
 // Card lookup + price adapters. Every price carries {source,date}. Never invents prices.
 const today = () => new Date().toISOString().slice(0, 10);
-const j = async (u, o) => { const r = await fetch(u, o); if (!r.ok) throw new Error(r.status + ' ' + u); return r.json(); };
+const j = u => Net.json(u);
 const P = (source, label, value, currency, date, url) => ({ source, label, value: +value, currency, date, url });
 const proxy = () => (localStorage.getItem('proxyUrl') || '').replace(/\/$/, '');
 
 const Adapters = {
   pokemon: {
     async search(q, num) {
-      const list = await j(`https://api.tcgdex.net/v2/en/cards?name=${encodeURIComponent(q)}&pagination:itemsPerPage=40`);
+      const list = await j(`https://api.tcgdex.net/v2/en/cards?name=${encodeURIComponent(q)}&pagination:itemsPerPage=120`);
       let l = num ? list.filter(c => String(+c.localId) === String(+num) || c.localId === num) : list;
       if (!l.length) l = list;
-      return l.slice(0, 20).map(c => ({ game: 'pokemon', id: c.id, name: c.name, number: c.localId, img: c.image ? c.image + '/low.webp' : '', set: c.id.split('-')[0] }));
+      return l.slice(0, 120).map(c => ({ game: 'pokemon', id: c.id, name: c.name, number: c.localId, img: c.image ? c.image + '/low.webp' : '', set: c.id.split('-')[0] }));
     },
     async detail(c) {
       const d = await j(`https://api.tcgdex.net/v2/en/cards/${c.id}`);
@@ -28,24 +28,25 @@ const Adapters = {
       let d; try { d = await j(`https://api.scryfall.com/cards/search?unique=prints&q=${encodeURIComponent(qq)}`); }
       catch { d = await j(`https://api.scryfall.com/cards/search?unique=prints&q=${encodeURIComponent(q)}`); }
       const data = d.data.sort((a, b) => (b.name.toLowerCase() === q.toLowerCase()) - (a.name.toLowerCase() === q.toLowerCase()));
-      return data.slice(0, 20).map(c => ({ game: 'magic', id: c.id, name: c.name, number: c.collector_number, set: c.set_name, rarity: c.rarity,
-        img: c.image_uris?.normal || c.card_faces?.[0]?.image_uris?.normal || '', variant: (c.finishes || []).join(', '), _raw: c }));
+      return data.slice(0, 40).map(this.map);
     },
+    map: c => ({ game: 'magic', id: c.id, name: c.name, number: c.collector_number, set: c.set_name, setCode: c.set, rarity: c.rarity,
+        img: c.image_uris?.small || c.card_faces?.[0]?.image_uris?.small || '', imgLarge: c.image_uris?.normal || c.card_faces?.[0]?.image_uris?.normal || '', variant: (c.finishes || []).join(', '), _raw: c }),
     async detail(c) {
       const d = c._raw || await j(`https://api.scryfall.com/cards/${c.id}`), pr = [], dt = today();
       const map = { usd: ['nonfoil', 'USD'], usd_foil: ['foil', 'USD'], usd_etched: ['etched', 'USD'], eur: ['nonfoil', 'EUR'], eur_foil: ['foil', 'EUR'] };
       for (const [k, [lab, cur]] of Object.entries(map)) if (d.prices?.[k]) pr.push(P('Scryfall (TCGplayer/Cardmarket, daily)', lab, d.prices[k], cur, dt + ' (fetched)', d.purchase_uris?.tcgplayer));
-      const { _raw, ...rest } = c; return { ...rest, setCode: d.set, prices: pr };
+      const { _raw, ...rest } = c; return { ...rest, img: c.imgLarge || c.img, setCode: d.set, prices: pr };
     }
   },
   yugioh: {
     async search(q) {
-      const d = await j(`https://db.ygoprodeck.com/api/v7/cardinfo.php?fname=${encodeURIComponent(q)}&num=20&offset=0`);
+      const d = await j(`https://db.ygoprodeck.com/api/v7/cardinfo.php?fname=${encodeURIComponent(q)}&num=12&offset=0`);
       const out = [];
       for (const c of d.data) { const sets = c.card_sets?.length ? c.card_sets : [{}];
-        for (const s of sets.slice(0, 6)) out.push({ game: 'yugioh', id: c.id + '|' + (s.set_code || ''), name: c.name, number: s.set_code || '', set: s.set_name || '', rarity: s.set_rarity || '', variant: s.set_rarity || '',
+        for (const s of sets.slice(0, 12)) out.push({ game: 'yugioh', id: c.id + '|' + (s.set_code || ''), name: c.name, number: s.set_code || '', set: s.set_name || '', rarity: s.set_rarity || '', variant: s.set_rarity || '',
           img: c.card_images?.[0]?.image_url_small || '', _raw: c, _set: s }); }
-      return out.slice(0, 20);
+      return out.slice(0, 60);
     },
     async detail(c) {
       const d = c._raw || (await j(`https://db.ygoprodeck.com/api/v7/cardinfo.php?id=${String(c.id).split('|')[0]}`)).data[0], pr = [], dt = today(), cp = d.card_prices?.[0] || {};

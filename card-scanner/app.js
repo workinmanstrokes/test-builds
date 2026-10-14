@@ -5,13 +5,13 @@ let photo = null, current = null, stream = null;
 
 // Tabs
 document.querySelectorAll('nav button').forEach(b => b.onclick = () => {
-  document.querySelectorAll('nav button').forEach(x => x.classList.toggle('on', x === b));
+  document.querySelectorAll('nav button').forEach(x => { x.classList.toggle('on', x === b); x.setAttribute('aria-selected', x === b); });
   document.querySelectorAll('main section').forEach(s => s.hidden = s.id !== 'tab-' + b.dataset.tab);
   if (b.dataset.tab === 'collection') renderCollection(); if (b.dataset.tab === 'wish') renderWish();
 });
 // Settings
-$('settingsBtn').onclick = () => { $('proxyUrl').value = localStorage.getItem('proxyUrl') || ''; $('ocrOn').checked = localStorage.getItem('ocr') !== '0'; $('settings').showModal(); };
-$('saveSettings').onclick = () => { localStorage.setItem('proxyUrl', $('proxyUrl').value.trim()); localStorage.setItem('ocr', $('ocrOn').checked ? '1' : '0'); };
+$('settingsBtn').onclick = () => { $('proxyUrl').value = localStorage.getItem('proxyUrl') || ''; $('ocrOn').checked = localStorage.getItem('ocr') !== '0'; $('aiAssist').checked = localStorage.getItem('aiAssist') === '1'; $('settings').showModal(); };
+$('saveSettings').onclick = () => { localStorage.setItem('aiAssist', $('aiAssist').checked ? '1' : '0'); localStorage.setItem('proxyUrl', $('proxyUrl').value.trim()); localStorage.setItem('ocr', $('ocrOn').checked ? '1' : '0'); };
 $('game').onchange = () => { $('sportsFields').hidden = $('game').value !== 'sports'; $('q').placeholder = $('game').value === 'sports' ? 'Player name, e.g. Shohei Ohtani' : 'Card name, e.g. Charizard'; };
 
 async function camera(videoEl) {
@@ -22,46 +22,79 @@ function grab(videoEl, max = 1280) { const c = $('canvas'), s = Math.min(1, max 
 function readFile(f, max = 1280) { return new Promise(r => { const fr = new FileReader(); fr.onload = () => { const i = new Image(); i.onload = () => { const c = $('canvas'), s = Math.min(1, max / Math.max(i.width, i.height)); c.width = i.width * s; c.height = i.height * s; c.getContext('2d').drawImage(i, 0, 0, c.width, c.height); r(c.toDataURL('image/jpeg', .88)); }; i.src = fr.result; }; fr.readAsDataURL(f); }); }
 const thumb = src => readFileFromUrl(src, 320);
 async function readFileFromUrl(src, max) { const i = await loadImg(src), c = document.createElement('canvas'), s = Math.min(1, max / Math.max(i.width, i.height)); c.width = i.width * s; c.height = i.height * s; c.getContext('2d').drawImage(i, 0, 0, c.width, c.height); return c.toDataURL('image/jpeg', .8); }
-function setPhoto(src) { photo = src; $('shot').src = src; $('shot').hidden = false; $('video').hidden = true; $('idBtn').disabled = false; }
+function setPhoto(src) { photo = src; $('frame').hidden = true; $('shot').src = src; $('shot').hidden = false; $('video').hidden = true; $('idBtn').disabled = false; }
 
-$('camBtn').onclick = async () => { $('video').hidden = false; $('shot').hidden = true; if (await camera($('video'))) $('snapBtn').disabled = false; };
-$('snapBtn').onclick = () => setPhoto(grab($('video')));
-$('fileIn').onchange = async e => e.target.files[0] && setPhoto(await readFile(e.target.files[0]));
+$('camBtn').onclick = async () => { $('video').hidden = false; $('shot').hidden = true; $('frame').hidden = false; if (await camera($('video'))) { $('snapBtn').disabled = false; watchSteady(); } };
+$('snapBtn').onclick = () => snapFrame();
+// Crop to the on-screen card frame (+ margin) so identification sees the card, not the table
+function snapFrame() { const v = $('video'), vw = v.videoWidth, vh = v.videoHeight; if (!vw) return;
+  const box = v.getBoundingClientRect(), fr = $('frame').getBoundingClientRect(), s = Math.min(box.width / vw, box.height / vh), ox = box.left + (box.width - vw * s) / 2, oy = box.top + (box.height - vh * s) / 2;
+  const m = 0.08, x = Math.max(0, (fr.left - ox) / s - fr.width / s * m), y = Math.max(0, (fr.top - oy) / s - fr.height / s * m), w = Math.min(vw - x, fr.width / s * (1 + 2 * m)), h = Math.min(vh - y, fr.height / s * (1 + 2 * m));
+  const c = $('canvas'), k = Math.min(1, 1400 / h); c.width = w * k; c.height = h * k; c.getContext('2d').drawImage(v, x, y, w, h, 0, 0, c.width, c.height);
+  stopWatch(); setPhoto(c.toDataURL('image/jpeg', .9)); $('frame').hidden = true; buzz(25); $('vfHint').textContent = 'Captured.';
+  if (localStorage.getItem('autoId') !== '0') identify(); }
+let watchT = null;
+function stopWatch() { clearInterval(watchT); watchT = null; }
+function watchSteady() { // auto-capture when the card is steady and in focus
+  stopWatch(); if (!$('autoCap').checked) return; const c = document.createElement('canvas'); c.width = 64; c.height = 90; const g = c.getContext('2d', { willReadFrequently: true }); let prev = null, steady = 0;
+  watchT = setInterval(() => { const v = $('video'); if (!v.videoWidth || v.hidden) return; const fr = $('frame').getBoundingClientRect(), box = v.getBoundingClientRect(), s = Math.min(box.width / v.videoWidth, box.height / v.videoHeight);
+    const ox = box.left + (box.width - v.videoWidth * s) / 2, oy = box.top + (box.height - v.videoHeight * s) / 2; g.drawImage(v, (fr.left - ox) / s, (fr.top - oy) / s, fr.width / s, fr.height / s, 0, 0, 64, 90);
+    const d = g.getImageData(0, 0, 64, 90).data, l = new Float32Array(64 * 90); for (let i = 0; i < l.length; i++) l[i] = (d[i * 4] + d[i * 4 + 1] + d[i * 4 + 2]) / 3;
+    let lap = 0, diff = 0, mean = 0; for (let y = 1; y < 89; y++) for (let x = 1; x < 63; x++) { const i = y * 64 + x; lap += Math.abs(4 * l[i] - l[i - 1] - l[i + 1] - l[i - 64] - l[i + 64]); }
+    lap /= 62 * 88; l.forEach(x => mean += x); mean /= l.length; if (prev) for (let i = 0; i < l.length; i++) diff += Math.abs(l[i] - prev[i]); diff /= l.length; prev = l;
+    const ok = diff < 4 && lap > 6 && mean > 25; steady = ok ? steady + 1 : 0;
+    $('vfHint').textContent = mean <= 25 ? 'Too dark – add light' : lap <= 6 ? 'Move closer / let it focus' : diff >= 4 ? 'Hold steady…' : 'Steady – capturing…';
+    $('frame').classList.toggle('ready', ok); if (steady >= 4) snapFrame(); }, 250); }
+$('autoCap').onchange = () => { localStorage.setItem('autoCap', $('autoCap').checked ? '1' : '0'); if (stream) watchSteady(); };
+$('autoCap').checked = localStorage.getItem('autoCap') !== '0';
+$('fileIn').onchange = async e => { if (!e.target.files[0]) return; stopWatch(); setPhoto(await readFile(e.target.files[0], 1600)); e.target.value = ''; if (localStorage.getItem('autoId') !== '0') identify(); };
 
 // Identify: proxy vision (xAI) if configured, else free on-device OCR, then database check.
-$('idBtn').onclick = async () => {
-  const st = $('idStatus'), game = $('game').value, px = localStorage.getItem('proxyUrl');
+$('idBtn').onclick = () => identify();
+async function identify() {
+  const st = $('idStatus'), game = $('game').value, px = localStorage.getItem('proxyUrl'), aiOn = px && localStorage.getItem('aiAssist') === '1';
+  const btn = $('idBtn'); btn.disabled = true; btn.setAttribute('aria-busy', 'true'); $('results').innerHTML = ''; $('detail').innerHTML = '';
   try {
-    if (px) {
-      st.textContent = 'Identifying with AI vision…';
-      const r = await fetch(px.replace(/\/$/, '') + '/api/identify', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ image: photo, gameHint: game }) });
-      if (!r.ok) throw new Error('proxy ' + r.status); const v = await r.json();
-      if (v.game && $('game').querySelector(`option[value=${v.game}]`)) $('game').value = v.game; $('game').onchange();
-      $('q').value = v.name || ''; $('qnum').value = (v.number || '').split('/')[0];
-      if (v.game === 'sports') { $('sYear').value = v.year || ''; $('sBrand').value = v.set || ''; $('sPar').value = v.variant || ''; }
-      st.textContent = `AI read: ${[v.name, v.set, v.number, v.variant].filter(Boolean).join(' · ')} (confidence ${v.confidence ?? '?'}). Checking database…`;
-      await doSearch(v);
-    } else if (localStorage.getItem('ocr') !== '0') {
-      st.textContent = 'Reading card text on-device (offline, free)…';
-      const r = await readCard(photo);
-      if (r.looksLikeBack) { photo = null; $('idBtn').disabled = true; st.textContent = 'This looks like the back of a card. Flip it and snap the front.'; buzz([30, 60, 30]); return; }
-      const num = (r.text.match(/\b([A-Z]{0,4}-?\d{1,3})\s*\/\s*\d{1,3}\b/) || r.text.match(/\b([A-Z]{2,5}\d?-[A-Z]{0,2}\d{2,3})\b/) || [])[1] || '';
-      let name = '';
-      if (game === 'sports') {
-        const g = sportsGuess(r.text); $('sYear').value = g.year; $('sBrand').value = g.brand; $('sPar').value = g.parallel;
-        name = await wikiPlayer(g.nameCandidates) || g.nameCandidates[0] || ''; $('q').value = name; $('qnum').value = g.number;
-        st.textContent = name ? `Read ${[g.year, g.brand, name, g.number && '#' + g.number, g.parallel].filter(Boolean).join(' ')}. Check fields, then Search.` : 'Could not read the player. Type it below.';
-        if (name) await doSearch(); return;
-      }
-      const stop = /^(Evolves|Stage|Basic|Put|From|Pokemon|Pokémon|Trainer|Energy|Weakness|Resistance|Retreat|Illus|Length|Weight|Creature|Instant|Sorcery|Effect|Monster|Spell|Trap|Character|Action|Item)$/i;
-      const cands = [...new Set([...r.nameLines, ...r.lines.slice(0, 4)].flatMap(l => l.match(/\b[A-Z][a-zé'\-]{2,}(?: [A-Z][a-zé'\-]+)*/g) || []).map(w => w.split(' ').filter(x => !stop.test(x)).join(' ')).filter(w => w.length > 3))];
-      for (const c of cands.slice(0, 10)) { try { if ((await Adapters[game].search(c, num)).length) { name = c; break; } } catch {} }
-      $('q').value = name; $('qnum').value = num.replace(/^0+(?=\d)/, '');
-      st.textContent = name ? `Read "${name}"${num ? ' #' + num : ''}${r.cropped ? ' (auto-cropped)' : ''}. Pick the exact print below.` : 'Could not read the name. Type it below.';
-      if (name) { buzz(20); await doSearch(); }
-    } else st.textContent = 'AI identification is off (no proxy). Type the name below.';
+    if (game === 'sports') return await identifySports(st, px, aiOn);
+    const r = await ID.run(photo, game, m => st.textContent = m);
+    if (r.back) { photo = null; st.textContent = 'This looks like the back of a card. Flip it and snap the front.'; buzz([30, 60, 30]); return; }
+    let ranked = r.ranked, conf = r.confidence;
+    if (aiOn && conf < 0.5) { // optional AI-vision upgrade for hard cases (off by default)
+      st.textContent = 'Low confidence – asking AI vision…';
+      try { const v = await aiIdentify(px, game); const extra = v.name ? await Adapters[game].search(v.name, (v.number || '').split('/')[0]) : [];
+        const key = c => c.game + c.id; const seen = new Set(ranked.map(key)); ranked = [...extra.filter(c => !seen.has(key(c))), ...ranked];
+        ranked.forEach(c => { if (v.name && c.name.toLowerCase() === v.name.toLowerCase()) c.score = (c.score || 0) + 0.4; if (v.number && String(c.number) === String(v.number).split('/')[0]) c.score += 0.3; });
+        ranked.sort((x, y) => (y.score || 0) - (x.score || 0)); conf = Math.max(conf, v.confidence || 0); } catch (e) { st.textContent = 'AI vision unavailable: ' + e.message; }
+    }
+    if (!ranked.length) { st.textContent = `Couldn't match this card${r.parsed.raw?.[0] ? ` (read "${r.parsed.raw[0]}")` : ''}. Retake closer, or type the name below.`; return; }
+    const top = ranked[0]; $('q').value = top.name; $('qnum').value = top.number || '';
+    st.textContent = `${conf >= 0.6 ? 'Match' : 'Best guess'}: ${top.name}${top.number ? ' #' + top.number : ''} (${Math.round(conf * 100)}% confident${r.visual ? '' : ', artwork check unavailable'}).`;
+    buzz(20); showList(ranked.slice(0, 8), conf >= 0.6);
   } catch (e) { st.textContent = 'Identify failed: ' + e.message + '. Use search below.'; }
-};
+  finally { btn.disabled = !photo; btn.removeAttribute('aria-busy'); }
+}
+async function aiIdentify(px, game) {
+  const r = await Net.raw(px.replace(/\/$/, '') + '/api/identify', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ image: photo, gameHint: game }), timeout: 30000 }, 2);
+  if (!r.ok) throw new Error('proxy ' + r.status); return r.json();
+}
+async function identifySports(st, px, aiOn) {
+  if (aiOn) { st.textContent = 'Identifying with AI vision…'; try { const v = await aiIdentify(px, 'sports');
+    $('q').value = v.name || ''; $('qnum').value = (v.number || '').split('/')[0]; $('sYear').value = v.year || ''; $('sBrand').value = v.set || ''; $('sPar').value = v.variant || '';
+    st.textContent = `AI read: ${[v.year, v.set, v.name, v.number, v.variant].filter(Boolean).join(' · ')}`; return doSearch(v); } catch (e) { st.textContent = 'AI vision unavailable, reading on-device…'; } }
+  st.textContent = 'Reading card text on-device…'; const r = await readCard(photo);
+  if (r.looksLikeBack && !/\d{4}/.test(r.text)) { st.textContent = 'This looks like a card back – the stats side helps for sports, but the front shows the name. Try the front.'; }
+  const g = sportsGuess(r.text); $('sYear').value = g.year; $('sBrand').value = g.brand; $('sPar').value = g.parallel;
+  const name = await wikiPlayer(g.nameCandidates) || g.nameCandidates[0] || ''; $('q').value = name; $('qnum').value = g.number;
+  st.textContent = name ? `Read ${[g.year, g.brand, name, g.number && '#' + g.number, g.parallel].filter(Boolean).join(' ')}. Check the fields, then Search.` : 'Could not read the player. Type it below.';
+  if (name) await doSearch();
+}
+function showList(list, autoOpen) {
+  
+  $('results').innerHTML = `<p class="muted">${list.length} match${list.length > 1 ? 'es' : ''}. Tap the exact print:</p><ul class="plain" role="list">` + list.map((c, i) =>
+    `<li><button class="card" data-i="${i}" aria-label="${esc(c.name)}, ${esc([c.set, c.number && 'number ' + c.number].filter(Boolean).join(', '))}">${c.img ? `<img src="${esc(c.img)}" loading="lazy" alt="">` : ''}<div><b>${esc(c.name)}</b><span class="muted">${esc([c.set, c.number && '#' + c.number, c.rarity || c.variant].filter(Boolean).join(' · '))}</span>${c.score != null && i < 3 ? `<span class="muted"> · match ${Math.round(Math.min(1, c.score) * 100)}</span>` : ''}</div></button></li>`).join('') + '</ul>';
+  $('results').querySelectorAll('.card').forEach(el => el.onclick = () => showDetail(list[+el.dataset.i]));
+  if (autoOpen || list.length === 1) showDetail(list[0]);
+}
 $('searchBtn').onclick = () => doSearch();
 
 async function doSearch(v = {}) {
@@ -71,11 +104,7 @@ async function doSearch(v = {}) {
     const list = await Adapters[game].search(q, $('qnum').value.trim(), { year: $('sYear').value, brand: $('sBrand').value, parallel: $('sPar').value, grade: $('sGrade').value });
     if (!list.length) { $('results').innerHTML = '<p class="muted">No matches.</p>'; return; }
     if (v.set) list.sort((a, b) => (b.set || '').toLowerCase().includes(v.set.toLowerCase()) - (a.set || '').toLowerCase().includes(v.set.toLowerCase()));
-    window._list = list;
-    $('results').innerHTML = `<p class="muted">${list.length} match${list.length > 1 ? 'es' : ''} — tap the exact print:</p>` + list.map((c, i) =>
-      `<div class="card" data-i="${i}">${c.img ? `<img src="${esc(c.img)}" loading="lazy" alt="">` : ''}<div><b>${esc(c.name)}</b><span class="muted">${esc([c.set, c.number && '#' + c.number, c.rarity || c.variant].filter(Boolean).join(' · '))}</span></div></div>`).join('');
-    $('results').querySelectorAll('.card').forEach(el => el.onclick = () => showDetail(list[+el.dataset.i]));
-    if (list.length === 1) showDetail(list[0]);
+    showList(list, false);
   } catch (e) { $('results').innerHTML = `<p class="bad">Search failed: ${esc(e.message)}</p>`; }
 }
 
@@ -87,7 +116,7 @@ function priceHtml(c) {
 }
 async function showDetail(c) {
   $('detail').innerHTML = '<p class="muted">Loading prices…</p>';
-  try { current = await Adapters[c.game].detail(c); } catch (e) { $('detail').innerHTML = `<p class="bad">${esc(e.message)}</p>`; return; }
+  try { current = await Adapters[c.game].detail(c); } catch (e) { $('detail').innerHTML = `<p class="bad" role="alert">Couldn't load prices: ${esc(e.message)}. <button id="retryDetail">Retry</button></p>`; $('retryDetail').onclick = () => showDetail(c); return; }
   const d = current;
   $('detail').innerHTML = `<h2>${esc(d.name)}</h2>${d.img ? `<img class="big" src="${esc(d.img)}" alt="">` : ''}
     <p>${esc([d.set, d.number && '#' + d.number + (d.setTotal ? '/' + d.setTotal : ''), d.rarity].filter(Boolean).join(' · '))}${d.variant ? `<br><span class="muted">Variant/parallel: ${esc(d.variant)}</span>` : ''}</p>
@@ -231,3 +260,9 @@ renderCollection(); renderWish();
 FX.load().then(() => { renderCollection(); refreshPrices(); });
 if ('serviceWorker' in navigator && location.protocol === 'https:') navigator.serviceWorker.register('sw.js');
 $('replayOnboard').onclick = () => { $('settings').close(); $('onboard').showModal(); };
+
+// Offline awareness
+const netState = () => { $('offline').hidden = navigator.onLine; };
+addEventListener('online', netState); addEventListener('offline', netState); netState();
+// Warm up the on-device model in the background after first paint
+setTimeout(() => { if ('requestIdleCallback' in window) requestIdleCallback(() => ID.loadModel().catch(() => {})); }, 3000);
