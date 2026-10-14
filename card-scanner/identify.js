@@ -152,7 +152,8 @@ const ID = (() => {
     for (let k = 0; k < D; k++) v[k] /= n; for (let k = D; k < 2 * D; k++) v[k] /= n2; return v;
   }
   const cos = (a, b) => { let s = 0; for (let k = 0; k < a.length; k++) s += a[k] * b[k]; return s / 2; };
-  const imgUrl = c => !c.img ? '' : c.game === 'yugioh' ? `https://wsrv.nl/?url=${encodeURIComponent(c.img.replace('cards_small', 'cards_small'))}&w=240` : c.img;
+  // artwork fetched for embedding goes via the free wsrv.nl image CDN for hosts with broken CORS (TCGdex sends a duplicate ACAO header; YGOPRODeck sends none)
+  const imgUrl = c => !c.img ? '' : /tcgdex\.net|ygoprodeck\.com/.test(c.img) ? `https://wsrv.nl/?url=${encodeURIComponent(c.img)}&w=240` : c.img;
   async function candEmbed(c, blob) {
     const u = imgUrl(c); if (!u) return null; if (embCache.has(u)) return embCache.get(u);
     const k = 'e:' + u; try { const h = localStorage.getItem(k); if (h) { const v = Float32Array.from(JSON.parse(h)); embCache.set(u, v); return v; } } catch {}

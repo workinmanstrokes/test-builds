@@ -52,11 +52,11 @@ async function setPhoto(src) {
   $('idStatus').textContent = 'Found your card ✓'; await new Promise(r => setTimeout(r, 700)); identify();
 }
 $('backHome').onclick = () => { showStage(false); $('manualBox').open = false; };
-$('retryBtn').onclick = () => identify();
+$('retryBtn').onclick = async () => { if ($('retryBtn').dataset.retake) { const p = await takePhoto('CAMERA'); if (p) await setPhoto(p); } else identify(); };
 $('errSearch').onclick = () => { $('errBox').hidden = true; openSearch(); };
 $('openSearch').onclick = () => openSearch();
 function openSearch() { $('manualBox').open = true; $('q').focus(); $('manualBox').scrollIntoView({ behavior: 'smooth' }); }
-function showError(msg) { $('errText').textContent = msg; $('errBox').hidden = false; buzz([30, 60, 30]); }
+function showError(msg, retake) { $('errText').textContent = msg; const b = $('retryBtn'); b.textContent = retake ? '📷 Retake photo' : 'Try again'; retake ? b.dataset.retake = 1 : delete b.dataset.retake; $('errBox').hidden = false; buzz([30, 60, 30]); }
 function drawCrop() {
   const w = $('cropWrap'), r = $('shot').getBoundingClientRect(), base = w.getBoundingClientRect(); if (!quad) return;
   const pts = quad.map(([x, y]) => [r.left - base.left + x * r.width, r.top - base.top + y * r.height]);
@@ -77,33 +77,10 @@ $('fileIn').onchange = async e => { if (!e.target.files[0]) return; await setPho
 
 // ---- Identification: AI vision (proxy) first → confirm against card databases + artwork; on-device fallback ----
 async function croppedPhoto() { const { canvas } = await ID.rectify(photo, quad); return canvas.toDataURL('image/jpeg', 0.92); }
-async function scanCard(game, step = () => {}) {
-  const out = { ai: null, ranked: [], conf: 0, mode: 'device' };
-  if (AI.available()) {
-    step('Identifying with AI vision…');
-    try { out.ai = await AI.identify(await croppedPhoto(), game === 'auto' ? '' : game); } catch (e) { out.aiError = e.message; }
-  }
-  const v = out.ai;
-  if (v?.is_back) return { ...out, back: true };
-  if (v && v.name) {
-    out.mode = 'ai'; const g = v.game && v.game !== 'other' ? v.game : game; out.game = g;
-    if (g === 'sports') return out;
-    if (!Adapters[g]) return out;
-    step('Confirming the exact print…');
-    const r = await ID.run(photo, g, step, { name: v.name, number: v.number, total: v.total, setCode: v.setCode }, quad);
-    let ranked = r.ranked;
-    if (!ranked.length) ranked = await Adapters[g].search(v.name, v.number).catch(() => []);
-    // boost prints that agree with what the AI read
-    const nn = s => String(s || '').toLowerCase().replace(/[^a-z0-9]/g, '');
-    ranked.forEach(c => { c.score = (c.score || 0) + (nn(c.name) === nn(v.name) ? 0.3 : 0) + (v.number && nn(c.number) === nn(v.number) ? 0.5 : 0) + (v.setCode && (nn(c.number) === nn(v.setCode) || nn(c.setCode) === nn(v.setCode)) ? 0.4 : 0) + (v.set && nn(c.set).includes(nn(v.set).slice(0, 8)) ? 0.15 : 0); });
-    ranked.sort((a, b) => b.score - a.score); out.ranked = ranked;
-    const t = ranked[0]; out.conf = t ? Math.min(1, (v.confidence ?? 0.7) * 0.5 + (nn(t.name) === nn(v.name) ? 0.25 : 0) + (v.number && nn(t.number) === nn(v.number) || v.setCode && nn(t.number) === nn(v.setCode) ? 0.25 : 0)) : 0;
-    return out;
-  }
-  if (game === 'auto' || game === 'sports') return out; // on-device fallback needs a specific TCG
-  step(out.aiError ? `AI unavailable (${out.aiError}) – identifying on-device…` : 'Identifying on-device…');
-  const r = await ID.run(photo, game, step, null, quad);
-  return { ...out, back: r.back, ranked: r.ranked, conf: r.confidence, parsed: r.parsed, game };
+async function scanCard(game, step = () => {}) { // thin wrapper over the deep identification module (idcore.js)
+  const r = await identifyCard(photo, { game, quad, step, cropped: croppedPhoto });
+  const cloud = r.runs?.find(x => x.adapter === 'cloud');
+  return { ...r, ai: r.ai || cloud?.ai || null, aiError: cloud?.error, mode: r.mode || (r.adapter === 'cloud' ? 'ai' : 'device') };
 }
 $('idBtn').onclick = () => identify();
 async function identify() {
@@ -119,7 +96,8 @@ async function identify() {
       $('q').value = v.player || v.name; $('qnum').value = v.number; $('sYear').value = v.year; $('sBrand').value = v.brand || v.set; $('sPar').value = [v.variant, v.serial && '/' + v.serial.split('/').pop()].filter(Boolean).join(' ');
       st.textContent = `AI read: ${[v.year, v.brand || v.set, v.player || v.name, v.number && '#' + v.number, v.variant, v.serial].filter(Boolean).join(' · ')} (${Math.round((v.confidence || 0) * 100)}%)`; buzz(20); return doSearch();
     }
-    if (!r.ranked.length) { showError(sel === 'auto' && !AI.available() ? 'Tell us the card type first – tap Pokémon, Magic, Yu-Gi-Oh!, Lorcana or Sports, then scan again.' : 'We couldn’t recognise this card. Try again with the card flat and well lit, or type its name.' + (tech() && r.aiError ? ` (${r.aiError})` : '')); return; }
+    if (r.retake && r.ranked.length) { showList(r.ranked.slice(0, 9), true, true); $('stageTitle').textContent = 'Is this your card?'; showError('We’re not sure about this one. For a better match, retake the photo with the card flat, filling the frame, and no glare – or pick it below.', true); return; }
+    if (!r.ranked.length) { showError('We couldn’t recognise this card. Try again with the card flat and well lit, or type its name.' + (tech() && r.aiError ? ` (${r.aiError})` : '')); return; }
     const top = r.ranked[0]; $('q').value = top.name; $('qnum').value = top.number || '';
     st.textContent = (r.conf >= 0.6 ? 'Here’s your card' : 'Our best guess – check below if it’s not right') + (tech() ? ` · ${Math.round(r.conf * 100)}% · ${r.mode === 'ai' ? 'AI vision + database' : 'on-device'}` : '');
     $('stageTitle').textContent = r.conf >= 0.6 ? 'We found it!' : 'Is this your card?';
