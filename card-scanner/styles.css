@@ -51,3 +51,5 @@ label{display:flex;flex-direction:column;gap:6px}.chk{flex-direction:row!importa
 dialog{background:var(--card);color:var(--text);border:0;border-radius:22px;width:92vw;max-width:440px;padding:22px}dialog::backdrop{background:#000a}dialog form{display:flex;flex-direction:column;gap:14px}
 .ob{text-align:center;display:flex;flex-direction:column;gap:10px}.obArt{font-size:4rem}textarea{min-height:140px}
 @media (prefers-reduced-motion: reduce){*{animation:none!important;transition:none!important;scroll-behavior:auto!important}}
+
+.chipsLabel{margin:6px 0 -6px;font-weight:600}.stageType{display:flex;flex-direction:column;gap:6px}.chips.small .chip{min-height:40px;padding:6px 12px;font-size:.9rem}#readBox label{font-weight:600;margin-top:6px;display:block}#readBox input{width:100%}#readText{white-space:pre-wrap;max-height:30vh;overflow:auto;font-size:.8rem}

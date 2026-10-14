@@ -183,17 +183,17 @@ const ID = (() => {
       for (const [r, sc] of [[game === 'yugioh' ? [0.05, 0.03, 0.78, 0.08] : ROI.name, 3], [ROI.top, 2.5]]) { extra.push((await w.recognize(binarize(region(cv0(), r, sc, 1.4)).toDataURL('image/png'))).data.text); }
       const more = parse({ name: extra.join('\n'), bottom: '' }, game).names, b0 = fixNames.best, fixed = await fixNames(game, [...p.raw, ...more]);
       if (fixNames.best >= b0) p.names = fixed; } } step('Searching databases…'); let cands = await candidates(game, p);
-    step(`Comparing artwork with ${Math.min(cands.length, 40)} prints…`);
+    step(`Comparing artwork with ${Math.min(cands.length, +(localStorage.getItem('visN') || 80))} prints…`);
     // pre-rank by text so the visual pass spends time on the likeliest prints
     const nameScore = c => Math.max(0, ...p.names.map(n => sim(n, c.name)), p.codeName ? sim(p.codeName, c.name) : 0);
     const numScore = c => (p.number && norm(c.number) === norm(p.number) ? 1 : 0) + (p.setCode && norm(c.number) === norm(p.setCode) ? 1 : 0) + (p.setCode && game === 'magic' && c.setCode === p.setCode ? 0.6 : 0);
     cands.forEach(c => { c._name = nameScore(c); c._num = Math.min(1, numScore(c)); c._pre = c._name + c._num; });
-    cands.sort((a, b) => b._pre - a._pre); cands = cands.slice(0, 80);
+    cands.sort((a, b) => b._pre - a._pre); cands = cands.slice(0, 80); const visN = +(localStorage.getItem('visN') || 80); // artwork-compare only the likeliest prints (cold-cache speed on phones)
     let pe = null; try { pe = await embed(canvas); } catch (e) { console.warn('embedding unavailable', e); }
     if (pe) { const blobs = new Map(); let i = 0; // fetch images 6 at a time, embed sequentially
       const fetchOne = async c => { const u = imgUrl(c); if (!u || embCache.has(u) || localStorage.getItem('e:' + u)) return; try { const r = await Net.raw(u); if (r.ok) blobs.set(u, await r.blob()); } catch {} };
-      await Promise.all(Array.from({ length: 6 }, async () => { while (i < cands.length) await fetchOne(cands[i++]); }));
-      for (const c of cands) { const v = await candEmbed(c, blobs.get(imgUrl(c))); c._vis = v ? cos(pe, v) : null; } }
+      const vc = cands.slice(0, visN); await Promise.all(Array.from({ length: 6 }, async () => { while (i < vc.length) await fetchOne(vc[i++]); }));
+      for (const c of vc) { const v = await candEmbed(c, blobs.get(imgUrl(c))); c._vis = v ? cos(pe, v) : null; } }
     const vis = cands.map(c => c._vis).filter(v => v != null), lo = Math.min(...vis), hi = Math.max(...vis);
     for (const c of cands) { const vn = c._vis == null ? 0 : hi > lo ? (c._vis - lo) / (hi - lo) : 0.5;
       c.score = (pe ? 0.5 * vn + 0.15 * (c._vis ?? 0) : 0) + 0.25 * c._name + 0.35 * c._num; }

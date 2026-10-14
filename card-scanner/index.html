@@ -12,12 +12,14 @@
   <div id="home">
     <header class="top"><img src="icon.svg" alt="" width="36"><h1 id="scanTitle">Card Scanner</h1></header>
     <button class="valueCard" id="homeValue" data-go="collection"><span>My collection</span><b id="homeTotal">$0.00</b><small id="homeCount">No cards yet</small></button>
-    <button id="camBtn" class="hero">📷<span>Scan a card</span></button>
-    <button id="galBtn" class="secondary big">🖼️ Choose from gallery</button>
-    <p class="tip">💡 Tip: lay the card flat on a plain surface, in good light.</p>
+    <p class="chipsLabel" id="typeLabel">What are you scanning?</p>
     <div class="chips" role="radiogroup" aria-label="Card type">
       <button class="chip" data-game="auto" role="radio">✨ Any card</button><button class="chip" data-game="pokemon" role="radio">Pokémon</button><button class="chip" data-game="magic" role="radio">Magic</button>
       <button class="chip" data-game="yugioh" role="radio">Yu-Gi-Oh!</button><button class="chip" data-game="lorcana" role="radio">Lorcana</button><button class="chip" data-game="sports" role="radio">Sports</button></div>
+    <button id="camBtn" class="hero">📷<span>Scan a card</span></button>
+    <button id="galBtn" class="secondary big">🖼️ Choose from gallery</button>
+    <p class="tip">💡 Tip: lay the card flat on a plain surface, in good light.</p>
+
     <select id="game" hidden aria-hidden="true"><option value="auto">Any</option><option value="pokemon">Pokémon</option><option value="magic">Magic</option><option value="yugioh">Yu-Gi-Oh</option><option value="lorcana">Lorcana</option><option value="sports">Sports</option></select>
     <button id="openSearch" class="link">Or type the card name instead</button>
   </div>
@@ -28,7 +30,16 @@
       <div id="busy" class="busy" hidden><div class="spinner" aria-hidden="true"></div><p id="busyText">Identifying…</p></div></div>
     <p id="idStatus" class="status" role="status" aria-live="polite"></p>
     <div id="adjustBar" class="btns" hidden><button id="idBtn" class="primary big" disabled>✓ Looks good – identify</button><button id="resetCrop" class="secondary">Use whole photo</button></div>
+    <div class="stageType"><span class="muted">Card type:</span> <div class="chips small" role="radiogroup" aria-label="Card type for this scan">
+      <button class="chip" data-game="auto" role="radio">✨ Any card</button><button class="chip" data-game="pokemon" role="radio">Pokémon</button><button class="chip" data-game="magic" role="radio">Magic</button>
+      <button class="chip" data-game="yugioh" role="radio">Yu-Gi-Oh!</button><button class="chip" data-game="lorcana" role="radio">Lorcana</button><button class="chip" data-game="sports" role="radio">Sports</button></div></div>
     <div id="errBox" class="errbox" hidden role="alert"><p id="errText"></p><div class="btns"><button id="retryBtn" class="primary">Try again</button><button id="errSearch" class="secondary">Type the name</button></div></div>
+    <div id="readBox" class="errbox" hidden role="alert"><h3 id="readTitle">We couldn’t be sure about this card</h3>
+      <p class="muted">Here’s what we could read. Fix the name if needed, pick the card type above, then search.</p>
+      <label for="readQ">Name on the card</label><input id="readQ" autocomplete="off" placeholder="e.g. Omarion Hampton">
+      <label for="readExtra">Set / year (optional)</label><input id="readExtra" autocomplete="off" placeholder="e.g. 2025 Panini Phoenix RC">
+      <details><summary>All text we read</summary><pre id="readText" class="muted"></pre></details>
+      <div class="btns"><button id="readSearch" class="primary">🔎 Search</button><button id="readRetake" class="secondary">📷 Retake photo</button></div></div>
   </div>
   <div id="detail"></div>
   <div id="altBox" hidden><h3>Is it one of these?</h3><div id="results" class="tiles"></div></div>
@@ -91,5 +102,5 @@
   <button id="onboardGo" hidden>Done</button></form></dialog>
 <dialog id="listDlg"><form method="dialog"><h3>Sell this card</h3><div id="listBody"></div><div class="btns"><button id="copyList" class="primary">Copy everything</button><button class="secondary">Close</button></div></form></dialog>
 <canvas id="canvas" hidden></canvas>
-<script src="vendor/capacitor.js"></script><script src="net.js"></script><script src="pricing.js"></script><script src="ocr.js"></script><script src="identify.js"></script><script src="ai.js"></script><script src="idcore.js"></script><script src="centering.js"></script><script src="app.js"></script>
+<script src="vendor/capacitor.js"></script><script src="net.js"></script><script src="pricing.js"></script><script src="ocr.js"></script><script src="identify.js"></script><script src="sports.js"></script><script src="ai.js"></script><script src="idcore.js"></script><script src="centering.js"></script><script src="app.js"></script>
 </body></html>

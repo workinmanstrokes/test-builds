@@ -17,7 +17,7 @@ function loadSettings() { $('proxyUrl').value = localStorage.getItem('proxyUrl')
   $('aiState').textContent = AI.available() ? 'AI vision: on' : 'AI vision: off (no server set) – on-device matching is used.'; }
 $('saveSettings').onclick = () => { localStorage.setItem('proxyUrl', $('proxyUrl').value.trim()); localStorage.setItem('ocr', $('ocrOn').checked ? '1' : '0'); localStorage.setItem('tech', $('techOn').checked ? '1' : '0'); loadSettings(); $('saveSettings').textContent = 'Saved ✓'; setTimeout(() => $('saveSettings').textContent = 'Save', 1500); };
 function syncChips() { document.querySelectorAll('.chip').forEach(c => { const on = c.dataset.game === $('game').value; c.classList.toggle('on', on); c.setAttribute('aria-checked', on); }); }
-document.querySelectorAll('.chip').forEach(c => c.onclick = () => { $('game').value = c.dataset.game; localStorage.setItem('game', c.dataset.game); $('game').onchange(); });
+document.querySelectorAll('.chip').forEach(c => c.onclick = () => { $('game').value = c.dataset.game; localStorage.setItem('game', c.dataset.game); $('game').onchange(); if (!$('stage').hidden && photo && !$('idBtn').disabled) identify(); });
 $('game').onchange = () => { syncChips(); $('sportsFields').hidden = $('game').value !== 'sports'; $('q').placeholder = $('game').value === 'sports' ? 'Player name, e.g. Shohei Ohtani' : 'Card name, e.g. Charizard'; };
 
 async function camera(videoEl) {
@@ -36,7 +36,7 @@ const Cam = () => { if (!AI.native()) return null; try { return Capacitor.Plugin
 function pickWithInput(source) {
   return new Promise(res => { const i = document.createElement('input'); i.type = 'file'; i.accept = 'image/*'; if (source === 'CAMERA') i.capture = 'environment';
     i.style.display = 'none'; document.body.appendChild(i);
-    i.onchange = async () => { const f = i.files[0]; i.remove(); res(f ? await readFile(f, 4000) : null); };
+    i.onchange = async () => { const f = i.files[0]; i.remove(); res(f ? await readFile(f, 2400) : null); };
     i.oncancel = () => { i.remove(); res(null); }; i.click(); });
 }
 function photoError(msg, source) { showStage(true); $('cropWrap').hidden = true; showError(msg); const b = $('retryBtn'); b.textContent = source === 'CAMERA' ? '📷 Open camera' : '🖼️ Open gallery';
@@ -45,7 +45,7 @@ addEventListener('error', e => console.error('JS error', e.message, e.filename, 
 async function takePhoto(source) { // source: 'CAMERA' | 'PHOTOS'
   const c = Cam(); if (!c || localStorage.getItem('nativeCam') === 'off') return pickWithInput(source);
   let left = false; const onHide = () => { if (document.hidden) left = true; }; document.addEventListener('visibilitychange', onHide); addEventListener('pause', onHide);
-  const call = c.getPhoto({ quality: 92, resultType: 'dataUrl', source, correctOrientation: true, saveToGallery: false, width: 4000 }).then(p => ({ p: p.dataUrl }), e => ({ e }));
+  const call = c.getPhoto({ quality: 92, resultType: 'dataUrl', source, correctOrientation: true, saveToGallery: false, width: 2400 }).then(p => ({ p: p.dataUrl }), e => ({ e }));
   const r = await Promise.race([call, new Promise(r => setTimeout(() => r(left ? null : { stuck: true }), 1500))]).then(x => x || call);
   document.removeEventListener('visibilitychange', onHide);
   if (r.p) return r.p;
@@ -94,7 +94,7 @@ addEventListener('resize', drawCrop);
 $('resetCrop').onclick = () => { quad = [[0, 0], [1, 0], [1, 1], [0, 1]]; drawCrop(); };
 const photoBtn = source => async () => { try { const p = await takePhoto(source); if (p) await setPhoto(p); } catch (e) { photoError('Something went wrong opening the ' + (source === 'CAMERA' ? 'camera' : 'gallery') + '. Tap below to try again.' + (tech() ? ` (${e.message})` : ''), source); } };
 $('camBtn').onclick = photoBtn('CAMERA'); $('galBtn').onclick = photoBtn('PHOTOS');
-$('fileIn').onchange = async e => { if (!e.target.files[0]) return; await setPhoto(await readFile(e.target.files[0], 4000)); e.target.value = ''; };
+$('fileIn').onchange = async e => { if (!e.target.files[0]) return; await setPhoto(await readFile(e.target.files[0], 2400)); e.target.value = ''; };
 
 // ---- Identification: AI vision (proxy) first → confirm against card databases + artwork; on-device fallback ----
 async function croppedPhoto() { const { canvas } = await ID.rectify(photo, quad); return canvas.toDataURL('image/jpeg', 0.92); }
@@ -106,10 +106,16 @@ async function scanCard(game, step = () => {}) { // thin wrapper over the deep i
 $('idBtn').onclick = () => identify();
 async function identify() {
   const st = $('idStatus'), btn = $('idBtn'), sel = $('game').value; btn.disabled = true; btn.setAttribute('aria-busy', 'true'); $('results').innerHTML = ''; $('detail').innerHTML = '';
-  setAdjust(false); $('errBox').hidden = true; $('altBox').hidden = true; st.textContent = ''; busy('Identifying…');
+  setAdjust(false); $('errBox').hidden = true; $('readBox').hidden = true; $('altBox').hidden = true; st.textContent = ''; busy('Identifying…');
   const friendly = m => /Comparing|Confirming/.test(m) ? 'Finding the exact version…' : /Reading|Re-reading|AI vision/.test(m) ? 'Identifying…' : /Searching/.test(m) ? 'Looking it up…' : m;
+  localStorage.setItem('scanning', String(Date.now()));
+  const slow = setTimeout(() => { if ($('busy').hidden) return; $('busyText').textContent = 'Still working – this card is taking longer than usual…';
+    if (!$('busySkip')) { const b = document.createElement('button'); b.id = 'busySkip'; b.className = 'secondary'; b.textContent = '✍️ Type the name instead'; $('busy').appendChild(b);
+      b.onclick = () => { identify.cancelled = true; busy(''); showRead({ read: IDCore.last }, 'Type the name to search'); }; } }, 15000);
+  identify.cancelled = false;
   try {
-    const r = await scanCard(sel, m => busy(tech() ? m : friendly(m)));
+    const r = await scanCard(sel, m => !identify.cancelled && !$('busySkip') && busy(tech() ? m : friendly(m)));
+    if (identify.cancelled) return;
     if (r.back) { showError('That looks like the back of the card. Flip it over and scan the front.'); return; }
     if (r.game && r.game !== sel && $('game').querySelector(`option[value=${r.game}]`)) { $('game').value = r.game; $('game').onchange(); }
     const v = r.ai;
@@ -117,15 +123,33 @@ async function identify() {
       $('q').value = v.player || v.name; $('qnum').value = v.number; $('sYear').value = v.year; $('sBrand').value = v.brand || v.set; $('sPar').value = [v.variant, v.serial && '/' + v.serial.split('/').pop()].filter(Boolean).join(' ');
       st.textContent = `AI read: ${[v.year, v.brand || v.set, v.player || v.name, v.number && '#' + v.number, v.variant, v.serial].filter(Boolean).join(' · ')} (${Math.round((v.confidence || 0) * 100)}%)`; buzz(20); return doSearch();
     }
-    if (r.retake && r.ranked.length) { showList(r.ranked.slice(0, 9), true, true); $('stageTitle').textContent = 'Is this your card?'; showError('We’re not sure about this one. For a better match, retake the photo with the card flat, filling the frame, and no glare – or pick it below.', true); return; }
-    if (!r.ranked.length) { showError('We couldn’t recognise this card. Try again with the card flat and well lit, or type its name.' + (tech() && r.aiError ? ` (${r.aiError})` : '')); return; }
+    if (r.retake && r.ranked.length) { showList(r.ranked.slice(0, 9), true, true); showRead(r, 'Is this your card?', true); $('stageTitle').textContent = 'Is this your card?'; return; }
+    if (!r.ranked.length) { showRead(r, r.timeout ? 'That took too long' : 'We couldn’t be sure about this card'); return; }
+    if (r.game === 'sports') { const p = r.parsed || {}; $('sYear').value = p.year || ''; $('sBrand').value = p.brand || ''; $('sPar').value = [p.rc && 'RC', p.serial].filter(Boolean).join(' '); }
     const top = r.ranked[0]; $('q').value = top.name; $('qnum').value = top.number || '';
     st.textContent = (r.conf >= 0.6 ? 'Here’s your card' : 'Our best guess – check below if it’s not right') + (tech() ? ` · ${Math.round(r.conf * 100)}% · ${r.mode === 'ai' ? 'AI vision + database' : 'on-device'}` : '');
     $('stageTitle').textContent = r.conf >= 0.6 ? 'We found it!' : 'Is this your card?';
     buzz(20); showList(r.ranked.slice(0, 9), true, r.conf < 0.6);
   } catch (e) { showError(navigator.onLine ? 'Something went wrong while identifying. Please try again.' + (tech() ? ` (${e.message})` : '') : 'You’re offline. Connect to the internet and try again.'); }
-  finally { busy(''); btn.disabled = !photo; btn.removeAttribute('aria-busy'); }
+  finally { clearTimeout(slow); $('busySkip')?.remove(); localStorage.removeItem('scanning'); busy(''); btn.disabled = !photo; btn.removeAttribute('aria-busy');
+    // never end silently: if nothing is on screen, show what we read + search
+    if (!$('stage').hidden && $('errBox').hidden && $('readBox').hidden && !$('detail').innerHTML.trim() && !$('results').children.length) showRead({ read: IDCore.last }, 'We couldn’t be sure about this card'); }
 }
+// "What we read" screen: editable name + set, card-type chips, search, retake.
+function showRead(r, title, withGuesses) {
+  const rd = r.read || IDCore.last || {}, p = rd.parsed || r.parsed || {}, lines = String(rd.text || '').split('\n').map(x => x.trim()).filter(x => x.length > 2);
+  $('readTitle').textContent = title; $('readBox').hidden = false; $('stageTitle').textContent = withGuesses ? 'Is this your card?' : 'Help us find it';
+  $('readQ').value = p.player || r.ranked?.[0]?.name || (p.names || [])[0] || lines.find(l => /^[A-Za-z][A-Za-z '.-]{4,30}$/.test(l)) || '';
+  $('readExtra').value = [p.year, p.brand, p.rc && 'RC'].filter(Boolean).join(' ');
+  $('readText').textContent = lines.slice(0, 40).join('\n') || '(no readable text – try retaking without glare)';
+  $('readBox').querySelector('p').textContent = withGuesses ? 'Our best guesses are below. If none is right, fix the name and search, or retake the photo (card flat, fill the frame, tilt to avoid glare).' : 'Here’s what we could read. Fix the name if needed, pick the card type above, then search.';
+  buzz([30, 60, 30]);
+}
+$('readSearch').onclick = () => { const q = $('readQ').value.trim(); if (!q) return $('readQ').focus(); $('q').value = q; const ex = $('readExtra').value, y = (ex.match(/\b(19|20)\d\d\b/) || [''])[0];
+  if ($('game').value === 'auto') { $('game').value = 'sports'; $('game').onchange(); }
+  if ($('game').value === 'sports') { $('sYear').value = y; $('sBrand').value = ex.replace(y, '').replace(/\bRC\b/, '').trim(); $('sPar').value = /\bRC\b/.test(ex) ? 'RC' : ''; }
+  $('readBox').hidden = true; doSearch(); };
+$('readRetake').onclick = async () => { const p = await takePhoto('CAMERA'); if (p) await setPhoto(p); };
 function showList(list, autoOpen, showAlts) {
   $('results').innerHTML = list.map((c, i) => `<button class="card tile" data-i="${i}" aria-label="${esc(c.name)}${c.set ? ', ' + esc(c.set) : ''}${c.number ? ', number ' + esc(c.number) : ''}">
     ${c.img ? `<img src="${esc(c.img)}" loading="lazy" alt="">` : '<div class="noimg" aria-hidden="true">🃏</div>'}<b>${esc(c.name)}</b><span class="muted">${esc([c.set, c.number && '#' + c.number].filter(Boolean).join(' · '))}</span>${tech() && c.score != null ? `<span class="muted">score ${Math.round(Math.min(1, c.score) * 100)}</span>` : ''}</button>`).join('');
@@ -337,3 +361,7 @@ const netState = () => { $('offline').hidden = navigator.onLine; };
 addEventListener('online', netState); addEventListener('offline', netState); netState();
 // Warm up the on-device model in the background after first paint
 setTimeout(() => { if ('requestIdleCallback' in window) requestIdleCallback(() => ID.loadModel().catch(() => {})); }, 3000);
+
+// If the app was killed/reloaded mid-scan (e.g. Android reclaimed memory), say so on the Scan tab instead of leaving the user lost.
+if (localStorage.getItem('scanning')) { localStorage.removeItem('scanning'); go('scan'); showStage(true); $('cropWrap').hidden = true;
+  showError('Your last scan didn’t finish (the phone may have closed the app to save memory). Please scan again – tip: fill the frame with the card.', true); }
