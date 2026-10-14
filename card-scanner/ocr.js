@@ -1,12 +1,19 @@
 // Offline OCR (bundled tesseract.js) with auto-crop, contrast boost and multiple passes.
-let _worker = null;
-async function ocrWorker() {
+let _worker = null; // a Promise for the single Tesseract worker (runs in a Web Worker, not the main thread)
+function ocrWorker() {
   if (_worker) return _worker;
-  if (!window.Tesseract) await new Promise((res, rej) => { const s = document.createElement('script'); s.src = 'vendor/tesseract/tesseract.min.js'; s.onload = res; s.onerror = rej; document.head.appendChild(s); });
-  const base = new URL('vendor/tesseract/', location.href).href;
-  _worker = await Tesseract.createWorker('eng', 1, { workerPath: base + 'worker.min.js', corePath: base, langPath: base, gzip: true, workerBlobURL: false });
+  const t0 = performance.now();
+  _worker = (async () => {
+    if (!window.Tesseract) await new Promise((res, rej) => { const s = document.createElement('script'); s.src = 'vendor/tesseract/tesseract.min.js'; s.onload = res; s.onerror = rej; document.head.appendChild(s); });
+    const base = new URL('vendor/tesseract/', location.href).href;
+    const w = await Tesseract.createWorker('eng', 1, { workerPath: base + 'worker.min.js', corePath: base, langPath: base, gzip: true, workerBlobURL: false, errorHandler: e => console.error('OCR worker error', e) });
+    console.log('[t] ocr worker loaded ' + Math.round(performance.now() - t0) + 'ms'); return w;
+  })();
+  _worker.catch(e => { console.error('OCR worker failed to load', e?.message || e); _worker = null; });
   return _worker;
 }
+// Preload OCR (script + wasm + English data) right after start-up so the first scan doesn't pay for it.
+addEventListener('load', () => setTimeout(() => ocrWorker().catch(() => {}), 1200));
 // Find the card's bounding box: scan inward from each side until pixels differ from the background.
 function cardBox(cx, W, H) {
   const d = cx.getImageData(0, 0, W, H).data, px = (x, y) => { const i = (y * W + x) * 4; return [d[i], d[i + 1], d[i + 2]]; };

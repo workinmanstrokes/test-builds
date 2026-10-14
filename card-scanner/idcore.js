@@ -22,7 +22,7 @@ const IDCore = (() => {
     o.conf = Math.min(o.conf, 0.25 + 0.75 * ev);
     if (!t._num && o.ranked.slice(1, 6).some(c => nn(c.name) === nn(t.name))) o.conf = Math.min(o.conf, 0.55);
     o.evidence = ev; return o; }
-  async function sportsRun(photo, h) { const { canvas } = await ID.rectify(photo, h.quad); const r = await Sports.identify(canvas, h.step, Math.max(2500, Math.min(9000, (h.deadline || Infinity) - performance.now() - 3000))); IDCore.last = { text: r.text, parsed: r.parsed }; return r; }
+  async function sportsRun(photo, h) { const t = performance.now(); const { canvas } = await ID.rectify(photo, h.quad); console.log('[t] rectify ' + Math.round(performance.now() - t) + 'ms'); const r = await Sports.identify(canvas, h.step, Math.max(2500, Math.min(h.game === 'sports' ? 7000 : 9000, (h.deadline || Infinity) - performance.now() - 2500))); IDCore.last = { text: r.text, parsed: r.parsed }; return r; }
   register({ name: 'device', kind: 'device', available: () => true, async run(photo, h) {
     if (h.game === 'sports') return sportsRun(photo, h);
     let games = GAMES.includes(h.game) ? [h.game] : null, text = '';
@@ -63,7 +63,7 @@ const IDCore = (() => {
   // Combine: run every available adapter in parallel, auto-pick the most confident, boost when they agree, ask for a retake when nothing is confident.
   async function identifyCard(photo, hint = {}) {
     const h = { game: 'auto', quad: null, step: () => {}, ...hint }, use = adapters.filter(a => (!h.only || h.only.includes(a.name)) && a.available(h));
-    IDCore.last = null; const T = h.timeoutMs ?? 45000; h.deadline = performance.now() + T;
+    IDCore.last = null; const T = h.timeoutMs ?? (h.game === 'sports' ? 10000 : 45000); h.deadline = performance.now() + T;
     const runs = await Promise.all(use.map(async a => { const t0 = performance.now(); try {
       const r = await Promise.race([a.run(photo, h), new Promise((_, rej) => setTimeout(() => rej(new Error('timeout')), T))]); return { adapter: a.name, ...r, ms: performance.now() - t0 }; }
       catch (e) { return { adapter: a.name, error: e.message, ranked: [], conf: 0 }; } }));

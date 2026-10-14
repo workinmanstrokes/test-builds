@@ -21,18 +21,24 @@ const Sports = (() => {
       d[i] = d[i + 1] = d[i + 2] = v; }
     g.putImageData(im, 0, 0); return src;
   }
-  // regions where sports cards print name/brand/year; each read with several preprocessings
-  const REG = [[0, 0.72, 1, 0.28], [0, 0, 1, 0.22], [0, 0, 1, 1], [0, 0.55, 1, 0.45]];
-  async function readAll(card, step = () => {}, budgetMs = 9000) {
-    const w = await ocrWorker(), t0 = performance.now(), texts = [];
-    const base = card.width > 900 ? crop(card, [0, 0, 1, 1], 900 / card.width) : card;
-    const passes = [];
-    for (const r of REG) { const sc = Math.min(3, 1200 / (base.width * r[2]));
-      passes.push(() => crop(base, r, sc, 'grayscale(1) contrast(1.8)'), () => localNorm(crop(base, r, sc)), () => crop(base, r, sc, 'grayscale(1) invert(1) contrast(1.8)')); }
-    for (const [k, mk] of passes.entries()) { if (performance.now() - t0 > budgetMs) break; step(`Reading the card text (${k + 1}/${passes.length})…`);
-      try { texts.push((await w.recognize(mk().toDataURL('image/png'))).data.text); } catch {} }
-    return texts.join('\n');
+  // Regions in order of payoff (name plate first). OCR runs in sequence with an early exit once a real player is confirmed.
+  const PASSES = [[[0, 0.68, 1, 0.32], 'c'], [[0, 0, 1, 0.22], 'c'], [[0, 0.68, 1, 0.32], 'i'], [[0, 0.68, 1, 0.32], 'n'], [[0, 0.45, 1, 0.3], 'c'], [[0, 0, 1, 1], 'c'], [[0, 0.72, 1, 0.28], 'c'], [[0, 0, 1, 1], 'n'], [[0, 0.55, 1, 0.45], 'n'], [[0, 0, 1, 1], 'i'], [[0, 0.55, 1, 0.45], 'i'], [[0, 0, 1, 0.22], 'n']];
+  const T = (h, n) => { const ms = Math.round(performance.now() - h.t0); (h.timings ||= []).push([n, ms]); console.log('[t] ' + n + ' ' + ms + 'ms'); };
+  const race = (p, ms) => Promise.race([p, new Promise(r => setTimeout(() => r('__timeout'), Math.max(0, ms)))]);
+  async function readAll(card, step = () => {}, budgetMs = 8000, onText = null) {
+    const h = { t0: performance.now() }, end = h.t0 + budgetMs, texts = [];
+    const w = await race(ocrWorker(), end - performance.now()); T(h, 'ocr worker ready'); if (w === '__timeout') return { text: '', timings: h.timings, stuck: true };
+    const base = card.width > 1000 ? crop(card, [0, 0, 1, 1], 1000 / card.width) : card; // ~1000px: plenty for name plates, fast on phones
+    for (const [k, [r, mode]] of PASSES.entries()) {
+      if (performance.now() > end - 400) break; step(`Reading the card text (${k + 1}/${PASSES.length})…`);
+      const sc = Math.min(3, 1200 / (base.width * r[2])), img = mode === 'n' ? localNorm(crop(base, r, sc)) : crop(base, r, sc, mode === 'i' ? 'grayscale(1) invert(1) contrast(1.8)' : 'grayscale(1) contrast(1.8)');
+      const res = await race(w.recognize(img.toDataURL('image/png')), end - performance.now()); T(h, `ocr pass ${k + 1}${mode}`);
+      if (res === '__timeout') { resetWorker(); break; } texts.push(res.data.text);
+      if (onText && await onText(texts.join('\n')) && k >= 1) break; // plausible + confirmed player → stop early
+    }
+    return { text: texts.join('\n'), timings: h.timings };
   }
+  function resetWorker() { try { _worker?.terminate(); } catch {} _worker = null; setTimeout(() => ocrWorker().catch(() => {}), 500); } // a stuck worker must not block the next scan
   function parse(text) {
     const t = text.replace(/[|_~]/g, ' '), flat = t.replace(/\s+/g, ' ');
     const years = (flat.match(/\b(19[5-9]\d|20[0-3]\d)\b/g) || []).map(Number), year = years.length ? String(Math.max(...years.filter(y => y <= new Date().getFullYear() + 1))) : '';
@@ -44,10 +50,10 @@ const Sports = (() => {
     const num = (flat.match(/(?:No\.?|#)\s*([A-Z]{0,4}-?\d{1,4})\b/i) || [])[1] || '', serial = (flat.match(/\b\d{1,3}\s*\/\s*(\d{1,4})\b/) || [])[0] || '';
     // name candidates: 2–3 word lines, ALL CAPS or Title Case, not brands/teams
     const names = new Map();
-    for (const line of t.split('\n')) for (const m of line.matchAll(/\b([A-Z][A-Za-z'.-]{1,14})(?:\s+([A-Z][A-Za-z'.-]{1,14}))(?:\s+([A-Z][A-Za-z'.-]{1,14}))?\b/g)) {
+    for (const line0 of t.split('\n')) { const line = line0.toUpperCase(); for (const m of line.matchAll(/\b([A-Z][A-Za-z'.-]{1,14})(?:\s+([A-Z][A-Za-z'.-]{1,14}))(?:\s+([A-Z][A-Za-z'.-]{1,14}))?\b/g)) {
       const ws = m.slice(1).filter(Boolean).filter(x => !STOP.has(x.toUpperCase()) && !BR.some(b => b.toUpperCase() === x.toUpperCase()));
       if (ws.length < 2) continue; const n = ws.slice(0, 3).map(x => x[0] + x.slice(1).toLowerCase()).join(' ');
-      if (TEAMS.test(n) || n.length < 7) continue; names.set(n, (names.get(n) || 0) + 1 + (line.trim().toUpperCase() === line.trim() ? 0.5 : 0)); }
+      if (TEAMS.test(n) || n.length < 7) continue; names.set(n, (names.get(n) || 0) + 1 + (line0.trim().toUpperCase() === line0.trim() ? 0.5 : 0) + Math.min(...ws.map(x => x.length)) / 10); } }
     return { year, maker, product, brand: [maker, product].filter(Boolean).join(' '), rc, team, number: num, serial, names: [...names.entries()].sort((a, b) => b[1] - a[1]).map(e => e[0]).slice(0, 6) };
   }
   const lev = (a, b) => { const m = Array.from({ length: a.length + 1 }, (_, i) => [i]); for (let j = 1; j <= b.length; j++) m[0][j] = j;
@@ -55,24 +61,28 @@ const Sports = (() => {
   const sim = (a, b) => { a = a.toLowerCase().replace(/[^a-z ]/g, ''); b = b.toLowerCase().replace(/[^a-z ]/g, ''); return 1 - lev(a, b) / Math.max(a.length, b.length, 1); };
   const ATH = /player|football|basketball|baseball|hockey|quarterback|running back|wide receiver|pitcher|shortstop|outfielder|guard|forward|center|linebacker|athlete/i;
   async function wiki(cands) { // fuzzy-match OCR name candidates to real athletes on Wikipedia (free, CORS-enabled, no key)
-    let best = null;
-    for (const q of cands.slice(0, 4).flatMap(c => [[c, c + ' player'], [c, c.split(' ').map(w => w + '~').join(' ') + ' player']])) { const c = q[0]; if (best?.sc >= 0.9) break; try {
-      const r = await (await Net.raw(`https://en.wikipedia.org/w/api.php?action=query&list=search&srsearch=${encodeURIComponent(q[1])}&srlimit=5&srprop=snippet&format=json&origin=*`, {}, 1)).json();
+    let best = null; // all queries in parallel – one round-trip instead of up to 8
+    await Promise.all(cands.slice(0, 6).flatMap(c => [[c, c + ' player'], [c, c.split(' ').map(w => w + '~').join(' ') + ' player']]).map(async ([c, q]) => { try {
+      const r = await (await Net.raw(`https://en.wikipedia.org/w/api.php?action=query&list=search&srsearch=${encodeURIComponent(q)}&srlimit=5&srprop=snippet&format=json&origin=*`, {}, 1)).json();
       for (const h of r.query?.search || []) { const title = h.title.replace(/ \(.*\)$/, ''); if (title.split(' ').length < 2) continue;
-        const sc = sim(title, c); if ((sc >= 0.85 || ATH.test(h.snippet + ' ' + h.title) && sc >= 0.7) && (!best || sc > best.sc)) best = { name: title, cand: c, desc: h.snippet.replace(/<[^>]+>/g, ''), sc, ath: ATH.test(h.snippet + ' ' + h.title) }; }
-      if (best?.sc >= 0.9) break; } catch {} }
+        const sc = sim(title, c); if ((sc >= 0.85 || ATH.test(h.snippet + ' ' + h.title) && sc >= 0.75) && (!best || sc > best.sc)) best = { name: title, cand: c, desc: h.snippet.replace(/<[^>]+>/g, ''), sc, ath: ATH.test(h.snippet + ' ' + h.title) }; }
+    } catch {} }));
     return best ? [best] : [];
   }
-  async function identify(card, step, budgetMs) {
-    const text = await readAll(card, step, budgetMs), p = parse(text); step('Looking up the player…');
-    const w = p.names.length ? await wiki(p.names) : [], player = w[0]?.name || p.names[0] || '';
+  async function identify(card, step, budgetMs = 8000) {
+    const t0 = performance.now(); let w = [], tried = new Set();
+    const check = async txt => { const q = parse(txt).names.filter(n => !tried.has(n)).slice(0, 2); if (!q.length) return false; q.forEach(n => tried.add(n));
+      const left = budgetMs - (performance.now() - t0); const r = await race(wiki(q), Math.min(2500, left)); if (r !== '__timeout' && r.length) { w = r; return true; } return false; };
+    const rd = await readAll(card, step, budgetMs, check), text = rd.text, p = parse(text);
+    if (!w.length && p.names.length && performance.now() - t0 < budgetMs) { step('Looking up the player…'); const r = await race(wiki(p.names), Math.min(2500, budgetMs + 1500 - (performance.now() - t0))); if (r !== '__timeout') w = r; }
+    const player = w[0]?.name || p.names[0] || '';
     const set = [p.year, p.brand].filter(Boolean).join(' '), variant = [p.rc && 'RC', p.serial].filter(Boolean).join(' ');
     const mk = (name, s, extra = {}) => ({ game: 'sports', id: 'sp-' + (name + '|' + s).toLowerCase().replace(/[^a-z0-9|]/g, ''), name, number: p.number, set: s, variant, team: p.team, img: '', ...extra });
     const ranked = player ? [mk(player, set, { verified: !!w[0] })] : [];
     if (player) { if (p.year && p.maker && p.product) ranked.push(mk(player, `${p.year} ${p.maker}`)); if (p.brand) ranked.push(mk(player, p.brand)); }
     if (!w[0]) p.names.filter(n => n !== player).slice(0, 3).forEach(n => ranked.push(mk(n, set))); // unverified OCR names only when no real athlete matched
     const conf = !player ? 0 : (w[0] ? 0.55 : 0.25) + (p.year ? 0.1 : 0) + (p.brand ? 0.1 : 0) + (p.rc ? 0.05 : 0);
-    return { game: 'sports', ranked: ranked.filter((c, i, a) => a.findIndex(x => x.id === c.id) === i), conf: Math.min(0.9, conf), parsed: { ...p, player, verified: !!w[0], athlete: !!w[0]?.ath, sports: looksSports(text) }, text };
+    return { game: 'sports', ranked: ranked.filter((c, i, a) => a.findIndex(x => x.id === c.id) === i), conf: Math.min(0.9, conf), parsed: { ...p, player, verified: !!w[0], athlete: !!w[0]?.ath, sports: looksSports(text) }, text, timings: rd.timings, ms: Math.round(performance.now() - t0) };
   }
   function looksSports(text) { return LS(text); }
   const LS = text => /\b(Panini|Topps|Upper Deck|Bowman|Donruss|Prizm|Rookie|NFL|NBA|MLB|NHL|NCAA)\b/i.test(text) || TEAMS.test(text);

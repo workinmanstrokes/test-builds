@@ -68,7 +68,9 @@ async function setPhoto(src) {
   await new Promise(r => img.complete && img.naturalWidth ? r() : (img.onload = r));
   let found = false; try { const d = await ID.detect(src); quad = d.quad; found = d.found; } catch { quad = [[0, 0], [1, 0], [1, 1], [0, 1]]; }
   drawCrop(); busy('');
-  if (!found) { setAdjust(true); $('idStatus').textContent = 'We couldn’t spot the card’s edges. Drag the 4 dots onto the card corners, then tap “Looks good”.'; return; }
+  if (!found) quad = [[0.1, 0.08], [0.9, 0.08], [0.9, 0.92], [0.1, 0.92]]; // centre crop beats the full frame (e.g. card in a toploader)
+  if (!found && $('game').value === 'sports') { drawCrop(); $('idStatus').textContent = 'Couldn’t find the edges – reading the middle of the photo.'; return identify(); } // OCR doesn't need exact corners
+  if (!found) { setAdjust(true); drawCrop(); $('idStatus').textContent = 'We couldn’t spot the card’s edges. Drag the 4 dots onto the card corners, then tap “Looks good”.'; return; }
   $('idStatus').textContent = 'Found your card ✓'; await new Promise(r => setTimeout(r, 700)); identify();
 }
 $('backHome').onclick = () => { showStage(false); $('manualBox').open = false; };
@@ -116,6 +118,7 @@ async function identify() {
   try {
     const r = await scanCard(sel, m => !identify.cancelled && !$('busySkip') && busy(tech() ? m : friendly(m)));
     if (identify.cancelled) return;
+    if (tech()) console.log('[t] scan total', JSON.stringify(r.runs?.map(x => [x.adapter, Math.round(x.ms || 0), x.error || '', x.timings])));
     if (r.back) { showError('That looks like the back of the card. Flip it over and scan the front.'); return; }
     if (r.game && r.game !== sel && $('game').querySelector(`option[value=${r.game}]`)) { $('game').value = r.game; $('game').onchange(); }
     const v = r.ai;
@@ -130,6 +133,7 @@ async function identify() {
     st.textContent = (r.conf >= 0.6 ? 'Here’s your card' : 'Our best guess – check below if it’s not right') + (tech() ? ` · ${Math.round(r.conf * 100)}% · ${r.mode === 'ai' ? 'AI vision + database' : 'on-device'}` : '');
     $('stageTitle').textContent = r.conf >= 0.6 ? 'We found it!' : 'Is this your card?';
     buzz(20); showList(r.ranked.slice(0, 9), true, r.conf < 0.6);
+    if (r.game === 'sports' && !r.parsed?.verified) showRead(r, 'Check the player name', true); // editable OCR result for unconfirmed sports reads
   } catch (e) { showError(navigator.onLine ? 'Something went wrong while identifying. Please try again.' + (tech() ? ` (${e.message})` : '') : 'You’re offline. Connect to the internet and try again.'); }
   finally { clearTimeout(slow); $('busySkip')?.remove(); localStorage.removeItem('scanning'); busy(''); btn.disabled = !photo; btn.removeAttribute('aria-busy');
     // never end silently: if nothing is on screen, show what we read + search
