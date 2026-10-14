@@ -1,5 +1,5 @@
-const C = 'cs-v2', SHELL = ['./', 'index.html', 'styles.css', 'app.js', 'pricing.js', 'ocr.js', 'centering.js', 'icon.svg', 'privacy.html', 'manifest.webmanifest',
-  'vendor/tesseract/tesseract.min.js', 'vendor/tesseract/worker.min.js', 'vendor/tesseract/tesseract-core-simd-lstm.wasm.js', 'vendor/tesseract/tesseract-core-lstm.wasm.js', 'vendor/tesseract/eng.traineddata.gz'];
+const C = 'cs-v3', SHELL = ['./', 'net.js', 'identify.js', 'data/ygo-names.json', 'index.html', 'styles.css', 'app.js', 'pricing.js', 'ocr.js', 'centering.js', 'icon.svg', 'privacy.html', 'manifest.webmanifest',
+  'vendor/tesseract/tesseract.min.js', 'vendor/tesseract/worker.min.js', 'vendor/tesseract/tesseract-core-simd-lstm.wasm.js', 'vendor/tesseract/tesseract-core-lstm.wasm.js', 'vendor/tesseract/eng.traineddata.gz', 'vendor/ort/ort.wasm.min.js'];
 self.addEventListener('install', e => e.waitUntil(caches.open(C).then(c => c.addAll(SHELL)).then(() => self.skipWaiting())));
 self.addEventListener('activate', e => e.waitUntil(caches.keys().then(k => Promise.all(k.filter(x => x !== C).map(x => caches.delete(x)))).then(() => self.clients.claim())));
 self.addEventListener('fetch', e => { const u = new URL(e.request.url); if (e.request.method !== 'GET') return;
