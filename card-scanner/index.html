@@ -1,59 +1,95 @@
 <!DOCTYPE html>
 <html lang="en"><head>
 <meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<meta name="theme-color" content="#0d1117"><title>Card Scanner</title>
+<meta name="theme-color" content="#0b1020"><title>Card Scanner</title>
 <link rel="icon" href="icon.svg"><link rel="stylesheet" href="styles.css"><link rel="manifest" href="manifest.webmanifest">
 </head><body>
-<header><img src="icon.svg" alt="" width="28"><h1>Card Scanner</h1><button id="settingsBtn" class="ghost" aria-label="Settings">⚙</button></header>
-<nav role="tablist" aria-label="Sections"><button role="tab" data-tab="scan" class="on">Scan</button><button role="tab" data-tab="collection">Collection <span id="colCount"></span></button><button role="tab" data-tab="grade">Grade</button><button role="tab" data-tab="wish">Wishlist</button></nav>
-<div id="offline" class="price" role="alert" hidden>You are offline. Saved cards and cached prices still work; identification needs internet for the card databases.</div>
-<main><div id="alertBar" class="price" hidden></div>
-<section id="tab-scan">
-  <div class="row"><label for="game">Game</label><select id="game">
-    <option value="auto">Auto-detect (AI)</option><option value="pokemon">Pokémon</option><option value="magic">Magic</option><option value="yugioh">Yu-Gi-Oh</option><option value="lorcana">Lorcana</option><option value="sports">Sports</option></select></div>
-  <div id="cropWrap" class="cropwrap" hidden><img id="shot" alt="Card photo"><svg aria-hidden="true"><polygon id="cropPoly"/></svg>
-    <button class="handle" aria-label="Top-left corner"></button><button class="handle" aria-label="Top-right corner"></button><button class="handle" aria-label="Bottom-right corner"></button><button class="handle" aria-label="Bottom-left corner"></button></div>
-  <div class="btns"><button id="camBtn" class="primary">📷 Take photo</button><button id="galBtn">🖼 Gallery</button><button id="resetCrop" class="ghost2">Whole photo</button>
-    <input type="file" id="fileIn" accept="image/*" hidden aria-hidden="true"></div>
-  <button id="idBtn" class="primary" disabled>Identify card</button>
-  <p id="idStatus" class="muted" role="status" aria-live="polite"></p>
-  <details id="manualBox" open><summary>Search by name (no key needed)</summary>
-    <div class="row"><input id="q" aria-label="Card name" placeholder="Card name, e.g. Charizard"><input id="qnum" aria-label="Card number" placeholder="# (optional)" size="5"></div>
-    <div id="sportsFields" hidden><div class="row"><input id="sYear" aria-label="Year" placeholder="Year" size="5"><input id="sBrand" aria-label="Brand or set" placeholder="Brand/set, e.g. Topps Chrome"></div>
-      <div class="row"><input id="sPar" aria-label="Parallel" placeholder="Parallel, e.g. Refractor /99"><input id="sGrade" aria-label="Grade" placeholder="Grade (opt.)" size="6"></div></div>
-    <button id="searchBtn">Search</button></details>
-  <div id="results"></div>
+<div id="offline" class="banner warn" role="alert" hidden>You're offline. Your saved cards still work. Scanning needs internet.</div>
+<div id="alertBar" class="banner" hidden></div>
+<main>
+<!-- SCAN -->
+<section id="tab-scan" aria-labelledby="scanTitle">
+  <div id="home">
+    <header class="top"><img src="icon.svg" alt="" width="36"><h1 id="scanTitle">Card Scanner</h1></header>
+    <button class="valueCard" id="homeValue" data-go="collection"><span>My collection</span><b id="homeTotal">$0.00</b><small id="homeCount">No cards yet</small></button>
+    <button id="camBtn" class="hero">📷<span>Scan a card</span></button>
+    <button id="galBtn" class="secondary big">🖼️ Choose from gallery</button>
+    <p class="tip">💡 Tip: lay the card flat on a plain surface, in good light.</p>
+    <div class="chips" role="radiogroup" aria-label="Card type">
+      <button class="chip" data-game="auto" role="radio">✨ Any card</button><button class="chip" data-game="pokemon" role="radio">Pokémon</button><button class="chip" data-game="magic" role="radio">Magic</button>
+      <button class="chip" data-game="yugioh" role="radio">Yu-Gi-Oh!</button><button class="chip" data-game="lorcana" role="radio">Lorcana</button><button class="chip" data-game="sports" role="radio">Sports</button></div>
+    <select id="game" hidden aria-hidden="true"><option value="auto">Any</option><option value="pokemon">Pokémon</option><option value="magic">Magic</option><option value="yugioh">Yu-Gi-Oh</option><option value="lorcana">Lorcana</option><option value="sports">Sports</option></select>
+    <button id="openSearch" class="link">Or type the card name instead</button>
+  </div>
+  <div id="stage" hidden>
+    <div class="bar"><button id="backHome" class="iconbtn" aria-label="Back">←</button><h2 id="stageTitle">Your card</h2></div>
+    <div id="cropWrap" class="cropwrap"><img id="shot" alt="Your card photo"><svg aria-hidden="true"><polygon id="cropPoly"/></svg>
+      <button class="handle" aria-label="Top-left corner"></button><button class="handle" aria-label="Top-right corner"></button><button class="handle" aria-label="Bottom-right corner"></button><button class="handle" aria-label="Bottom-left corner"></button>
+      <div id="busy" class="busy" hidden><div class="spinner" aria-hidden="true"></div><p id="busyText">Identifying…</p></div></div>
+    <p id="idStatus" class="status" role="status" aria-live="polite"></p>
+    <div id="adjustBar" class="btns" hidden><button id="idBtn" class="primary big" disabled>✓ Looks good – identify</button><button id="resetCrop" class="secondary">Use whole photo</button></div>
+    <div id="errBox" class="errbox" hidden role="alert"><p id="errText"></p><div class="btns"><button id="retryBtn" class="primary">Try again</button><button id="errSearch" class="secondary">Type the name</button></div></div>
+  </div>
   <div id="detail"></div>
+  <div id="altBox" hidden><h3>Is it one of these?</h3><div id="results" class="tiles"></div></div>
+  <details id="manualBox"><summary>Search by name</summary>
+    <div class="row"><input id="q" aria-label="Card name" placeholder="Card name, e.g. Charizard"><input id="qnum" aria-label="Card number" placeholder="Number" size="6"></div>
+    <div id="sportsFields" hidden><div class="row"><input id="sYear" aria-label="Year" placeholder="Year" size="5"><input id="sBrand" aria-label="Brand or set" placeholder="Brand, e.g. Topps Chrome"></div>
+      <div class="row"><input id="sPar" aria-label="Parallel" placeholder="Parallel, e.g. Refractor /99"><input id="sGrade" aria-label="Grade" placeholder="Grade" size="6"></div></div>
+    <button id="searchBtn" class="primary big">Search</button></details>
+  <input type="file" id="fileIn" accept="image/*" hidden aria-hidden="true">
 </section>
-<section id="tab-collection" hidden>
-  <div class="row"><input id="colQ" aria-label="Search collection" placeholder="Search name, set, tag…"><select id="colGame" aria-label="Filter by game"><option value="">All</option><option value="pokemon">Pokémon</option><option value="magic">Magic</option><option value="yugioh">Yu-Gi-Oh</option><option value="lorcana">Lorcana</option><option value="sports">Sports</option></select><select id="colSort" aria-label="Sort"><option value="added">Newest</option><option value="value">Value</option><option value="name">Name</option><option value="set">Set #</option></select></div>
-  <div class="total">Total value: <b id="total">$0.00</b><small id="totalNote"></small></div>
+<!-- COLLECTION -->
+<section id="tab-collection" hidden aria-labelledby="colTitle">
+  <h1 id="colTitle">My collection</h1>
+  <div class="total"><span>Total value</span><b id="total">$0.00</b><small id="totalNote"></small></div>
+  <div class="row"><input id="colQ" aria-label="Search collection" placeholder="🔍 Search your cards"></div>
+  <div class="row"><select id="colGame" aria-label="Show"><option value="">All games</option><option value="pokemon">Pokémon</option><option value="magic">Magic</option><option value="yugioh">Yu-Gi-Oh</option><option value="lorcana">Lorcana</option><option value="sports">Sports</option></select><select id="colSort" aria-label="Sort"><option value="added">Newest first</option><option value="value">Most valuable</option><option value="name">A–Z</option><option value="set">By set</option></select></div>
   <div id="colList"></div>
-  <div class="btns"><button id="csvBtn">Export CSV</button><button id="exportBtn">Export JSON</button><label class="file">Import CSV/JSON<input type="file" id="importIn" accept=".csv,.json,text/csv,application/json"></label></div>
 </section>
-<section id="tab-grade" hidden>
-  <p class="step" id="stepText">Step 1/6 – Front of card</p>
-    <div class="btns"><button id="captureBtn" class="primary">📷 Take photo</button>
-    <label class="file">Upload<input type="file" id="gfileIn" accept="image/*"></label></div>
+<!-- PRE-GRADE WIZARD -->
+<section id="tab-grade" hidden aria-labelledby="gradeTitle">
+  <div class="bar"><button id="gradeBack" class="iconbtn" aria-label="Back">←</button><h1 id="gradeTitle">Pre-grade</h1></div>
+  <p id="gradeFor" class="muted"></p>
+  <div class="wizard"><div id="stepDots" class="dots" aria-hidden="true"></div><p class="step" id="stepText">Step 1 of 6 – Front of the card</p>
+    <div id="stepExample" class="example" aria-hidden="true"></div><p id="stepHint" class="muted"></p>
+    <div class="btns"><button id="captureBtn" class="primary big">📷 Take photo</button><label class="file secondary">🖼️ Gallery<input type="file" id="gfileIn" accept="image/*"></label></div>
+    <button id="skipStep" class="link">Skip this step</button></div>
   <div class="preview-row" id="previews"></div>
-  <button id="analyzeBtn" class="primary" hidden>Analyze centering</button>
+  <button id="analyzeBtn" class="primary big" hidden>See my results</button>
   <div id="gradeOut"></div>
 </section>
-<section id="tab-wish" hidden><p class="muted">Prices are re-checked once a day when you open the app. You get an alert when one drops to your target.</p><div id="wishList"></div></section>
+<!-- WISHLIST -->
+<section id="tab-wish" hidden aria-labelledby="wishTitle"><h1 id="wishTitle">Wishlist</h1><p class="muted">We check prices each day you open the app and let you know when one drops to your target.</p><div id="wishList"></div></section>
+<!-- SETTINGS -->
+<section id="tab-settings" hidden aria-labelledby="setTitle"><h1 id="setTitle">Settings</h1>
+  <div class="group"><h3>Your data</h3><div class="btns col"><button id="csvBtn" class="secondary">Save my collection (spreadsheet)</button><button id="exportBtn" class="secondary">Save a full backup</button>
+    <label class="file secondary">Restore / import cards<input type="file" id="importIn" accept=".csv,.json,text/csv,application/json"></label></div></div>
+  <div class="group"><h3>Help</h3><div class="btns col"><button type="button" id="replayOnboard" class="secondary">Show the intro again</button><a class="file secondary" href="privacy.html" target="_blank">Privacy policy</a></div>
+    <p class="muted">Card Scanner by Diddlerrr · mscofield1588@gmail.com</p></div>
+  <details class="group" id="advanced"><summary>Advanced settings</summary>
+    <label>AI vision server (proxy URL)<input id="proxyUrl" placeholder="https://your-proxy.vercel.app" inputmode="url"></label>
+    <p class="muted">Holds the xAI/eBay keys. Keys are never stored in this app.</p>
+    <label class="chk"><input type="checkbox" id="ocrOn" checked> On-device matching when AI is unavailable</label>
+    <label class="chk"><input type="checkbox" id="techOn"> Show match scores and sources</label>
+    <button id="saveSettings" class="primary">Save</button><p id="aiState" class="muted"></p></details>
+</section>
 </main>
-<dialog id="onboard"><form method="dialog"><h3>Welcome to Card Scanner</h3>
-  <p>1. Pick the game, then <b>Snap</b> or <b>Upload</b> the card front, flat on a plain background.</p><p>2. Tap <b>Identify</b>. Text is read on your phone, offline. Then tap the exact print.</p>
-  <p>3. Check the dated market prices and <b>Add to collection</b> or ♡ Wishlist.</p><p>4. <b>Grade</b> tab: 6 photos give you centering plus corner, edge and surface estimates.</p>
-  <p class="muted">Free and no account. Everything stays on this device.</p><button id="onboardGo" class="primary">Let's go</button></form></dialog>
-<dialog id="settings"><form method="dialog">
-  <h3>Settings</h3>
-  <label>Proxy URL (Vercel or Firebase function)<input id="proxyUrl" placeholder="https://your-proxy.vercel.app"></label>
-  <p class="muted">The proxy holds API keys (xAI vision, eBay, SportsCardsPro). Keys are never stored in this app. Leave blank to use free sources only.</p>
-  <label class="chk"><input type="checkbox" id="ocrOn" checked> On-device identification (free, private)</label>
-  <button type="button" id="replayOnboard">Show intro again</button>
-  <p><a href="privacy.html" target="_blank">Privacy policy</a></p>
-  <button id="saveSettings" class="primary">Save</button></form></dialog>
-<dialog id="listDlg"><form method="dialog"><h3>Draft listing</h3><div id="listBody"></div><div class="btns"><button id="copyList">Copy text</button><button>Close</button></div></form></dialog>
+<nav class="tabbar" role="tablist" aria-label="Sections">
+  <button role="tab" data-tab="scan" class="on"><span aria-hidden="true">📷</span>Scan</button>
+  <button role="tab" data-tab="collection"><span aria-hidden="true">🗂️</span>Collection<i id="colCount"></i></button>
+  <button role="tab" data-tab="wish"><span aria-hidden="true">♡</span>Wishlist</button>
+  <button role="tab" data-tab="settings"><span aria-hidden="true">⚙️</span>Settings</button>
+  <button data-tab="grade" hidden aria-hidden="true" tabindex="-1">Grade</button>
+</nav>
+<dialog id="onboard" aria-labelledby="obTitle"><form method="dialog">
+  <div class="ob" data-ob="0"><div class="obArt">📷</div><h2 id="obTitle">Snap any card</h2><p>Pokémon, Magic, Yu-Gi-Oh!, Lorcana or sports. Lay it flat and take a photo.</p></div>
+  <div class="ob" data-ob="1" hidden><div class="obArt">💲</div><h2>See what it's worth</h2><p>We find the exact card and show today's market price.</p></div>
+  <div class="ob" data-ob="2" hidden><div class="obArt">🗂️</div><h2>Build your collection</h2><p>Track value, pre-grade centering, and draft eBay listings. Everything stays on your phone.</p></div>
+  <div id="obDots" class="dots" aria-hidden="true"><i class="on"></i><i></i><i></i></div>
+  <div class="btns"><button type="button" id="obSkip" class="secondary">Skip</button><button type="button" id="obNext" class="primary">Next</button></div>
+  <button id="onboardGo" hidden>Done</button></form></dialog>
+<dialog id="listDlg"><form method="dialog"><h3>Sell this card</h3><div id="listBody"></div><div class="btns"><button id="copyList" class="primary">Copy everything</button><button class="secondary">Close</button></div></form></dialog>
 <canvas id="canvas" hidden></canvas>
 <script src="net.js"></script><script src="pricing.js"></script><script src="ocr.js"></script><script src="identify.js"></script><script src="ai.js"></script><script src="centering.js"></script><script src="app.js"></script>
 </body></html>

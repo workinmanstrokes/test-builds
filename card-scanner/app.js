@@ -4,15 +4,21 @@ const store = { get: () => JSON.parse(localStorage.getItem('collection') || '[]'
 let photo = null, current = null, stream = null;
 
 // Tabs
-document.querySelectorAll('nav button').forEach(b => b.onclick = () => {
-  document.querySelectorAll('nav button').forEach(x => { x.classList.toggle('on', x === b); x.setAttribute('aria-selected', x === b); });
-  document.querySelectorAll('main section').forEach(s => s.hidden = s.id !== 'tab-' + b.dataset.tab);
-  if (b.dataset.tab === 'collection') renderCollection(); if (b.dataset.tab === 'wish') renderWish();
-});
+const tech = () => localStorage.getItem('tech') === '1';
+function go(tab) {
+  document.querySelectorAll('nav button').forEach(x => { x.classList.toggle('on', x.dataset.tab === tab); x.setAttribute('aria-selected', x.dataset.tab === tab); });
+  document.querySelectorAll('main section').forEach(s => s.hidden = s.id !== 'tab-' + tab); scrollTo(0, 0);
+  if (tab === 'collection') renderCollection(); if (tab === 'wish') renderWish(); if (tab === 'settings') loadSettings(); if (tab === 'grade') gradeReset();
+}
+document.querySelectorAll('nav button').forEach(b => b.onclick = () => go(b.dataset.tab));
+document.querySelectorAll('[data-go]').forEach(b => b.onclick = () => go(b.dataset.go));
 // Settings
-$('settingsBtn').onclick = () => { $('proxyUrl').value = localStorage.getItem('proxyUrl') || ''; $('ocrOn').checked = localStorage.getItem('ocr') !== '0';  $('settings').showModal(); };
-$('saveSettings').onclick = () => { localStorage.setItem('proxyUrl', $('proxyUrl').value.trim()); localStorage.setItem('ocr', $('ocrOn').checked ? '1' : '0'); };
-$('game').onchange = () => { $('sportsFields').hidden = $('game').value !== 'sports'; $('q').placeholder = $('game').value === 'sports' ? 'Player name, e.g. Shohei Ohtani' : 'Card name, e.g. Charizard'; };
+function loadSettings() { $('proxyUrl').value = localStorage.getItem('proxyUrl') || ''; $('ocrOn').checked = localStorage.getItem('ocr') !== '0'; $('techOn').checked = tech();
+  $('aiState').textContent = AI.available() ? 'AI vision: on' : 'AI vision: off (no server set) – on-device matching is used.'; }
+$('saveSettings').onclick = () => { localStorage.setItem('proxyUrl', $('proxyUrl').value.trim()); localStorage.setItem('ocr', $('ocrOn').checked ? '1' : '0'); localStorage.setItem('tech', $('techOn').checked ? '1' : '0'); loadSettings(); $('saveSettings').textContent = 'Saved ✓'; setTimeout(() => $('saveSettings').textContent = 'Save', 1500); };
+function syncChips() { document.querySelectorAll('.chip').forEach(c => { const on = c.dataset.game === $('game').value; c.classList.toggle('on', on); c.setAttribute('aria-checked', on); }); }
+document.querySelectorAll('.chip').forEach(c => c.onclick = () => { $('game').value = c.dataset.game; localStorage.setItem('game', c.dataset.game); $('game').onchange(); });
+$('game').onchange = () => { syncChips(); $('sportsFields').hidden = $('game').value !== 'sports'; $('q').placeholder = $('game').value === 'sports' ? 'Player name, e.g. Shohei Ohtani' : 'Card name, e.g. Charizard'; };
 
 async function camera(videoEl) {
   try { stream = stream || await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment', width: { ideal: 1920 } }, audio: false }); videoEl.srcObject = stream; return true; }
@@ -32,14 +38,25 @@ async function takePhoto(source) { // source: 'CAMERA' | 'PHOTOS'
     i.onchange = async () => res(i.files[0] ? await readFile(i.files[0], 4000) : null); i.click(); });
 }
 let quad = null;
+const busy = t => { $('busy').hidden = !t; if (t) $('busyText').textContent = t; };
+function showStage(on) { $('home').hidden = on; $('stage').hidden = !on; if (!on) { $('detail').innerHTML = ''; $('altBox').hidden = true; } }
+function setAdjust(on) { $('adjustBar').hidden = !on; $('cropWrap').classList.toggle('adjust', on); }
 async function setPhoto(src) {
-  photo = src; quad = null; $('idBtn').disabled = false; $('results').innerHTML = ''; $('detail').innerHTML = '';
-  const img = $('shot'); img.src = src; img.hidden = false; $('cropWrap').hidden = false; $('idStatus').textContent = 'Finding the card edges…';
-  await new Promise(r => img.complete ? r() : (img.onload = r));
-  try { const d = await ID.detect(src); quad = d.quad; $('idStatus').textContent = d.found ? 'Card found. Drag the corners if needed, then Identify.' : 'Couldn’t find the edges – drag the corners onto the card, or Identify the whole photo.'; }
-  catch { quad = [[0, 0], [1, 0], [1, 1], [0, 1]]; }
-  drawCrop();
+  photo = src; quad = null; $('idBtn').disabled = false; $('results').innerHTML = ''; $('detail').innerHTML = ''; $('altBox').hidden = true; $('errBox').hidden = true;
+  showStage(true); setAdjust(false); $('stageTitle').textContent = 'Your card'; $('idStatus').textContent = '';
+  const img = $('shot'); img.src = src; img.hidden = false; $('cropWrap').hidden = false; busy('Finding your card…');
+  await new Promise(r => img.complete && img.naturalWidth ? r() : (img.onload = r));
+  let found = false; try { const d = await ID.detect(src); quad = d.quad; found = d.found; } catch { quad = [[0, 0], [1, 0], [1, 1], [0, 1]]; }
+  drawCrop(); busy('');
+  if (!found) { setAdjust(true); $('idStatus').textContent = 'We couldn’t spot the card’s edges. Drag the 4 dots onto the card corners, then tap “Looks good”.'; return; }
+  $('idStatus').textContent = 'Found your card ✓'; await new Promise(r => setTimeout(r, 700)); identify();
 }
+$('backHome').onclick = () => { showStage(false); $('manualBox').open = false; };
+$('retryBtn').onclick = () => identify();
+$('errSearch').onclick = () => { $('errBox').hidden = true; openSearch(); };
+$('openSearch').onclick = () => openSearch();
+function openSearch() { $('manualBox').open = true; $('q').focus(); $('manualBox').scrollIntoView({ behavior: 'smooth' }); }
+function showError(msg) { $('errText').textContent = msg; $('errBox').hidden = false; buzz([30, 60, 30]); }
 function drawCrop() {
   const w = $('cropWrap'), r = $('shot').getBoundingClientRect(), base = w.getBoundingClientRect(); if (!quad) return;
   const pts = quad.map(([x, y]) => [r.left - base.left + x * r.width, r.top - base.top + y * r.height]);
@@ -91,40 +108,43 @@ async function scanCard(game, step = () => {}) {
 $('idBtn').onclick = () => identify();
 async function identify() {
   const st = $('idStatus'), btn = $('idBtn'), sel = $('game').value; btn.disabled = true; btn.setAttribute('aria-busy', 'true'); $('results').innerHTML = ''; $('detail').innerHTML = '';
+  setAdjust(false); $('errBox').hidden = true; $('altBox').hidden = true; st.textContent = ''; busy('Identifying…');
+  const friendly = m => /Comparing|Confirming/.test(m) ? 'Finding the exact version…' : /Reading|Re-reading|AI vision/.test(m) ? 'Identifying…' : /Searching/.test(m) ? 'Looking it up…' : m;
   try {
-    const r = await scanCard(sel, m => st.textContent = m);
-    if (r.back) { st.textContent = 'That’s the back of the card – flip it and take the front.'; buzz([30, 60, 30]); return; }
+    const r = await scanCard(sel, m => busy(tech() ? m : friendly(m)));
+    if (r.back) { showError('That looks like the back of the card. Flip it over and scan the front.'); return; }
     if (r.game && r.game !== sel && $('game').querySelector(`option[value=${r.game}]`)) { $('game').value = r.game; $('game').onchange(); }
     const v = r.ai;
     if (r.mode === 'ai' && r.game === 'sports') {
       $('q').value = v.player || v.name; $('qnum').value = v.number; $('sYear').value = v.year; $('sBrand').value = v.brand || v.set; $('sPar').value = [v.variant, v.serial && '/' + v.serial.split('/').pop()].filter(Boolean).join(' ');
       st.textContent = `AI read: ${[v.year, v.brand || v.set, v.player || v.name, v.number && '#' + v.number, v.variant, v.serial].filter(Boolean).join(' · ')} (${Math.round((v.confidence || 0) * 100)}%)`; buzz(20); return doSearch();
     }
-    if (!r.ranked.length) { st.textContent = sel === 'auto' && !AI.available() ? 'Pick the game first (AI vision isn’t set up, so on-device matching needs to know the game).' : `Couldn't match this card${r.aiError ? ' (AI: ' + r.aiError + ')' : ''}. Adjust the crop or type the name below.`; return; }
+    if (!r.ranked.length) { showError(sel === 'auto' && !AI.available() ? 'Tell us the card type first – tap Pokémon, Magic, Yu-Gi-Oh!, Lorcana or Sports, then scan again.' : 'We couldn’t recognise this card. Try again with the card flat and well lit, or type its name.' + (tech() && r.aiError ? ` (${r.aiError})` : '')); return; }
     const top = r.ranked[0]; $('q').value = top.name; $('qnum').value = top.number || '';
-    st.textContent = `${r.conf >= 0.6 ? 'Match' : 'Best guess'}: ${top.name}${top.number ? ' #' + top.number : ''} · ${top.set || ''} (${Math.round(r.conf * 100)}% · ${r.mode === 'ai' ? 'AI vision + database' : 'on-device'})`;
-    buzz(20); showList(r.ranked.slice(0, 8), r.conf >= 0.6);
-  } catch (e) { st.textContent = 'Identify failed: ' + e.message + '. Use search below.'; }
-  finally { btn.disabled = !photo; btn.removeAttribute('aria-busy'); }
+    st.textContent = (r.conf >= 0.6 ? 'Here’s your card' : 'Our best guess – check below if it’s not right') + (tech() ? ` · ${Math.round(r.conf * 100)}% · ${r.mode === 'ai' ? 'AI vision + database' : 'on-device'}` : '');
+    $('stageTitle').textContent = r.conf >= 0.6 ? 'We found it!' : 'Is this your card?';
+    buzz(20); showList(r.ranked.slice(0, 9), true, r.conf < 0.6);
+  } catch (e) { showError(navigator.onLine ? 'Something went wrong while identifying. Please try again.' + (tech() ? ` (${e.message})` : '') : 'You’re offline. Connect to the internet and try again.'); }
+  finally { busy(''); btn.disabled = !photo; btn.removeAttribute('aria-busy'); }
 }
-function showList(list, autoOpen) {
-  
-  $('results').innerHTML = `<p class="muted">${list.length} match${list.length > 1 ? 'es' : ''}. Tap the exact print:</p><ul class="plain" role="list">` + list.map((c, i) =>
-    `<li><button class="card" data-i="${i}" aria-label="${esc(c.name)}, ${esc([c.set, c.number && 'number ' + c.number].filter(Boolean).join(', '))}">${c.img ? `<img src="${esc(c.img)}" loading="lazy" alt="">` : ''}<div><b>${esc(c.name)}</b><span class="muted">${esc([c.set, c.number && '#' + c.number, c.rarity || c.variant].filter(Boolean).join(' · '))}</span>${c.score != null && i < 3 ? `<span class="muted"> · match ${Math.round(Math.min(1, c.score) * 100)}</span>` : ''}</div></button></li>`).join('') + '</ul>';
-  $('results').querySelectorAll('.card').forEach(el => el.onclick = () => showDetail(list[+el.dataset.i]));
-  if (autoOpen || list.length === 1) showDetail(list[0]);
+function showList(list, autoOpen, showAlts) {
+  $('results').innerHTML = list.map((c, i) => `<button class="card tile" data-i="${i}" aria-label="${esc(c.name)}${c.set ? ', ' + esc(c.set) : ''}${c.number ? ', number ' + esc(c.number) : ''}">
+    ${c.img ? `<img src="${esc(c.img)}" loading="lazy" alt="">` : '<div class="noimg" aria-hidden="true">🃏</div>'}<b>${esc(c.name)}</b><span class="muted">${esc([c.set, c.number && '#' + c.number].filter(Boolean).join(' · '))}</span>${tech() && c.score != null ? `<span class="muted">score ${Math.round(Math.min(1, c.score) * 100)}</span>` : ''}</button>`).join('');
+  $('results').querySelectorAll('.card').forEach(el => el.onclick = () => { $('altBox').hidden = true; showDetail(list[+el.dataset.i], list); });
+  $('altBox').querySelector('h3').textContent = autoOpen ? 'Not right? Is it one of these?' : 'Pick your card';
+  if (autoOpen && list.length) { showDetail(list[0], list); $('altBox').hidden = !showAlts; } else $('altBox').hidden = false;
 }
 $('searchBtn').onclick = () => doSearch();
 
 async function doSearch(v = {}) {
   const game = $('game').value, q = $('q').value.trim(); if (!q) return;
-  $('results').innerHTML = '<p class="muted">Searching…</p>'; $('detail').innerHTML = '';
+  $('altBox').hidden = false; $('altBox').querySelector('h3').textContent = 'Searching…'; $('results').innerHTML = '<div class="spinner" aria-label="Searching"></div>'; $('detail').innerHTML = '';
   try {
     const list = await Adapters[game].search(q, $('qnum').value.trim(), { year: $('sYear').value, brand: $('sBrand').value, parallel: $('sPar').value, grade: $('sGrade').value });
-    if (!list.length) { $('results').innerHTML = '<p class="muted">No matches.</p>'; return; }
+    if (!list.length) { $('altBox').querySelector('h3').textContent = 'No cards found'; $('results').innerHTML = '<p class="muted">Check the spelling, or try just part of the name.</p>'; return; }
     if (v.set) list.sort((a, b) => (b.set || '').toLowerCase().includes(v.set.toLowerCase()) - (a.set || '').toLowerCase().includes(v.set.toLowerCase()));
     showList(list, false);
-  } catch (e) { $('results').innerHTML = `<p class="bad">Search failed: ${esc(e.message)}</p>`; }
+  } catch (e) { $('altBox').querySelector('h3').textContent = 'Search didn’t work'; $('results').innerHTML = `<div class="errbox"><p>${navigator.onLine ? 'The card database didn’t answer. Please try again.' : 'You’re offline.'}</p><button class="primary" id="searchRetry">Try again</button></div>`; $('searchRetry').onclick = () => doSearch(v); }
 }
 
 function priceHtml(c) {
@@ -133,25 +153,39 @@ function priceHtml(c) {
     : '<p class="muted">No price data from connected sources for this card.</p>')
     + (c.links ? '<p class="muted">Check real sales (free):</p><div class="btns">' + c.links.map(([t, u]) => `<a class="file" href="${u}" target="_blank">${t}</a>`).join('') + '</div>' : '');
 }
-async function showDetail(c) {
-  $('detail').innerHTML = '<p class="muted">Loading prices…</p>';
-  try { current = await Adapters[c.game].detail(c); } catch (e) { $('detail').innerHTML = `<p class="bad" role="alert">Couldn't load prices: ${esc(e.message)}. <button id="retryDetail">Retry</button></p>`; $('retryDetail').onclick = () => showDetail(c); return; }
-  const d = current;
-  $('detail').innerHTML = `<h2>${esc(d.name)}</h2>${d.img ? `<img class="big" src="${esc(d.img)}" alt="">` : ''}
-    <p>${esc([d.set, d.number && '#' + d.number + (d.setTotal ? '/' + d.setTotal : ''), d.rarity].filter(Boolean).join(' · '))}${d.variant ? `<br><span class="muted">Variant/parallel: ${esc(d.variant)}</span>` : ''}</p>
-    <div id="prices">${priceHtml(d)}</div>
-    ${d.game === 'sports' ? `<details><summary>Add a sold comp you found</summary><div class="row"><input id="compVal" type="number" step="0.01" placeholder="Sold $"><input id="compSrc" placeholder="Source (e.g. eBay sold)"><input id="compDate" type="date"></div><button id="compAdd">Add comp</button></details>` : ''}
-    <div class="btns"><button id="addBtn" class="primary">Add to collection</button><button id="wishBtn">♡ Wishlist</button></div>`;
-  $('wishBtn').onclick = () => { const t = prompt('Alert me when price is at or below (USD, optional):', ''); const w = wish.get(); const bp = bestPrice(d);
+async function showDetail(c, alts) {
+  $('detail').innerHTML = '<div class="result"><div class="spinner" aria-label="Loading price"></div><p class="muted">Getting today’s price…</p></div>';
+  try { current = await Adapters[c.game].detail(c); } catch (e) { $('detail').innerHTML = `<div class="errbox" role="alert"><p>We couldn’t get the price right now.</p><button class="primary" id="retryDetail">Try again</button></div>`; $('retryDetail').onclick = () => showDetail(c, alts); return; }
+  const d = current, bp = bestPrice(d), owned = store.get().find(x => x.game === d.game && x.id === d.id);
+  $('detail').innerHTML = `<article class="result" aria-labelledby="resName">
+    ${d.img ? `<img class="resImg" src="${esc(d.img)}" alt="${esc(d.name)} card">` : photo ? `<img class="resImg" src="${esc(photo)}" alt="Your card">` : ''}
+    <h2 id="resName">${esc(d.name)}</h2>
+    <p class="resSet">${esc([d.set, d.number && '#' + d.number + (d.setTotal ? '/' + d.setTotal : '')].filter(Boolean).join(' · '))}${d.variant ? ` · ${esc(d.variant)}` : ''}</p>
+    <div class="bigPrice">${bp ? `<b>${money(bp.value)}</b><small>Market price · ${esc(bp.source.split(' (')[0])} · ${esc((bp.date || '').slice(0, 10))}</small>` : `<b class="na">No price yet</b><small>${d.game === 'sports' ? 'Check recent sales below' : 'This card has no listed price'}</small>`}</div>
+    ${owned ? `<p class="muted">You already have ${owned.qty || 1} of these.</p>` : ''}
+    <button id="addBtn" class="primary big">＋ Add to collection</button>
+    <div class="btns three"><button id="gradeBtn" class="secondary">📐 Pre-grade</button><button id="sellBtn" class="secondary">🏷️ List for sale</button><button id="wishBtn" class="secondary">♡ Wishlist</button></div>
+    <div class="btns"><button id="notRight" class="link">Not right?</button>${photo ? '<button id="adjustBtn" class="link">Adjust crop</button>' : ''}</div>
+    <details><summary>All prices &amp; sources</summary><div id="prices">${priceHtml(d)}</div>
+    ${d.game === 'sports' ? `<h4>Add a sale you found</h4><div class="row"><input id="compVal" type="number" step="0.01" placeholder="Sold for $" aria-label="Sold price"><input id="compSrc" placeholder="Where (e.g. eBay)" aria-label="Where it sold"></div><input id="compDate" type="date" aria-label="Sale date"><button id="compAdd" class="secondary">Add sale</button>` : ''}</details>
+  </article>`;
+  const addToCol = async () => { const col = store.get(), dup = col.find(x => x.game === d.game && x.id === d.id);
+    if (dup) { dup.qty = (dup.qty || 1) + 1; store.set(col); return { uid: dup.uid, dup: dup.qty }; }
+    const uid = Date.now().toString(36); col.unshift({ ...d, uid, added: today(), photo: photo ? await thumb(photo) : '', grade: null, qty: 1, tags: [], history: bp ? [{ d: today(), v: +bp.value.toFixed(2) }] : [] }); store.set(col); return { uid }; };
+  $('addBtn').onclick = async () => { const r = await addToCol(); buzz(20); $('addBtn').textContent = r.dup ? `Added ✓ (you have ${r.dup})` : 'Added to collection ✓'; $('addBtn').disabled = true;
+    if (r.dup) $('addBtn').textContent = `Already owned – now ×${r.dup}`; };
+  $('gradeBtn').onclick = async () => { const r = owned ? { uid: owned.uid } : await addToCol(); gradeTarget = r.uid; go('grade'); };
+  $('sellBtn').onclick = () => draftListing({ ...d, photo: photo || d.img, grade: owned?.grade });
+  $('notRight').onclick = () => { if (alts && alts.length > 1) { $('altBox').hidden = false; $('altBox').querySelector('h3').textContent = 'Is it one of these?'; $('altBox').scrollIntoView({ behavior: 'smooth' }); } else openSearch(); $('manualBox').open = true; };
+  if ($('adjustBtn')) $('adjustBtn').onclick = () => { $('detail').innerHTML = ''; $('altBox').hidden = true; setAdjust(true); $('idStatus').textContent = 'Drag the dots to the card corners, then tap “Looks good”.'; $('cropWrap').scrollIntoView({ behavior: 'smooth' }); };
+  $('wishBtn').onclick = () => { const t = prompt('Tell me when the price drops to (optional, in $):', ''); if (t === null) return; const w = wish.get();
     w.unshift({ uid: Date.now().toString(36), game: d.game, id: d.id, name: d.name, set: d.set, number: d.number, setCode: d.setCode, img: d.img, target: +t || null, last: bp ? +bp.value.toFixed(2) : null });
-    wish.set(w); $('wishBtn').textContent = 'On wishlist ✓'; $('wishBtn').disabled = true; buzz(20); };
-  if ($('compAdd')) $('compAdd').onclick = () => { const v = +$('compVal').value; if (!(v > 0) || !$('compSrc').value) return alert('Enter price and source');
-    d.prices.unshift({ source: $('compSrc').value + ' (entered by you)', label: 'sold comp', value: v, currency: 'USD', date: $('compDate').value || today() }); $('prices').innerHTML = priceHtml(d); };
-  $('addBtn').onclick = async () => { const col = store.get(), dup = col.find(x => x.game === d.game && x.id === d.id);
-    if (dup) { dup.qty = (dup.qty || 1) + 1; store.set(col); $('addBtn').textContent = `Already owned – now ×${dup.qty}`; $('addBtn').disabled = true; buzz(20); return; }
-    const bp = bestPrice(d); col.unshift({ ...d, uid: Date.now().toString(36), added: today(), photo: photo ? await thumb(photo) : '', grade: null, qty: 1, tags: [], history: bp ? [{ d: today(), v: +bp.value.toFixed(2) }] : [] }); buzz(20); store.set(col);
-    photo = null; $('shot').hidden = true; $('cropWrap').hidden = true; $('idBtn').disabled = true; $('addBtn').textContent = 'Added ✓'; $('addBtn').disabled = true; };
+    wish.set(w); $('wishBtn').textContent = '♥ On wishlist'; $('wishBtn').disabled = true; buzz(20); };
+  if ($('compAdd')) $('compAdd').onclick = () => { const v = +$('compVal').value; if (!(v > 0) || !$('compSrc').value) return alert('Please enter the price and where it sold.');
+    d.prices.unshift({ source: $('compSrc').value + ' (entered by you)', label: 'sold', value: v, currency: 'USD', date: $('compDate').value || today() }); showDetail(d, alts); };
+  $('detail').scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
+let gradeTarget = null;
 
 const buzz = p => { try { navigator.vibrate?.(p); } catch {} };
 const wish = { get: () => JSON.parse(localStorage.getItem('wishlist') || '[]'), set: v => { localStorage.setItem('wishlist', JSON.stringify(v)); renderWish(); } };
@@ -165,16 +199,19 @@ function renderCollection() {
   const val = c => (bestPrice(c)?.value || 0) * (c.qty || 1);
   col.sort(sort === 'value' ? (a, b) => val(b) - val(a) : sort === 'name' ? (a, b) => a.name.localeCompare(b.name) : sort === 'set' ? (a, b) => (a.set || '').localeCompare(b.set || '') || (parseInt(a.number) || 0) - (parseInt(b.number) || 0) : () => 0);
   let tot = 0, priced = 0, n = 0; col.forEach(c => { n += c.qty || 1; if (bestPrice(c)) { tot += val(c); priced++; } });
-  $('total').textContent = money(tot); $('totalNote').textContent = `${n} cards (${priced}/${col.length} priced). EUR converted to USD at ${FX.d ? 'free daily rate (open.er-api.com)' : 'no rate yet'}.`;
+  $('total').textContent = money(tot); $('totalNote').textContent = `${n} card${n === 1 ? '' : 's'}${priced < col.length ? ` · ${col.length - priced} without a price` : ''}`;
+  { let t = 0, k = 0; all.forEach(c => { k += c.qty || 1; t += val(c); }); $('homeTotal').textContent = money(t); $('homeCount').textContent = k ? `${k} card${k === 1 ? '' : 's'} · tap to view` : 'No cards yet'; }
   $('colList').innerHTML = col.length ? col.map(c => { const p = bestPrice(c);
     return `<div class="card">${c.photo || c.img ? `<img src="${esc(c.photo || c.img)}" alt="">` : ''}<div><b>${esc(c.name)}${c.qty > 1 ? ` ×${c.qty}` : ''}</b><span class="muted">${esc(GAMES[c.game] || '')} · ${esc([c.set, c.number && '#' + c.number, c.variant].filter(Boolean).join(' · '))}</span><br>
-    ${p ? `<b class="good">${money(p.value)}</b> ${trend(c)} <span class="muted">${esc(p.source)} · ${esc(p.date)}</span>` : '<span class="muted">no price</span>'}
-    ${c.grade ? `<br><span>Centering ${esc(c.grade.front.lr)} L/R · ${esc(c.grade.front.tb)} T/B · cap PSA ${c.grade.cap}</span>` : ''}
+    ${p ? `<b class="good">${money(p.value)}</b> ${trend(c)}${tech() ? ` <span class="muted">${esc(p.source)} · ${esc(p.date)}</span>` : ''}` : '<span class="muted">No price</span>'}
+    ${c.grade ? `<br><span>📐 Centering ${esc(c.grade.front.lr)} · up to PSA ${c.grade.cap}</span>` : ''}
     ${(c.tags || []).length ? `<br>${c.tags.map(t => `<span class="tag">${esc(t)}</span>`).join(' ')}` : ''}<span class="setc" data-set="${c.uid}"></span></div>
-    <div class="side"><button data-sell="${c.uid}">Sell</button><button data-share="${c.uid}">Share</button><button data-tag="${c.uid}">Tag</button><button data-del="${c.uid}">✕</button></div></div>`; }).join('') : `<p class="muted">${all.length ? 'No cards match.' : 'No cards yet. Scan one!'}</p>`;
+    <div class="side"><button data-sell="${c.uid}">🏷️ Sell</button><button data-grade="${c.uid}">📐 Grade</button><button data-share="${c.uid}">Share</button><button data-tag="${c.uid}">Tag</button><button data-del="${c.uid}" aria-label="Remove ${esc(c.name)}">🗑️</button></div></div>`; }).join('')
+    : all.length ? '<div class="empty"><p>No cards match your search.</p></div>' : '<div class="empty"><div class="emptyArt">🗂️</div><h3>Your collection is empty</h3><p>Scan your first card to see what it’s worth.</p><button class="primary big" data-go="scan">📷 Scan a card</button></div>';
+  $('colList').querySelectorAll('[data-go]').forEach(b => b.onclick = () => go(b.dataset.go));
   const on = (attr, fn) => $('colList').querySelectorAll(`[data-${attr}]`).forEach(b => b.onclick = () => fn(store.get().find(c => c.uid === b.dataset[attr])));
   on('del', c => { if (!confirm('Remove card?')) return; const l = store.get(); const x = l.find(y => y.uid === c.uid); if (x.qty > 1) x.qty--; else l.splice(l.indexOf(x), 1); store.set(l); });
-  on('sell', draftListing); on('share', shareCard);
+  on('sell', draftListing); on('share', shareCard); on('grade', c => { gradeTarget = c.uid; go('grade'); });
   on('tag', c => { const t = prompt('Tags (comma separated), e.g. binder, for trade, PC', (c.tags || []).join(', ')); if (t == null) return; store.set(store.get().map(x => x.uid === c.uid ? { ...x, tags: t.split(',').map(s => s.trim()).filter(Boolean) } : x)); });
   setCompletion(all);
 }
@@ -196,7 +233,7 @@ async function refreshPrices() {
 function checkAlerts(hits) { if (!hits.length) return; buzz([40, 40, 40]); $('alertBar').hidden = false; $('alertBar').innerHTML = '🔔 Price alert: ' + hits.map(x => `${esc(x.name)} is ${money(x.last)} (target ${money(x.target)})`).join('; '); }
 function renderWish() {
   const w = wish.get(); $('wishList').innerHTML = w.length ? w.map(x => `<div class="card">${x.img ? `<img src="${esc(x.img)}" alt="">` : ''}<div><b>${esc(x.name)}</b><span class="muted">${esc([x.set, x.number && '#' + x.number].filter(Boolean).join(' · '))}</span><br>
-    ${x.last != null ? `Now <b class="good">${money(x.last)}</b>` : '<span class="muted">no price</span>'} ${x.target ? `· alert ≤ ${money(x.target)} ${x.last != null && x.last <= x.target ? '🔔' : ''}` : ''}</div><div class="side"><button data-wdel="${x.uid}">✕</button></div></div>`).join('') : '<p class="muted">Nothing on your wishlist. Tap ♡ on a card to add it.</p>';
+    ${x.last != null ? `Now <b class="good">${money(x.last)}</b>` : '<span class="muted">no price</span>'} ${x.target ? `· alert ≤ ${money(x.target)} ${x.last != null && x.last <= x.target ? '🔔' : ''}` : ''}</div><div class="side"><button data-wdel="${x.uid}">✕</button></div></div>`).join('') : '<div class="empty"><div class="emptyArt">♡</div><h3>No cards on your wishlist</h3><p>After you scan a card, tap ♡ Wishlist to watch its price.</p></div>';
   $('wishList').querySelectorAll('[data-wdel]').forEach(b => b.onclick = () => wish.set(wish.get().filter(x => x.uid !== b.dataset.wdel)));
 }
 ['colQ', 'colGame', 'colSort'].forEach(id => $(id).oninput = renderCollection);
@@ -249,36 +286,52 @@ function draftListing(c) {
   $('listDlg').showModal();
 }
 
-// Pre-Grade (from Phase 1 base): 6 guided photos + real centering measurement, attachable to a collection card
-const steps = ['Front of card', 'Back of card', 'Top-left corner', 'Top-right corner', 'Bottom-left corner', 'Bottom-right corner'];
+// Pre-grade wizard: 6 guided photos with an example per step
+const steps = [['Front of the card', 'Lay the card flat, face up, on a plain dark surface. Fit the whole card in the photo.', 'front'], ['Back of the card', 'Flip it over and take the same photo of the back.', 'back'],
+  ['Top-left corner', 'Get close to the top-left corner so it fills the photo.', 'tl'], ['Top-right corner', 'Now the top-right corner, up close.', 'tr'], ['Bottom-left corner', 'Bottom-left corner, up close.', 'bl'], ['Bottom-right corner', 'Last one: bottom-right corner.', 'br']];
+const EX = k => { const card = '<rect x="38" y="14" width="64" height="90" rx="6" fill="#f2c94c" stroke="#fff" stroke-width="2"/><rect x="45" y="22" width="50" height="40" rx="2" fill="#2d9cdb"/><rect x="45" y="68" width="50" height="4" fill="#fff8"/><rect x="45" y="76" width="40" height="4" fill="#fff8"/>';
+  const back = '<rect x="38" y="14" width="64" height="90" rx="6" fill="#2f5bd3" stroke="#fff" stroke-width="2"/><ellipse cx="70" cy="59" rx="20" ry="26" fill="#f2c94c"/>';
+  const zoom = { tl: [38, 14], tr: [102, 14], bl: [38, 104], br: [102, 104] }[k];
+  return `<svg viewBox="0 0 140 118" role="img" aria-label="Example photo"><rect width="140" height="118" rx="10" fill="#1d2433"/>${k === 'back' ? back : card}${zoom ? `<circle cx="${zoom[0]}" cy="${zoom[1]}" r="16" fill="none" stroke="#3fb950" stroke-width="4"/><text x="70" y="114" fill="#cfd6e4" font-size="9" text-anchor="middle">close-up of this corner</text>` : ''}</svg>`; };
 let gStep = 0, gShots = [];
-function addShot(src) { gShots.push(src); const i = new Image(); i.src = src; $('previews').appendChild(i); gStep++;
-  if (gStep < 6) $('stepText').textContent = `Step ${gStep + 1}/6 – ${steps[gStep]}`; else { $('captureBtn').disabled = true; $('stepText').textContent = 'All photos captured.'; }
-  $('analyzeBtn').hidden = gShots.length < 1; }
+function gradeReset() { gStep = 0; gShots = []; $('previews').innerHTML = ''; $('gradeOut').innerHTML = ''; $('analyzeBtn').hidden = true; $('captureBtn').disabled = false;
+  const c = gradeTarget && store.get().find(x => x.uid === gradeTarget); $('gradeFor').textContent = c ? `For: ${c.name}${c.number ? ' #' + c.number : ''}` : ''; gradeStep(); }
+function gradeStep() { const [t, h, k] = steps[Math.min(gStep, 5)];
+  $('stepDots').innerHTML = steps.map((_, i) => `<i class="${i < gStep ? 'done' : i === gStep ? 'on' : ''}"></i>`).join('');
+  if (gStep >= 6) { $('stepText').textContent = 'All done! 🎉'; $('stepHint').textContent = 'Tap “See my results”.'; $('stepExample').innerHTML = ''; $('captureBtn').disabled = true; $('skipStep').hidden = true; return; }
+  $('stepText').textContent = `Step ${gStep + 1} of 6 – ${t}`; $('stepHint').textContent = h; $('stepExample').innerHTML = EX(k); $('skipStep').hidden = gStep < 1; }
+function addShot(src) { gShots[gStep] = src; const i = new Image(); i.src = src; i.alt = steps[gStep][0]; $('previews').appendChild(i); gStep++; buzz(15); gradeStep(); $('analyzeBtn').hidden = !gShots[0]; }
+$('skipStep').onclick = () => { if (gStep < 6) { gStep++; gradeStep(); } };
+$('gradeBack').onclick = () => go(gradeTarget ? 'collection' : 'scan');
 $('captureBtn').onclick = async () => { if (gStep >= 6) return; const p = await takePhoto('CAMERA'); if (p) addShot(await readFileFromUrl(p, 2000)); };
 $('gfileIn').onchange = async e => { if (e.target.files[0] && gStep < 6) addShot(await readFile(e.target.files[0])); e.target.value = ''; };
-function renderGradeTargets() {}
 $('analyzeBtn').onclick = async () => {
-  const out = $('gradeOut'); out.innerHTML = '<p class="muted">Measuring borders…</p>';
+  const out = $('gradeOut'); out.innerHTML = '<div class="spinner" aria-label="Checking"></div><p class="muted">Checking your photos…</p>';
   const f = await measureCentering(gShots[0]), b = gShots[1] ? await measureCentering(gShots[1]) : { ok: false };
-  if (!f.ok) { out.innerHTML = '<p class="bad">Could not find the card borders on the front photo. Shoot flat on a plain, contrasting background with the whole card in frame.</p>'; return; }
-  const cap = centeringGrade(f, b), col = store.get(), cond = await conditionEstimate(gShots[0], gShots.slice(2, 6));
-  out.innerHTML = `<div class="price"><b>Front</b> L/R ${f.lr} · T/B ${f.tb} <span class="${f.max <= 55 ? 'good' : 'bad'}">${f.max <= 55 ? 'PSA 10 range (≤55/45)' : 'outside PSA 10 (55/45)'}</span></div>
-   ${b.ok ? `<div class="price"><b>Back</b> L/R ${b.lr} · T/B ${b.tb} <span class="${b.max <= 75 ? 'good' : 'bad'}">${b.max <= 75 ? 'OK (≤75/25)' : 'over 75/25'}</span></div>` : '<p class="muted">Back not measured.</p>'}
-   <div class="price"><b>Estimates</b> (photo-based, not a real grade): Corners ${cond.corners ?? 'n/a – add corner photos'} · Edges ${cond.edges} · Surface ${cond.surface}/10${cond.glare ? '<br><span class="bad">Glare detected – reshoot without reflections.</span>' : ''}</div>
-   <p>Centering alone caps this card at about <b>PSA ${cap}</b>. Corner/edge/surface numbers are rough estimates only.</p>
-   ${col.length ? `<div class="row"><select id="attachTo">${col.map(c => `<option value="${c.uid}">${esc(c.name)} ${esc(c.number || '')}</option>`).join('')}</select><button id="attachBtn">Attach to card</button></div>` : '<p class="muted">Scan a card into your collection to attach this result.</p>'}`;
-  if ($('attachBtn')) $('attachBtn').onclick = async () => { const ph = []; for (const s of gShots.slice(0, 6)) ph.push(await thumb(s));
-    store.set(store.get().map(c => c.uid === $('attachTo').value ? { ...c, grade: { front: f, back: b, cap, cond, date: today(), photos: ph } } : c)); $('attachBtn').textContent = 'Attached ✓'; };
+  if (!f.ok) { out.innerHTML = '<div class="errbox" role="alert"><p>We couldn’t see the card’s borders in the front photo. Retake it with the whole card on a plain, darker surface.</p><button class="primary" id="gradeRetry">Retake front photo</button></div>'; $('gradeRetry').onclick = () => { gradeReset(); }; return; }
+  const cap = centeringGrade(f, b), col = store.get(), cond = await conditionEstimate(gShots[0], gShots.slice(2, 6).filter(Boolean));
+  const good = f.max <= 55, word = n => n >= 9 ? 'Great' : n >= 7 ? 'Good' : n >= 5 ? 'Fair' : 'Worn';
+  out.innerHTML = `<div class="result"><div class="bigPrice"><small>Best possible grade from centering</small><b>PSA ${cap}</b></div>
+   <div class="price"><b>Front centering</b> ${f.lr} left/right · ${f.tb} top/bottom <span class="${good ? 'good' : 'bad'}">${good ? '✓ PSA 10 range' : 'Off-center for a 10'}</span></div>
+   ${b.ok ? `<div class="price"><b>Back centering</b> ${b.lr} · ${b.tb} <span class="${b.max <= 75 ? 'good' : 'bad'}">${b.max <= 75 ? '✓ OK' : 'Off-center'}</span></div>` : ''}
+   <div class="price"><b>Rough condition check</b><br>Corners: ${cond.corners != null ? word(cond.corners) : 'not photographed'} · Edges: ${word(cond.edges)} · Surface: ${word(cond.surface)}${cond.glare ? '<br><span class="bad">Glare in the photo – retake without reflections for a better surface check.</span>' : ''}</div>
+   <p class="muted">These are estimates from your photos, not an official grade.</p>
+   ${gradeTarget ? '' : col.length ? `<label>Save to card<select id="attachTo">${col.map(c => `<option value="${c.uid}">${esc(c.name)} ${esc(c.number || '')}</option>`).join('')}</select></label>` : ''}
+   ${gradeTarget || col.length ? '<button id="attachBtn" class="primary big">Save to my card</button>' : '<p class="muted">Scan the card into your collection to save this result.</p>'}</div>`;
+  if ($('attachBtn')) $('attachBtn').onclick = async () => { const ph = []; for (const s of gShots.filter(Boolean).slice(0, 6)) ph.push(await thumb(s)); const id = gradeTarget || $('attachTo').value;
+    store.set(store.get().map(c => c.uid === id ? { ...c, grade: { front: f, back: b, cap, cond, date: today(), photos: ph } } : c)); $('attachBtn').textContent = 'Saved ✓'; $('attachBtn').disabled = true; buzz(20); };
 };
 // Onboarding, alerts, daily price refresh, PWA
-if (!localStorage.getItem('onboarded')) $('onboard').showModal();
-$('onboardGo').onclick = () => localStorage.setItem('onboarded', '1');
+let obI = 0; const obShow = i => { obI = i; document.querySelectorAll('.ob').forEach(o => o.hidden = +o.dataset.ob !== i); document.querySelectorAll('#obDots i').forEach((d, k) => d.classList.toggle('on', k === i)); $('obNext').textContent = i === 2 ? 'Get started' : 'Next'; };
+const obDone = () => { localStorage.setItem('onboarded', '1'); $('onboard').close(); };
+$('obNext').onclick = () => obI < 2 ? obShow(obI + 1) : obDone(); $('obSkip').onclick = obDone; $('onboardGo').onclick = obDone;
+if (!localStorage.getItem('onboarded')) { obShow(0); $('onboard').showModal(); }
+$('game').value = localStorage.getItem('game') || (AI.available() ? 'auto' : 'pokemon'); syncChips();
 if (!AI.available() && $('game').value === 'auto') $('game').value = 'pokemon'; $('game').onchange();
 renderCollection(); renderWish();
 FX.load().then(() => { renderCollection(); refreshPrices(); });
 if ('serviceWorker' in navigator && location.protocol === 'https:') navigator.serviceWorker.register('sw.js');
-$('replayOnboard').onclick = () => { $('settings').close(); $('onboard').showModal(); };
+$('replayOnboard').onclick = () => { obShow(0); $('onboard').showModal(); };
 
 // Offline awareness
 const netState = () => { $('offline').hidden = navigator.onLine; };
