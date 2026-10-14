@@ -36,7 +36,9 @@ const Sports = (() => {
   function parse(text) {
     const t = text.replace(/[|_~]/g, ' '), flat = t.replace(/\s+/g, ' ');
     const years = (flat.match(/\b(19[5-9]\d|20[0-3]\d)\b/g) || []).map(Number), year = years.length ? String(Math.max(...years.filter(y => y <= new Date().getFullYear() + 1))) : '';
-    const brands = BR.filter(b => new RegExp('\\b' + b.replace('&', '&?').replace(' ', '\\s*') + '\\b', 'i').test(flat));
+    const toks = flat.toUpperCase().replace(/0/g, 'O').replace(/1/g, 'I').split(/[^A-Z&]+/).filter(w => w.length >= 4);
+    const fuzzy = b => b.split(' ').every(w => w.length < 4 ? new RegExp('\\b' + w + '\\b', 'i').test(flat) : toks.some(t => sim(t, w) >= 0.75)); // OCR-tolerant (PH0ENIX, PRlZM)
+    const brands = BR.filter(b => new RegExp('\\b' + b.replace('&', '&?').replace(' ', '\\s*') + '\\b', 'i').test(flat) || fuzzy(b));
     const maker = MAKERS.find(m => brands.some(b => b.startsWith(m))) || '', product = (brands.find(b => !MAKERS.includes(b)) || '').replace(new RegExp('^(' + MAKERS.join('|') + ')\\s+'), '');
     const rc = /\bR\s?C\b|\bROOKIE\b/i.test(flat), team = (flat.match(TEAMS) || [])[0] || '';
     const num = (flat.match(/(?:No\.?|#)\s*([A-Z]{0,4}-?\d{1,4})\b/i) || [])[1] || '', serial = (flat.match(/\b\d{1,3}\s*\/\s*(\d{1,4})\b/) || [])[0] || '';
@@ -57,7 +59,7 @@ const Sports = (() => {
     for (const q of cands.slice(0, 4).flatMap(c => [[c, c + ' player'], [c, c.split(' ').map(w => w + '~').join(' ') + ' player']])) { const c = q[0]; if (best?.sc >= 0.9) break; try {
       const r = await (await Net.raw(`https://en.wikipedia.org/w/api.php?action=query&list=search&srsearch=${encodeURIComponent(q[1])}&srlimit=5&srprop=snippet&format=json&origin=*`, {}, 1)).json();
       for (const h of r.query?.search || []) { const title = h.title.replace(/ \(.*\)$/, ''); if (title.split(' ').length < 2) continue;
-        const sc = sim(title, c); if ((sc >= 0.85 || ATH.test(h.snippet + ' ' + h.title) && sc >= 0.7) && (!best || sc > best.sc)) best = { name: title, cand: c, desc: h.snippet.replace(/<[^>]+>/g, ''), sc }; }
+        const sc = sim(title, c); if ((sc >= 0.85 || ATH.test(h.snippet + ' ' + h.title) && sc >= 0.7) && (!best || sc > best.sc)) best = { name: title, cand: c, desc: h.snippet.replace(/<[^>]+>/g, ''), sc, ath: ATH.test(h.snippet + ' ' + h.title) }; }
       if (best?.sc >= 0.9) break; } catch {} }
     return best ? [best] : [];
   }
@@ -68,10 +70,11 @@ const Sports = (() => {
     const mk = (name, s, extra = {}) => ({ game: 'sports', id: 'sp-' + (name + '|' + s).toLowerCase().replace(/[^a-z0-9|]/g, ''), name, number: p.number, set: s, variant, team: p.team, img: '', ...extra });
     const ranked = player ? [mk(player, set, { verified: !!w[0] })] : [];
     if (player) { if (p.year && p.maker && p.product) ranked.push(mk(player, `${p.year} ${p.maker}`)); if (p.brand) ranked.push(mk(player, p.brand)); }
-    p.names.filter(n => n !== player && n !== w[0]?.cand).slice(0, 3).forEach(n => ranked.push(mk(n, set)));
+    if (!w[0]) p.names.filter(n => n !== player).slice(0, 3).forEach(n => ranked.push(mk(n, set))); // unverified OCR names only when no real athlete matched
     const conf = !player ? 0 : (w[0] ? 0.55 : 0.25) + (p.year ? 0.1 : 0) + (p.brand ? 0.1 : 0) + (p.rc ? 0.05 : 0);
-    return { game: 'sports', ranked: ranked.filter((c, i, a) => a.findIndex(x => x.id === c.id) === i), conf: Math.min(0.9, conf), parsed: { ...p, player, verified: !!w[0] }, text };
+    return { game: 'sports', ranked: ranked.filter((c, i, a) => a.findIndex(x => x.id === c.id) === i), conf: Math.min(0.9, conf), parsed: { ...p, player, verified: !!w[0], athlete: !!w[0]?.ath, sports: looksSports(text) }, text };
   }
-  const looksSports = text => /\b(Panini|Topps|Upper Deck|Bowman|Donruss|Prizm|Rookie|NFL|NBA|MLB|NHL|NCAA)\b/i.test(text) || TEAMS.test(text);
+  function looksSports(text) { return LS(text); }
+  const LS = text => /\b(Panini|Topps|Upper Deck|Bowman|Donruss|Prizm|Rookie|NFL|NBA|MLB|NHL|NCAA)\b/i.test(text) || TEAMS.test(text);
   return { identify, parse, readAll, localNorm, looksSports, wiki };
 })();

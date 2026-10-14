@@ -30,7 +30,7 @@ const IDCore = (() => {
     if (!games) { h.step('Working out the card type…'); await quick(); if (!guessGames(text).length || Sports.looksSports(text)) { const sp = await sportsRun(photo, h); if (sp.parsed?.verified || Sports.looksSports(text) && sp.ranked.length) return sp; h.sportsTried = sp; }
       games = [...new Set([...guessGames(text), ...GAMES.slice(0, 3)])]; }
     else { await quick(); // selected TCG but the card has none of its text cues → likely a sports card: try that first (fast)
-      if (!guessGames(text).length || Sports.looksSports(text)) { const sp = await sportsRun(photo, h); if (sp.parsed?.verified) return sp; h.sportsTried = sp; } }
+      if (!guessGames(text).length || Sports.looksSports(text)) { const sp = await sportsRun(photo, h); if (sp.parsed?.verified && (sp.parsed.athlete || sp.parsed.sports || Sports.looksSports(text))) return sp; h.sportsTried = sp; } }
     let best = null;
     for (const g of games) {
       const r = await ID.run(photo, g, h.step, null, h.quad);
@@ -42,7 +42,7 @@ const IDCore = (() => {
     }
     // Wrong card type picked (e.g. a sports card while "Pokémon" is selected)? Check for sports text before giving up.
     if (!best || best.back || (best.evidence ?? 0) < 0.6) { const prev = IDCore.last; const sp = h.sportsTried || await sportsRun(photo, h);
-      if (sp.ranked.length && (sp.parsed?.verified || best?.back || !best?.ranked?.length || sp.conf > (best?.conf ?? 0))) return sp; if (!best?.ranked?.length) IDCore.last = sp.text ? IDCore.last : prev; }
+      if (sp.ranked.length && sp.parsed?.verified && (sp.parsed.athlete || sp.parsed.sports || best?.back || !best?.ranked?.length)) return sp; if (!best?.ranked?.length) IDCore.last = sp.text ? IDCore.last : prev; }
     return best || { ranked: [], conf: 0 };
   } });
   register({ name: 'cloud', kind: 'cloud', available: () => typeof AI !== 'undefined' && AI.available(), async run(photo, h) {
