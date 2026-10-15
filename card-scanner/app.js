@@ -13,7 +13,19 @@ function go(tab) {
 document.querySelectorAll('nav button').forEach(b => b.onclick = () => go(b.dataset.tab));
 document.querySelectorAll('[data-go]').forEach(b => b.onclick = () => go(b.dataset.go));
 // Settings
-function loadSettings() { $('proxyUrl').value = localStorage.getItem('proxyUrl') || ''; $('ocrOn').checked = localStorage.getItem('ocr') !== '0'; $('techOn').checked = tech();
+function showDiag() { $('diagBox').hidden = !tech(); if (tech()) $('diag').textContent = Diag.text() || '(nothing yet)'; }
+Diag.onchange = () => { if (!$('tab-settings').hidden) showDiag(); };
+$('diagCopy').onclick = () => navigator.clipboard?.writeText(Diag.text()).then(() => $('diagCopy').textContent = 'Copied ✓', () => {});
+$('diagTest').onclick = async () => { const b = $('diagTest'); b.disabled = true; b.textContent = 'Testing…';
+  const step = async (n, f) => { const t = performance.now(); try { const r = await f(); console.log(`[t] self-test ${n}: OK ${Math.round(performance.now() - t)}ms ${r || ''}`); } catch (e) { console.error(`self-test ${n}: FAILED ${e.message || e}`); } };
+  await step('OCR engine', async () => { const w = await ocrWorker(); const c = document.createElement('canvas'); c.width = 400; c.height = 80; const g = c.getContext('2d'); g.fillStyle = '#fff'; g.fillRect(0, 0, 400, 80); g.fillStyle = '#000'; g.font = 'bold 40px sans-serif'; g.fillText('JAXSON DART', 10, 55);
+    const t = (await w.recognize(c.toDataURL())).data.text.trim(); if (!/JAXSON|DART/i.test(t)) throw new Error('read: ' + t); return t; });
+  await step('artwork model', async () => { await ID.loadModel(); });
+  await step('card database', async () => { const r = await Net.raw('https://api.tcgdex.net/v2/en/cards/base1-4'); if (!r.ok) throw new Error('HTTP ' + r.status); });
+  await step('Wikipedia', async () => { const r = await Net.raw('https://en.wikipedia.org/w/api.php?action=query&list=search&srsearch=Jaxson%20Dart&format=json&origin=*'); if (!r.ok) throw new Error('HTTP ' + r.status); });
+  if (AI.available()) await step('AI server', async () => { const r = await Net.raw(AI.proxy() + '/api/health'); const j = await r.json(); return 'vision: ' + JSON.stringify(j.vision); });
+  b.disabled = false; b.textContent = 'Run self-test'; showDiag(); };
+function loadSettings() { showDiag(); $('proxyUrl').value = localStorage.getItem('proxyUrl') || ''; $('ocrOn').checked = localStorage.getItem('ocr') !== '0'; $('techOn').checked = tech();
   $('aiState').textContent = AI.available() ? 'AI vision: on' : 'AI vision: off (no server set) – on-device matching is used.'; }
 $('saveSettings').onclick = () => { localStorage.setItem('proxyUrl', $('proxyUrl').value.trim()); localStorage.setItem('ocr', $('ocrOn').checked ? '1' : '0'); localStorage.setItem('tech', $('techOn').checked ? '1' : '0'); loadSettings(); $('saveSettings').textContent = 'Saved ✓'; setTimeout(() => $('saveSettings').textContent = 'Save', 1500); };
 function syncChips() { document.querySelectorAll('.chip').forEach(c => { const on = c.dataset.game === $('game').value; c.classList.toggle('on', on); c.setAttribute('aria-checked', on); }); }

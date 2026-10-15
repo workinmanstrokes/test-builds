@@ -65,7 +65,7 @@ const ID = (() => {
   const ROI = { name: [0.03, 0.02, 0.8, 0.09], bottom: [0, 0.89, 1, 0.11], ygoCode: [0.45, 0.715, 0.53, 0.05], top: [0, 0, 1, 0.16] };
   let _cw = null; // second worker restricted to code characters (numbers, set codes)
   async function codeWorker() { if (_cw) return _cw; await ocrWorker(); const base = new URL('vendor/tesseract/', location.href).href;
-    _cw = await Tesseract.createWorker('eng', 1, { workerPath: base + 'worker.min.js', corePath: base, langPath: base, gzip: true, workerBlobURL: false });
+    _cw = await Tesseract.createWorker('eng', 1, { workerPath: base + 'worker.min.js', corePath: base, langPath: base, gzip: false, workerBlobURL: false });
     await _cw.setParameters({ tessedit_char_whitelist: '0123456789/ABCDEFGHIJKLMNOPQRSTUVWXYZ-', tessedit_pageseg_mode: '11' }); return _cw; }
   async function ocrAll(cv, game) {
     const w = await ocrWorker(), rd = async r => (await w.recognize(region(cv, r).toDataURL('image/png'))).data.text;

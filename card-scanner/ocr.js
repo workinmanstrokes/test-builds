@@ -1,4 +1,6 @@
 // Offline OCR (bundled tesseract.js) with auto-crop, contrast boost and multiple passes.
+// NOTE: eng.traineddata ships UNcompressed – Android's asset packager silently un-gzips *.gz files (it became eng.traineddata in the APK),
+// so requesting eng.traineddata.gz 404'd inside the app and OCR never started on phones.
 let _worker = null; // a Promise for the single Tesseract worker (runs in a Web Worker, not the main thread)
 function ocrWorker() {
   if (_worker) return _worker;
@@ -6,7 +8,8 @@ function ocrWorker() {
   _worker = (async () => {
     if (!window.Tesseract) await new Promise((res, rej) => { const s = document.createElement('script'); s.src = 'vendor/tesseract/tesseract.min.js'; s.onload = res; s.onerror = rej; document.head.appendChild(s); });
     const base = new URL('vendor/tesseract/', location.href).href;
-    const w = await Tesseract.createWorker('eng', 1, { workerPath: base + 'worker.min.js', corePath: base, langPath: base, gzip: true, workerBlobURL: false, errorHandler: e => console.error('OCR worker error', e) });
+    let fail; const failed = new Promise((_, rej) => { fail = rej; setTimeout(() => rej(new Error('OCR worker not ready after 25s')), 25000); }); failed.catch(() => {});
+    const w = await Promise.race([failed, Tesseract.createWorker('eng', 1, { workerPath: base + 'worker.min.js', corePath: base, langPath: base, gzip: false, workerBlobURL: false, errorHandler: e => { console.error('OCR worker error', e?.message || e); fail(e instanceof Error ? e : new Error(String(e))); } })]);
     console.log('[t] ocr worker loaded ' + Math.round(performance.now() - t0) + 'ms'); return w;
   })();
   _worker.catch(e => { console.error('OCR worker failed to load', e?.message || e); _worker = null; });

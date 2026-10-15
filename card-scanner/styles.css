@@ -53,3 +53,4 @@ dialog{background:var(--card);color:var(--text);border:0;border-radius:22px;widt
 @media (prefers-reduced-motion: reduce){*{animation:none!important;transition:none!important;scroll-behavior:auto!important}}
 
 .chipsLabel{margin:6px 0 -6px;font-weight:600}.stageType{display:flex;flex-direction:column;gap:6px}.chips.small .chip{min-height:40px;padding:6px 12px;font-size:.9rem}#readBox label{font-weight:600;margin-top:6px;display:block}#readBox input{width:100%}#readText{white-space:pre-wrap;max-height:30vh;overflow:auto;font-size:.8rem}
+#diag{white-space:pre-wrap;font-size:.75rem;max-height:50vh;overflow:auto;background:#0004;padding:8px;border-radius:8px}

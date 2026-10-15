@@ -1,5 +1,5 @@
-const C = 'cs-v8', SHELL = ['./', 'net.js', 'identify.js', 'ai.js', 'vendor/capacitor.js', 'idcore.js', 'sports.js', 'data/ygo-names.json', 'index.html', 'styles.css', 'app.js', 'pricing.js', 'ocr.js', 'centering.js', 'icon.svg', 'privacy.html', 'manifest.webmanifest',
-  'vendor/tesseract/tesseract.min.js', 'vendor/tesseract/worker.min.js', 'vendor/tesseract/tesseract-core-simd-lstm.wasm.js', 'vendor/tesseract/tesseract-core-lstm.wasm.js', 'vendor/tesseract/eng.traineddata.gz', 'vendor/ort/ort.wasm.min.js'];
+const C = 'cs-v9', SHELL = ['./', 'net.js', 'identify.js', 'ai.js', 'vendor/capacitor.js', 'idcore.js', 'diag.js', 'sports.js', 'data/ygo-names.json', 'index.html', 'styles.css', 'app.js', 'pricing.js', 'ocr.js', 'centering.js', 'icon.svg', 'privacy.html', 'manifest.webmanifest',
+  'vendor/tesseract/tesseract.min.js', 'vendor/tesseract/worker.min.js', 'vendor/tesseract/tesseract-core-simd-lstm.wasm.js', 'vendor/tesseract/tesseract-core-lstm.wasm.js', 'vendor/tesseract/eng.traineddata', 'vendor/ort/ort.wasm.min.js'];
 self.addEventListener('install', e => e.waitUntil(caches.open(C).then(c => c.addAll(SHELL)).then(() => self.skipWaiting())));
 self.addEventListener('activate', e => e.waitUntil(caches.keys().then(k => Promise.all(k.filter(x => x !== C).map(x => caches.delete(x)))).then(() => self.clients.claim())));
 self.addEventListener('fetch', e => { const u = new URL(e.request.url); if (e.request.method !== 'GET') return;
