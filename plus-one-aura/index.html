@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+  <meta name="theme-color" content="#0b0716">
+  <meta name="description" content="+1 Aura: Tap to Ascend. Every tap is +1. Build your aura, unlock new stages.">
+  <title>+1 Aura: Tap to Ascend</title>
+  <link rel="icon" href="icon.png">
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <canvas id="stage" aria-label="Tap Aurie to gain aura"></canvas>
+  <div id="hud">
+    <header class="top">
+      <div class="lvl"><span id="lvl">LV 1</span><i><b id="lvlbar"></b></i></div>
+      <div class="total"><div id="aura" class="big">0</div><div class="sub"><span id="cur">Aura</span> · <span id="rate">0</span> <span id="rateLbl">aura/s</span></div></div>
+      <button id="btnSettings" class="icon" aria-label="Settings">⚙</button>
+    </header>
+    <button id="stageChip" class="chip"><span id="stageName">Ember Wilds</span><i><b id="stagebar"></b></i><small id="stageNext"></small></button>
+    <div class="side">
+      <button id="btnBoost" class="reward"><span class="tv">▶</span><b>2x</b><small id="boostLbl">Boost</small></button>
+      <button id="btnSkip" class="reward skip" hidden><span class="tv">▶</span><b>⏭</b><small>Skip stage</small></button>
+    </div>
+    <div id="tapHint" class="hint">TAP AURIE</div>
+    <div class="meters">
+      <div id="streak" class="streak"></div>
+      <div class="heat"><i><b id="heatbar"></b></i><span>HEAT</span></div>
+    </div>
+    <nav id="shop" class="shop" aria-label="Upgrades"></nav>
+  </div>
+
+  <div id="modal" class="modal" hidden><div class="card" id="modalCard"></div></div>
+  <div id="banner" class="banner"></div>
+  <div id="toast" class="toast" role="status" aria-live="polite"></div>
+  <script type="module" src="js/app.js"></script>
+</body>
+</html>

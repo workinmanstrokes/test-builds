@@ -1,0 +1,1 @@
+{ "name": "+1 Aura: Tap to Ascend", "short_name": "+1 Aura", "start_url": "./", "display": "standalone", "orientation": "portrait", "background_color": "#0b0716", "theme_color": "#0b0716", "icons": [{ "src": "icon.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" }] }
