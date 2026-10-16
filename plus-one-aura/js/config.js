@@ -14,7 +14,7 @@ export const ADS = {
 //  - native: true once android/app/google-services.json is present (configure.mjs flips this)
 //  - web: put the web app config in js/firebase-config.js (see docs/FIREBASE.md); null = no-op
 export const ANALYTICS = {
-  native: false,  // @cfg analytics-native
+  native: true,  // @cfg analytics-native
 };
 
 export const GAME = {

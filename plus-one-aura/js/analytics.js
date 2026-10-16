@@ -7,20 +7,25 @@ import { FIREBASE_WEB } from './firebase-config.js';
 const cap = window.Capacitor;
 const nativeFA = ANALYTICS.native && cap?.isNativePlatform?.() ? cap.Plugins?.FirebaseAnalytics : null;
 let webLog = null; const queue = [];
+// Diagnostic status for tests / Settings: off | loading | ready | unsupported | error:<msg>
+export const analyticsStatus = { web: 'off' };
+window.__aura_analytics = analyticsStatus;
 const log = (window.__aura_events = window.__aura_events || []);
 export const analyticsMode = () => (nativeFA ? 'firebase-native' : FIREBASE_WEB ? 'firebase-web' : 'off');
 
 export async function initAnalytics() {
   if (nativeFA || !FIREBASE_WEB || cap?.isNativePlatform?.()) return;
+  analyticsStatus.web = 'loading';
   try {
-    const v = '11.0.2';
+    const v = '12.6.0';
     const { initializeApp } = await import(`https://www.gstatic.com/firebasejs/${v}/firebase-app.js`);
     const { getAnalytics, logEvent, isSupported } = await import(`https://www.gstatic.com/firebasejs/${v}/firebase-analytics.js`);
-    if (!(await isSupported())) return;
+    if (!(await isSupported())) { analyticsStatus.web = 'unsupported'; return; }
     const a = getAnalytics(initializeApp(FIREBASE_WEB));
     webLog = (n, p) => logEvent(a, n, p);
+    analyticsStatus.web = 'ready'; analyticsStatus.app = a.app.options.appId;
     queue.splice(0).forEach(([n, p]) => webLog(n, p));
-  } catch (e) { console.warn('analytics off', e); }
+  } catch (e) { analyticsStatus.web = 'error:' + (e?.code || e?.message); console.warn('analytics off', e); }
 }
 
 /** Log an event (snake_case name, flat params). Never throws. */
