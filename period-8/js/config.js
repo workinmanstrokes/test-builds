@@ -1,0 +1,15 @@
+// Period 8 runtime config. scripts/configure.mjs rewrites the @cfg lines from CI secrets for --release builds only.
+// Ad unit ids below are Google's official AdMob TEST ids. Real units go in ONLY for release AABs.
+// The AdMob *App ID* is native: android/gradle.properties ADMOB_APP_ID or the ADMOB_APP_ID CI secret.
+export const ADS = {
+  enabled: true,
+  testing: true,                                          // @cfg testing
+  rewardedId: 'ca-app-pub-3940256099942544/5224354917',   // @cfg rewarded (TEST)
+  rewardCooldownMs: 15e3,   // min gap between optional rewarded ads
+  rewardDailyCap: 30,
+  // Rewarded only, by design: NO interstitials anywhere in Period 8.
+};
+// $1.99 "Remove ads" (makes hints + streak saves free, no video). Scaffolded but OFF until a Play product exists.
+export const IAP = { enabled: false, removeAdsSku: 'period8_remove_ads', price: '$1.99' };
+export const PRIVACY_URL = 'https://workinmanstrokes.github.io/test-builds/period-8/privacy.html';
+export const PLAY_URL = 'https://workinmanstrokes.github.io/test-builds/period-8/';

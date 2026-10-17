@@ -1,0 +1,1 @@
+{ "name": "Period 8", "short_name": "Period 8", "start_url": ".", "display": "fullscreen", "orientation": "portrait", "background_color": "#0a090c", "theme_color": "#0a090c", "icons": [{ "src": "icon.png", "sizes": "512x512", "type": "image/png" }] }
