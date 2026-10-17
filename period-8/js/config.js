@@ -11,5 +11,10 @@ export const ADS = {
 };
 // $1.99 "Remove ads" (makes hints + streak saves free, no video). Scaffolded but OFF until a Play product exists.
 export const IAP = { enabled: false, removeAdsSku: 'period8_remove_ads', price: '$1.99' };
+// Firebase Analytics (project period-8-dd, Spark/free). native flips to true in configure.mjs when
+// android/app/google-services.json is present; web uses js/firebase-config.js.
+export const ANALYTICS = {
+  native: false,  // @cfg analytics-native
+};
 export const PRIVACY_URL = 'https://workinmanstrokes.github.io/test-builds/period-8/privacy.html';
 export const PLAY_URL = 'https://workinmanstrokes.github.io/test-builds/period-8/';

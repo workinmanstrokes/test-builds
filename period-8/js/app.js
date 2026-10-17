@@ -5,7 +5,7 @@ import * as G from './game.js';
 import * as sfx from './audio.js';
 import { initAds, showRewarded, rewardGate, adsInfo, showPrivacyOptions } from './ads.js';
 import { iapInfo, buyRemoveAds } from './iap.js';
-import { track } from './analytics.js';
+import { track, initAnalytics } from './analytics.js';
 import { buzzPhone, thud, setHaptics } from './haptics.js';
 import { playScare } from './scare.js';
 import { drawEnding } from './endings.js';
@@ -81,7 +81,7 @@ function compass() {
 async function choose(choice) {
   if (busy || !run) return; busy = true; view.enabled = false; sfx.unlockAudio();
   const cur = run.current, res = G.decide(run, save, choice); persist();
-  track('decision', { choice, correct: res.correct, anomaly: cur.anomaly || 'none', streak: res.streak });
+  track('loop_result', { result: res.kind, choice, correct: res.correct ? 1 : 0, scene: cur.scene, anomaly: cur.anomaly || 'none', streak: res.streak, loop: run.loops, misses: run.misses });
   if (choice === 'back') { sfx.turn(); const from = view.camX; await animate(520, k => { view.camX = from + ease(k) * 2000; view.fade = k * 0.3; }); }
   if (res.kind === 'missed') { sfx.stopLoops(); thud(); await scare(); return reveal(res); }
   for (let i = 0; i < 4; i++) setTimeout(() => sfx.step(i), i * 210);
@@ -132,7 +132,7 @@ $('#btnPause').onclick = () => { sfx.ui(); pauseMenu(); };
 
 /* ------------------------------------------------------------ endings */
 async function ending(id) {
-  save.run = null; persist(); track('ending', { id, loops: run.loops, misses: run.misses });
+  save.run = null; persist(); track('ending_reached', { ending: id, loops: run.loops, misses: run.misses, minutes: Math.round((Date.now() - run.startedAt) / 60000), pass: run.pass ? 1 : 0, endings_found: Object.keys(save.endings).length });
   view.enabled = false; sfx.stopLoops();
   if (id !== 'bad') { sfx.bell(); view.fade = 1; await sleep(1400); }
   else { sfx.falseAlarm(); await sleep(900); }
@@ -214,4 +214,11 @@ function frame(t) {
 }
 document.addEventListener('visibilitychange', () => { if (document.hidden) { snapshotRun(); } });
 window.__p8 = { get run() { return run; }, save, view, choose, G, byId, persist, title, openClip, get clip() { return clip; } };
-initAds(); track('app_open'); title(); requestAnimationFrame(frame);
+// first launch + day-N / D1 return (Firebase also logs first_open / session_start automatically on Android)
+const DAY = 86400e3, firstOpen = !save.installedAt; if (firstOpen) save.installedAt = Date.now();
+const day = Math.floor((new Date().setHours(0, 0, 0, 0) - new Date(save.installedAt).setHours(0, 0, 0, 0)) / DAY);
+initAnalytics(); initAds();
+if (firstOpen) track('first_launch');
+if (day > 0 && day !== save.lastDayLogged) { track('return_day', { day }); if (day === 1) track('d1_return'); save.lastDayLogged = day; }
+track('session_begin', { day, endings_found: Object.keys(save.endings).length, best: save.best }); persist();
+title(); requestAnimationFrame(frame);
