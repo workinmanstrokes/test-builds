@@ -104,7 +104,7 @@ export default {
       body.addColorStop(0, '#ffffff'); body.addColorStop(0.5, '#fff1b0'); body.addColorStop(1, '#f2a93b');
       ctx.fillStyle = body; ctx.beginPath(); ctx.arc(0, 0, r, 0, TAU); ctx.fill();
     }
-    if (heat > 0.05) { ctx.globalCompositeOperation = 'source-atop'; ctx.fillStyle = `rgba(255,40,20,${heat * 0.45})`; ctx.fillRect(-r * 2, -r * 2, r * 4, r * 4); ctx.globalCompositeOperation = 'source-over'; }
+    if (heat > 0.05) { const hg2 = ctx.createRadialGradient(0, 0, 0, 0, 0, r); hg2.addColorStop(0, `rgba(255,40,20,${heat * 0.45})`); hg2.addColorStop(0.85, `rgba(255,40,20,${heat * 0.35})`); hg2.addColorStop(1, 'rgba(255,40,20,0)'); ctx.fillStyle = hg2; ctx.beginPath(); ctx.arc(0, 0, r, 0, TAU); ctx.fill(); } // tint the body only
     drawFace(ctx, r, t, o);
     ctx.restore();
   },

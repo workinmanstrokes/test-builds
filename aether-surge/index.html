@@ -3,6 +3,16 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <!-- ios-pwa -->
+  <link rel="manifest" href="manifest.webmanifest">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Aether Surge">
+  <link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png">
+  <meta name="theme-color" content="#06060e">
+  <script src="ios.js"></script>
+  <!-- /ios-pwa -->
 <title>Aether Surge</title>
 <link rel="icon" href="data:,">
 <style>
@@ -36,7 +46,12 @@ html,body{width:100%;height:100%;overflow:hidden;background:#06060e;font-family:
 .rbtn{position:absolute;top:calc(env(safe-area-inset-top,0px) + 10px);width:38px;height:38px;border-radius:50%;background:rgba(0,0,0,.55);border:1px solid rgba(140,180,255,.4);color:#c8e0ff;font-size:15px;display:none;align-items:center;justify-content:center;pointer-events:auto;z-index:20}
 #mute{right:14px}
 #pauseBtn{right:58px}
-.ov{position:fixed;inset:0;background:rgba(4,6,16,.94);display:none;flex-direction:column;align-items:center;justify-content:center;pointer-events:auto;z-index:50;padding:20px;text-align:center}
+.ov{position:fixed;inset:0;background:rgba(4,6,16,.94);display:none;flex-direction:column;align-items:center;justify-content:flex-start;overflow-y:auto;touch-action:pan-y;pointer-events:auto;z-index:50;padding:max(20px,env(safe-area-inset-top)) 20px max(20px,env(safe-area-inset-bottom));text-align:center}
+/* centered when it fits, scrollable when it doesn't (small phones with both reward buttons) */
+.ov>:first-child{margin-top:auto}.ov>:last-child{margin-bottom:auto}
+.ov *{touch-action:pan-y}
+/* keep menu buttons clear of the bottom AdMob banner */
+body.ad-banner #start,body.ad-banner #end{padding-bottom:calc(76px + env(safe-area-inset-bottom))}
 .ov h1{font-size:34px;font-weight:900;background:linear-gradient(135deg,#6ab0ff,#ffe566,#ff6b9a);-webkit-background-clip:text;background-clip:text;color:transparent;margin-bottom:8px}
 .ov p{font-size:14px;color:#a8c8ff;margin-bottom:16px;max-width:300px}
 .btn{background:linear-gradient(135deg,#2a6ae0,#1a4aaa);border:2px solid #8ab8ff;color:#fff;font-size:16px;font-weight:800;padding:12px 32px;border-radius:26px;margin:6px;cursor:pointer;min-width:200px}
@@ -123,6 +138,8 @@ html,body{width:100%;height:100%;overflow:hidden;background:#06060e;font-family:
 .btn{transition:transform .12s,filter .12s}.btn:active{transform:scale(.96);filter:brightness(1.15)}
 #banner.pop{animation:pop .32s ease-out}
 .rbtn,.abt{transition:transform .1s}
+/* short phones: compact end-of-run screen */
+@media (max-height:700px){.stats{gap:2px 14px;font-size:12px;margin-bottom:10px}#end .btn{padding:10px 28px;margin:4px}#end h1{font-size:28px}}
 </style>
 </head>
 <body>
@@ -157,6 +174,7 @@ html,body{width:100%;height:100%;overflow:hidden;background:#06060e;font-family:
   <button class="btn alt" id="altarBtn">✦ RESONANCE ALTAR</button>
   <button class="btn alt" id="shakeBtn2">📳 Screen shake: ON</button>
   <button class="btn alt" id="gfxBtn2">✨ Graphics: HIGH</button>
+  <button class="btn alt" id="privacyBtn" style="display:none">🔒 Privacy choices</button>
 </div>
 <div class="ov" id="lvlUp"><h1 id="lvlTitle" style="font-size:22px;margin-bottom:4px">POWER UP</h1><p id="lvlSub" style="font-size:12px;margin-bottom:10px"></p><div class="ug" id="ug"></div><button class="btn alt" id="reroll">↻ REROLL</button></div>
 <div class="ov" id="end"><h1 id="endT">DEFEATED</h1><div id="endRec">★ NEW RECORD ★</div><div class="stats" id="endS"></div><div id="endM"></div><button class="btn" id="doubleBtn" style="display:none;background:linear-gradient(135deg,#1a8a8a,#0f5a6a);border-color:#9affe0">✦ DOUBLE MOTES (Watch Ad)</button><button class="btn" id="reviveBtn" style="display:none;background:linear-gradient(135deg,#22a05a,#157a3f);border-color:#8affc0">▶ REVIVE (Watch Ad)</button><button class="btn" id="nx">PLAY AGAIN</button><button class="btn alt" id="menuBtn">MENU</button></div>

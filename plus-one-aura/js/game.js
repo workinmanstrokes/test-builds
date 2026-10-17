@@ -25,7 +25,7 @@ export function newState(now = Date.now()) {
     up: { power: 0, auto: 0, combo: 0, cool: 0, crit: 0 },
     boostUntil: 0, installedAt: now, lastSeen: now, lastDayLogged: 0,
     ads: { day: '', count: 0, lastReward: 0, earned: 0 },
-    settings: { sound: true, vibe: true }, skin: null, noAds: false, best: { combo: 0 },
+    settings: { sound: true, vibe: true, analytics: true }, skin: null, noAds: false, best: { combo: 0 },
     // transient (not saved)
     rt: freshRuntime(),
   };

@@ -1,0 +1,72 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Privacy Policy · Fishing Almanac</title><link rel="icon" type="image/png" href="./icons/icon-192.png">
+<style>
+  body { font: 16px/1.6 Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; color: #0B1117; background: #F1F3F6; margin: 0; }
+  main { max-width: 760px; margin: 0 auto; padding: 28px 20px 60px; background: #fff; min-height: 100vh; box-sizing: border-box; }
+  h1 { font-size: 28px; margin: 8px 0 4px; } h2 { font-size: 19px; margin: 28px 0 6px; } p, li { color: #2A333D; }
+  .meta { color: #5A6572; font-size: 14px; } a { color: #0B9C64; } table { border-collapse: collapse; width: 100%; font-size: 14px; }
+  td, th { border: 1px solid #E5E8EC; padding: 8px; vertical-align: top; text-align: left; } th { background: #F7F8FA; }
+  .back { display: inline-block; margin-bottom: 8px; font-weight: 600; text-decoration: none; }
+</style></head>
+<body><main>
+<a class="back" href="./">← Back to Fishing Almanac</a>
+<h1>Privacy Policy</h1>
+<p class="meta">Fishing Almanac · developer: <strong>Diddlerrr</strong> · contact: <a href="mailto:mscofield1588@gmail.com">mscofield1588@gmail.com</a><br>Effective October 2, 2026</p>
+
+<p>Fishing Almanac ("the app") helps you plan fishing trips: water reports, satellite maps, depth contours, weather, solunar tables and a personal catch log. This policy explains what data the app uses, where it goes, and the choices you have. We do not sell your data, show ads, or use advertising or analytics trackers.</p>
+
+<h2>1. Who can use the app</h2>
+<p>The app is intended for people aged <strong>13 and older</strong>. It is not directed to children under 13, and we do not knowingly collect personal information from them. If you believe a child under 13 has used the app, contact us and we will delete the associated data.</p>
+
+<h2>2. Anonymous sign-in (no account)</h2>
+<p>The app signs you in with <strong>Firebase Anonymous Authentication</strong> (Google). This creates a random user ID on your device. We never ask for your name, email or phone number. The ID is used only to keep your catch log private to you, and to apply fair-use limits on the AI report. If you uninstall the app or clear its data, the anonymous ID is lost and cannot be recovered.</p>
+
+<h2>3. Location</h2>
+<p>With your permission, the app uses your device's precise or approximate location to find the nearest water, center the map, place pins, record where a catch happened, and get local weather, stream-gauge, solunar and depth data. Location is used on your device. It is only sent off the device as follows:</p>
+<ul>
+  <li><strong>Map and data services</strong>, which receive the coordinates or map area you're viewing so they can return data: Esri/ArcGIS Online (satellite imagery), OpenStreetMap Nominatim and Overpass (place search and nearby water), Open-Meteo (weather forecast), the U.S. Geological Survey (stream gauges) and the Michigan DNR (lake depth surveys). These services get your device's IP address like any website you visit. They do not receive your anonymous ID.</li>
+  <li><strong>Your catch log</strong>, if you attach a GPS position or map pin to a catch (see section 5).</li>
+  <li><strong>The AI fishing report</strong>, when you ask for one near you (see section 6).</li>
+</ul>
+<p>The app does not track your location in the background. Location is read only while you use a feature that needs it. You can deny or revoke location permission in Android Settings and still search for waters by name.</p>
+
+<h2>4. Photos and camera</h2>
+<p>You can add a photo to a catch by taking one or choosing one from your gallery. The app shrinks the photo and stores it with that catch, on your device and in your private catch log in the cloud. Photos are never posted publicly unless you tick "Also post to the public leaderboard". In that case the photo, species, size, display name, avatar and water name become visible to other users. The location of the catch is never posted. The app does not access your other photos.</p>
+
+<h2>5. Catch log and cloud storage (Cloud Firestore)</h2>
+<p>Catches you log are saved on your device first. When you are online, they are copied to <strong>Google Cloud Firestore</strong> under your anonymous ID. Each catch includes the species, size, bait, notes, photo, time, water name, the spot (if you chose one), and the conditions at the time: weather, moon, solunar period, and nearby water temperature. Security rules allow only your anonymous ID to read or change these records. Deleting a catch in the app deletes it from Firestore too. Saved waters, private spots, map pins, gear, trips and offline map data stay on your device only.</p>
+
+<h2>6. AI fishing report (sent to Anthropic)</h2>
+<p>When you ask for a fishing report, the app sends a short request to our Firebase Cloud Function. The request contains the water name you typed and/or the nearby coordinates. The function builds the prompt and sends it to <strong>Anthropic</strong> (the Claude API), which generates the report and may use web search to find current information about that water. The request sent to Anthropic does not include your anonymous ID, photos, catch log, or any account details. Anthropic processes it under its commercial terms and privacy policy (<a href="https://www.anthropic.com/legal/privacy">anthropic.com/legal/privacy</a>). To prevent abuse, the function keeps short-lived counters keyed by your anonymous ID and by a one-way hash of your IP address. These are deleted automatically within about 2 days.</p>
+
+<h2>7. App integrity checks</h2>
+<p>To keep the report service and database from being misused by bots and modified apps, the app uses <strong>Firebase App Check</strong>. On Android it uses Google Play Integrity; on the web it uses Google reCAPTCHA v3. These services may process device and browser signals under <a href="https://policies.google.com/privacy">Google's privacy policy</a>. The app also loads its typeface from Google Fonts.</p>
+
+<h2>8. Notifications</h2>
+<p>Bite-time alerts are scheduled locally on your phone from solunar times and the forecast. No push server is involved. You can turn them off in the app or in Android Settings.</p>
+
+<h2>9. Summary</h2>
+<table>
+<tr><th>Data</th><th>Purpose</th><th>Where it goes</th><th>Retention</th></tr>
+<tr><td>Location</td><td>Nearby water, map, weather, gauges, catch spot</td><td>Device; the map/data services listed in §3; your catch log; the AI report</td><td>On device until you delete it; catch log until you delete the catch</td></tr>
+<tr><td>Photos</td><td>Catch log</td><td>Device; your private Firestore log; public leaderboard only if you opt in</td><td>Until you delete the catch</td></tr>
+<tr><td>Anonymous user ID</td><td>Keep your log private; fair-use limits</td><td>Firebase Authentication, Firestore</td><td>Until the app's data is cleared</td></tr>
+<tr><td>Water name / coordinates for a report</td><td>Generate the AI report</td><td>Our Cloud Function, Anthropic</td><td>Not stored by us after the response</td></tr>
+<tr><td>Hashed IP + request counters</td><td>Rate limiting</td><td>Firestore (server only)</td><td>About 2 days</td></tr>
+</table>
+
+<h2>10. Your choices and deleting data</h2>
+<ul>
+  <li>Deny location, camera or notification permission at any time in Android Settings.</li>
+  <li>Delete individual catches in the Catch log. This also deletes them from the cloud.</li>
+  <li>Uninstall the app or clear its storage to remove everything kept on the device.</li>
+  <li>Email <a href="mailto:mscofield1588@gmail.com">mscofield1588@gmail.com</a> to ask us to delete cloud data or a leaderboard entry, or with any privacy question. We aim to reply within 30 days.</li>
+</ul>
+
+<h2>11. Security</h2>
+<p>All network traffic uses HTTPS. Access to your catch log is restricted by Firestore security rules to your anonymous ID. The Anthropic API key is kept server-side and never shipped in the app.</p>
+
+<h2>12. Changes</h2>
+<p>If this policy changes, we will update the effective date above. If the change is significant, we will also post a notice in the app.</p>
+</main></body></html>

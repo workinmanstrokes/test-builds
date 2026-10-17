@@ -23,11 +23,14 @@ $('diagTest').onclick = async () => { const b = $('diagTest'); b.disabled = true
   await step('artwork model', async () => { await ID.loadModel(); });
   await step('card database', async () => { const r = await Net.raw('https://api.tcgdex.net/v2/en/cards/base1-4'); if (!r.ok) throw new Error('HTTP ' + r.status); });
   await step('Wikipedia', async () => { const r = await Net.raw('https://en.wikipedia.org/w/api.php?action=query&list=search&srsearch=Jaxson%20Dart&format=json&origin=*'); if (!r.ok) throw new Error('HTTP ' + r.status); });
-  if (AI.available()) await step('AI server', async () => { const r = await Net.raw(AI.proxy() + '/api/health'); const j = await r.json(); return 'vision: ' + JSON.stringify(j.vision); });
+  if (AI.available()) await step('AI helper (Firebase)', async () => { const c = document.createElement('canvas'); c.width = 300; c.height = 420; const g = c.getContext('2d'); g.fillStyle = '#fff'; g.fillRect(0, 0, 300, 420); g.fillStyle = '#000'; g.font = 'bold 28px sans-serif'; g.fillText('Pikachu', 20, 50); g.fillText('58/102', 180, 400);
+    const v = await AI.identify(c.toDataURL('image/jpeg'), ''); return `${v.model}: ${v.name} ${v.number}`; });
   b.disabled = false; b.textContent = 'Run self-test'; showDiag(); };
-function loadSettings() { showDiag(); $('proxyUrl').value = localStorage.getItem('proxyUrl') || ''; $('ocrOn').checked = localStorage.getItem('ocr') !== '0'; $('techOn').checked = tech();
-  $('aiState').textContent = AI.available() ? 'AI vision: on' : 'AI vision: off (no server set) – on-device matching is used.'; }
-$('saveSettings').onclick = () => { localStorage.setItem('proxyUrl', $('proxyUrl').value.trim()); localStorage.setItem('ocr', $('ocrOn').checked ? '1' : '0'); localStorage.setItem('tech', $('techOn').checked ? '1' : '0'); loadSettings(); $('saveSettings').textContent = 'Saved ✓'; setTimeout(() => $('saveSettings').textContent = 'Save', 1500); };
+function loadSettings() { showDiag(); $('proxyUrl').value = localStorage.getItem('proxyUrl') || ''; $('fbConfig').value = localStorage.getItem('firebaseConfig') || ''; $('aiOn').checked = localStorage.getItem('aiOff') !== '1'; $('ocrOn').checked = localStorage.getItem('ocr') !== '0'; $('techOn').checked = tech();
+  $('aiState').textContent = AI.available() ? 'AI helper: on (Firebase AI Logic + App Check) – used alongside on-device matching.' : 'AI helper: off – on-device matching is used.'; }
+$('saveSettings').onclick = () => { localStorage.setItem('proxyUrl', $('proxyUrl').value.trim()); const fc = $('fbConfig').value.trim();
+  if (fc) { try { const o = JSON.parse(fc.replace(/^[^{]*/, '').replace(/[^}]*$/, '').replace(/(\w+)\s*:/g, '"$1":').replace(/'/g, '"').replace(/""/g, '"')); localStorage.setItem('firebaseConfig', JSON.stringify(o)); } catch { alert('That Firebase config doesn’t look right – paste the { apiKey: … } block.'); } } else localStorage.removeItem('firebaseConfig');
+  localStorage.setItem('aiOff', $('aiOn').checked ? '0' : '1'); localStorage.setItem('ocr', $('ocrOn').checked ? '1' : '0'); localStorage.setItem('tech', $('techOn').checked ? '1' : '0'); loadSettings(); $('saveSettings').textContent = 'Saved ✓'; setTimeout(() => $('saveSettings').textContent = 'Save', 1500); };
 function syncChips() { document.querySelectorAll('.chip').forEach(c => { const on = c.dataset.game === $('game').value; c.classList.toggle('on', on); c.setAttribute('aria-checked', on); }); }
 document.querySelectorAll('.chip').forEach(c => c.onclick = () => { $('game').value = c.dataset.game; localStorage.setItem('game', c.dataset.game); $('game').onchange(); if (!$('stage').hidden && photo && !$('idBtn').disabled) identify(); });
 $('game').onchange = () => { syncChips(); $('sportsFields').hidden = $('game').value !== 'sports'; $('q').placeholder = $('game').value === 'sports' ? 'Player name, e.g. Shohei Ohtani' : 'Card name, e.g. Charizard'; };
@@ -204,7 +207,7 @@ async function showDetail(c, alts) {
     ${owned ? `<p class="muted">You already have ${owned.qty || 1} of these.</p>` : ''}
     <button id="addBtn" class="primary big">＋ Add to collection</button>
     <div class="btns three"><button id="gradeBtn" class="secondary">📐 Pre-grade</button><button id="sellBtn" class="secondary">🏷️ List for sale</button><button id="wishBtn" class="secondary">♡ Wishlist</button></div>
-    <div class="btns"><button id="notRight" class="link">Not right?</button>${photo ? '<button id="adjustBtn" class="link">Adjust crop</button>' : ''}</div>
+    <div class="btns"><button id="notRight" class="link">Not right?</button>${photo ? '<button id="adjustBtn" class="link">Adjust crop</button><button id="centerBtn" class="link">📏 Check centering</button>' : ''}</div><div id="centerOut"></div>
     <details><summary>All prices &amp; sources</summary><div id="prices">${priceHtml(d)}</div>
     ${d.game === 'sports' ? `<h4>Add a sale you found</h4><div class="row"><input id="compVal" type="number" step="0.01" placeholder="Sold for $" aria-label="Sold price"><input id="compSrc" placeholder="Where (e.g. eBay)" aria-label="Where it sold"></div><input id="compDate" type="date" aria-label="Sale date"><button id="compAdd" class="secondary">Add sale</button>` : ''}</details>
   </article>`;
@@ -213,6 +216,7 @@ async function showDetail(c, alts) {
     const uid = Date.now().toString(36); col.unshift({ ...d, uid, added: today(), photo: photo ? await thumb(photo) : '', grade: null, qty: 1, tags: [], history: bp ? [{ d: today(), v: +bp.value.toFixed(2) }] : [] }); store.set(col); return { uid }; };
   $('addBtn').onclick = async () => { const r = await addToCol(); buzz(20); $('addBtn').textContent = r.dup ? `Added ✓ (you have ${r.dup})` : 'Added to collection ✓'; $('addBtn').disabled = true;
     if (r.dup) $('addBtn').textContent = `Already owned – now ×${r.dup}`; };
+  if ($('centerBtn')) $('centerBtn').onclick = async () => { const o = $('centerOut'); o.innerHTML = '<div class="spinner" aria-label="Measuring"></div>'; o.innerHTML = centeringHtml(await measureCard(photo, quad)); };
   $('gradeBtn').onclick = async () => { const r = owned ? { uid: owned.uid } : await addToCol(); gradeTarget = r.uid; go('grade'); };
   $('sellBtn').onclick = () => draftListing({ ...d, photo: photo || d.img, grade: owned?.grade });
   $('notRight').onclick = () => { if (alts && alts.length > 1) { $('altBox').hidden = false; $('altBox').querySelector('h3').textContent = 'Is it one of these?'; $('altBox').scrollIntoView({ behavior: 'smooth' }); } else openSearch(); $('manualBox').open = true; };
@@ -346,15 +350,17 @@ $('captureBtn').onclick = async () => { if (gStep >= 6) return; const p = await 
 $('gfileIn').onchange = async e => { if (e.target.files[0] && gStep < 6) addShot(await readFile(e.target.files[0])); e.target.value = ''; };
 $('analyzeBtn').onclick = async () => {
   const out = $('gradeOut'); out.innerHTML = '<div class="spinner" aria-label="Checking"></div><p class="muted">Checking your photos…</p>';
-  const f = await measureCentering(gShots[0]), b = gShots[1] ? await measureCentering(gShots[1]) : { ok: false };
+  const mc = async src => { const r = await measureCard(src); return r.ok ? r : measureCentering(src); };
+  const f = await mc(gShots[0]), b = gShots[1] ? await mc(gShots[1]) : { ok: false };
   if (!f.ok) { out.innerHTML = '<div class="errbox" role="alert"><p>We couldn’t see the card’s borders in the front photo. Retake it with the whole card on a plain, darker surface.</p><button class="primary" id="gradeRetry">Retake front photo</button></div>'; $('gradeRetry').onclick = () => { gradeReset(); }; return; }
   const cap = centeringGrade(f, b), col = store.get(), cond = await conditionEstimate(gShots[0], gShots.slice(2, 6).filter(Boolean));
   const good = f.max <= 55, word = n => n >= 9 ? 'Great' : n >= 7 ? 'Good' : n >= 5 ? 'Fair' : 'Worn';
   out.innerHTML = `<div class="result"><div class="bigPrice"><small>Best possible grade from centering</small><b>PSA ${cap}</b></div>
+   ${f.overlay ? `<img class="centerImg" src="${f.overlay}" alt="Measured borders: ${f.lr} left/right, ${f.tb} top/bottom">` : ''}
    <div class="price"><b>Front centering</b> ${f.lr} left/right · ${f.tb} top/bottom <span class="${good ? 'good' : 'bad'}">${good ? '✓ PSA 10 range' : 'Off-center for a 10'}</span></div>
    ${b.ok ? `<div class="price"><b>Back centering</b> ${b.lr} · ${b.tb} <span class="${b.max <= 75 ? 'good' : 'bad'}">${b.max <= 75 ? '✓ OK' : 'Off-center'}</span></div>` : ''}
    <div class="price"><b>Rough condition check</b><br>Corners: ${cond.corners != null ? word(cond.corners) : 'not photographed'} · Edges: ${word(cond.edges)} · Surface: ${word(cond.surface)}${cond.glare ? '<br><span class="bad">Glare in the photo – retake without reflections for a better surface check.</span>' : ''}</div>
-   <p class="muted">These are estimates from your photos, not an official grade.</p>
+   <p class="note">⚠️ Estimate only – measured from your photos, not an official PSA/BGS/SGC grade.</p>
    ${gradeTarget ? '' : col.length ? `<label>Save to card<select id="attachTo">${col.map(c => `<option value="${c.uid}">${esc(c.name)} ${esc(c.number || '')}</option>`).join('')}</select></label>` : ''}
    ${gradeTarget || col.length ? '<button id="attachBtn" class="primary big">Save to my card</button>' : '<p class="muted">Scan the card into your collection to save this result.</p>'}</div>`;
   if ($('attachBtn')) $('attachBtn').onclick = async () => { const ph = []; for (const s of gShots.filter(Boolean).slice(0, 6)) ph.push(await thumb(s)); const id = gradeTarget || $('attachTo').value;
@@ -381,3 +387,12 @@ setTimeout(() => { if ('requestIdleCallback' in window) requestIdleCallback(() =
 // If the app was killed/reloaded mid-scan (e.g. Android reclaimed memory), say so on the Scan tab instead of leaving the user lost.
 if (localStorage.getItem('scanning')) { localStorage.removeItem('scanning'); go('scan'); showStage(true); $('cropWrap').hidden = true;
   showError('Your last scan didn’t finish (the phone may have closed the app to save memory). Please scan again – tip: fill the frame with the card.', true); }
+
+function centeringHtml(m) {
+  if (!m.ok) return '<div class="errbox" role="alert"><p>We couldn’t measure the borders in this photo. Lay the card flat on a plain, darker surface, out of the sleeve if you can, and retake.</p></div>';
+  const g = psaCentering(m.max);
+  return `<div class="result centering"><img class="centerImg" src="${m.overlay}" alt="Measured borders: ${m.lr} left/right, ${m.tb} top/bottom">
+    <div class="price"><b>Left / right</b> ${m.lr}</div><div class="price"><b>Top / bottom</b> ${m.tb}</div>
+    <div class="bigPrice"><small>Centering alone allows up to</small><b>PSA ${g}</b><small>${g === 10 ? 'Within PSA 10 limits (55/45 or better)' : `Worst side ${m.max.toFixed(0)}/${(100 - m.max).toFixed(0)} – PSA 10 needs 55/45 or better`}</small></div>
+    <p class="note">⚠️ Estimate only – measured from this photo${m.found ? '' : ' (card edges weren’t detected, so this may be off)'}. Not an official grade: real graders also check the back, corners, edges and surface.</p></div>`;
+}

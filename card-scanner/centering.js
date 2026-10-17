@@ -39,3 +39,30 @@ async function conditionEstimate(front, corners) {
   const cs = []; for (const s of corners) cs.push(score((await stat(s, (b, W, H) => ({ x: 0, y: 0, w: W, h: H }))).white * 0.5));
   return { edges: score((edges.white + edgesB.white) / 2), corners: cs.length ? Math.min(...cs) : null, cornerScores: cs, surface: Math.max(1, Math.min(10, Math.round(10 - surf.glare * 80))), glare: surf.glare > 0.02 };
 }
+// Centering on the straightened card (photo → detect corners → perspective-correct), so tilt and background don't skew it.
+// Measures the printed border on each side along many scanlines, returns L/R and T/B ratios plus an overlay image.
+async function measureCard(src, quad) {
+  let canvas, found = true;
+  try { if (!quad) { const d = await ID.detect(src); quad = d.quad; found = d.found; } canvas = (await ID.rectify(src, quad)).canvas; } catch { return { ok: false }; }
+  const W = 500, H = Math.round(canvas.height * W / canvas.width), c = document.createElement('canvas'); c.width = W; c.height = H;
+  const x = c.getContext('2d', { willReadFrequently: true }); x.drawImage(canvas, 0, 0, W, H); const d = x.getImageData(0, 0, W, H).data;
+  const px = (X, Y) => { const i = (Y * W + X) * 4; return [d[i], d[i + 1], d[i + 2]]; }, diff = (a, b) => Math.abs(a[0] - b[0]) + Math.abs(a[1] - b[1]) + Math.abs(a[2] - b[2]);
+  const inset = 3; // skip the cut edge itself
+  const lim = len => Math.round(len * 0.25);
+  const next = (len, get, from) => { const ref = get(from + inset); for (let i = from + inset + 2; i < lim(len); i++) if (diff(get(i), ref) > 75 && diff(get(i + 1), ref) > 75) return i; return null; };
+  const border = (len, get) => { // first colour change from the edge; if it's a tiny background sliver left by corner detection, measure from there
+    const t1 = next(len, get, 0); if (t1 == null) return null; if (t1 > len * 0.015) return t1;
+    const t2 = next(len, get, t1); return t2 == null ? null : t2 - t1; };
+  const med = a => { a = a.filter(v => v != null).sort((p, q) => p - q); return a.length >= 4 ? a[a.length >> 1] : null; };
+  const S = { L: [], R: [], T: [], B: [] };
+  for (let k = 0; k < 15; k++) { const y = Math.round(H * (0.2 + k * 0.04)), X = Math.round(W * (0.2 + k * 0.04));
+    S.L.push(border(W, i => px(i, y))); S.R.push(border(W, i => px(W - 1 - i, y))); S.T.push(border(H, i => px(X, i))); S.B.push(border(H, i => px(X, H - 1 - i))); }
+  const L = med(S.L), R = med(S.R), T = med(S.T), B = med(S.B);
+  if (!L || !R || !T || !B) return { ok: false, found };
+  const lr = 100 * L / (L + R), tb = 100 * T / (T + B), max = Math.max(lr, 100 - lr, tb, 100 - tb);
+  x.strokeStyle = '#22d3ee'; x.lineWidth = 2; x.setLineDash([6, 4]); x.strokeRect(L, T, W - L - R, H - T - B); x.setLineDash([]); x.strokeStyle = '#f97316'; x.strokeRect(1, 1, W - 2, H - 2);
+  x.fillStyle = '#000a'; x.fillRect(0, H / 2 - 14, 70, 28); x.fillRect(W - 70, H / 2 - 14, 70, 28); x.fillStyle = '#fff'; x.font = 'bold 16px sans-serif';
+  x.fillText(lr.toFixed(0) + '%', 8, H / 2 + 6); x.fillText((100 - lr).toFixed(0) + '%', W - 62, H / 2 + 6);
+  return { ok: true, found, lr: `${lr.toFixed(1)} / ${(100 - lr).toFixed(1)}`, tb: `${tb.toFixed(1)} / ${(100 - tb).toFixed(1)}`, max, px: { L, R, T, B }, overlay: c.toDataURL('image/jpeg', 0.85) };
+}
+const psaCentering = max => [[55, 10], [60, 9], [65, 8], [70, 7], [80, 6], [85, 5], [90, 4]].find(([m]) => max <= m)?.[1] || 3; // PSA front-centering limits

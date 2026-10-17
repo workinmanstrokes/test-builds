@@ -1,9 +1,10 @@
 // Period 8 runtime config. scripts/configure.mjs rewrites the @cfg lines from CI secrets for --release builds only.
 // Ad unit ids below are Google's official AdMob TEST ids. Real units go in ONLY for release AABs.
-// The AdMob *App ID* is native: android/gradle.properties ADMOB_APP_ID or the ADMOB_APP_ID CI secret.
+// The AdMob *App ID* is native: release builds only, from the ADMOB_APP_ID secret via configure.mjs --release.
 export const ADS = {
   enabled: true,
   testing: true,                                          // @cfg testing
+  maxAdContentRating: 'Teen',                             // matches the AdMob app's max ad content rating (T)
   rewardedId: 'ca-app-pub-3940256099942544/5224354917',   // @cfg rewarded (TEST)
   rewardCooldownMs: 15e3,   // min gap between optional rewarded ads
   rewardDailyCap: 30,

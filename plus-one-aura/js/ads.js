@@ -2,7 +2,7 @@
 // Placements: boost (2x for 3 min), revive (after overheat), skip (next stage), offline (double away earnings).
 // Web build: no AdMob, so a 3-second "TEST AD" overlay stands in for a rewarded ad.
 import { ADS } from './config.js';
-import { track } from './analytics.js';
+import { track, setAnalyticsConsent } from './analytics.js';
 import { isPortal, portalRewarded, portalReady } from './portal.js';
 import { setSound } from './audio.js';
 const cap = window.Capacitor;
@@ -18,12 +18,21 @@ export async function initAds() {
     await AdMob.initialize({ initializeForTesting: ADS.testing });
     let info = await AdMob.requestConsentInfo();
     if (info.isConsentFormAvailable && info.status === 'REQUIRED') info = await AdMob.showConsentForm();
-    canRequest = info.canRequestAds !== false;
-    privacyRequired = info.privacyOptionsRequirementStatus === 'REQUIRED';
+    applyConsent(info);
     ready = true; preload();
   } catch (e) { console.warn('ads init failed', e); }
 }
-export async function showPrivacyOptions() { try { await AdMob?.showPrivacyOptionsForm(); } catch {} }
+// UMP outcome drives both ad requests and Firebase Analytics collection.
+function applyConsent(info) {
+  canRequest = info.canRequestAds !== false;
+  privacyRequired = info.privacyOptionsRequirementStatus === 'REQUIRED';
+  setAnalyticsConsent(canRequest && (info.status === 'OBTAINED' || info.status === 'NOT_REQUIRED'));
+}
+/** Re-open the UMP form (Settings > Privacy options), then re-read consent. */
+export async function showPrivacyOptions() {
+  if (!AdMob) return;
+  try { await AdMob.showPrivacyOptionsForm(); applyConsent(await AdMob.requestConsentInfo()); } catch (e) { console.warn('privacy options', e); }
+}
 async function preload() { if (!ready || !canRequest || loaded) return; try { await AdMob.prepareRewardVideoAd({ adId: ADS.rewardedId, isTesting: ADS.testing }); loaded = true; } catch { loaded = false; } }
 
 /** Optional-ad gating (cooldown + daily cap) stored in the save so it survives restarts. Revive bypasses cooldown. */

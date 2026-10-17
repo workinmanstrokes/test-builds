@@ -878,6 +878,7 @@ function toggleGfx(){GF.autoLowered=false;GF.set(GF.q==="high"?"low":"high","use
 $("gfxBtn").addEventListener("click",toggleGfx);$("gfxBtn2").addEventListener("click",toggleGfx);renderGfx();
 GF.listeners.push(function(q,why){renderGfx();if(why==="auto")banner("Graphics set to LOW to keep it smooth",false);});
 $("go").addEventListener("click",startGame);
+$("privacyBtn").addEventListener("click",function(){N.showPrivacyOptions();});
 $("nx").addEventListener("click",function(){N.maybeInterstitial(startGame);});
 $("menuBtn").addEventListener("click",backToStart);
 $("pauseBtn").addEventListener("click",function(e){e.stopPropagation();pauseGame();});
@@ -925,7 +926,8 @@ N.init({
     else if(G.state==="start")N.exitApp();
   },
   onBackground:function(){pauseGame();},
-  onRewardReady:updateAdBtns
+  onRewardReady:updateAdBtns,
+  onPrivacy:function(req){$("privacyBtn").style.display=req?"block":"none";}
 });
 N.showBanner();
 $("start").style.display="flex";

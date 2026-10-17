@@ -6,7 +6,7 @@ import { createFx } from './fx.js';
 import { unlockAudio, sfx, setSkinAudio, setSound } from './audio.js';
 import { buzz, setVibe } from './haptics.js';
 import { initAds, showRewarded, rewardGate, adsInfo, showPrivacyOptions } from './ads.js';
-import { initAnalytics, track, analyticsMode } from './analytics.js';
+import { initAnalytics, track, analyticsMode, setAnalyticsOptIn, analyticsStatus } from './analytics.js';
 import { initPortal, gameplayStart, gameplayStop, isPortal } from './portal.js';
 import { initBilling, billingAvailable, buyRemoveAds, restoreRemoveAds, removeAdsPrice } from './billing.js';
 
@@ -32,7 +32,7 @@ setSound(s.settings.sound); setVibe(s.settings.vibe);
 const save = () => { try { localStorage.setItem(G.SAVE_KEY, G.serialize(s, Date.now())); } catch {} };
 
 // ---------- analytics: first open + D1/Dn retention ----------
-initAnalytics();
+initAnalytics(s.settings.analytics);
 if (firstOpen) track('first_launch', { skin: skin.id });
 const day = G.dayIndex(s, now);
 if (day > 0 && day !== s.lastDayLogged) { track('return_day', { day }); if (day === 1) track('d1_return'); s.lastDayLogged = day; }
@@ -154,14 +154,16 @@ $('btnSettings').addEventListener('click', () => {
   modal(`<h2>Settings</h2>
     <div class="set">Sound ${tg('tSound', s.settings.sound)}</div>
     <div class="set">Vibration ${tg('tVibe', s.settings.vibe)}</div>
-    ${adsInfo().privacyRequired ? '<div class="set">Ad privacy <button class="btn" id="mPriv">Manage</button></div>' : ''}
+    ${analyticsMode() !== 'off' ? `<div class="set"><span>Share anonymous analytics<br><small style="opacity:.7;font-weight:600">Helps improve the game${analyticsStatus.consent === 'denied' ? ' · off: not consented' : ''}</small></span> ${tg('tAnalytics', s.settings.analytics)}</div>` : ''}
+    ${adsInfo().privacyRequired ? '<div class="set">Privacy options <button class="btn" id="mPriv">Manage</button></div>' : ''}
     ${billingAvailable() ? (s.noAds ? '<div class="set">Ads removed ✓ <span style="font-size:12px;opacity:.7">bonuses are instant</span></div>' : `<div class="set">Remove ads <button class="btn primary" id="mBuy">${removeAdsPrice()}</button></div><div class="set">Already bought? <button class="btn" id="mRestore">Restore</button></div>`) : ''}
     ${isPortal ? '' : `<div class="set">Privacy policy <a href="${PRIVACY_URL}" target="_blank" rel="noopener">Open</a></div>`}
     <div class="set" style="font-size:12px;opacity:.7">Total taps ${G.fmt(s.taps)} · Best streak ${s.best.combo} · v${VERSION} · analytics ${analyticsMode()}</div>
     <div class="row" style="margin-top:12px"><button class="btn" id="mClose">Close</button></div>`);
   $('tSound').onclick = e => { s.settings.sound = !s.settings.sound; setSound(s.settings.sound); e.target.classList.toggle('on', s.settings.sound); save(); };
   $('tVibe').onclick = e => { s.settings.vibe = !s.settings.vibe; setVibe(s.settings.vibe); e.target.classList.toggle('on', s.settings.vibe); save(); };
-  $('mPriv') && ($('mPriv').onclick = showPrivacyOptions);
+  $('tAnalytics') && ($('tAnalytics').onclick = e => { s.settings.analytics = !s.settings.analytics; setAnalyticsOptIn(s.settings.analytics); e.target.classList.toggle('on', s.settings.analytics); track('analytics_opt', { on: s.settings.analytics }); save(); });
+  $('mPriv') && ($('mPriv').onclick = async () => { await showPrivacyOptions(); toast('Privacy choices updated'); });
   $('mBuy') && ($('mBuy').onclick = async () => { $('mBuy').disabled = true; if (await buyRemoveAds(s)) { save(); banner('ADS REMOVED!'); sfx('unlock'); closeModal(); refreshAdButtons(); } else { toast('Purchase not completed'); $('mBuy').disabled = false; } });
   $('mRestore') && ($('mRestore').onclick = async () => { const ok = await restoreRemoveAds(s); save(); toast(ok ? 'Purchase restored' : 'No purchase found'); if (ok) { closeModal(); refreshAdButtons(); } });
   $('mClose').onclick = closeModal;

@@ -43,7 +43,7 @@ $('#btnTitleSettings').onclick = () => { sfx.unlockAudio(); settings(); };
 
 /* ------------------------------------------------------------ run flow */
 async function startRun(resume = null) {
-  run = G.newRun(); if (resume) Object.assign(run, { streak: resume.streak, loops: resume.loops, misses: resume.misses, pass: resume.pass });
+  run = G.newRun(); if (resume) Object.assign(run, { streak: resume.streak, loops: resume.loops, misses: resume.misses, pass: resume.pass, log: Array.isArray(resume.log) ? resume.log : [], startedAt: Date.now() - (resume.playedMs || 0) });
   save.runsStarted = (save.runsStarted || 0) + 1; track(resume ? 'run_resume' : 'run_start');
   show('#hud'); view.dim = 0;
   if (!resume && !save.introSeen) { await intro(); save.introSeen = true; persist(); }
@@ -54,7 +54,8 @@ function intro() {
     <ul class="rules"><li>Drag to look around. Pinch or double-tap to zoom. Tap things to inspect.</li><li>If <b>everything is normal</b>, keep going.</li><li>If <b>anything is different</b>, turn back.</li><li>Get <b>8 in a row</b> and the final bell rings.</li></ul>
     <div class="row"><button class="btn primary" id="mGo">I'm ready</button></div>`, { cls: 'intro' }); $('#mGo').onclick = () => { sfx.ui(); closeModal(); res(); }; });
 }
-function snapshotRun() { save.run = run && !run.ending ? { streak: run.streak, loops: run.loops, misses: run.misses, pass: run.pass } : null; persist(); }
+// The snapshot keeps the loop log + play time so a resumed run's ending stats (anomalies spotted, minutes) stay correct.
+function snapshotRun() { save.run = run && !run.ending ? { streak: run.streak, loops: run.loops, misses: run.misses, pass: run.pass, log: run.log.map(({ scene, anomaly, correct }) => ({ scene, anomaly, correct })), playedMs: Date.now() - run.startedAt } : null; persist(); }
 
 function beginLoop() {
   const cur = G.nextLoop(run, save), S = G.stateFor(cur);

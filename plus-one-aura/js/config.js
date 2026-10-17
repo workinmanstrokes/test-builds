@@ -36,4 +36,4 @@ export const BILLING = {
   priceFallback: '$1.99',
 };
 
-export const PRIVACY_URL = 'https://workinmanstrokes.github.io/test-builds/plus-one-aura/privacy.html';
+export const PRIVACY_URL = 'https://workinmanstrokes.github.io/test-builds/privacy/plus-one-aura.html'; // permanent path

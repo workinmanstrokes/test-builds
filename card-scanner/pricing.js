@@ -2,6 +2,13 @@
 const today = () => new Date().toISOString().slice(0, 10);
 const j = u => Net.json(u);
 const P = (source, label, value, currency, date, url) => ({ source, label, value: +value, currency, date, url });
+// Second free Pokémon price source: pokemontcg.io (no key needed at low volume; same set-number ids as TCGdex). Best-effort, 5s cap.
+async function ptcgio(id) { try {
+  const r = await Promise.race([Net.raw(`https://api.pokemontcg.io/v2/cards/${encodeURIComponent(id)}?select=tcgplayer,cardmarket`, {}, 1), new Promise((_, x) => setTimeout(() => x(new Error('slow')), 5000))]);
+  if (!r.ok) return []; const d = (await r.json()).data || {}, out = [];
+  for (const [k, v] of Object.entries(d.tcgplayer?.prices || {})) if (v?.market) out.push(P('TCGplayer via pokemontcg.io', `${k} market`, v.market, 'USD', (d.tcgplayer.updatedAt || '').replace(/\//g, '-'), d.tcgplayer.url));
+  if (d.cardmarket?.prices?.trendPrice) out.push(P('Cardmarket via pokemontcg.io', 'trend', d.cardmarket.prices.trendPrice, 'EUR', (d.cardmarket.updatedAt || '').replace(/\//g, '-'), d.cardmarket.url));
+  return out; } catch { return []; } }
 const proxy = () => (localStorage.getItem('proxyUrl') || '').replace(/\/$/, '');
 
 const Adapters = {
@@ -13,8 +20,8 @@ const Adapters = {
       return l.slice(0, 120).map(c => ({ game: 'pokemon', id: c.id, name: c.name, number: c.localId, img: c.image ? c.image + '/low.webp' : '', set: c.id.split('-')[0] }));
     },
     async detail(c) {
-      const d = await j(`https://api.tcgdex.net/v2/en/cards/${c.id}`);
-      const pr = [], p = d.pricing || {};
+      const [d, pt] = await Promise.all([j(`https://api.tcgdex.net/v2/en/cards/${c.id}`), ptcgio(c.id)]);
+      const pr = [...pt], p = d.pricing || {};
       if (p.tcgplayer) for (const [k, v] of Object.entries(p.tcgplayer)) if (v && typeof v === 'object' && v.marketPrice != null)
         pr.push(P('TCGplayer via TCGdex', `${k} market`, v.marketPrice, p.tcgplayer.unit || 'USD', (p.tcgplayer.updated || '').slice(0, 10), `https://www.tcgplayer.com/product/${v.productId}`));
       if (p.cardmarket && p.cardmarket.trend != null) pr.push(P('Cardmarket via TCGdex', 'trend', p.cardmarket.trend, p.cardmarket.unit || 'EUR', (p.cardmarket.updated || '').slice(0, 10)));

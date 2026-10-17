@@ -16,7 +16,7 @@ function applyConsent(info) { consentStatus = info.status || 'UNKNOWN'; canReque
 export async function initAds() {
   if (!ADS.enabled || !AdMob) return;
   try {
-    await AdMob.initialize({ initializeForTesting: ADS.testing });
+    await AdMob.initialize({ initializeForTesting: ADS.testing, maxAdContentRating: ADS.maxAdContentRating || 'Teen' });
     let info = await AdMob.requestConsentInfo();
     if (info.isConsentFormAvailable && info.status === 'REQUIRED') info = await AdMob.showConsentForm();
     applyConsent(info); ready = true; preload();

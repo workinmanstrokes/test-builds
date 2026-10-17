@@ -30,6 +30,8 @@ zone.addEventListener("touchstart",function(e){
   start(t.identifier,t.clientX,t.clientY);
 },{passive:false});
 window.addEventListener("touchmove",function(e){
+  // let menus (Resonance Altar list, pause inventory, tall end screens) scroll; block page scroll everywhere else
+  if(!joy.a&&e.target&&e.target.closest&&e.target.closest(".ov"))return;
   e.preventDefault();if(!joy.a||joy.id==="kbd")return;
   var L=e.changedTouches;for(var i=0;i<L.length;i++){if(L[i].identifier===joy.id){move(L[i].clientX,L[i].clientY);break;}}
 },{passive:false});
@@ -65,7 +67,7 @@ window.addEventListener("keydown",function(e){var k=e.key.toLowerCase();if(e.rep
   keys[k]=true;keyJoy();if((k==="escape"||k==="p")&&AS.game)AS.game.togglePause();});
 window.addEventListener("keyup",function(e){var k=e.key.toLowerCase();if((k==="j"||k==="k")&&act.held){act.held=false;act.up++;}keys[k]=false;keyJoy();});
 window.addEventListener("blur",function(){keys={};if(joy.id==="kbd"||joy.id==="m")end();});
-document.body.addEventListener("touchmove",function(e){e.preventDefault();},{passive:false});
+document.body.addEventListener("touchmove",function(e){if(!joy.a&&e.target&&e.target.closest&&e.target.closest(".ov"))return;e.preventDefault();},{passive:false});
 
 AS.input={joy:joy,act:act,reset:function(){keys={};end();act.held=false;act.up=0;act.dash=0;},show:function(v){zone.style.display=v?"block":"none";jEl.style.display=v?"block":"none";if(!v)end();}};
 })(window.AS);

@@ -1,0 +1,915 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <!-- ios-pwa -->
+  <link rel="manifest" href="manifest.webmanifest">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Brainrot: Ta">
+  <link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png">
+  <meta name="theme-color" content="#0f172a">
+  <script src="ios.js"></script>
+  <!-- /ios-pwa -->
+  <title>Brainrot: Tactical Aura Rush</title>
+  <link rel="icon" href="data:,">
+  <style>
+    @font-face { font-family: 'GameFont'; src: url('fonts/ArchivoBlack-Regular.ttf') format('truetype'); font-display: swap; }
+    * { box-sizing: border-box; margin: 0; padding: 0; user-select: none; -webkit-user-select: none; touch-action: none; }
+    body, html { width: 100%; height: 100%; overflow: hidden; background: #0f172a; font-family: 'GameFont', 'Arial Black', Impact, 'Roboto', 'Helvetica Neue', Arial, sans-serif; }
+    canvas#gameCanvas { display: block; width: 100vw; height: 100vh; }
+
+    #ui { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; display: none; }
+
+    .top-bar { position: absolute; top: max(env(safe-area-inset-top, 0px), 14px); left: 12px; right: 12px; display: flex; flex-direction: column; gap: 10px; }
+    .stats-row { display: flex; justify-content: space-between; align-items: center; gap: 8px; color: #fff; font-size: 14px; text-shadow: 0 2px 6px rgba(0,0,0,0.9); }
+    .right-group { display: flex; align-items: center; gap: 8px; }
+    .badge { background: rgba(15, 23, 42, 0.92); padding: 7px 14px; border-radius: 20px; border: 2px solid #38bdf8; box-shadow: 0 4px 14px rgba(56, 189, 248, 0.4); display: flex; align-items: center; gap: 6px; white-space: nowrap; }
+    .icon-btn { pointer-events: auto; width: 38px; height: 38px; border-radius: 50%; border: 2px solid #94a3b8; background: rgba(15,23,42,0.92); color: #fff; font-size: 16px; display: flex; align-items: center; justify-content: center; cursor: pointer; font-family: sans-serif; }
+    .icon-btn:active { transform: scale(0.92); }
+
+    .progress-container { width: 100%; height: 12px; background: rgba(15,23,42,0.9); border: 2px solid #334155; border-radius: 8px; overflow: hidden; position: relative; }
+    .progress-fill { height: 100%; width: 0%; background: linear-gradient(90deg, #38bdf8, #facc15, #ec4899); box-shadow: 0 0 10px #facc15; transition: width 0.1s linear; }
+
+    .tier-announcement { position: absolute; top: calc(max(env(safe-area-inset-top, 0px), 14px) + 78px); left: 50%; transform: translateX(-50%); color: #38bdf8; font-size: 16px; text-shadow: 0 3px 0 #0369a1, 0 0 14px rgba(56, 189, 248, 0.7); text-transform: uppercase; letter-spacing: 1px; white-space: nowrap; transition: transform 0.2s; }
+    .tier-pop { transform: translateX(-50%) scale(1.3) !important; color: #fff !important; text-shadow: 0 0 20px #facc15 !important; }
+
+    .modal { position: absolute; inset: 0; background: rgba(2, 6, 23, 0.9); backdrop-filter: blur(6px); display: flex; flex-direction: column; align-items: center; justify-content: center; pointer-events: auto; z-index: 100; }
+    .card { background: linear-gradient(180deg, #1e1b4b 0%, #0f172a 100%); border: 4px solid #38bdf8; border-radius: 24px; padding: 24px 20px; text-align: center; width: 88%; max-width: 360px; box-shadow: 0 16px 50px rgba(56, 189, 248, 0.3); animation: slideUp 0.4s ease-out; }
+    @keyframes slideUp { from { transform: translateY(40px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+    .card h1 { font-size: 28px; color: #38bdf8; margin-bottom: 10px; text-transform: uppercase; text-shadow: 0 4px 0 #0369a1; font-weight: normal; }
+    .card p { font-size: 15px; color: #cbd5e1; margin-bottom: 18px; font-family: 'Roboto', 'Helvetica Neue', Arial, sans-serif; font-weight: bold; line-height: 1.4; }
+    .card p.best { font-size: 13px; color: #facc15; margin: -8px 0 16px; }
+
+    .btn { background: linear-gradient(180deg, #38bdf8 0%, #0284c7 100%); border: 2px solid #bae6fd; color: #0f172a; font-family: inherit; font-size: 19px; padding: 14px 28px; border-radius: 16px; cursor: pointer; box-shadow: 0 8px 20px rgba(56, 189, 248, 0.5); text-transform: uppercase; letter-spacing: 1px; width: 100%; transition: transform 0.1s; }
+    .btn:active { transform: scale(0.95); }
+    .btn.gold { background: linear-gradient(180deg, #facc15 0%, #ca8a04 100%); border-color: #fef08a; box-shadow: 0 8px 20px rgba(250, 204, 21, 0.4); }
+    .btn.ghost { background: transparent; color: #e2e8f0; border-color: #475569; box-shadow: none; font-size: 15px; padding: 10px; margin-top: 10px; }
+
+    #shop { display: none; flex-direction: column; gap: 8px; margin: -4px 0 16px; }
+    #shop h2 { font-size: 13px; color: #facc15; letter-spacing: 1px; font-weight: normal; }
+    .upg { display: flex; align-items: center; gap: 10px; text-align: left; background: rgba(15,23,42,0.85); border: 2px solid #334155; border-radius: 14px; padding: 8px 10px; color: #fff; font-family: inherit; cursor: pointer; width: 100%; }
+    .upg:not(:disabled):active { transform: scale(0.97); }
+    .upg:disabled { opacity: 0.45; cursor: default; }
+    .upg .ico { font-size: 20px; width: 26px; text-align: center; font-family: sans-serif; }
+    .upg .txt { flex: 1; display: flex; flex-direction: column; gap: 2px; }
+    .upg .nm { font-size: 13px; }
+    .upg .ds { font-size: 11px; color: #94a3b8; font-family: 'Roboto', Arial, sans-serif; font-weight: bold; }
+    .upg .pips { font-size: 10px; color: #38bdf8; letter-spacing: 2px; font-family: sans-serif; }
+    .upg .cost { font-size: 13px; color: #facc15; white-space: nowrap; }
+
+    #metaShop .card { max-height: 92vh; overflow-y: auto; touch-action: pan-y; }
+    #metaList { display: flex; flex-direction: column; gap: 8px; margin: 4px 0 14px; }
+    .essence { font-size: 14px; color: #c4b5fd; margin: -6px 0 14px; font-family: 'Roboto', Arial, sans-serif; font-weight: bold; }
+    .btn.violet { background: linear-gradient(180deg, #a78bfa 0%, #6d28d9 100%); border-color: #ddd6fe; color: #fff; box-shadow: 0 8px 20px rgba(139, 92, 246, 0.45); margin-top: 10px; font-size: 16px; padding: 11px 20px; }
+    #hint { position: absolute; top: 58%; left: 50%; transform: translateX(-50%); color: #fff; font-size: 16px; letter-spacing: 2px; animation: pulse 1s infinite alternate; text-shadow: 0 2px 4px #000; white-space: nowrap; }
+    @keyframes pulse { from { opacity: 0.55; } to { opacity: 1; } }
+
+    #bossUI { position: absolute; top: calc(max(env(safe-area-inset-top, 0px), 14px) + 112px); left: 50%; transform: translateX(-50%); width: 80%; display: none; flex-direction: column; align-items: center; gap: 6px; }
+    #bossUI span { color: #ef4444; font-size: 16px; text-shadow: 0 2px 4px #000; letter-spacing: 2px; }
+    .boss-hp-container { width: 100%; height: 14px; background: rgba(0,0,0,0.8); border: 2px solid #7f1d1d; border-radius: 8px; overflow: hidden; }
+    .boss-hp-fill { height: 100%; width: 100%; background: linear-gradient(90deg, #ef4444, #dc2626); transition: width 0.1s; }
+
+    #damageOverlay { position: absolute; inset: 0; background: radial-gradient(circle, transparent 40%, rgba(239,68,68,0.45) 100%); opacity: 0; pointer-events: none; }
+    #slowmoOverlay { position: absolute; inset: 0; box-shadow: inset 0 0 100px rgba(56,189,248,0.35); opacity: 0; pointer-events: none; transition: opacity 0.3s; }
+  </style>
+</head>
+<body>
+  <canvas id="gameCanvas"></canvas>
+  <div id="damageOverlay"></div>
+  <div id="slowmoOverlay"></div>
+
+  <div id="ui">
+    <div class="top-bar">
+      <div class="progress-container"><div class="progress-fill" id="progressBar"></div></div>
+      <div class="stats-row">
+        <div class="badge" id="levelBadge">ZONE 1</div>
+        <div class="right-group">
+          <div class="badge" style="border-color:#facc15;" id="auraBadge">✨ 0 AURA</div>
+          <button class="icon-btn" id="muteBtn" aria-label="Mute" onclick="toggleMute()">🔊</button>
+          <button class="icon-btn" id="pauseBtn" aria-label="Pause" onclick="pauseGame()">❚❚</button>
+        </div>
+      </div>
+    </div>
+
+    <div id="bossUI">
+      <span>GORILLA KING</span>
+      <div class="boss-hp-container"><div class="boss-hp-fill" id="bossHpBar"></div></div>
+    </div>
+
+    <div class="tier-announcement" id="tierBadge">FORMATION: GRID</div>
+    <div id="hint">⟵ DRAG TO STEER ⟶</div>
+  </div>
+
+  <div id="startModal" class="modal">
+    <div class="card">
+      <h1 style="color:#facc15; text-shadow:0 4px 0 #a16207;">TACTICAL RUSH</h1>
+      <p>Pick the right gates to grow your squad.<br>Dodge the Gorilla King's red laser.<br>Spend aura on upgrades between zones!</p>
+      <p class="best" id="startBest"></p>
+      <p class="essence" id="essenceP"></p>
+      <button class="btn gold" onclick="startGame()">TAP TO START</button>
+      <button class="btn violet" id="metaBtn" onclick="openMetaShop()">⬡ UPGRADES</button>
+    </div>
+  </div>
+
+  <div id="endModal" class="modal" style="display:none;">
+    <div class="card">
+      <h1 id="endTitle">STAGE CLEAR!</h1>
+      <p id="endDesc">Boss Defeated!</p>
+      <p class="best" id="endBest"></p>
+      <div id="shop"></div>
+      <button class="btn" id="nextBtn" onclick="nextLevel()">CONTINUE</button>
+    </div>
+  </div>
+
+  <div id="metaShop" class="modal" style="display:none;">
+    <div class="card">
+      <h1>UPGRADES</h1>
+      <p class="essence" id="metaEssence" style="margin:0 0 12px"></p>
+      <div id="metaList"></div>
+      <button class="btn" onclick="closeMetaShop()">BACK</button>
+    </div>
+  </div>
+
+  <div id="pauseModal" class="modal" style="display:none;">
+    <div class="card">
+      <h1>PAUSED</h1>
+      <p id="pauseDesc">Take a breather.</p>
+      <button class="btn gold" onclick="resumeGame()">RESUME</button>
+      <button class="btn ghost" id="pauseMuteBtn" onclick="toggleMute()">SOUND: ON</button>
+      <button class="btn ghost" id="pauseVibeBtn" onclick="toggleVibe()">VIBRATION: ON</button>
+      <button class="btn ghost" onclick="quitToTitle()">END RUN</button>
+    </div>
+  </div>
+
+  <script>
+    const canvas = document.getElementById('gameCanvas');
+    const ctx = canvas.getContext('2d', { alpha: false });
+    const $ = id => document.getElementById(id);
+    const FONT = 'GameFont, "Arial Black", Impact, Roboto, Arial, sans-serif';
+    const font = px => `${px}px ${FONT}`;
+
+    // Older Android System WebViews (Chrome < 99) lack roundRect; without it gate labels throw every frame.
+    if (!CanvasRenderingContext2D.prototype.roundRect) {
+      CanvasRenderingContext2D.prototype.roundRect = function (x, y, w, h, r) {
+        r = Math.max(0, Math.min(typeof r === 'number' ? r : 0, w / 2, h / 2));
+        this.moveTo(x + r, y); this.arcTo(x + w, y, x + w, y + h, r); this.arcTo(x + w, y + h, x, y + h, r);
+        this.arcTo(x, y + h, x, y, r); this.arcTo(x, y, x + w, y, r); this.closePath();
+      };
+    }
+
+    // ----- Native (Capacitor) bridge: absent in a plain browser, so every call is optional -----
+    const Native = (window.Capacitor && window.Capacitor.Plugins) || {};
+    const isNative = !!(window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform());
+    let lastBuzz = 0;
+    function buzz(kind) {
+      if (!save.vibe) return;
+      const now = performance.now(); if (now - lastBuzz < 90) return; lastBuzz = now;
+      try {
+        if (Native.Haptics) {
+          if (kind === 'heavy') Native.Haptics.impact({ style: 'HEAVY' });
+          else if (kind === 'success') Native.Haptics.notification({ type: 'SUCCESS' });
+          else Native.Haptics.impact({ style: 'LIGHT' });
+        } else if (navigator.vibrate) navigator.vibrate(kind === 'heavy' ? 40 : 15);
+      } catch (e) { /* haptics unavailable */ }
+    }
+
+    // ----- Screen / scaling: canvas is backed at devicePixelRatio, world is scaled to fit the road -----
+    const ROAD_HALF = 190;                 // half road width in world units
+    let W = 0, H = 0, DPR = 1, VS = 1;     // CSS size, pixel ratio, world->CSS scale
+    function resize() {
+      DPR = Math.min(window.devicePixelRatio || 1, 3);
+      W = window.innerWidth; H = window.innerHeight;
+      canvas.width = Math.round(W * DPR); canvas.height = Math.round(H * DPR);
+      VS = Math.max(0.6, Math.min(W / 420, H / 760));
+    }
+    window.addEventListener('resize', resize);
+    resize();
+
+    // ----- Persistence -----
+    const SAVE_KEY = 'brainrot-aura-rush-v1';
+    let save = { bestAura: 0, bestZone: 0, muted: false, vibe: true };
+    try { save = Object.assign(save, JSON.parse(localStorage.getItem(SAVE_KEY) || '{}')); } catch (e) { /* storage unavailable */ }
+    function persist() { try { localStorage.setItem(SAVE_KEY, JSON.stringify(save)); } catch (e) { /* ignore */ } }
+    function recordBest() {
+      save.bestAura = Math.max(save.bestAura, Math.round(aura));
+      save.bestZone = Math.max(save.bestZone, level);
+      persist();
+    }
+    const bestText = () => save.bestZone ? `BEST: ZONE ${save.bestZone} · ✨ ${save.bestAura}` : '';
+
+    // ----- Essence: permanent meta-progression (ported from 74ce0a6, adapted to this game) -----
+    // Runs earn Essence on a wipe-out or when you end a run; it buys permanent levels that apply to every new run.
+    const META_UPS = [
+      { id: 'hp',      n: 'Vigor',   d: '+2 starting troopers per level', i: '♥',  max: 10, base: 15, grow: 1.22 },
+      { id: 'dmg',     n: 'Power',   d: '+4% bullet damage per level',    i: '⚡', max: 10, base: 18, grow: 1.24 },
+      { id: 'spd',     n: 'Haste',   d: '+3% fire rate per level',        i: '💨', max: 8,  base: 14, grow: 1.22 },
+      { id: 'luck',    n: 'Greed',   d: '+8% aura earned per level',      i: '🧲', max: 8,  base: 12, grow: 1.2 },
+      { id: 'harvest', n: 'Harvest', d: '+10% Essence earned per level',  i: '🔮', max: 10, base: 20, grow: 1.26 },
+    ];
+    const META_KEY = 'as_meta';
+    let meta = { essence: 0, lv: {} };
+    try {
+      const m = JSON.parse(localStorage.getItem(META_KEY) || 'null');
+      if (m && typeof m === 'object') {
+        if (Number.isFinite(m.essence) && m.essence >= 0) meta.essence = Math.floor(m.essence);
+        if (m.lv && typeof m.lv === 'object') meta.lv = m.lv;
+      }
+    } catch (e) { /* storage unavailable */ }
+    META_UPS.forEach(u => { const v = meta.lv[u.id]; meta.lv[u.id] = Number.isFinite(v) ? Math.max(0, Math.min(u.max, Math.floor(v))) : 0; });
+    function saveMeta() { try { localStorage.setItem(META_KEY, JSON.stringify(meta)); } catch (e) { /* ignore */ } }
+    const metaCost = u => Math.floor(u.base * Math.pow(u.grow, meta.lv[u.id]));
+    function renderEssence() { $('essenceP').textContent = `◈ ${meta.essence.toLocaleString()} ESSENCE`; }
+    function awardEssence(n) {
+      n = Math.max(0, Math.floor(n * (1 + meta.lv.harvest * 0.1)));
+      if (n > 0) { meta.essence += n; saveMeta(); renderEssence(); }
+      return n;
+    }
+    function renderMetaShop() {
+      const list = $('metaList'); list.innerHTML = '';
+      for (const u of META_UPS) {
+        const lv = meta.lv[u.id], maxed = lv >= u.max, cost = metaCost(u);
+        const b = document.createElement('button');
+        b.className = 'upg'; b.dataset.meta = u.id; b.disabled = maxed || meta.essence < cost;
+        b.innerHTML = `<span class="ico">${u.i}</span><span class="txt"><span class="nm">${u.n.toUpperCase()} · LV ${lv}/${u.max}</span><span class="ds">${u.d}</span><span class="pips">${'■'.repeat(lv)}${'□'.repeat(u.max - lv)}</span></span><span class="cost">${maxed ? 'MAX' : '◈ ' + cost}</span>`;
+        b.onclick = () => buyMeta(u);
+        list.appendChild(b);
+      }
+      $('metaEssence').textContent = `◈ ${meta.essence.toLocaleString()} Essence available`;
+    }
+    function buyMeta(u) {
+      const cost = metaCost(u);
+      if (meta.lv[u.id] >= u.max || meta.essence < cost) return;
+      meta.essence -= cost; meta.lv[u.id]++; saveMeta();
+      playSound('powerup'); buzz('light'); renderMetaShop(); renderEssence();
+    }
+    function openMetaShop() { initAudio(); renderMetaShop(); $('startModal').style.display = 'none'; $('metaShop').style.display = 'flex'; }
+    function closeMetaShop() { $('metaShop').style.display = 'none'; renderEssence(); $('startModal').style.display = 'flex'; }
+
+    // ----- Audio -----
+    const AudioContext = window.AudioContext || window.webkitAudioContext;
+    let actx, master, lastShootSound = 0;
+    function initAudio() {
+      if (!AudioContext) return;
+      if (!actx) { actx = new AudioContext(); master = actx.createGain(); master.connect(actx.destination); }
+      master.gain.value = save.muted ? 0 : 1;
+      if (actx.state === 'suspended') actx.resume();
+    }
+    function playSound(type) {
+      if (!actx || save.muted) return;
+      const now = actx.currentTime;
+      if (type === 'shoot') { if (now - lastShootSound < 0.16) return; lastShootSound = now; }
+      const osc = actx.createOscillator(), gain = actx.createGain();
+      osc.connect(gain); gain.connect(master);
+      if (type === 'shoot') {
+        osc.type = 'square'; osc.frequency.setValueAtTime(600, now); osc.frequency.exponentialRampToValueAtTime(300, now + 0.05);
+        gain.gain.setValueAtTime(0.012, now); gain.gain.exponentialRampToValueAtTime(0.004, now + 0.05);
+        osc.start(now); osc.stop(now + 0.05);
+      } else if (type === 'hit') {
+        osc.type = 'sawtooth'; osc.frequency.setValueAtTime(200, now); osc.frequency.exponentialRampToValueAtTime(50, now + 0.1);
+        gain.gain.setValueAtTime(0.08, now); gain.gain.linearRampToValueAtTime(0, now + 0.1);
+        osc.start(now); osc.stop(now + 0.1);
+      } else if (type === 'powerup') {
+        osc.type = 'sine'; osc.frequency.setValueAtTime(800, now); osc.frequency.setValueAtTime(1200, now + 0.2);
+        gain.gain.setValueAtTime(0.1, now); gain.gain.linearRampToValueAtTime(0, now + 0.4);
+        osc.start(now); osc.stop(now + 0.4);
+      } else if (type === 'laser') {
+        osc.type = 'sawtooth'; osc.frequency.setValueAtTime(100, now); osc.frequency.linearRampToValueAtTime(50, now + 0.8);
+        gain.gain.setValueAtTime(0.25, now); gain.gain.linearRampToValueAtTime(0, now + 0.8);
+        osc.start(now); osc.stop(now + 0.8);
+      } else if (type === 'damage') {
+        osc.type = 'square'; osc.frequency.setValueAtTime(120, now); osc.frequency.exponentialRampToValueAtTime(20, now + 0.3);
+        gain.gain.setValueAtTime(0.18, now); gain.gain.linearRampToValueAtTime(0, now + 0.3);
+        osc.start(now); osc.stop(now + 0.3);
+      }
+    }
+    function toggleMute() {
+      save.muted = !save.muted; persist();
+      if (master) master.gain.value = save.muted ? 0 : 1;
+      updateMuteUI();
+    }
+    function updateMuteUI() {
+      $('muteBtn').textContent = save.muted ? '🔇' : '🔊';
+      $('pauseMuteBtn').textContent = save.muted ? 'SOUND: OFF' : 'SOUND: ON';
+      $('pauseVibeBtn').textContent = save.vibe ? 'VIBRATION: ON' : 'VIBRATION: OFF';
+    }
+    function toggleVibe() { save.vibe = !save.vibe; persist(); updateMuteUI(); buzz('light'); }
+
+    // ----- Game state -----
+    let state = 'START', pausedFrom = null;
+    let runKills = 0, runAuraEarned = 0, runAwarded = true; // Essence inputs for the current run
+    let level = 1, aura = 0, trackProgress = 0, trackLength = 6000, baseSpeed = 240, screenShake = 0;
+    let timeScale = 1.0, slowMoTimer = 0, zoneTime = 0, lastStandUsed = false, damageFlash = 0;
+    let shieldCharges = 0, carrySquad = 0, zoneAuraStart = 0;
+    const ZONE_COLORS = { train: [19, 33, 66], industrial: [74, 29, 10], arena: [59, 7, 100] };
+    let bgColor = ZONE_COLORS.train.slice();
+
+    const UPGRADES = {
+      recruits: { name: 'RECRUITS', ico: '🪖', desc: '+4 starting troopers', max: 5, base: 1500 },
+      rate:     { name: 'TRIGGER FINGER', ico: '⚡', desc: '+15% fire rate', max: 5, base: 2000 },
+      dmg:      { name: 'AURA ROUNDS', ico: '💥', desc: '+20% bullet damage', max: 5, base: 2000 },
+      shield:   { name: 'AURA SHIELD', ico: '🛡️', desc: 'Blocks 1 hit each zone', max: 3, base: 3000 },
+    };
+    let upgrades = { recruits: 0, rate: 0, dmg: 0, shield: 0 };
+    const upgradeCost = k => Math.round(UPGRADES[k].base * Math.pow(1.6, upgrades[k]) / 50) * 50;
+
+    const squad = { x: 0, targetX: 0, drawX: 0, count: 8, visualCount: 8, formation: 'GRID', fireRate: 4.5, fireRange: 550, shootTimer: 0 };
+    const entities = { bullets: [], gates: [], enemies: [], particles: [], texts: [] };
+    let boss = null;
+
+    // Difficulty knobs per zone
+    // Hits cost a flat amount early on and a share of the squad later, so big squads still feel pressure.
+    const tankDamage = () => Math.max(Math.min(24, 2 + level * 2), Math.round(squad.count * (0.08 + 0.015 * level)));
+    const swarmDamage = () => Math.max(2 + Math.floor((level - 1) / 2), Math.round(squad.count * (0.03 + 0.008 * level)));
+    const enemyHpMul = () => Math.pow(1.22, level - 1);
+    const bossHp = () => Math.round(2400 * Math.pow(1.5, level - 1));
+    const bulletDamage = () => (10 + level * 2) * (1 + 0.2 * upgrades.dmg) * (1 + 0.04 * meta.lv.dmg);
+
+    // ----- Input -----
+    let dragging = false, dragStartX = 0, squadStartX = 0, lastTouch = 0;
+    const isGhostMouse = e => !e.touches && performance.now() - lastTouch < 800; // WebView fires emulated mouse events after taps
+    function hideHint() { $('hint').style.display = 'none'; }
+    function onPointerDown(e) {
+      if (e.touches) lastTouch = performance.now(); else if (isGhostMouse(e)) return;
+      if (state !== 'PLAYING' && state !== 'BOSS') return;
+      if (e.target && e.target.closest && e.target.closest('button')) return;
+      const t = e.touches ? e.touches[e.touches.length - 1] : e;
+      dragging = true; dragStartX = t.clientX;
+      squadStartX = squad.targetX;
+    }
+    function onPointerMove(e) {
+      if (!dragging || isGhostMouse(e)) return;
+      const clientX = e.touches ? e.touches[e.touches.length - 1].clientX : e.clientX;
+      const dx = (clientX - dragStartX) * 1.6 / VS;
+      if (Math.abs(dx) > 4) hideHint();
+      squad.targetX = Math.max(-150, Math.min(150, squadStartX + dx));
+    }
+    function onPointerUp(e) {
+      if (e && e.touches) {
+        lastTouch = performance.now();
+        // another finger is still down: keep steering with it from where the squad is now
+        if (e.touches.length > 0 && dragging) { dragStartX = e.touches[e.touches.length - 1].clientX; squadStartX = squad.targetX; return; }
+      } else if (e && isGhostMouse(e)) return;
+      dragging = false;
+    }
+    window.addEventListener('mousedown', onPointerDown); window.addEventListener('mousemove', onPointerMove); window.addEventListener('mouseup', onPointerUp);
+    window.addEventListener('touchstart', onPointerDown, { passive: true }); window.addEventListener('touchmove', onPointerMove, { passive: true }); window.addEventListener('touchend', onPointerUp); window.addEventListener('touchcancel', onPointerUp);
+    window.addEventListener('keydown', e => { if (e.key === 'Escape' || e.key === 'p') { state === 'PAUSED' ? resumeGame() : pauseGame(); } });
+    document.addEventListener('visibilitychange', () => { if (document.hidden) { pauseGame(); recordBest(); } });
+
+    // Android back button: pause a run, resume from pause, close a menu, or leave the app from the title screen.
+    if (Native.App && isNative) {
+      try {
+        Native.App.addListener('backButton', () => {
+          if (state === 'PLAYING' || state === 'BOSS') pauseGame();
+          else if (state === 'PAUSED') resumeGame();
+          else if (state === 'VICTORY' || state === 'GAMEOVER') quitToTitle();
+          else if ($('metaShop').style.display === 'flex') closeMetaShop();
+          else Native.App.exitApp();
+        });
+        Native.App.addListener('pause', () => { pauseGame(); recordBest(); });
+      } catch (e) { /* plugin unavailable */ }
+    }
+    if (Native.StatusBar && isNative) { try { Native.StatusBar.hide(); } catch (e) { /* ignore */ } }
+
+    function quitToTitle() {
+      if (state === 'PLAYING' || state === 'BOSS' || state === 'PAUSED' || state === 'VICTORY') { recordBest(); endRunEssence(); }
+      state = 'START'; pausedFrom = null; dragging = false; boss = null;
+      for (const key in entities) entities[key].length = 0;
+      ['pauseModal', 'endModal'].forEach(id => $(id).style.display = 'none');
+      $('ui').style.display = 'none'; $('bossUI').style.display = 'none';
+      $('damageOverlay').style.opacity = '0'; $('slowmoOverlay').style.opacity = '0'; damageFlash = 0; slowMoTimer = 0;
+      $('startBest').textContent = bestText(); renderEssence(); $('startModal').style.display = 'flex';
+      if (actx && actx.state === 'running') actx.suspend();
+    }
+
+    function pauseGame() {
+      if (state !== 'PLAYING' && state !== 'BOSS') return;
+      pausedFrom = state; state = 'PAUSED'; dragging = false;
+      $('pauseDesc').textContent = `Zone ${level} · ✨ ${Math.round(aura)} aura`;
+      $('pauseModal').style.display = 'flex';
+      if (actx && actx.state === 'running') actx.suspend();
+    }
+    function resumeGame() {
+      if (state !== 'PAUSED') return;
+      state = pausedFrom; $('pauseModal').style.display = 'none';
+      lastTime = performance.now();
+      if (actx) actx.resume();
+    }
+
+    // ----- Run / zone flow -----
+    function startGame() {
+      initAudio(); $('startModal').style.display = 'none'; $('ui').style.display = 'block';
+      newRun();
+    }
+    function newRun() {
+      level = 1; aura = 0; carrySquad = 0; runKills = 0; runAuraEarned = 0; runAwarded = false;
+      upgrades = { recruits: 0, rate: 0, dmg: 0, shield: 0 };
+      initLevel();
+    }
+
+    function generateGateAction(isBad) {
+      if (isBad) {
+        const loss = 8 + level * 2, r = Math.random();
+        if (level >= 2 && r < 0.35) { const pc = level >= 5 ? 40 : 30; return { text: `-${pc}% SQUAD`, type: 'SQUADPCT', val: -pc / 100, isBad: true }; }
+        return r < 0.65 ? { text: `-${loss} SQUAD`, type: 'SQUAD', val: -loss, isBad: true }
+                        : { text: `-250 AURA`, type: 'AURA', val: -250, isBad: true };
+      }
+      const r = Math.random();
+      if (r < 0.45) { const v = Math.floor(Math.random() * 12) + 6 + level * 2; return { text: `+${v} SQUAD`, type: 'SQUAD', val: v, cap: v + 8 }; }
+      if (r < 0.75) {
+        const f = ['WIDE', 'SPEARHEAD', 'GRID'][Math.floor(Math.random() * 3)];
+        return { text: f === 'GRID' ? 'GRID FORMATION' : f === 'WIDE' ? 'WIDE FORMATION' : 'SPEARHEAD', type: 'FORM', val: f };
+      }
+      return { text: `+500 AURA`, type: 'AURA', val: 500 };
+    }
+    function makeGatePair(y, allowBad) {
+      const badSide = allowBad && Math.random() < 0.45 ? (Math.random() < 0.5 ? 'left' : 'right') : null;
+      let left = generateGateAction(badSide === 'left'), right = generateGateAction(badSide === 'right');
+      let guard = 0;
+      while (!left.isBad && !right.isBad && left.text === right.text && guard++ < 10) right = generateGateAction(false);
+      return { y, left: { x: -95, ...left, hitTime: 0 }, right: { x: 95, ...right, hitTime: 0 }, active: true };
+    }
+    function spawnSwarmRow(y) {
+      // 5 slots across the road; one is always left empty so there's a gap to slip through.
+      const slots = [-150, -75, 0, 75, 150], gap = Math.floor(Math.random() * slots.length);
+      const phase = Math.random() * Math.PI * 2;
+      slots.forEach((x, i) => {
+        if (i === gap) return;
+        const hp = Math.round((20 + level * 6) * enemyHpMul());
+        entities.enemies.push({ x, baseX: x, y, phase, hp, maxHp: hp, type: 'SWARM', aura: 50, active: true, hitTime: 0 });
+      });
+    }
+    function spawnTanks(y) {
+      const hp = Math.round((80 + level * 25) * enemyHpMul());
+      for (const x of (level >= 4 && Math.random() < 0.5 ? [-130, 0, 130] : [-80, 80])) entities.enemies.push({ x, baseX: x, y, phase: 0, hp, maxHp: hp, type: 'TANK', aura: 150, active: true, hitTime: 0 });
+    }
+
+    function initLevel() {
+      state = 'PLAYING'; trackProgress = 0; zoneTime = 0;
+      trackLength = 5000 + level * 1000; baseSpeed = 240 + level * 10;
+      squad.x = 0; squad.targetX = 0; squad.drawX = 0; squad.formation = 'GRID'; squad.shootTimer = 0;
+      squad.fireRate = 4.5 * (1 + 0.15 * upgrades.rate) * (1 + 0.03 * meta.lv.spd);
+      squad.count = Math.max(8 + upgrades.recruits * 4 + meta.lv.hp * 2, carrySquad); squad.visualCount = squad.count;
+      shieldCharges = upgrades.shield; lastStandUsed = false;
+      timeScale = 1.0; slowMoTimer = 0; damageFlash = 0; zoneAuraStart = aura;
+      for (const key in entities) entities[key].length = 0;
+      boss = null; $('bossUI').style.display = 'none'; $('endModal').style.display = 'none';
+      $('levelBadge').textContent = `ZONE ${level}`;
+      $('tierBadge').textContent = 'FORMATION: GRID';
+      $('hint').style.display = 'block';
+      save.bestZone = Math.max(save.bestZone, level); persist();
+      updateAuraUI();
+
+      // Safe start: the first ~3 s only has a friendly gate; enemies begin further up the track.
+      entities.gates.push(makeGatePair(800, false));
+      let y = 1350;
+      const gap = Math.max(330, 500 - level * 25);
+      while (y < trackLength - 500) {
+        if (Math.random() < Math.max(0.3, 0.44 - level * 0.02)) { entities.gates.push(makeGatePair(y, true)); y += 600; continue; }
+        const r = Math.random();
+        if (r < 0.5) spawnSwarmRow(y);
+        else spawnTanks(y);
+        if (level >= 3 && Math.random() < 0.25 + level * 0.05) spawnSwarmRow(y + 170); // later zones stack waves
+        y += gap + (level >= 3 ? 120 : 0);
+      }
+    }
+
+    function spawnBoss() {
+      state = 'BOSS';
+      const hp = bossHp();
+      boss = { x: 0, y: trackProgress + 600, hp, maxHp: hp, state: 'IDLE', timer: 1.0, hitTime: 0, active: true, targetX: 0, lanes: [], shielded: false };
+      $('bossUI').style.display = 'flex'; $('bossHpBar').style.width = '100%';
+      baseSpeed = 80;
+    }
+
+    function addAura(v) {
+      if (v > 0) { v = Math.round(v * (1 + 0.08 * meta.lv.luck)); runAuraEarned += v; }
+      aura = Math.max(0, aura + v); updateAuraUI();
+      return v;
+    }
+    const runEssence = () => Math.floor(runKills / 4 + level * 10 + runAuraEarned / 120);
+    function endRunEssence() { if (runAwarded) return 0; runAwarded = true; return awardEssence(runEssence()); }
+    function updateAuraUI() { $('auraBadge').textContent = `✨ ${Math.round(aura)} AURA`; }
+
+    function spawnExplosion(x, y, color, count = 12, size = 1) {
+      for (let i = 0; i < count; i++) {
+        const ang = Math.random() * Math.PI * 2, spd = 80 + Math.random() * 250;
+        entities.particles.push({ x, y, vx: Math.cos(ang) * spd, vy: Math.sin(ang) * spd, color, life: 0.5, size: (6 + Math.random() * 8) * size });
+      }
+    }
+    function addFloatText(x, y, str, color) { entities.texts.push({ x, y, str, color, life: 0.9, vy: 70 }); }
+    function triggerShake(amount) { screenShake = Math.max(screenShake, amount); }
+    function hurtFlash() { damageFlash = 0.15; }
+
+    function loseTroops(n, x, y) {
+      if (shieldCharges > 0) {
+        shieldCharges--; addFloatText(squad.x, trackProgress + 90, 'SHIELDED!', '#facc15');
+        spawnExplosion(x, y, '#facc15', 18); playSound('powerup'); triggerShake(6);
+        return false;
+      }
+      squad.count -= n; hurtFlash(); triggerShake(15); playSound('damage'); buzz('heavy');
+      if (squad.count <= 3 && !lastStandUsed && zoneTime > 3 && squad.count > 0) triggerLastStand();
+      if (squad.count < 1) { gameOver(); return true; }
+      return false;
+    }
+    function triggerLastStand() {
+      lastStandUsed = true; slowMoTimer = 2.0; playSound('powerup');
+      addFloatText(squad.x, trackProgress + 100, 'LAST STAND!', '#38bdf8');
+    }
+
+    // ----- Main loop: an exception is logged and the game keeps running -----
+    let lastTime = performance.now(), lastErr = '';
+    function loop(now) {
+      requestAnimationFrame(loop);
+      const rawDt = Math.min((now - lastTime) / 1000, 0.05); lastTime = now;
+      try {
+        if (state === 'PLAYING' || state === 'BOSS') {
+          if (slowMoTimer > 0) { slowMoTimer -= rawDt; timeScale = 0.35; } else timeScale = 1.0;
+          $('slowmoOverlay').style.opacity = slowMoTimer > 0 ? '1' : '0';
+          update(rawDt * timeScale, rawDt);
+        }
+        render(rawDt);
+      } catch (err) {
+        const msg = String(err && err.stack || err);
+        if (msg !== lastErr) { console.error('[game loop]', err); lastErr = msg; }
+      }
+    }
+
+    function formationLayout(n, form) {
+      // Visible troopers are capped and packed so the squad stays on the road and on screen.
+      const slots = [];
+      if (form === 'SPEARHEAD') {
+        const rows = Math.min(5, Math.ceil(Math.sqrt(n))), m = Math.min(n, rows * rows);
+        for (let i = 0; i < m; i++) { const r = Math.floor(Math.sqrt(i)), c = i - r * r; slots.push([(c - r) * 14, -r * 20]); }
+      } else {
+        const wide = form === 'WIDE', sp = wide ? 19 : 22;
+        const cols = wide ? Math.min(12, n) : Math.min(9, Math.max(1, Math.ceil(Math.sqrt(n))));
+        const rows = Math.min(wide ? 3 : 4, Math.ceil(n / cols)), m = Math.min(n, cols * rows);
+        for (let i = 0; i < m; i++) {
+          const r = Math.floor(i / cols), c = i % cols, inRow = Math.min(cols, m - r * cols);
+          slots.push([(c - (inRow - 1) / 2) * sp, -r * sp]);
+        }
+      }
+      let hw = 0; for (const s of slots) hw = Math.max(hw, Math.abs(s[0]));
+      return { slots, hw: hw + 8 };
+    }
+
+    function update(dt, rawDt) {
+      trackProgress += baseSpeed * dt; zoneTime += dt;
+      if (zoneTime > 4 && $('hint').style.display !== 'none') hideHint();
+      const pct = trackProgress / trackLength;
+
+      if (state === 'PLAYING') {
+        $('progressBar').style.width = `${Math.min(100, pct * 100)}%`;
+        if (trackProgress > trackLength) spawnBoss();
+      }
+
+      squad.x += (squad.targetX - squad.x) * Math.min(1, 12 * dt);
+      if (squad.visualCount < squad.count) {
+        squad.visualCount += (squad.count - squad.visualCount) * 4 * dt;
+        if (squad.count - squad.visualCount < 0.5) squad.visualCount = squad.count;
+      } else squad.visualCount = squad.count;
+
+      const layout = formationLayout(Math.max(1, Math.ceil(squad.visualCount)), squad.formation);
+      const lim = Math.max(0, ROAD_HALF - layout.hw);
+      squad.drawX = Math.max(-lim, Math.min(lim, squad.x));
+
+      // Shooting
+      squad.shootTimer += dt;
+      const activeCount = Math.floor(squad.visualCount);
+      if (squad.shootTimer >= 1 / squad.fireRate && activeCount > 0) {
+        squad.shootTimer = 0; playSound('shoot');
+        const numBullets = Math.min(activeCount, squad.formation === 'WIDE' ? 12 : (squad.formation === 'SPEARHEAD' ? 5 : 8));
+        const spreadMul = squad.formation === 'WIDE' ? 20 : (squad.formation === 'SPEARHEAD' ? 8 : 14);
+        const dmg = bulletDamage();
+        for (let i = 0; i < numBullets; i++) {
+          const bx = Math.max(-ROAD_HALF, Math.min(ROAD_HALF, squad.drawX + (i - (numBullets - 1) / 2) * spreadMul));
+          entities.bullets.push({ x: bx, y: trackProgress + 45, vy: 900, dmg, life: squad.fireRange / 900 });
+        }
+      }
+
+      // Boss: telegraphed laser, faster in later zones; the laser takes a share of the squad
+      if (state === 'BOSS' && boss.active) {
+        boss.y = trackProgress + 450; boss.timer -= dt;
+        if (boss.hitTime > 0) boss.hitTime -= dt;
+        if (boss.state === 'IDLE') {
+          boss.x += (0 - boss.x) * 2 * dt;
+          if (boss.timer <= 0) {
+            boss.state = 'TELEGRAPH'; boss.timer = Math.max(0.9, 1.5 - 0.1 * (level - 1));
+            boss.targetX = squad.x; boss.lanes = [squad.x];
+            if (level >= 3) { // later zones: a second laser lane blocks one escape route
+              const side = squad.x > 0 ? -1 : 1, x2 = squad.x + side * (130 + Math.random() * 60);
+              if (Math.abs(x2) <= 170) boss.lanes.push(x2);
+            }
+            playSound('powerup');
+          }
+        } else if (boss.state === 'TELEGRAPH') {
+          if (boss.timer <= 0) {
+            boss.state = 'STRIKE'; boss.timer = level >= 5 ? 0.95 : 0.8; boss.shielded = false;
+            playSound('laser'); triggerShake(15); buzz('heavy');
+          }
+        } else if (boss.state === 'STRIKE') {
+          if (boss.lanes.some(lx => Math.abs(squad.x - lx) < 60)) {
+            if (!boss.shielded && shieldCharges > 0) {
+              boss.shielded = true; shieldCharges--; addFloatText(squad.x, trackProgress + 90, 'SHIELDED!', '#facc15'); playSound('powerup');
+            }
+            if (!boss.shielded) {
+              squad.count -= Math.max(10, squad.count * 0.9) * dt; damageFlash = 0.12; // ~half the squad per full strike
+              if (squad.count <= 3 && !lastStandUsed && squad.count >= 1) triggerLastStand();
+              if (squad.count < 1) { gameOver(); return; }
+            }
+          }
+          if (boss.timer <= 0) { boss.state = 'IDLE'; boss.timer = Math.max(0.8, 2.0 - 0.25 * (level - 1)); }
+        }
+        $('bossHpBar').style.width = `${Math.max(0, (boss.hp / boss.maxHp) * 100)}%`;
+      }
+
+      // Enemies
+      for (const e of entities.enemies) {
+        if (!e.active) continue;
+        if (e.hitTime > 0) e.hitTime -= dt;
+        if (e.type === 'SWARM') { e.y -= (80 + level * 5) * dt; e.x = e.baseX + Math.sin(zoneTime * 1.6 + e.phase) * 22; }
+        else e.y -= 30 * dt;
+        if (e.y < trackProgress - 250) { e.active = false; continue; } // slipped past: clean up
+        // hit box grows a little with the formation (still narrow enough to fit through swarm gaps)
+        if (Math.abs(squad.x - e.x) < Math.min(layout.hw, 40) + 20 && Math.abs(trackProgress - e.y) < 30) {
+          e.active = false; spawnExplosion(e.x, e.y, '#ef4444', 25);
+          if (loseTroops(e.type === 'TANK' ? tankDamage() : swarmDamage(), e.x, e.y)) return;
+        }
+      }
+
+      // Bullets
+      for (let i = entities.bullets.length - 1; i >= 0; i--) {
+        const b = entities.bullets[i]; b.y += b.vy * dt; b.life -= dt; let hit = false;
+        for (const g of entities.gates) {
+          if (!g.active || hit || Math.abs(b.y - g.y) >= 25) continue;
+          const side = b.x < 0 ? g.left : g.right;
+          if (Math.abs(b.x - side.x) < 90) {
+            if (side.type === 'SQUAD' && !side.isBad) side.val = Math.min(side.cap, side.val + 0.1);
+            side.hitTime = 0.12; hit = true;
+          }
+        }
+        for (const e of entities.enemies) {
+          if (!e.active || hit) continue;
+          if (Math.hypot(b.x - e.x, b.y - e.y) < 40) {
+            e.hp -= b.dmg; e.hitTime = 0.1; hit = true; spawnExplosion(b.x, b.y, '#38bdf8', 2, 0.4);
+            if (e.hp <= 0) {
+              e.active = false; runKills++; const got = addAura(e.aura); playSound('hit');
+              addFloatText(e.x, e.y, `+${got}`, '#facc15'); spawnExplosion(e.x, e.y, '#facc15', 16);
+            }
+          }
+        }
+        if (state === 'BOSS' && boss.active && !hit && Math.hypot(b.x - boss.x, b.y - boss.y) < 80) {
+          boss.hp -= b.dmg; boss.hitTime = 0.06; hit = true;
+          if (Math.random() < 0.35) spawnExplosion(b.x, b.y, '#38bdf8', 1, 0.35);
+          if (boss.hp <= 0) {
+            boss.active = false; addAura(5000 + (level - 1) * 1000); playSound('powerup');
+            spawnExplosion(boss.x, boss.y, '#facc15', 60); triggerShake(20); buzz('success'); victory(); return;
+          }
+        }
+        if (hit || b.life <= 0) { entities.bullets[i] = entities.bullets[entities.bullets.length - 1]; entities.bullets.pop(); }
+      }
+
+      // Gate pass
+      for (const g of entities.gates) {
+        g.left.hitTime = Math.max(0, g.left.hitTime - dt); g.right.hitTime = Math.max(0, g.right.hitTime - dt);
+        if (!g.active) continue;
+        if (trackProgress >= g.y && trackProgress - baseSpeed * dt < g.y) {
+          g.active = false; const chosen = squad.x < 0 ? g.left : g.right;
+          if (chosen.type === 'SQUAD') {
+            if (chosen.val < 0) { if (loseTroops(-chosen.val, chosen.x, g.y)) return; }
+            else squad.count = squad.count + Math.round(chosen.val);
+          } else if (chosen.type === 'SQUADPCT') {
+            if (loseTroops(Math.max(4, Math.round(squad.count * -chosen.val)), chosen.x, g.y)) return;
+          } else if (chosen.type === 'FORM') {
+            squad.formation = chosen.val;
+            const badgeUI = $('tierBadge'); badgeUI.textContent = `FORMATION: ${chosen.val}`;
+            badgeUI.classList.add('tier-pop'); setTimeout(() => badgeUI.classList.remove('tier-pop'), 200);
+          } else if (chosen.type === 'AURA') addAura(chosen.val);
+          if (!chosen.isBad) { playSound('powerup'); buzz('light'); }
+          const label = chosen.type === 'SQUAD' && !chosen.isBad ? `+${Math.round(chosen.val)} SQUAD` : chosen.text;
+          addFloatText(squad.x, g.y, label, gateColor(chosen));
+          spawnExplosion(chosen.x, g.y, gateColor(chosen), 30);
+        }
+      }
+
+      for (let i = entities.particles.length - 1; i >= 0; i--) {
+        const p = entities.particles[i]; p.x += p.vx * dt; p.y += p.vy * dt; p.vx *= 0.95; p.vy *= 0.95; p.life -= dt;
+        if (p.life <= 0) { entities.particles[i] = entities.particles[entities.particles.length - 1]; entities.particles.pop(); }
+      }
+      for (let i = entities.texts.length - 1; i >= 0; i--) {
+        const t = entities.texts[i]; t.y += t.vy * dt; t.life -= dt;
+        if (t.life <= 0) { entities.texts[i] = entities.texts[entities.texts.length - 1]; entities.texts.pop(); }
+      }
+      if (screenShake > 0) screenShake = Math.max(0, screenShake - rawDt * 40);
+    }
+
+    // ----- Rendering -----
+    function drawVoxel(ctx, x, y, z, w, h, d, hexColor) {
+      const isoX = x; const isoY = y - z;
+      ctx.fillStyle = hexColor; ctx.beginPath(); ctx.moveTo(isoX, isoY - h); ctx.lineTo(isoX + w/2, isoY - h - d/3); ctx.lineTo(isoX, isoY - h - (2*d)/3); ctx.lineTo(isoX - w/2, isoY - h - d/3); ctx.closePath(); ctx.fill();
+      ctx.fillStyle = adjustBrightness(hexColor, -25); ctx.beginPath(); ctx.moveTo(isoX, isoY - h); ctx.lineTo(isoX + w/2, isoY - h - d/3); ctx.lineTo(isoX + w/2, isoY - d/3); ctx.lineTo(isoX, isoY); ctx.closePath(); ctx.fill();
+      ctx.fillStyle = adjustBrightness(hexColor, -45); ctx.beginPath(); ctx.moveTo(isoX, isoY - h); ctx.lineTo(isoX - w/2, isoY - h - d/3); ctx.lineTo(isoX - w/2, isoY - d/3); ctx.lineTo(isoX, isoY); ctx.closePath(); ctx.fill();
+    }
+    function adjustBrightness(hex, percent) {
+      let num = parseInt(hex.replace("#",""), 16), amt = Math.round(2.55 * percent);
+      let R = (num >> 16) + amt, G = (num >> 8 & 0x00FF) + amt, B = (num & 0x0000FF) + amt;
+      return "#" + (0x1000000 + (R<255?R<1?0:R:255)*0x10000 + (G<255?G<1?0:G:255)*0x100 + (B<255?B<1?0:B:255)).toString(16).slice(1);
+    }
+    function drawShadow(ctx, x, y, radius) { ctx.fillStyle = 'rgba(0,0,0,0.5)'; ctx.beginPath(); ctx.ellipse(x, y - radius*0.2, radius, radius*0.3, 0, 0, Math.PI*2); ctx.fill(); }
+
+    // Gate colours by effect: green = growth, red = loss, blue = formation, gold = aura
+    function gateColor(side) {
+      if (side.isBad) return '#ef4444';
+      if (side.type === 'SQUAD') return '#22c55e';
+      if (side.type === 'FORM') return '#38bdf8';
+      return '#facc15';
+    }
+    function mixWhite(hex, t) {
+      const n = parseInt(hex.slice(1), 16), m = c => Math.round(c + (255 - c) * t);
+      return `rgb(${m(n >> 16)},${m((n >> 8) & 255)},${m(n & 255)})`;
+    }
+    function drawGate(side, y) {
+      const col = gateColor(side), flash = Math.min(1, side.hitTime / 0.12);
+      const c = flash > 0 ? mixWhite(col, flash * 0.75) : col;
+      ctx.save(); ctx.translate(side.x, y);
+      ctx.globalAlpha = 0.28 + flash * 0.3; ctx.fillStyle = c; ctx.fillRect(-88, -7, 176, 14);
+      ctx.globalAlpha = 1; ctx.strokeStyle = c; ctx.lineWidth = 4; ctx.strokeRect(-88, -7, 176, 14);
+      ctx.scale(1, -1);
+      let text = side.text; if (side.type === 'SQUAD' && !side.isBad) text = `+${Math.round(side.val)} SQUAD`;
+      ctx.font = font(15); ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      const tw = Math.min(170, ctx.measureText(text).width + 18);
+      ctx.fillStyle = 'rgba(2,6,23,0.85)'; ctx.beginPath(); ctx.roundRect(-tw / 2, 13, tw, 24, 12); ctx.fill();
+      ctx.strokeStyle = col; ctx.lineWidth = 2; ctx.stroke();
+      ctx.fillStyle = side.isBad ? '#fecaca' : '#ffffff'; ctx.fillText(text, 0, 26, 160);
+      ctx.restore();
+    }
+
+    function render(rawDt) {
+      // Zone atmosphere drawn on the canvas itself: blue -> industrial orange -> purple arena
+      const pct = trackProgress / trackLength;
+      const target = (state === 'BOSS' || pct >= 0.8) ? ZONE_COLORS.arena : pct >= 0.4 ? ZONE_COLORS.industrial : ZONE_COLORS.train;
+      const k = Math.min(1, (rawDt || 0.016) * 1.5);
+      for (let i = 0; i < 3; i++) bgColor[i] += (target[i] - bgColor[i]) * k;
+      const bg = `rgb(${bgColor.map(Math.round).join(',')})`;
+      ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+      ctx.fillStyle = bg; ctx.fillRect(0, 0, W, H);
+      const vg = ctx.createLinearGradient(0, 0, 0, H);
+      vg.addColorStop(0, 'rgba(2,6,23,0.55)'); vg.addColorStop(0.5, 'rgba(2,6,23,0)'); vg.addColorStop(1, 'rgba(2,6,23,0.35)');
+      ctx.fillStyle = vg; ctx.fillRect(0, 0, W, H);
+      document.body.style.backgroundColor = bg;
+      $('damageOverlay').style.opacity = damageFlash > 0 ? '1' : '0';
+      if (damageFlash > 0) damageFlash -= rawDt || 0.016;
+
+      const cy = H * 0.8;
+      ctx.save();
+      if (screenShake > 0) ctx.translate((Math.random() - 0.5) * screenShake, (Math.random() - 0.5) * screenShake);
+      ctx.translate(W / 2, cy); ctx.scale(VS, VS);
+      const top = -cy / VS, bottom = (H - cy) / VS;
+
+      ctx.fillStyle = 'rgba(2, 6, 23, 0.45)'; ctx.fillRect(-ROAD_HALF, top, ROAD_HALF * 2, bottom - top);
+      ctx.fillStyle = '#38bdf8'; ctx.fillRect(-ROAD_HALF - 8, top, 8, bottom - top); ctx.fillRect(ROAD_HALF, top, 8, bottom - top);
+      const spacing = 180, offset = -(trackProgress % spacing);
+      ctx.strokeStyle = 'rgba(56, 189, 248, 0.2)'; ctx.lineWidth = 4;
+      for (let y = top + offset - spacing; y < bottom + spacing; y += spacing) { ctx.beginPath(); ctx.moveTo(-ROAD_HALF, y); ctx.lineTo(ROAD_HALF, y); ctx.stroke(); }
+
+      ctx.save(); ctx.scale(1, -1); ctx.translate(0, -trackProgress);
+
+      if (state !== 'START' && boss && boss.active && (boss.state === 'TELEGRAPH' || boss.state === 'STRIKE')) {
+        const strike = boss.state === 'STRIKE';
+        const y0 = trackProgress - 260, len = boss.y - trackProgress + 260;
+        for (const lx of boss.lanes) {
+          ctx.fillStyle = strike ? 'rgba(239, 68, 68, 0.85)' : 'rgba(239, 68, 68, 0.28)';
+          ctx.fillRect(lx - 60, y0, 120, len);
+          if (strike) { ctx.fillStyle = 'rgba(255,255,255,0.75)'; ctx.fillRect(lx - 14, y0, 28, len); }
+          else { ctx.strokeStyle = 'rgba(239,68,68,0.9)'; ctx.lineWidth = 3; ctx.setLineDash([14, 10]); ctx.strokeRect(lx - 60, y0, 120, len); ctx.setLineDash([]); }
+        }
+      }
+
+      for (const g of entities.gates) { if (!g.active) continue; drawGate(g.left, g.y); drawGate(g.right, g.y); }
+
+      for (const e of entities.enemies) {
+        if (!e.active) continue;
+        drawShadow(ctx, e.x, e.y, 40);
+        if (e.type === 'SWARM') {
+          drawVoxel(ctx, e.x, e.y, 0, 20, 24, 20, e.hitTime > 0 ? '#ffffff' : '#64748b');
+          drawVoxel(ctx, e.x, e.y + 4, 18, 12, 6, 12, '#38bdf8');
+        } else {
+          drawVoxel(ctx, e.x, e.y, 0, 32, 28, 32, e.hitTime > 0 ? '#ffffff' : '#b45309');
+          drawVoxel(ctx, e.x, e.y, 28, 16, 16, 16, '#ea580c');
+        }
+        ctx.save(); ctx.translate(e.x, e.y); ctx.scale(1, -1);
+        ctx.fillStyle = '#000'; ctx.fillRect(-20, -40, 40, 6);
+        ctx.fillStyle = '#ef4444'; ctx.fillRect(-20, -40, 40 * Math.max(0, e.hp / e.maxHp), 6);
+        ctx.restore();
+      }
+
+      if (boss && boss.active) {
+        const flash = boss.hitTime > 0;
+        drawShadow(ctx, boss.x, boss.y, 100);
+        drawVoxel(ctx, boss.x, boss.y, 0, 80, 60, 60, flash ? '#cbd5e1' : '#334155');
+        drawVoxel(ctx, boss.x, boss.y, 60, 50, 45, 40, flash ? '#fde68a' : '#eab308');
+        const eyeColor = (boss.state === 'TELEGRAPH' || boss.state === 'STRIKE') ? '#ef4444' : '#000000';
+        drawVoxel(ctx, boss.x - 15, boss.y + 15, 80, 10, 10, 10, eyeColor);
+        drawVoxel(ctx, boss.x + 15, boss.y + 15, 80, 10, 10, 10, eyeColor);
+      }
+
+      ctx.lineWidth = 6; ctx.lineCap = 'round'; ctx.strokeStyle = '#38bdf8';
+      ctx.beginPath();
+      for (const b of entities.bullets) { ctx.moveTo(b.x, b.y); ctx.lineTo(b.x, b.y - 20); }
+      ctx.stroke();
+
+      if (state !== 'START') {
+        ctx.save(); ctx.translate(squad.drawX, trackProgress);
+        const count = Math.max(1, Math.ceil(squad.visualCount));
+        const { slots, hw } = formationLayout(count, squad.formation);
+        drawShadow(ctx, 0, 0, Math.max(40, hw + 10));
+        if (shieldCharges > 0) {
+          ctx.strokeStyle = 'rgba(250,204,21,0.7)'; ctx.lineWidth = 3;
+          ctx.beginPath(); ctx.ellipse(0, -10, hw + 22, (hw + 22) * 0.4, 0, 0, Math.PI * 2); ctx.stroke();
+        }
+        slots.forEach(([ox, oy], i) => {
+          const bob = Math.abs(Math.sin((trackProgress * 0.15) + i)) * 6;
+          drawVoxel(ctx, ox, oy, bob, 14, 18, 14, '#e2e8f0');
+          drawVoxel(ctx, ox, oy, 18 + bob, 12, 12, 12, '#38bdf8');
+        });
+        ctx.save(); ctx.scale(1, -1);
+        const label = `x${Math.max(0, Math.ceil(squad.count))}`;
+        ctx.font = font(14); ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+        const lw = Math.max(60, ctx.measureText(label).width + 22);
+        let depth = 0; for (const s of slots) depth = Math.max(depth, -s[1]);
+        const py = depth + 26; // pill sits just behind the last row
+        ctx.fillStyle = '#0f172a'; ctx.beginPath(); ctx.roundRect(-lw / 2, py, lw, 24, 12); ctx.fill();
+        ctx.strokeStyle = '#38bdf8'; ctx.lineWidth = 2; ctx.stroke();
+        ctx.fillStyle = '#fff'; ctx.fillText(label, 0, py + 13);
+        ctx.restore();
+        ctx.restore();
+      }
+
+      for (const p of entities.particles) { ctx.fillStyle = p.color; ctx.beginPath(); ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2); ctx.fill(); }
+      ctx.font = font(20); ctx.textAlign = 'center'; ctx.textBaseline = 'alphabetic'; ctx.lineWidth = 4; ctx.strokeStyle = '#000';
+      for (const t of entities.texts) {
+        ctx.save(); ctx.translate(t.x, t.y); ctx.scale(1, -1);
+        ctx.globalAlpha = Math.min(1, t.life * 3); ctx.fillStyle = t.color;
+        ctx.strokeText(t.str, 0, 0); ctx.fillText(t.str, 0, 0);
+        ctx.restore();
+      }
+      ctx.restore(); ctx.restore();
+    }
+
+    // ----- End of zone / run -----
+    function renderShop() {
+      const shop = $('shop');
+      shop.innerHTML = '<h2>SPEND AURA ON UPGRADES</h2>';
+      for (const k of Object.keys(UPGRADES)) {
+        const u = UPGRADES[k], lvl = upgrades[k], maxed = lvl >= u.max, cost = upgradeCost(k);
+        const b = document.createElement('button');
+        b.className = 'upg'; b.dataset.upg = k; b.disabled = maxed || aura < cost;
+        b.innerHTML = `<span class="ico">${u.ico}</span><span class="txt"><span class="nm">${u.name}</span><span class="ds">${u.desc}</span><span class="pips">${'■'.repeat(lvl)}${'□'.repeat(u.max - lvl)}</span></span><span class="cost">${maxed ? 'MAX' : '✨ ' + cost}</span>`;
+        b.onclick = () => buyUpgrade(k);
+        shop.appendChild(b);
+      }
+    }
+    function buyUpgrade(k) {
+      const cost = upgradeCost(k);
+      if (upgrades[k] >= UPGRADES[k].max || aura < cost) return;
+      aura -= cost; upgrades[k]++; updateAuraUI(); playSound('powerup');
+      $('endDesc').textContent = `Boss defeated! ✨ ${Math.round(aura)} aura to spend. ${Math.min(40, Math.round(squad.count * 0.5))} troopers carry over.`;
+      renderShop();
+    }
+    function victory() {
+      state = 'VICTORY'; recordBest();
+      $('endTitle').textContent = 'STAGE CLEAR!'; $('endTitle').style.color = '#38bdf8';
+      $('endDesc').textContent = `Boss defeated! ✨ ${Math.round(aura)} aura to spend. ${Math.min(40, Math.round(squad.count * 0.5))} troopers carry over.`;
+      $('endBest').textContent = bestText();
+      $('shop').style.display = 'flex'; renderShop();
+      $('nextBtn').textContent = 'NEXT ZONE'; $('nextBtn').className = 'btn';
+      $('bossUI').style.display = 'none'; $('endModal').style.display = 'flex';
+      slowMoTimer = 0; $('slowmoOverlay').style.opacity = '0';
+    }
+    function gameOver() {
+      state = 'GAMEOVER'; recordBest(); const gained = endRunEssence();
+      $('endTitle').textContent = 'CRASHED OUT!'; $('endTitle').style.color = '#ef4444';
+      $('endDesc').textContent = `Your squad was wiped out in Zone ${level}. Run aura: ✨ ${Math.round(aura)}. Essence: ◈ +${gained} (spend it in UPGRADES).`;
+      $('endBest').textContent = bestText();
+      $('shop').style.display = 'none'; $('bossUI').style.display = 'none';
+      slowMoTimer = 0; $('slowmoOverlay').style.opacity = '0';
+      $('nextBtn').textContent = 'NEW RUN'; $('nextBtn').className = 'btn gold';
+      $('endModal').style.display = 'flex';
+    }
+    function nextLevel() {
+      if (state === 'VICTORY') { carrySquad = Math.min(40, Math.round(squad.count * 0.5)); level++; initLevel(); }
+      else if (state === 'GAMEOVER') newRun();
+    }
+
+    $('startBest').textContent = bestText();
+    renderEssence();
+    updateMuteUI();
+    if (document.fonts && document.fonts.load) document.fonts.load(font(16)).catch(() => {});
+    requestAnimationFrame(loop);
+  </script>
+</body>
+</html>

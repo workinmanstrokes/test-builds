@@ -1,6 +1,14 @@
 <!DOCTYPE html>
 <html lang="en"><head>
 <meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <!-- ios-pwa -->
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Cards">
+  <link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png">
+  <script src="ios.js"></script>
+  <!-- /ios-pwa -->
 <meta name="theme-color" content="#0b1020"><title>Card Scanner</title>
 <link rel="icon" href="icon.svg"><link rel="stylesheet" href="styles.css"><link rel="manifest" href="manifest.webmanifest">
 </head><body>
@@ -79,7 +87,9 @@
   <div class="group"><h3>Help</h3><div class="btns col"><button type="button" id="replayOnboard" class="secondary">Show the intro again</button><a class="file secondary" href="privacy.html" target="_blank">Privacy policy</a></div>
     <p class="muted">Card Scanner by Diddlerrr · mscofield1588@gmail.com</p></div>
   <details class="group" id="advanced"><summary>Advanced settings</summary>
-    <label>AI vision server (proxy URL)<input id="proxyUrl" placeholder="https://your-proxy.vercel.app" inputmode="url"></label>
+    <label>AI helper (Firebase config, optional)<textarea id="fbConfig" rows="3" placeholder='{"apiKey":"…","projectId":"…","appId":"…"}' spellcheck="false"></textarea></label>
+    <label class="row"><input type="checkbox" id="aiOn"> Use AI helper when available</label>
+    <label>Price server (optional)<input id="proxyUrl" placeholder="https://your-price-proxy.vercel.app" inputmode="url"></label>
     <p class="muted">Holds the xAI/eBay keys. Keys are never stored in this app.</p>
     <label class="chk"><input type="checkbox" id="ocrOn" checked> On-device matching when AI is unavailable</label>
     <label class="chk"><input type="checkbox" id="techOn"> Show match scores and sources</label>
@@ -104,5 +114,5 @@
   <button id="onboardGo" hidden>Done</button></form></dialog>
 <dialog id="listDlg"><form method="dialog"><h3>Sell this card</h3><div id="listBody"></div><div class="btns"><button id="copyList" class="primary">Copy everything</button><button class="secondary">Close</button></div></form></dialog>
 <canvas id="canvas" hidden></canvas>
-<script src="diag.js"></script><script src="vendor/capacitor.js"></script><script src="net.js"></script><script src="pricing.js"></script><script src="ocr.js"></script><script src="identify.js"></script><script src="sports.js"></script><script src="ai.js"></script><script src="idcore.js"></script><script src="centering.js"></script><script src="app.js"></script>
+<script src="diag.js"></script><script src="vendor/capacitor.js"></script><script src="net.js"></script><script src="pricing.js"></script><script src="ocr.js"></script><script src="identify.js"></script><script src="sports.js"></script><script src="firebase-config.js"></script><script src="ai.js"></script><script src="idcore.js"></script><script src="centering.js"></script><script src="app.js"></script>
 </body></html>

@@ -1,0 +1,30 @@
+{
+  "name": "Spin & Deal: Free Casino",
+  "short_name": "Spin & Deal",
+  "description": "A free-play social casino with original games.",
+  "start_url": "./",
+  "display": "standalone",
+  "background_color": "#090612",
+  "theme_color": "#090612",
+  "orientation": "portrait",
+  "categories": [
+    "games",
+    "entertainment"
+  ],
+  "id": "./",
+  "scope": "./",
+  "icons": [
+    {
+      "src": "icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    }
+  ]
+}
