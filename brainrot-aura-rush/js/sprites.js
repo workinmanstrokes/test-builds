@@ -42,87 +42,74 @@
 
   // ---------- The cast ----------
   const CAST = {
-    // Player troops: chrome toaster with a penguin face and a cyan toast-blaster.
-    trooper: { name: 'Tostino Pingwhirl', role: 'Your trooper', w: 26, h: 34, frames: 2, draw(c, f) {
-      const step = f ? 1 : -1;
-      blob(c, -5 + step * 1.5, -2, 4.5, 2.4, '#fb923c', 1); blob(c, 5 - step * 1.5, -2, 4.5, 2.4, '#fb923c', 1);  // feet
-      blob(c, -11.5, -15 + step, 3, 6.5, '#1e293b', 1, 0.35); blob(c, 11.5, -15 - step, 3, 6.5, '#1e293b', 1, -0.35); // flippers
-      box(c, -10, -28, 20, 25, 6, '#cbd5e1');                                // toaster body
-      rr(c, -6.5, -27, 4, 2.2, 1); c.fillStyle = OUT; c.fill(); rr(c, 2.5, -27, 4, 2.2, 1); c.fill(); // bread slots
-      box(c, -6, -33, 4.5, 6, 1.5, '#f59e0b', 0.9); box(c, 2, -32 + step * 0.6, 4.5, 5, 1.5, '#f59e0b', 0.9); // toast popping
-      box(c, -7.5, -21, 15, 15, 6, '#f8fafc', 0.9);                         // penguin belly/face
-      eye(c, -3.2, -16.5, 2.7, 0, -0.3); eye(c, 3.2, -16.5, 2.7, 0, -0.3);
-      c.beginPath(); c.moveTo(-2.4, -12.5); c.lineTo(2.4, -12.5); c.lineTo(0, -9); c.closePath(); c.fillStyle = '#fb923c'; c.fill(); c.lineWidth = 0.8; c.strokeStyle = OUT; c.stroke();
-      box(c, 9, -26, 3, 9, 1.4, '#22d3ee', 0.9);                            // toast lever = blaster
-      shine(c, -6, -24.5, 3, 1.4);
+    // Player troops: a grinning head popping up through the open lid of a front-loading washing machine, with a sudsy porthole.
+    trooper: { name: 'Lavatrino Schiumoso', role: 'Your trooper', w: 30, h: 40, frames: 2, draw(c, f) {
+      const b = f ? 1 : 0, SKIN = '#f6c7a1';
+      blob(c, -7, -1.5, 3.2, 1.8, '#64748b', 0.9); blob(c, 7, -1.5, 3.2, 1.8, '#64748b', 0.9);             // little feet
+      c.save(); c.translate(-10, -25); c.rotate(-0.55 - b * 0.1); box(c, -1, -2.5, 20, 3.6, 1.6, '#e2e8f0', 1); c.restore(); // open lid (behind head)
+      blob(c, 0, -29 - b * 1.2, 7.2, 7.4, SKIN, 1.2);                                                      // head
+      for (let k = 0; k < 5; k++) blob(c, -5 + k * 2.5, -35.5 - b * 1.2 - (k % 2) * 0.8, 2, 1.7, '#7c3f1d', 0.8); // messy hair tuft
+      eye(c, -2.8, -30 - b * 1.2, 2.1, 0.2, 0); eye(c, 2.8, -30 - b * 1.2, 2.1, 0.2, 0);
+      grin(c, 0, -26.3 - b * 1.2, 8, 2, 4, 0.8);
+      box(c, -12, -25, 24, 23, 4.5, '#f8fafc', 1.3);                                                       // machine body
+      box(c, -12, -25, 24, 5.5, 2.5, '#cbd5e1', 1);                                                        // control strip
+      blob(c, 6.5, -22.3, 1.6, 1.6, '#22d3ee', 0.7); blob(c, 2.5, -22.3, 1.1, 1.1, '#f472b6', 0.6); rr(c, -9.5, -23.3, 6, 2, 1); c.fillStyle = '#0f172a'; c.fill();
+      blob(c, 0, -11, 7.6, 7.6, '#94a3b8', 1.2);                                                           // porthole rim
+      ell(c, 0, -11, 5.6, 5.6); c.fillStyle = glossFill(c, 0, -11, 5.6, 5.6, '#38bdf8'); c.fill();
+      c.save(); ell(c, 0, -11, 5.6, 5.6); c.clip(); c.fillStyle = 'rgba(255,255,255,0.85)';
+      for (let k = 0; k < 5; k++) { const a = k * 1.26 + b * 0.6; ell(c, Math.cos(a) * 3, -11 + Math.sin(a) * 3, 1.3, 1.3); c.fill(); }
+      c.restore(); shine(c, -2.4, -13.6, 1.8, 0.9, 0.85);
+      c.globalAlpha = 0.9;                                                                                 // suds spilling over the top
+      for (const [x, y, r] of [[-10, -25.5, 2.2], [-7.5, -26.5, 1.6], [9.5, -25.6, 2.3], [11.5, -27.5 - b, 1.5], [-12, -29 - b, 1.2], [13, -31 + b, 1]]) blob(c, x, y, r, r, '#e0f2fe', 0.6);
+      c.globalAlpha = 1;
+      box(c, 11, -16, 4, 6, 1.4, '#22d3ee', 0.9);                                                          // soap-gun nozzle
+      shine(c, -8, -18, 2.4, 1.2, 0.7);
     } },
-    // Squad commander: plump glossy flamingo pilot with aviator goggles, a flowing scarf and a 3-blade rotor cap.
-    leader: { name: 'Flamenco Rotorina', role: 'Squad commander', w: 78, h: 98, frames: 2, draw(c, f) {
-      const PINK = '#f472b6', DEEP = '#db2777', flap = f ? 1 : 0;
-      // legs: knee joint + webbed orange feet (one leg tucks on frame 1)
+    // Squad commander: a wild-haired, grinning old grease-monkey in overalls, sweeping up dust clouds with a push broom.
+    leader: { name: 'Nonno Scopazzo', role: 'Squad commander', w: 114, h: 84, frames: 2, draw(c, f) {
+      const sw = f ? 1 : 0, SKIN = '#f2c6a0', DEN = '#2563eb';
       c.lineCap = 'round'; c.lineJoin = 'round';
-      const leg = (x0, kx, ky, fx, fy) => {
-        c.beginPath(); c.moveTo(x0, -26); c.lineTo(kx, ky); c.lineTo(fx, fy); c.lineWidth = 4.4; c.strokeStyle = OUT; c.stroke(); c.lineWidth = 2.6; c.strokeStyle = '#f9a8d4'; c.stroke();
-        blob(c, kx, ky, 1.9, 1.9, DEEP, 0.8);
-      };
-      leg(-4, -6, -14, -5, -3);
-      if (flap) leg(5, 11, -18, 6, -15); else leg(5, 7, -14, 6, -3);
-      const foot = (x, y) => { c.beginPath(); c.moveTo(x - 6, y + 1); c.quadraticCurveTo(x, y - 4, x + 6, y + 1); c.quadraticCurveTo(x, y + 2.5, x - 6, y + 1); c.fillStyle = glossFill(c, x, y, 6, 3, '#fb923c'); c.fill(); c.lineWidth = 1; c.strokeStyle = OUT; c.stroke(); };
-      foot(-5, -2); if (!flap) foot(6, -2);
-      // tail tuft
-      blob(c, -19, -33, 6, 4, DEEP, 1.1, 0.5); blob(c, -21, -29, 5, 3.5, '#be185d', 1.1, 0.2);
-      // back wing (behind body)
-      c.save(); c.translate(14, -37); c.rotate(flap ? -0.9 : -0.35);
-      for (let k = 2; k >= 0; k--) blob(c, 6 + k * 3.5, 1 + k * 1.5, 7, 3, k ? '#ec4899' : '#f9a8d4', 1, 0.15 * k); c.restore();
-      // plump egg body
-      c.save(); c.translate(0, -36); c.rotate(-0.12); blob(c, 0, 0, 16, 13.5, PINK, 1.5);
-      c.save(); ell(c, 0, 0, 16, 13.5); c.clip(); ell(c, 3, 8, 12, 7); c.fillStyle = 'rgba(253,242,248,0.55)'; c.fill(); c.restore();
-      shine(c, -6, -7, 6, 2.6, 0.8); c.restore();
-      // front wing with layered feather tips
-      c.save(); c.translate(-12, -38); c.rotate(flap ? 0.95 : 0.4);
-      for (let k = 2; k >= 0; k--) blob(c, -6 - k * 3.5, 1 + k * 1.5, 7.5, 3.2, k ? '#ec4899' : '#fbcfe8', 1, -0.15 * k);
-      blob(c, -18, 4.5, 3, 1.6, '#1a1033', 0); c.restore();
-      // thick glossy S-neck
-      c.beginPath(); c.moveTo(6, -46); c.bezierCurveTo(16, -52, 14, -60, 6, -62);
-      c.lineWidth = 9; c.strokeStyle = OUT; c.stroke(); c.lineWidth = 6.6; c.strokeStyle = PINK; c.stroke(); c.lineWidth = 2; c.strokeStyle = 'rgba(255,255,255,0.55)'; c.beginPath(); c.moveTo(8, -48); c.bezierCurveTo(14, -52, 12, -58, 6, -60); c.stroke();
-      // flowing scarf (red with yellow stripe), tail streams behind
-      c.save(); c.translate(7, -55);
-      c.beginPath(); c.moveTo(-1, 0); c.quadraticCurveTo(-12, 2 + flap * 2, -22, -2 + flap * 3); c.lineTo(-21, 4 + flap * 3); c.quadraticCurveTo(-12, 7, -1, 5); c.closePath();
-      c.fillStyle = glossFill(c, -11, 2, 11, 4, '#ef4444'); c.fill(); c.lineWidth = 1.1; c.strokeStyle = OUT; c.stroke();
-      c.beginPath(); c.moveTo(-6, 1.6); c.lineTo(-6, 5.6); c.moveTo(-13, 1); c.lineTo(-13, 5.5); c.lineWidth = 1.2; c.strokeStyle = '#facc15'; c.stroke();
-      box(c, -5.5, -2.5, 11, 6, 3, '#ef4444', 1.1); c.restore();
-      // big round head
-      blob(c, 4, -68, 11, 10, PINK, 1.5); shine(c, -1, -73, 4, 2, 0.75);
-      // curved beak: pale base, black hooked tip, little open smile
-      c.beginPath(); c.moveTo(12, -71); c.quadraticCurveTo(24, -71, 25, -63); c.quadraticCurveTo(21, -62, 18, -64.5); c.quadraticCurveTo(15, -63, 12, -64); c.closePath();
-      c.fillStyle = glossFill(c, 18, -67, 7, 4, '#fde68a'); c.fill(); c.lineWidth = 1.2; c.strokeStyle = OUT; c.stroke();
-      c.beginPath(); c.moveTo(21, -70.2); c.quadraticCurveTo(25, -69, 25, -63); c.quadraticCurveTo(22.5, -62.6, 20.5, -64.2); c.closePath(); c.fillStyle = '#1a1033'; c.fill();
-      c.beginPath(); c.moveTo(13, -66.5); c.quadraticCurveTo(17, -64.6, 20, -66); c.lineWidth = 1; c.strokeStyle = OUT; c.stroke();
-      // aviator goggles: strap + two gold-rimmed lenses with big eyes behind
-      c.beginPath(); c.moveTo(-7, -69); c.quadraticCurveTo(4, -73, 15, -70); c.lineWidth = 3.2; c.strokeStyle = '#7c2d12'; c.stroke();
-      for (const [gx, gr] of [[1.5, 5], [10.5, 4.3]]) {
-        blob(c, gx, -70, gr + 1.4, gr + 1.4, '#f59e0b', 1.1);
-        ell(c, gx, -70, gr, gr); c.fillStyle = glossFill(c, gx, -70, gr, gr, '#a5f3fc'); c.fill();
-        eye(c, gx + 0.4, -69.6, gr * 0.72, 0.5, 0.1, 0.25);
-        ell(c, gx - gr * 0.45, -70 - gr * 0.5, gr * 0.35, gr * 0.18, -0.6); c.fillStyle = 'rgba(255,255,255,0.85)'; c.fill();
-      }
-      // pilot cap with rotor mast
-      c.beginPath(); c.moveTo(-6, -75); c.quadraticCurveTo(4, -86, 14, -75); c.closePath(); c.fillStyle = glossFill(c, 4, -79, 10, 5, '#0d9488'); c.fill(); c.lineWidth = 1.3; c.strokeStyle = OUT; c.stroke();
-      box(c, 2.4, -84, 3.2, 5, 1.2, '#64748b', 0.9);
-      // 3-blade rotor, seen in perspective, with a motion-blur disc and speed streaks
-      c.save(); c.translate(4, -84); c.scale(1, 0.34);
-      const disc = c.createRadialGradient(0, 0, 3, 0, 0, 30); disc.addColorStop(0, 'rgba(226,232,240,0.55)'); disc.addColorStop(1, 'rgba(226,232,240,0.05)');
-      ell(c, 0, 0, 30, 30); c.fillStyle = disc; c.fill();
-      c.lineWidth = 2.2; c.strokeStyle = 'rgba(255,255,255,0.7)';
-      for (let k = 0; k < 3; k++) { const a0 = (f ? 0.5 : 0) + k * 2.094; c.beginPath(); c.arc(0, 0, 25, a0 - 0.75, a0 - 0.1); c.stroke(); }
-      for (let k = 0; k < 3; k++) {
-        c.save(); c.rotate((f ? 0.5 : 0) + k * 2.094);
-        c.globalAlpha = 0.35; rr(c, 2, -3.2, 27, 6.4, 3); c.fillStyle = '#cbd5e1'; c.fill(); c.globalAlpha = 1; // trailing blur copy
-        c.rotate(0.22); rr(c, 2, -2.6, 27, 5.2, 2.6); c.fillStyle = glossFill(c, 15, 0, 13, 3, '#e2e8f0'); c.fill(); c.lineWidth = 1.6; c.strokeStyle = OUT; c.stroke();
-        rr(c, 22, -2.6, 7, 5.2, 2.6); c.fillStyle = '#ef4444'; c.fill();                       // red blade tips
-        c.restore();
-      }
-      c.restore(); blob(c, 4, -84, 3, 2, '#facc15', 1);
+      // legs (overalls) + boots, bent knees, one stepping into the sweep
+      box(c, -12 - sw, -26, 9, 22, 3.5, DEN, 1.2); box(c, 2 + sw, -26, 9, 22, 3.5, DEN, 1.2);
+      blob(c, -9 - sw, -3, 7, 3.4, '#4a2c17', 1.1); blob(c, 7.5 + sw, -3, 7, 3.4, '#4a2c17', 1.1);
+      // back arm (sleeve) reaching to the broom
+      c.beginPath(); c.moveTo(-8, -46); c.quadraticCurveTo(0, -36, 10 + sw * 2, -34); c.lineWidth = 6.5; c.strokeStyle = OUT; c.stroke(); c.lineWidth = 4.5; c.strokeStyle = '#9ca3af'; c.stroke();
+      // grey work shirt torso
+      blob(c, -1, -42, 15, 15, '#9ca3af', 1.3);
+      // overall bib, straps, pocket with a wrench
+      box(c, -10, -46, 19, 22, 4, DEN, 1.2);
+      c.beginPath(); c.moveTo(-9, -45); c.lineTo(-12, -55); c.moveTo(8, -45); c.lineTo(10, -55); c.lineWidth = 3.4; c.strokeStyle = OUT; c.stroke(); c.lineWidth = 2; c.strokeStyle = DEN; c.stroke();
+      blob(c, -8.5, -45, 1.6, 1.6, '#facc15', 0.7); blob(c, 7.5, -45, 1.6, 1.6, '#facc15', 0.7);
+      box(c, -5, -40, 9, 7, 2, '#1d4ed8', 0.9);
+      c.save(); c.translate(1, -42); c.rotate(0.35); box(c, -1, -6, 2.2, 8, 1, '#cbd5e1', 0.8); blob(c, 0.1, -6.5, 2.4, 1.8, '#cbd5e1', 0.8); c.restore();
+      blob(c, 6, -30, 3, 2, '#1a1033', 0); // grease smudge
+      // push broom: handle angled down-right to a wide bristle head on the ground (sweeps between frames)
+      c.save(); c.translate(-2, -42); const ang = 0.86 - sw * 0.1; c.rotate(ang);
+      box(c, 0, -1.6, 46, 3.2, 1.6, '#a16207', 1);
+      c.translate(46, 0); c.rotate(-ang);
+      c.beginPath(); for (let k = -12; k <= 12; k += 2.4) { c.moveTo(k, 2); c.lineTo(k - 1.5 - sw * 1.5, 7.5); } c.lineWidth = 1.6; c.strokeStyle = '#d6b36a'; c.stroke();
+      box(c, -14, -3, 28, 5, 2, '#78350f', 1.1);
+      c.restore();
+      // dust puffs kicked up by the broom (move with the sweep)
+      c.globalAlpha = 0.8;
+      const dx = sw ? 6 : 0;
+      for (const [x, y, r] of [[38, -5, 6], [45, -11, 5.5], [33, -14, 4.5], [47, -3, 4.5], [40, -19, 3.6], [26, -3, 3.4]]) blob(c, x + dx + (r % 2) * sw * 2, y - sw * (r > 5 ? 2 : 0), r, r * 0.85, '#e7d8bf', 0.9);
+      c.globalAlpha = 1;
+      // front arm gripping the handle
+      c.beginPath(); c.moveTo(10, -50); c.quadraticCurveTo(22, -40, 22 - sw * 2, -26); c.lineWidth = 6.5; c.strokeStyle = OUT; c.stroke(); c.lineWidth = 4.5; c.strokeStyle = '#9ca3af'; c.stroke();
+      blob(c, 22 - sw * 2, -24.5, 3.4, 3.2, SKIN, 1); blob(c, 10 + sw * 2, -33, 3.2, 3, SKIN, 1);
+      // head: wild white hair explosion behind, bald shiny dome
+      for (let k = 0; k < 11; k++) { const a = -Math.PI * 0.95 + k * 0.29, r = 13 + (k % 3) * 2.5 + (sw && k % 2 ? 1.5 : 0); c.save(); c.translate(-2, -62); c.rotate(a); blob(c, r, 0, 6.5, 3.4, '#f1f5f9', 1, 0); c.restore(); }
+      blob(c, -15, -58, 5, 3.6, '#f1f5f9', 1, 0.6); blob(c, 11, -58, 5, 3.6, '#f1f5f9', 1, -0.6);
+      blob(c, -2, -62, 12, 12.5, SKIN, 1.4); shine(c, -6, -70, 4, 2, 0.7);
+      blob(c, -14, -61, 2.5, 3.5, SKIN, 1); blob(c, 10, -61, 2.5, 3.5, SKIN, 1); // ears
+      // bushy brows, big crazy eyes, bulb nose, gap-toothed grin, stubble chin
+      c.beginPath(); c.moveTo(-10, -69); c.quadraticCurveTo(-6, -72, -3, -68.5); c.moveTo(0, -68.5); c.quadraticCurveTo(4, -72.5, 7, -69); c.lineWidth = 2.6; c.strokeStyle = '#e5e7eb'; c.stroke();
+      eye(c, -6, -64.5, 3.2, 0.3, 0.1); eye(c, 3.2, -64.5, 3.6, -0.2, 0.2);
+      blob(c, -1.2, -59.5, 3.2, 2.6, '#e8907a', 1);
+      grin(c, -1.4, -55.5, 14, 3.4, 5, 1);
+      c.fillStyle = '#5b0f2e'; rr(c, -1.6, -55.6, 2.3, 2.6, 0.6); c.fill(); // missing tooth
+      c.fillStyle = 'rgba(100,116,139,0.35)'; for (let k = 0; k < 7; k++) { ell(c, -7 + k * 2, -51.2 + (k % 2) * 0.6, 0.45, 0.45); c.fill(); }
     } },
     // Swarm enemy: pineapple knight with a tin visor and a tiny sword.
     swarmA: { name: 'Ananasso Spadino', role: 'Swarm grunt', w: 46, h: 52, frames: 2, draw(c, f) {
@@ -156,6 +143,29 @@
       eye(c, 11 + s * 0.4, -26, 3.6, 0.3, 0.2); eye(c, 19 - s * 0.4, -25, 3.6, 0.3, 0.2);
       grin(c, 16, -11.5, 7, 2.2, 3, 0.8);
     } },
+    // Swarm variant: a tiny grinning kid in a ridiculously oversized top hat, waving, in a plain hoodie (no numbers, no marks).
+    swarmC: { name: 'Cilindrino Bimbetto', role: 'Swarm grunt (mixed in)', w: 42, h: 58, frames: 2, draw(c, f) {
+      const w = f ? 1 : 0, SKIN = '#e9b48a';
+      blob(c, -4.5, -2, 4, 2.3, '#f8fafc', 1); blob(c, 5, -2, 4, 2.3, '#f8fafc', 1);                     // sneakers
+      box(c, -6.5, -10, 5, 8, 2, '#334155', 1); box(c, 1.5, -10, 5, 8, 2, '#334155', 1);                 // legs
+      // waving arm up (behind), other arm at side
+      c.beginPath(); c.moveTo(6, -19); c.quadraticCurveTo(13, -24, 13 + w * 3, -32); c.lineWidth = 5; c.strokeStyle = OUT; c.stroke(); c.lineWidth = 3.4; c.strokeStyle = '#7c3aed'; c.stroke();
+      blob(c, 13 + w * 3, -33.5, 2.6, 2.6, SKIN, 0.9);
+      box(c, -8.5, -22, 17, 14, 5, '#7c3aed', 1.2);                                                      // plain hoodie
+      c.beginPath(); c.moveTo(-3, -21); c.lineTo(-2.5, -16); c.moveTo(3, -21); c.lineTo(2.5, -16); c.lineWidth = 0.9; c.strokeStyle = '#ede9fe'; c.stroke();
+      c.beginPath(); c.moveTo(-7, -18); c.quadraticCurveTo(-11, -14, -10, -10); c.lineWidth = 5; c.strokeStyle = OUT; c.stroke(); c.lineWidth = 3.4; c.strokeStyle = '#7c3aed'; c.stroke();
+      blob(c, -10, -9.5, 2.4, 2.4, SKIN, 0.9);
+      blob(c, 0, -29, 9, 8.5, SKIN, 1.3);                                                                 // big round head
+      eye(c, -3.4, -29.5, 2.5, 0.2, 0.1); eye(c, 3.4, -29.5, 2.5, 0.2, 0.1);
+      grin(c, 0, -25.5, 9, 2.4, 4, 0.9);
+      blob(c, -6, -26.5, 1.6, 1, '#fca5a5', 0); blob(c, 6, -26.5, 1.6, 1, '#fca5a5', 0);
+      // oversized top hat, tilted, slipping over the eyebrows
+      c.save(); c.translate(0, -35.5); c.rotate(-0.12 + w * 0.06);
+      blob(c, 0, 0, 15, 3.4, '#1f2937', 1.2);                                                             // brim
+      box(c, -10, -20, 20, 20, 3, '#1f2937', 1.3);                                                        // crown
+      box(c, -10, -6.5, 20, 4.5, 1, '#facc15', 1);                                                        // gold band
+      shine(c, -6, -15, 1.6, 5, 0.5, 0); c.restore();
+    } },
     // Heavy enemy: angry shark head riding tank treads with a cannon in its jaws.
     tank: { name: 'Squalo Cingolone', role: 'Heavy tank', w: 66, h: 58, frames: 2, draw(c, f) {
       box(c, -28, -14, 56, 13, 6.5, '#475569');                               // treads
@@ -172,32 +182,47 @@
       for (let i = 0; i < 3; i++) { c.beginPath(); c.moveTo(21 - i * 2.5, -33 + i * 0); c.lineTo(23 - i * 2.5, -26); c.lineWidth = 0.9; c.strokeStyle = 'rgba(26,16,51,0.6)'; c.stroke(); } // gills
       shine(c, -11, -38, 6, 2.4, 0.6);
     } },
-    // Boss: a gorilla-sized red espresso machine with gorilla arms, a chrome grin and steam.
-    boss: { name: 'Espressorilla, the Gorilla King', role: 'Boss', w: 184, h: 192, frames: 3, draw(c, f) {
-      const angry = f === 2, up = f === 1 ? -5 : 0;
-      blob(c, -40, -8, 16, 8, '#3f2a1e'); blob(c, 40, -8, 16, 8, '#3f2a1e');   // feet
-      c.save(); c.translate(-58, -70 + up); c.rotate(0.25); blob(c, 0, 0, 16, 34, '#5b3a29'); blob(c, 0, 36, 15, 12, '#3f2a1e'); c.restore(); // arms
-      c.save(); c.translate(58, -70 - up); c.rotate(-0.25); blob(c, 0, 0, 16, 34, '#5b3a29'); blob(c, 0, 36, 15, 12, '#3f2a1e'); c.restore();
-      box(c, -50, -132, 100, 124, 18, '#dc2626', 2);                          // machine body
-      box(c, -54, -146, 108, 20, 8, '#e2e8f0', 2);                            // chrome top
-      for (let i = 0; i < 3; i++) { box(c, -36 + i * 26, -160, 20, 15, 5, ['#fef3c7', '#e0f2fe', '#fce7f3'][i], 1.4); } // cups on top
-      blob(c, 0, -152, 20, 10, '#5b3a29', 1.6);                               // gorilla brow tuft
-      box(c, -40, -122, 80, 52, 16, '#3f2a1e', 1.6);                          // gorilla face plate
-      box(c, -32, -116, 64, 30, 14, '#a8826b', 1.2);                          // muzzle-light area
-      const ir = angry ? '#ef4444' : '#1a1033';
-      eye(c, -16, -104, 9, 0, 0.3, angry ? 1 : 0.5, ir); eye(c, 16, -104, 9, 0, 0.3, angry ? 1 : 0.5, ir);
-      if (angry) { blob(c, -16, -101, 3.5, 3.5, '#fecaca', 0); blob(c, 16, -101, 3.5, 3.5, '#fecaca', 0); }
-      blob(c, -5, -88, 3, 2.2, '#1a1033', 0); blob(c, 5, -88, 3, 2.2, '#1a1033', 0); // nostrils
-      grin(c, 0, -80, 50, angry ? 9 : 6, 8, 1.6);
-      box(c, -38, -62, 76, 14, 6, '#cbd5e1', 1.6);                            // portafilter / group head
-      box(c, -6, -50, 12, 10, 3, '#94a3b8', 1.2);
-      box(c, -16, -36, 32, 24, 6, '#fef3c7', 1.6); box(c, -12, -34, 24, 6, 3, '#78350f', 0); // cup with espresso
-      blob(c, 38, -28, 8, 8, '#facc15', 1.4); blob(c, -38, -28, 8, 8, '#22d3ee', 1.4);   // dials
-      const st = f === 1 ? 6 : 0;                                             // steam puffs
-      c.globalAlpha = 0.85;
-      blob(c, -50, -166 - st, 8, 6, '#f1f5f9', 1); blob(c, -58, -178 - st, 6, 5, '#f1f5f9', 1);
-      blob(c, 52, -164 + st * 0.5, 8, 6, '#f1f5f9', 1); blob(c, 60, -176 + st * 0.5, 6, 5, '#f1f5f9', 1); c.globalAlpha = 1;
-      shine(c, -38, -126, 10, 4, 0.55); shine(c, -40, -142, 12, 3, 0.8, 0);
+    // Boss: a GIANT grumpy fleshy blob head in mirrored aviator shades with a bushy mustache, waddling on stubby feet.
+    // Frame 2 (laser telegraph/strike): the shades glow red.
+    boss: { name: 'Testone Baffolini, the Grump King', role: 'Boss', w: 184, h: 192, frames: 3, draw(c, f) {
+      const angry = f === 2, wd = f === 1 ? 1 : 0, lean = wd ? 0.05 : -0.03, FLESH = '#f0b8a0';
+      blob(c, -34, -10 + (wd ? -5 : 0), 20, 10, '#d99583', 1.8); blob(c, 34, -10 + (wd ? 0 : -5), 20, 10, '#d99583', 1.8); // stubby feet
+      for (const s of [-1, 1]) for (let k = -1; k <= 1; k++) blob(c, s * 34 + k * 9 + s * 4, -14 + (wd === (s > 0 ? 0 : 1) ? -5 : 0), 3.4, 3, '#f5c9b6', 1); // toes
+      c.save(); c.translate(0, -100); c.rotate(lean);
+      blob(c, -79, 30, 12, 10, FLESH, 1.8, 0.4); blob(c, 79, 30, 12, 10, FLESH, 1.8, -0.4);                 // stubby hands
+      blob(c, 0, 0, 76, 78, FLESH, 2.2);                                                                     // the head
+      c.save(); ell(c, 0, 0, 76, 78); c.clip();
+      ell(c, 0, 62, 70, 30); c.fillStyle = 'rgba(190,100,90,0.25)'; c.fill();                              // jowl shading
+      c.lineWidth = 2.2; c.strokeStyle = 'rgba(150,70,60,0.45)';
+      c.beginPath(); c.moveTo(-30, -58); c.quadraticCurveTo(0, -66, 30, -58); c.moveTo(-24, -48); c.quadraticCurveTo(0, -55, 24, -48); c.stroke();          // forehead folds
+      c.beginPath(); c.moveTo(-62, 30); c.quadraticCurveTo(-44, 52, -20, 50); c.moveTo(62, 30); c.quadraticCurveTo(44, 52, 20, 50); c.stroke();             // jowl creases
+      c.restore();
+      blob(c, -74, -4, 9, 15, FLESH, 1.8); blob(c, 74, -4, 9, 15, FLESH, 1.8);                              // ears
+      // scowl brows
+      c.beginPath(); c.moveTo(-50, -38); c.lineTo(-10, angry ? -26 : -30); c.moveTo(50, -38); c.lineTo(10, angry ? -26 : -30); c.lineWidth = 7; c.lineCap = 'round'; c.strokeStyle = '#7a4a3a'; c.stroke();
+      // mirrored aviator shades (red glow before/while firing the laser)
+      if (angry) { c.save(); c.shadowColor = '#ef4444'; c.shadowBlur = 30; }
+      for (const s of [-1, 1]) {
+        c.beginPath(); c.moveTo(s * 6, -24); c.lineTo(s * 52, -26); c.quadraticCurveTo(s * 56, 0, s * 38, 6); c.quadraticCurveTo(s * 10, 8, s * 6, -10); c.closePath();
+        const g = c.createLinearGradient(0, -26, 0, 8);
+        if (angry) { g.addColorStop(0, '#fecaca'); g.addColorStop(0.35, '#ef4444'); g.addColorStop(1, '#7f1d1d'); }
+        else { g.addColorStop(0, '#fde68a'); g.addColorStop(0.45, '#f59e0b'); g.addColorStop(0.5, '#ea580c'); g.addColorStop(1, '#7c2d12'); }
+        c.fillStyle = g; c.fill(); c.lineWidth = 3; c.strokeStyle = '#d4af37'; c.stroke();
+        c.beginPath(); c.moveTo(s * 14, -20); c.lineTo(s * 30, -21); c.lineTo(s * 18, -6); c.closePath(); c.fillStyle = 'rgba(255,255,255,0.55)'; c.fill(); // mirror glint
+      }
+      c.beginPath(); c.moveTo(-6, -22); c.quadraticCurveTo(0, -27, 6, -22); c.lineWidth = 3; c.strokeStyle = '#d4af37'; c.stroke();  // bridge
+      c.beginPath(); c.moveTo(-52, -25); c.lineTo(-72, -12); c.moveTo(52, -25); c.lineTo(72, -12); c.stroke();                          // arms of the shades
+      if (angry) c.restore();
+      blob(c, 0, 14, 14, 12, '#e89a85', 1.8); shine(c, -5, 9, 4, 2.4, 0.6);                                    // big nose
+      // bushy mustache (layered tufts), grumpy down-turned mouth
+      const tufts = []; for (const s of [-1, 1]) { tufts.push([s * 13, 31, 15, 9, s * 0.15], [s * 27, 35, 12, 7.5, s * 0.45], [s * 37, 42, 7, 5, s * 0.9]); }
+      for (const [x, y, rx, ry, r] of tufts) { ell(c, x, y, rx, ry, r); c.lineWidth = 4; c.strokeStyle = OUT; c.stroke(); }  // one merged outline
+      for (const [x, y, rx, ry, r] of tufts) { ell(c, x, y, rx, ry, r); c.fillStyle = glossFill(c, x, y, rx, ry, '#6b4532'); c.fill(); }
+      c.lineWidth = 1.3; c.strokeStyle = 'rgba(40,20,10,0.55)'; c.beginPath();
+      for (const s of [-1, 1]) for (let k = 0; k < 6; k++) { const x = s * (6 + k * 6); c.moveTo(x, 27 + k * 0.8); c.lineTo(x + s * 4, 36 + k * 1.2); } c.stroke();  // hair strokes
+      c.beginPath(); c.moveTo(-24, 52); c.quadraticCurveTo(0, angry ? 38 : 42, 24, 52); c.lineWidth = 4.5; c.strokeStyle = '#7a3b34'; c.stroke();
+      shine(c, -40, -58, 18, 7, 0.55); shine(c, 44, 30, 6, 3, 0.25);
+      c.restore();
     } },
   };
 

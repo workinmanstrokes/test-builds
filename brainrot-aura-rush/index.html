@@ -102,7 +102,7 @@
     </div>
 
     <div id="bossUI">
-      <span>GORILLA KING</span>
+      <span>TESTONE BAFFOLINI</span>
       <div class="boss-hp-container"><div class="boss-hp-fill" id="bossHpBar"></div></div>
     </div>
 
@@ -113,7 +113,7 @@
   <div id="startModal" class="modal">
     <div class="card">
       <h1 style="color:#facc15; text-shadow:0 4px 0 #a16207;">TACTICAL RUSH</h1>
-      <p>Pick the right gates to grow your squad.<br>Dodge the Gorilla King's red laser.<br>Spend aura on upgrades between zones!</p>
+      <p>Pick the right gates to grow your squad.<br>Dodge the Grump King's red laser.<br>Spend aura on upgrades between zones!</p>
       <p class="best" id="startBest"></p>
       <p class="essence" id="essenceP"></p>
       <button class="btn gold" onclick="startGame()">TAP TO START</button>
@@ -456,7 +456,7 @@
       slots.forEach((x, i) => {
         if (i === gap) return;
         const hp = Math.round((20 + level * 6) * enemyHpMul());
-        entities.enemies.push({ x, baseX: x, y, phase, hp, maxHp: hp, type: 'SWARM', aura: 50, active: true, hitTime: 0, skin: level >= 3 && phase > Math.PI ? 'swarmB' : 'swarmA' });
+        entities.enemies.push({ x, baseX: x, y, phase, hp, maxHp: hp, type: 'SWARM', aura: 50, active: true, hitTime: 0, skin: level >= 3 && phase > Math.PI ? 'swarmB' : (i % 2 ? 'swarmC' : 'swarmA') });
       });
     }
     function spawnTanks(y) {
@@ -851,7 +851,7 @@
         let depth = 0; for (const s of slots) depth = Math.max(depth, -s[1]);
         // squad commander hovers beside the squad, off to the rear-left
         const lh = Sprites.CAST.leader.h * 0.6, hover = Math.sin(performance.now() / 260) * 3;
-        Sprites.draw(ctx, 'leader', anim, -(hw + 26), depth * 0.5 + lh * 0.5 + hover, 0.6);
+        Sprites.draw(ctx, 'leader', anim, -(hw + 36), depth * 0.5 + lh * 0.5 + hover, 0.6);
         const th = Sprites.CAST.trooper.h * 0.82;
         slots.forEach(([ox, oy], i) => {
           const bob = Math.abs(Math.sin((trackProgress * 0.15) + i)) * 4;
