@@ -314,6 +314,7 @@
     // ----- Game state -----
     let state = 'START', pausedFrom = null;
     let runKills = 0, runAuraEarned = 0, runAwarded = true; // Essence inputs for the current run
+    let troopStage = 0, evolveFlash = 0; // squad evolution stage (Sprites.EVOLVE, from aura earned this run) + flash timer
     let level = 1, aura = 0, trackProgress = 0, trackLength = 6000, baseSpeed = 240, screenShake = 0;
     let timeScale = 1.0, slowMoTimer = 0, zoneTime = 0, lastStandUsed = false, damageFlash = 0;
     let shieldCharges = 0, carrySquad = 0, zoneAuraStart = 0;
@@ -421,7 +422,7 @@
       newRun();
     }
     function newRun() {
-      level = 1; aura = 0; carrySquad = 0; runKills = 0; runAuraEarned = 0; runAwarded = false;
+      level = 1; aura = 0; carrySquad = 0; runKills = 0; runAuraEarned = 0; runAwarded = false; troopStage = 0; evolveFlash = 0;
       runRevived = false; runDoubled = false;
       upgrades = { recruits: 0, rate: 0, dmg: 0, shield: 0 };
       initLevel();
@@ -503,7 +504,7 @@
     }
 
     function addAura(v) {
-      if (v > 0) { v = Math.round(v * (1 + 0.08 * meta.lv.luck)); runAuraEarned += v; }
+      if (v > 0) { v = Math.round(v * (1 + 0.08 * meta.lv.luck)); runAuraEarned += v; checkEvolve(); }
       aura = Math.max(0, aura + v); updateAuraUI();
       return v;
     }
@@ -516,6 +517,16 @@
         const ang = Math.random() * Math.PI * 2, spd = 80 + Math.random() * 250;
         entities.particles.push({ x, y, vx: Math.cos(ang) * spd, vy: Math.sin(ang) * spd, color, life: 0.5, size: (6 + Math.random() * 8) * size });
       }
+    }
+    // Squad evolution: a new stage unlocks once enough aura is earned in this run -> flash, badge, burst, sound.
+    function checkEvolve() {
+      const st = Sprites.stageFor(runAuraEarned);
+      if (st <= troopStage) return;
+      troopStage = st; evolveFlash = 0.6;
+      const badgeUI = $('tierBadge'); badgeUI.textContent = `EVOLVED: ${Sprites.EVOLVE[st].title} SQUAD!`;
+      badgeUI.classList.add('tier-pop'); setTimeout(() => badgeUI.classList.remove('tier-pop'), 200);
+      spawnExplosion(squad.x, 0, '#67e8f9', 40, 1.4); addFloatText(squad.x, 40, `EVOLVED: ${Sprites.EVOLVE[st].title}!`, '#67e8f9');
+      playSound('powerup'); buzz('success');
     }
     function addFloatText(x, y, str, color) { entities.texts.push({ x, y, str, color, life: 0.9, vy: 70 }); }
     function triggerShake(amount) { screenShake = Math.max(screenShake, amount); }
@@ -852,10 +863,12 @@
         // squad commander hovers beside the squad, off to the rear-left
         const lh = Sprites.CAST.leader.h * 0.6, hover = Math.sin(performance.now() / 260) * 3;
         Sprites.draw(ctx, 'leader', anim, -(hw + 36), depth * 0.5 + lh * 0.5 + hover, 0.6);
-        const th = Sprites.CAST.trooper.h * 0.82;
+        const tKey = Sprites.EVOLVE[troopStage].key, th = Sprites.CAST.trooper.h * 0.82;
+        if (evolveFlash > 0) evolveFlash -= rawDt || 0.016;
+        const flashOn = evolveFlash > 0 && (Math.floor(evolveFlash * 16) & 1);
         slots.forEach(([ox, oy], i) => {
           const bob = Math.abs(Math.sin((trackProgress * 0.15) + i)) * 4;
-          Sprites.draw(ctx, 'trooper', (anim + i) & 1, ox, -oy + th * 0.45 - bob, 0.82);
+          Sprites.draw(ctx, tKey, flashOn ? 'hit' : (anim + i) & 1, ox, -oy + th * 0.45 - bob, 0.82);
         });
         const label = `x${Math.max(0, Math.ceil(squad.count))}`;
         ctx.font = font(14); ctx.textAlign = 'center'; ctx.textBaseline = 'middle';

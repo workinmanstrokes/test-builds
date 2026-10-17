@@ -40,30 +40,102 @@
     c.fillStyle = '#fff'; c.fill(); c.lineWidth = 0.7; c.strokeStyle = OUT; c.stroke();
   }
 
-  // ---------- The cast ----------
-  const CAST = {
-    // Player troops: a grinning head popping up through the open lid of a front-loading washing machine, with a sudsy porthole.
-    trooper: { name: 'Lavatrino Schiumoso', role: 'Your trooper', w: 30, h: 40, frames: 2, draw(c, f) {
+  // Shared bodies (palette P) so the same character can serve as a friendly unit or a tinted enemy.
+  // Top-hat kid. Optional evolution gear in P: hatUp (taller hat), hat colour, gem, trim, glow (cyan aura alpha),
+  // cape {cloth, lining}, goggles, pads, sparkles.
+  function drawKid(c, f, P) {
+      const w = f ? 1 : 0, SKIN = '#e9b48a', HAT = P.hat || '#1f2937', Hh = 20 + (P.hatUp || 0);
+      if (P.glow) {                                                                                      // aura glow
+        const g = c.createRadialGradient(0, -22, 2, 0, -22, 26); g.addColorStop(0, `rgba(103,232,249,${P.glow})`); g.addColorStop(0.6, `rgba(34,211,238,${P.glow * 0.45})`); g.addColorStop(1, 'rgba(34,211,238,0)');
+        ell(c, 0, -22, 26, 26); c.fillStyle = g; c.fill();
+      }
+      if (P.cape) {                                                                                      // cape behind the body
+        c.beginPath(); c.moveTo(-7, -21); c.quadraticCurveTo(-14, -10, -14 - w, -1); c.quadraticCurveTo(-7, 1 + w, 0, -1); c.quadraticCurveTo(7, 1 - w, 14 + w, -1); c.quadraticCurveTo(14, -10, 7, -21); c.closePath();
+        c.fillStyle = glossFill(c, 0, -11, 14, 11, P.cape.cloth); c.fill(); c.lineWidth = 1.1; c.strokeStyle = OUT; c.stroke();
+        c.beginPath(); c.moveTo(-13 - w, -2); c.quadraticCurveTo(-7, 0 + w, 0, -2); c.quadraticCurveTo(7, 0 - w, 13 + w, -2); c.lineWidth = 1.6; c.strokeStyle = P.cape.lining; c.stroke();
+      }
+      blob(c, -4.5, -2, 4, 2.3, '#f8fafc', 1); blob(c, 5, -2, 4, 2.3, '#f8fafc', 1);                     // sneakers
+      box(c, -6.5, -10, 5, 8, 2, P.legs, 1); box(c, 1.5, -10, 5, 8, 2, P.legs, 1);                       // legs
+      // raised arm with the blaster (behind), other arm at side
+      c.beginPath(); c.moveTo(6, -19); c.quadraticCurveTo(14, -22, 18 + w * 1.5, -28); c.lineWidth = 5; c.strokeStyle = OUT; c.stroke(); c.lineWidth = 3.4; c.strokeStyle = P.hoodie; c.stroke();
+      if (P.blaster) { c.save(); c.translate(18 + w * 1.5, -29); c.rotate(-0.25); box(c, -1, -2.2, 9, 4.4, 1.6, P.blaster, 0.9); blob(c, 8.4, 0, 1.4, 2.2, '#ecfeff', 0.7); c.restore(); }
+      blob(c, 18 + w * 1.5, -28.5, 2.6, 2.6, SKIN, 0.9);
+      box(c, -8.5, -22, 17, 14, 5, P.hoodie, 1.2);                                                      // hoodie
+      c.beginPath(); c.moveTo(-3, -21); c.lineTo(-2.5, -16); c.moveTo(3, -21); c.lineTo(2.5, -16); c.lineWidth = 0.9; c.strokeStyle = P.string; c.stroke();
+      if (P.trim) { c.beginPath(); c.moveTo(0, -21.5); c.lineTo(0, -8.5); c.lineWidth = 1.2; c.strokeStyle = P.trim; c.stroke(); rr(c, -8, -10.5, 16, 2, 1); c.fillStyle = P.trim; c.fill(); }
+      if (P.pads) { blob(c, -8, -20, 3.6, 2.4, P.pads, 1, -0.3); blob(c, 8, -20, 3.6, 2.4, P.pads, 1, 0.3); }
+      c.beginPath(); c.moveTo(-7, -18); c.quadraticCurveTo(-11, -14, -10, -10); c.lineWidth = 5; c.strokeStyle = OUT; c.stroke(); c.lineWidth = 3.4; c.strokeStyle = P.hoodie; c.stroke();
+      blob(c, -10, -9.5, 2.4, 2.4, SKIN, 0.9);
+      blob(c, 0, -29, 9, 8.5, SKIN, 1.3);                                                                 // big round head
+      eye(c, -3.4, -29.5, 2.5, 0.2, 0.1); eye(c, 3.4, -29.5, 2.5, 0.2, 0.1);
+      grin(c, 0, -25.5, 9, 2.4, 4, 0.9);
+      blob(c, -6, -26.5, 1.6, 1, '#fca5a5', 0); blob(c, 6, -26.5, 1.6, 1, '#fca5a5', 0);
+      // oversized top hat, tilted, slipping over the eyebrows (taller every evolution)
+      c.save(); c.translate(0, -35.5); c.rotate(-0.12 + w * 0.06);
+      blob(c, 0, 0, 15, 3.4, HAT, 1.2);                                                                   // brim
+      box(c, -10, -Hh, 20, Hh, 3, HAT, 1.3);                                                              // crown
+      box(c, -10, -6.5, 20, 4.5, 1, P.band, 1);                                                           // hat band
+      if (P.gem) { c.beginPath(); c.moveTo(0, -8); c.lineTo(3, -4.2); c.lineTo(0, -0.6); c.lineTo(-3, -4.2); c.closePath(); c.fillStyle = glossFill(c, 0, -4.2, 3, 3.6, P.gem); c.fill(); c.lineWidth = 0.8; c.strokeStyle = OUT; c.stroke(); }
+      if (P.goggles) { box(c, -10.5, -Hh * 0.62 - 2.2, 21, 2, 1, '#7c2d12', 0.6); for (const gx of [-4.5, 4.5]) { blob(c, gx, -Hh * 0.62 - 1.2, 3.8, 3.4, '#f59e0b', 0.9); ell(c, gx, -Hh * 0.62 - 1.2, 2.6, 2.3); c.fillStyle = glossFill(c, gx, -Hh * 0.62 - 1.2, 2.6, 2.3, '#a5f3fc'); c.fill(); } }
+      shine(c, -6, -Hh * 0.7, 1.6, Hh * 0.25, 0.5, 0); c.restore();
+      if (P.sparkles) {                                                                                  // twinkling stars
+        c.fillStyle = '#ecfeff';
+        for (const [x, y, r] of (w ? [[-15, -40, 2.4], [16, -12, 2], [-14, -14, 1.6]] : [[15, -44, 2.4], [-16, -26, 2], [13, -6, 1.6]])) { c.beginPath(); for (let k = 0; k < 8; k++) { const a = k * Math.PI / 4, rr2 = k % 2 ? r * 0.35 : r; c.lineTo(x + Math.cos(a) * rr2, y + Math.sin(a) * rr2); } c.closePath(); c.fill(); }
+      }
+  }
+  function drawWasher(c, f, P) {
       const b = f ? 1 : 0, SKIN = '#f6c7a1';
       blob(c, -7, -1.5, 3.2, 1.8, '#64748b', 0.9); blob(c, 7, -1.5, 3.2, 1.8, '#64748b', 0.9);             // little feet
-      c.save(); c.translate(-10, -25); c.rotate(-0.55 - b * 0.1); box(c, -1, -2.5, 20, 3.6, 1.6, '#e2e8f0', 1); c.restore(); // open lid (behind head)
+      c.save(); c.translate(-10, -25); c.rotate(-0.55 - b * 0.1); box(c, -1, -2.5, 20, 3.6, 1.6, P.body, 1); c.restore(); // open lid (behind head)
       blob(c, 0, -29 - b * 1.2, 7.2, 7.4, SKIN, 1.2);                                                      // head
-      for (let k = 0; k < 5; k++) blob(c, -5 + k * 2.5, -35.5 - b * 1.2 - (k % 2) * 0.8, 2, 1.7, '#7c3f1d', 0.8); // messy hair tuft
-      eye(c, -2.8, -30 - b * 1.2, 2.1, 0.2, 0); eye(c, 2.8, -30 - b * 1.2, 2.1, 0.2, 0);
+      for (let k = 0; k < 5; k++) blob(c, -5 + k * 2.5, -35.5 - b * 1.2 - (k % 2) * 0.8, 2, 1.7, P.hair, 0.8); // messy hair tuft
+      eye(c, -2.8, -30 - b * 1.2, 2.1, 0.2, 0, P.angry, P.iris); eye(c, 2.8, -30 - b * 1.2, 2.1, -0.2, 0, P.angry, P.iris);
       grin(c, 0, -26.3 - b * 1.2, 8, 2, 4, 0.8);
-      box(c, -12, -25, 24, 23, 4.5, '#f8fafc', 1.3);                                                       // machine body
-      box(c, -12, -25, 24, 5.5, 2.5, '#cbd5e1', 1);                                                        // control strip
-      blob(c, 6.5, -22.3, 1.6, 1.6, '#22d3ee', 0.7); blob(c, 2.5, -22.3, 1.1, 1.1, '#f472b6', 0.6); rr(c, -9.5, -23.3, 6, 2, 1); c.fillStyle = '#0f172a'; c.fill();
+      box(c, -12, -25, 24, 23, 4.5, P.body, 1.3);                                                       // machine body
+      box(c, -12, -25, 24, 5.5, 2.5, P.strip, 1);                                                        // control strip
+      blob(c, 6.5, -22.3, 1.6, 1.6, P.light, 0.7); blob(c, 2.5, -22.3, 1.1, 1.1, P.light2, 0.6); rr(c, -9.5, -23.3, 6, 2, 1); c.fillStyle = '#0f172a'; c.fill();
       blob(c, 0, -11, 7.6, 7.6, '#94a3b8', 1.2);                                                           // porthole rim
-      ell(c, 0, -11, 5.6, 5.6); c.fillStyle = glossFill(c, 0, -11, 5.6, 5.6, '#38bdf8'); c.fill();
-      c.save(); ell(c, 0, -11, 5.6, 5.6); c.clip(); c.fillStyle = 'rgba(255,255,255,0.85)';
+      ell(c, 0, -11, 5.6, 5.6); c.fillStyle = glossFill(c, 0, -11, 5.6, 5.6, P.water); c.fill();
+      c.save(); ell(c, 0, -11, 5.6, 5.6); c.clip(); c.fillStyle = P.bubble;
       for (let k = 0; k < 5; k++) { const a = k * 1.26 + b * 0.6; ell(c, Math.cos(a) * 3, -11 + Math.sin(a) * 3, 1.3, 1.3); c.fill(); }
       c.restore(); shine(c, -2.4, -13.6, 1.8, 0.9, 0.85);
       c.globalAlpha = 0.9;                                                                                 // suds spilling over the top
-      for (const [x, y, r] of [[-10, -25.5, 2.2], [-7.5, -26.5, 1.6], [9.5, -25.6, 2.3], [11.5, -27.5 - b, 1.5], [-12, -29 - b, 1.2], [13, -31 + b, 1]]) blob(c, x, y, r, r, '#e0f2fe', 0.6);
+      for (const [x, y, r] of [[-10, -25.5, 2.2], [-7.5, -26.5, 1.6], [9.5, -25.6, 2.3], [11.5, -27.5 - b, 1.5], [-12, -29 - b, 1.2], [13, -31 + b, 1]]) blob(c, x, y, r, r, P.suds, 0.6);
       c.globalAlpha = 1;
-      box(c, 11, -16, 4, 6, 1.4, '#22d3ee', 0.9);                                                          // soap-gun nozzle
+      box(c, 11, -16, 4, 6, 1.4, P.light, 0.9);                                                          // soap-gun nozzle
       shine(c, -8, -18, 2.4, 1.2, 0.7);
+  }
+
+  // Squad evolution palettes (all keep the teal/cyan squad identity).
+  const KID1 = { hoodie: '#14b8a6', string: '#ccfbf1', band: '#22d3ee', legs: '#0f3d3a', blaster: '#22d3ee' };
+  const KID2 = { ...KID1, hoodie: '#2dd4bf', hatUp: 3, band: '#facc15', gem: '#22d3ee', trim: '#facc15', glow: 0.28 };
+  const KID3 = { ...KID2, hoodie: '#0ea5a4', hatUp: 6, goggles: true, pads: '#e2e8f0', cape: { cloth: '#1e3a8a', lining: '#22d3ee' }, glow: 0.45, blaster: '#67e8f9' };
+  const KID4 = { ...KID3, hoodie: '#2dd4bf', hat: '#3b0764', band: '#facc15', gem: '#f0abfc', hatUp: 9, pads: '#facc15', cape: { cloth: '#0e7490', lining: '#facc15' }, glow: 0.7, sparkles: true };
+  // Evolution stages, unlocked by aura earned in the current run (resets every run). Sorted by threshold.
+  const EVOLVE = [
+    { key: 'trooper', title: 'ROOKIE', at: 0 },
+    { key: 'trooper2', title: 'DAPPER', at: 1500 },
+    { key: 'trooper3', title: 'CAPED', at: 5000 },
+    { key: 'trooper4', title: 'LEGEND', at: 12000 },
+  ];
+  const stageFor = runAura => { let i = 0; while (i + 1 < EVOLVE.length && runAura >= EVOLVE[i + 1].at) i++; return i; };
+
+  // ---------- The cast ----------
+  const CAST = {
+    // Player troops: a tiny grinning kid in an oversized top hat with a glowing cyan band, teal squad hoodie and a
+    // little cyan blaster. Squad teal + cyan stays readable in big clusters and never matches an enemy colour.
+    // The squad EVOLVES during a run (see EVOLVE below): trooper -> trooper2 -> trooper3 -> trooper4, each bigger and flashier.
+    trooper: { name: 'Cilindrino Bimbetto', role: 'Your trooper (evo 1: start)', w: 44, h: 44, frames: 2, draw(c, f) {
+      c.scale(0.72, 0.72); drawKid(c, f, KID1);
+    } },
+    trooper2: { name: 'Cilindrino Bimbetto (Dapper)', role: 'Evo 2: 1,500 run aura', w: 48, h: 52, frames: 2, draw(c, f) {
+      c.scale(0.77, 0.77); drawKid(c, f, KID2);
+    } },
+    trooper3: { name: 'Cilindrino Bimbetto (Caped)', role: 'Evo 3: 5,000 run aura', w: 54, h: 59, frames: 2, draw(c, f) {
+      c.scale(0.82, 0.82); drawKid(c, f, KID3);
+    } },
+    trooper4: { name: 'Cilindrino Bimbetto (Legend)', role: 'Evo 4: 12,000 run aura', w: 60, h: 70, frames: 2, draw(c, f) {
+      c.scale(0.88, 0.88); drawKid(c, f, KID4);
     } },
     // Squad commander: a wild-haired, grinning old grease-monkey in overalls, sweeping up dust clouds with a push broom.
     leader: { name: 'Nonno Scopazzo', role: 'Squad commander', w: 114, h: 84, frames: 2, draw(c, f) {
@@ -143,28 +215,11 @@
       eye(c, 11 + s * 0.4, -26, 3.6, 0.3, 0.2); eye(c, 19 - s * 0.4, -25, 3.6, 0.3, 0.2);
       grin(c, 16, -11.5, 7, 2.2, 3, 0.8);
     } },
-    // Swarm variant: a tiny grinning kid in a ridiculously oversized top hat, waving, in a plain hoodie (no numbers, no marks).
-    swarmC: { name: 'Cilindrino Bimbetto', role: 'Swarm grunt (mixed in)', w: 42, h: 58, frames: 2, draw(c, f) {
-      const w = f ? 1 : 0, SKIN = '#e9b48a';
-      blob(c, -4.5, -2, 4, 2.3, '#f8fafc', 1); blob(c, 5, -2, 4, 2.3, '#f8fafc', 1);                     // sneakers
-      box(c, -6.5, -10, 5, 8, 2, '#334155', 1); box(c, 1.5, -10, 5, 8, 2, '#334155', 1);                 // legs
-      // waving arm up (behind), other arm at side
-      c.beginPath(); c.moveTo(6, -19); c.quadraticCurveTo(13, -24, 13 + w * 3, -32); c.lineWidth = 5; c.strokeStyle = OUT; c.stroke(); c.lineWidth = 3.4; c.strokeStyle = '#7c3aed'; c.stroke();
-      blob(c, 13 + w * 3, -33.5, 2.6, 2.6, SKIN, 0.9);
-      box(c, -8.5, -22, 17, 14, 5, '#7c3aed', 1.2);                                                      // plain hoodie
-      c.beginPath(); c.moveTo(-3, -21); c.lineTo(-2.5, -16); c.moveTo(3, -21); c.lineTo(2.5, -16); c.lineWidth = 0.9; c.strokeStyle = '#ede9fe'; c.stroke();
-      c.beginPath(); c.moveTo(-7, -18); c.quadraticCurveTo(-11, -14, -10, -10); c.lineWidth = 5; c.strokeStyle = OUT; c.stroke(); c.lineWidth = 3.4; c.strokeStyle = '#7c3aed'; c.stroke();
-      blob(c, -10, -9.5, 2.4, 2.4, SKIN, 0.9);
-      blob(c, 0, -29, 9, 8.5, SKIN, 1.3);                                                                 // big round head
-      eye(c, -3.4, -29.5, 2.5, 0.2, 0.1); eye(c, 3.4, -29.5, 2.5, 0.2, 0.1);
-      grin(c, 0, -25.5, 9, 2.4, 4, 0.9);
-      blob(c, -6, -26.5, 1.6, 1, '#fca5a5', 0); blob(c, 6, -26.5, 1.6, 1, '#fca5a5', 0);
-      // oversized top hat, tilted, slipping over the eyebrows
-      c.save(); c.translate(0, -35.5); c.rotate(-0.12 + w * 0.06);
-      blob(c, 0, 0, 15, 3.4, '#1f2937', 1.2);                                                             // brim
-      box(c, -10, -20, 20, 20, 3, '#1f2937', 1.3);                                                        // crown
-      box(c, -10, -6.5, 20, 4.5, 1, '#facc15', 1);                                                        // gold band
-      shine(c, -6, -15, 1.6, 5, 0.5, 0); c.restore();
+    // Swarm variant mixed in with the pineapple knights: an angry washing machine (rusty red body, scorched-orange porthole
+    // sludge, grimy suds, red warning lights) with a grinning head popping out of the lid.
+    swarmC: { name: 'Lavatrino Schiumoso', role: 'Swarm grunt (mixed in)', w: 40, h: 50, frames: 2, draw(c, f) {
+      c.scale(1.22, 1.22);
+      drawWasher(c, f, { body: '#b91c1c', strip: '#3f1d1d', water: '#f97316', suds: '#d9d4b8', bubble: 'rgba(60,20,10,0.7)', light: '#ef4444', light2: '#facc15', iris: '#991b1b', angry: 0.8, hair: '#1f1209' });
     } },
     // Heavy enemy: angry shark head riding tank treads with a cannon in its jaws.
     tank: { name: 'Squalo Cingolone', role: 'Heavy tank', w: 66, h: 58, frames: 2, draw(c, f) {
@@ -256,5 +311,5 @@
     const s = CAST[key], w = (s.w + f.pad * 2) * scale, h = (s.h + f.pad * 2) * scale;
     ctx.drawImage(atlas, f.sx, f.sy, f.sw, f.sh, x - w / 2, y - h + f.pad * scale, w, h);
   }
-  root.Sprites = { CAST, draw, build, atlas: () => atlas };
+  root.Sprites = { CAST, EVOLVE, stageFor, draw, build, atlas: () => atlas };
 })(typeof window !== 'undefined' ? window : globalThis);
