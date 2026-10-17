@@ -1,5 +1,5 @@
 // AdMob rewarded ads with UMP consent (Google TEST ids by default, see config.js).
-// Placements: boost (2x for 3 min), revive (after overheat), skip (next stage), offline (double away earnings).
+// Placements: boost (2x for 120 s, every 5 min), free (next upgrade, every 10 min), revive (after overheat), skip (next wall), offline + daily (double).
 // Web build: no AdMob, so a 3-second "TEST AD" overlay stands in for a rewarded ad.
 import { ADS } from './config.js';
 import { track, setAnalyticsConsent } from './analytics.js';
@@ -45,6 +45,9 @@ export function rewardGate(s, placement, now = Date.now()) {
   if (s.ads.count >= ADS.rewardDailyCap) return { ok: false, why: 'Daily limit reached' };
   const wait = (s.ads.lastReward || 0) + ADS.rewardCooldownMs - now;
   if (placement !== 'revive' && wait > 0) return { ok: false, why: `Ready in ${Math.ceil(wait / 1000)}s`, wait };
+  // per-placement cooldowns (plan: x2 boost once per 5 min, free upgrade once per 10 min). Same limits with or without remove-ads.
+  const pw = ((s.ads.last || {})[placement] || 0) + (ADS.placementCooldownMs[placement] || 0) - now;
+  if (pw > 0) return { ok: false, why: `Ready in ${pw >= 60e3 ? Math.ceil(pw / 60e3) + ' min' : Math.ceil(pw / 1000) + 's'}`, wait: pw };
   return { ok: true };
 }
 
@@ -52,14 +55,14 @@ export function rewardGate(s, placement, now = Date.now()) {
 export async function showRewarded(s, placement) {
   if (showing) return false;
   const g = rewardGate(s, placement); if (!g.ok) return false;
-  if (s.noAds) { s.ads.count++; s.ads.lastReward = Date.now(); track('reward_no_ad', { placement }); return true; } // remove-ads owners skip the video
+  if (s.noAds) { s.ads.count++; s.ads.lastReward = Date.now(); (s.ads.last ||= {})[placement] = Date.now(); track('reward_no_ad', { placement }); return true; } // remove-ads owners skip the video
   showing = true; track('ad_reward_shown', { placement });
   let earned = false;
   try {
     if (isPortal) { setSound(false); earned = await portalRewarded(); }
     else earned = AdMob ? await nativeRewarded() : await simulated();
   } finally { showing = false; if (isPortal) setSound(s.settings.sound); }
-  if (earned) { s.ads.count++; s.ads.lastReward = Date.now(); s.ads.earned++; track('ad_reward_earned', { placement }); }
+  if (earned) { s.ads.count++; s.ads.lastReward = Date.now(); (s.ads.last ||= {})[placement] = Date.now(); s.ads.earned++; track('ad_reward_earned', { placement }); }
   return earned;
 }
 function nativeRewarded() {

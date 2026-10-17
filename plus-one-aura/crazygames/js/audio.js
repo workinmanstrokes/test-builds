@@ -1,12 +1,27 @@
 // Tiny WebAudio synth. All sounds are generated from the active skin's `sound` spec.
-let ctx = null, master = null, enabled = true, skin = null, root = 57, stage = 0;
+let ctx = null, master = null, musicBus = null, enabled = true, skin = null, root = 57, stage = 0, sfxVol = 0.8, musicVol = 0.5, musicT = 0, bar = 0;
 const midi = m => 440 * Math.pow(2, (m - 69) / 12);
 export function setSkinAudio(s, stageRoot, si = 0) { skin = s; root = stageRoot; stage = si; }
 export function setSound(on) { enabled = on; }
+export function setVolumes(sfx, music) { sfxVol = sfx; musicVol = music; if (master) master.gain.value = sfxVol; if (musicBus) musicBus.gain.value = musicVol * 0.5; }
+export function suspendAudio(yes) { if (!ctx) return; if (yes) ctx.suspend?.(); else ctx.resume?.(); }
+// Ambient music: a slow, original synthesized pad on the current stage's root (no samples, no licensed tracks).
+const PROG = [[0, 7, 12, 16], [-3, 4, 9, 12], [5, 9, 12, 17], [2, 7, 11, 14]];
+function musicTick() {
+  if (!ctx || !musicBus || !enabled || musicVol <= 0 || ctx.state !== 'running') return;
+  const chord = PROG[bar++ % PROG.length], t = ctx.currentTime;
+  for (const c of chord) {
+    const o = ctx.createOscillator(), g = ctx.createGain(); o.type = 'triangle'; o.frequency.value = midi(root - 12 + c);
+    g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(0.05, t + 1.2); g.gain.exponentialRampToValueAtTime(0.0001, t + 4.4);
+    o.connect(g); g.connect(musicBus); o.start(t); o.stop(t + 4.5);
+  }
+}
 export function unlockAudio() {
   if (ctx) { if (ctx.state === 'suspended') ctx.resume(); return; }
   const AC = window.AudioContext || window.webkitAudioContext; if (!AC) return;
-  ctx = new AC(); master = ctx.createGain(); master.gain.value = 0.8; master.connect(ctx.destination);
+  ctx = new AC(); master = ctx.createGain(); master.gain.value = sfxVol; master.connect(ctx.destination);
+  musicBus = ctx.createGain(); musicBus.gain.value = musicVol * 0.5; musicBus.connect(ctx.destination);
+  musicTick(); musicT = setInterval(musicTick, 4000);
 }
 function tone(freq, { wave = 'sine', dur = 0.1, gain = 0.15, detune = 0 } = {}, at = 0) {
   if (!ctx || !enabled) return;

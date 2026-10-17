@@ -21,13 +21,13 @@ export default {
     mascot: 'Aurie', heat: 'HEAT',
     overheatMsg: (lost, cur) => `Aurie burned out and dropped your streak of <b>+${lost}</b> ${cur}.`,
     upgrades: {
-      power: ['Brighter Glow', '+1 aura per tap'],
-      auto:  ['Little Wisps', '+1 aura every second, even offline'],
-      combo: ['Deep Focus', '+0.5 max streak multiplier'],
-      cool:  ['Calm Mind', 'Builds 9% less heat per tap'],
-      crit:  ['Lucky Spark', '+3% chance of a x10 Aura Burst'],
+      tap:   ['Tap Power', '+1 aura per tap'],
+      farm:  ['Aura Farm', '+2 aura/s, even offline · x2 at Lv10 & Lv25'],
+      glow:  ['Glow-Up', '+25% to ALL aura per level'],
+      rizz:  ['Rizz Combo', 'Streak 20+ pays x1.5 · +0.1s streak window'],
+      lucky: ['Lucky Sigma', '+1% chance of a x10 Aura Burst'],
     },
-    reward: { boost: '2x Aura · 3 min', revive: 'Revive & keep streak', skip: 'Skip to next stage', offline: 'Double it' },
+    reward: { boost: '2x Aura · 2 min', revive: 'Revive & keep streak', skip: 'Skip this wall', offline: 'Double it' },
     stageUnlock: n => `NEW STAGE: ${n}`, levelUp: L => `LEVEL ${L}`,
   },
   stages,
@@ -104,7 +104,7 @@ export default {
       body.addColorStop(0, '#ffffff'); body.addColorStop(0.5, '#fff1b0'); body.addColorStop(1, '#f2a93b');
       ctx.fillStyle = body; ctx.beginPath(); ctx.arc(0, 0, r, 0, TAU); ctx.fill();
     }
-    if (heat > 0.05) { ctx.globalCompositeOperation = 'source-atop'; ctx.fillStyle = `rgba(255,40,20,${heat * 0.45})`; ctx.fillRect(-r * 2, -r * 2, r * 4, r * 4); ctx.globalCompositeOperation = 'source-over'; }
+    if (heat > 0.05) { const hg2 = ctx.createRadialGradient(0, 0, 0, 0, 0, r); hg2.addColorStop(0, `rgba(255,40,20,${heat * 0.45})`); hg2.addColorStop(0.85, `rgba(255,40,20,${heat * 0.35})`); hg2.addColorStop(1, 'rgba(255,40,20,0)'); ctx.fillStyle = hg2; ctx.beginPath(); ctx.arc(0, 0, r, 0, TAU); ctx.fill(); } // tint the body only
     drawFace(ctx, r, t, o);
     ctx.restore();
   },

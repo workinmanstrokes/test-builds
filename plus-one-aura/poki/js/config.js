@@ -8,6 +8,7 @@ export const ADS = {
   interstitialId: 'ca-app-pub-3940256099942544/1033173712', // @cfg interstitial (TEST) - unused in week 1
   rewardCooldownMs: 20e3,   // min gap between optional rewarded ads (revive is exempt)
   rewardDailyCap: 40,
+  placementCooldownMs: { boost: 5 * 60e3, free: 10 * 60e3 },
 };
 
 // Firebase Analytics (free Spark plan). Both paths are OFF until Michael approves a Firebase project.
@@ -21,10 +22,13 @@ export const GAME = {
   skin: 'aura',             // default skin id (see js/skins/)
   offlineCapHours: 8,
   offlineEfficiency: 0.5,
-  boostMs: 3 * 60e3,        // rewarded 2x boost length
-  boostCapMs: 15 * 60e3,
+  boostMs: 120e3,           // rewarded 2x boost: 120 s, once per 5 min (ADS.placementCooldownMs)
+  boostCapMs: 120e3,
   reviveWindowMs: 6000,
-  skipMinProgress: 0.25,    // stage-skip ad offered once you're 25% of the way to the next stage
+  skipMinProgress: 0.25,    // wall-skip ad offered once you're 25% of the way to the next wall
+  skipFromFloor: 2,         // ...and never for the first two walls (they take ~20 s and ~35 s)
+  wispEverySec: [22, 34],   // floor-3 twist: a golden wisp drifts by; catch it for 5 s of income
+  wispValueSec: 5,
 };
 
 // "Remove ads" one-time Play Billing purchase ($1.99). OFF until Michael creates the in-app product in Play Console;
@@ -36,4 +40,4 @@ export const BILLING = {
   priceFallback: '$1.99',
 };
 
-export const PRIVACY_URL = 'https://workinmanstrokes.github.io/test-builds/plus-one-aura/privacy.html';
+export const PRIVACY_URL = 'https://workinmanstrokes.github.io/test-builds/privacy/plus-one-aura.html'; // permanent path

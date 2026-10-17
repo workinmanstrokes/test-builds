@@ -3,26 +3,38 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+  <!-- ios-pwa -->
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="+1 Aura">
+  <link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png">
+  <script src="ios.js"></script>
+  <!-- /ios-pwa -->
   <meta name="theme-color" content="#0b0716">
   <meta name="description" content="+1 Aura: Tap to Ascend. Every tap is +1. Build your aura, unlock new stages.">
   <title>+1 Aura: Tap to Ascend</title>
   <link rel="icon" href="icon.png">
   
   <link rel="stylesheet" href="styles.css">
+  <!-- Boot: no splash. The logo lives on the loading bar only and is gone as soon as the game can take input. -->
+  <style>#boot{position:fixed;inset:0;z-index:99;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;background:#0b0716;color:#ffe2b8;font:900 34px system-ui,sans-serif;transition:opacity .2s}#boot i{display:block;width:180px;height:8px;border-radius:4px;background:#ffffff22;overflow:hidden}#boot i b{display:block;height:100%;width:15%;background:linear-gradient(90deg,#ffb347,#ff7a1a);transition:width .25s}#boot.done{opacity:0;pointer-events:none}</style>
 </head>
 <body>
+  <div id="boot" aria-label="Loading"><div>+1 Aura</div><i><b id="bootbar"></b></i></div>
   <canvas id="stage" aria-label="Tap Aurie to gain aura"></canvas>
   <div id="hud">
     <header class="top">
       <div class="lvl"><span id="lvl">LV 1</span><i><b id="lvlbar"></b></i></div>
       <div class="total"><div id="aura" class="big">0</div><div class="sub"><span id="cur">Aura</span> · <span id="rate">0</span> <span id="rateLbl">aura/s</span></div></div>
-      <button id="btnSkins" class="icon" aria-label="Skins">🎨</button><button id="btnSettings" class="icon" aria-label="Settings">⚙</button>
+      <button id="btnPause" class="icon" aria-label="Pause">⏸</button><button id="btnSettings" class="icon" aria-label="Settings">⚙</button>
     </header>
-    <button id="stageChip" class="chip"><span id="stageName">Ember Wilds</span><i><b id="stagebar"></b></i><small id="stageNext"></small></button>
+    <button id="stageChip" class="chip"><span id="stageName">Floor 1</span><i><b id="stagebar"></b></i><small id="stageNext"></small></button>
     <div class="side">
       <button id="btnBoost" class="reward"><span class="tv">▶</span><b>2x</b><small id="boostLbl">Boost</small></button>
       <button id="btnSkip" class="reward skip" hidden><span class="tv">▶</span><b>⏭</b><small>Skip stage</small></button>
     </div>
+    <div id="tower" class="tower" aria-hidden="true"></div>
     <div id="tapHint" class="hint">TAP AURIE</div>
     <div class="meters">
       <div id="streak" class="streak"></div>
@@ -31,6 +43,18 @@
     <nav id="shop" class="shop" aria-label="Upgrades"></nav>
   </div>
 
+  <!-- Live title: the game idles behind it; tapping the hero is the first jump. Buttons sit in the bottom thumb zone. -->
+  <div id="title" hidden>
+    <div class="t-logo"><div id="tName" class="t1">+1 AURA</div><div id="tSub" class="t2">TAP TO ASCEND</div></div>
+    <div class="t-tap">tap anywhere</div>
+    <div class="t-menu">
+      <button id="tPlay" class="play">▶ PLAY</button>
+      <div class="t-row"><button id="tSkins" class="tbtn">🎨<small>Skins</small></button><button id="tDaily" class="tbtn">🎁<small>Daily</small></button><button id="tSettings" class="tbtn">⚙<small>Settings</small></button></div>
+    </div>
+  </div>
+  <div id="pause" class="modal" hidden><div class="card"><h2>Paused</h2><div class="row">
+    <button class="btn primary" id="pResume">Resume</button><button class="btn" id="pSkins">Skins</button><button class="btn" id="pDaily">Daily gift</button><button class="btn" id="pSettings">Settings</button><button class="btn" id="pHome">Home</button>
+  </div></div></div>
   <div id="modal" class="modal" hidden><div class="card" id="modalCard"></div></div>
   <div id="banner" class="banner"></div>
   <div id="toast" class="toast" role="status" aria-live="polite"></div>
