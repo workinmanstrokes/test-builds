@@ -3,6 +3,8 @@
 // Web build: no AdMob, so a 3-second "TEST AD" overlay stands in for a rewarded ad.
 import { ADS } from './config.js';
 import { track } from './analytics.js';
+import { isPortal, portalRewarded, portalReady } from './portal.js';
+import { setSound } from './audio.js';
 const cap = window.Capacitor;
 const native = !!cap?.isNativePlatform?.();
 const AdMob = native ? cap.Plugins?.AdMob : null;
@@ -27,7 +29,8 @@ async function preload() { if (!ready || !canRequest || loaded) return; try { aw
 /** Optional-ad gating (cooldown + daily cap) stored in the save so it survives restarts. Revive bypasses cooldown. */
 export function rewardGate(s, placement, now = Date.now()) {
   if (!ADS.enabled) return { ok: false, why: 'Ads off' };
-  if (native && (!ready || !canRequest)) return { ok: false, why: 'Ads unavailable' };
+  if (native && !s.noAds && (!ready || !canRequest)) return { ok: false, why: 'Ads unavailable' };
+  if (isPortal && !portalReady()) return { ok: false, why: 'Ads unavailable' };
   const today = new Date(now).toISOString().slice(0, 10);
   if (s.ads.day !== today) { s.ads.day = today; s.ads.count = 0; }
   if (s.ads.count >= ADS.rewardDailyCap) return { ok: false, why: 'Daily limit reached' };
@@ -40,9 +43,13 @@ export function rewardGate(s, placement, now = Date.now()) {
 export async function showRewarded(s, placement) {
   if (showing) return false;
   const g = rewardGate(s, placement); if (!g.ok) return false;
+  if (s.noAds) { s.ads.count++; s.ads.lastReward = Date.now(); track('reward_no_ad', { placement }); return true; } // remove-ads owners skip the video
   showing = true; track('ad_reward_shown', { placement });
   let earned = false;
-  try { earned = AdMob ? await nativeRewarded() : await simulated(); } finally { showing = false; }
+  try {
+    if (isPortal) { setSound(false); earned = await portalRewarded(); }
+    else earned = AdMob ? await nativeRewarded() : await simulated();
+  } finally { showing = false; if (isPortal) setSound(s.settings.sound); }
   if (earned) { s.ads.count++; s.ads.lastReward = Date.now(); s.ads.earned++; track('ad_reward_earned', { placement }); }
   return earned;
 }

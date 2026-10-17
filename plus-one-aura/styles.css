@@ -6,7 +6,7 @@ html, body { margin: 0; height: 100%; overflow: hidden; background: #0b0716; col
 #hud button, #hud nav { pointer-events: auto; }
 button { font: inherit; color: inherit; border: 0; cursor: pointer; }
 .top { display: flex; align-items: center; gap: 10px; padding: calc(10px + var(--safe-t)) 12px 4px; }
-.lvl { width: 64px; font-weight: 800; font-size: 13px; }
+.lvl { width: 92px; font-weight: 800; font-size: 13px; }
 .lvl i, .chip i, .heat i { display: block; height: 6px; border-radius: 4px; background: rgba(255,255,255,.15); overflow: hidden; margin-top: 4px; }
 .lvl b, .chip b, .heat b { display: block; height: 100%; width: 0; background: var(--accent); border-radius: 4px; transition: width .15s; }
 .total { flex: 1; text-align: center; }
@@ -14,6 +14,7 @@ button { font: inherit; color: inherit; border: 0; cursor: pointer; }
 .big.bump { animation: bump .18s ease-out; }
 @keyframes bump { 40% { transform: scale(1.08); } }
 .sub { font-size: 13px; opacity: .85; margin-top: 2px; }
+.top .icon + .icon { margin-left: -4px; }
 .icon { width: 44px; height: 44px; border-radius: 14px; background: var(--panel); font-size: 22px; }
 .chip { align-self: center; margin-top: 6px; padding: 6px 14px 7px; border-radius: 16px; background: var(--panel); min-width: 200px; font-weight: 800; font-size: 14px; text-align: center; border: 1px solid rgba(255,255,255,.12); }
 .chip small { display: block; font-weight: 600; font-size: 11px; opacity: .75; margin-top: 3px; }
@@ -77,3 +78,4 @@ button { font: inherit; color: inherit; border: 0; cursor: pointer; }
 .fake-ad div { background: #222; padding: 26px 30px; border-radius: 18px; border: 2px dashed #888; }
 .fake-ad span { display: inline-block; margin-top: 8px; font-size: 30px; font-weight: 900; }
 @media (min-height: 760px) { .big { font-size: 50px; } }
+.no-ads .tv { display: none; }

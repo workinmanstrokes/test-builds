@@ -1,12 +1,14 @@
 // +1 Aura UI shell: input, render loop, HUD, modals, ads + analytics wiring.
 import * as G from './game.js';
 import { GAME, PRIVACY_URL } from './config.js';
-import { getSkin } from './skins/index.js';
+import { getSkin, skinList } from './skins/index.js';
 import { createFx } from './fx.js';
 import { unlockAudio, sfx, setSkinAudio, setSound } from './audio.js';
 import { buzz, setVibe } from './haptics.js';
 import { initAds, showRewarded, rewardGate, adsInfo, showPrivacyOptions } from './ads.js';
 import { initAnalytics, track, analyticsMode } from './analytics.js';
+import { initPortal, gameplayStart, gameplayStop, isPortal } from './portal.js';
+import { initBilling, billingAvailable, buyRemoveAds, restoreRemoveAds, removeAdsPrice } from './billing.js';
 
 const $ = id => document.getElementById(id);
 const VERSION = '0.1.0';
@@ -21,7 +23,8 @@ function applySkin() {
   const st = skin.stages[s.curStage]; const r = document.documentElement.style;
   r.setProperty('--accent', st.accent); r.setProperty('--glow', st.glow); r.setProperty('--text', st.text);
   document.querySelector('meta[name=theme-color]').content = st.bg[1];
-  setSkinAudio(skin, st.root);
+  setSkinAudio(skin, st.root, s.curStage); G.setTuning(s, skin.tuning);
+  $('heatLbl').textContent = skin.text.heat || 'HEAT';
   $('cur').textContent = skin.text.currency; $('rateLbl').textContent = skin.text.perSec; $('tapHint').textContent = skin.text.tapHint;
   buildShop();
 }
@@ -45,7 +48,7 @@ let hinted = s.taps > 30;
 function doTap(x, y) {
   if (!$('modal').hidden) return;
   now = Date.now();
-  const r = G.tap(s, now);
+  const r = G.tap(s, now); gameplayStart();
   const st = skin.stages[s.curStage];
   if (r.locked) { fx.float(x, y, '🔥', '#ff6a5a', 24); return; }
   if (!hinted && s.taps > 12) { hinted = true; $('tapHint').classList.add('gone'); }
@@ -69,6 +72,8 @@ function handle(events) {
     } else if (e.type === 'overheat') {
       fx.shake(1); fx.flash('#ff2a1a', 1); sfx('overheat'); buzz('error'); track('overheat', { lost: e.lost, stage: s.stage });
       if (e.lost > 0) showOverheat(e.lost); else toast('Overheated! Cool down…');
+    } else if (e.type === 'chain') {
+      const t = fx.target(); fx.float(t.x, t.y - t.r * 2.4, `${skin.text.chain ? skin.text.chain(e.n) : 'CHAIN!'} +${G.fmt(e.value)}`, st.accent, 24, { life: 1, vy: -50 }); sfx('chain');
     } else if (e.type === 'level_up') {
       sfx('levelUp'); fx.ring('#fff', 1); banner(skin.text.levelUp(e.level)); track('level_up', { level: e.level });
     } else if (e.type === 'stage_unlock') {
@@ -98,7 +103,7 @@ function refreshShop() {
 async function reward(placement, apply) {
   const g = rewardGate(s, placement); if (!g.ok) { toast(g.why); return false; }
   const ok = await showRewarded(s, placement);
-  if (ok) { apply(); save(); } else toast('No reward this time');
+  if (ok) { apply(); save(); } else toast('No ad available right now, try again soon');
   return ok;
 }
 $('btnBoost').addEventListener('click', () => { unlockAudio(); reward('boost', () => { G.addBoost(s, Date.now(), GAME.boostMs, GAME.boostCapMs); banner('2x AURA!'); sfx('unlock'); fx.flash('#7dffb0', .7); }); });
@@ -106,12 +111,16 @@ $('btnSkip').addEventListener('click', () => { unlockAudio(); if (!G.canSkip(s, 
 
 function showOverheat(lost) {
   const until = Date.now() + GAME.reviveWindowMs;
-  modal(`<h2>${skin.text.overheat}</h2><p>${skin.text.mascot} burned out and dropped your streak of <b>+${G.fmt(lost)}</b> ${skin.text.currency}.</p>
+  modal(`<h2>${skin.text.overheat}</h2><p>${skin.text.overheatMsg(G.fmt(lost), skin.text.currency)}</p>
     <div class="countdown" id="cd"></div><div class="row"><button class="btn primary" id="mRevive"><span class="tv">AD</span>${skin.text.reward.revive}</button><button class="btn" id="mClose">Cool down</button></div>`);
   const tick = setInterval(() => { const k = (until - Date.now()) / GAME.reviveWindowMs; const cd = $('cd'); if (!cd) return clearInterval(tick); cd.style.transform = `scaleX(${Math.max(0, k)})`; if (k <= 0) { clearInterval(tick); closeModal(); } }, 50);
   $('mRevive').onclick = async () => { clearInterval(tick); $('mRevive').disabled = true; const ok = await reward('revive', () => { const r = G.revive(s, Date.now()); fx.float(fx.target().x, fx.target().y - 120, `+${G.fmt(r.refund)} SAVED!`, '#7dffb0', 30, { life: 1.4 }); sfx('bank'); handle(r.events); }); closeModal(); if (!ok) {} };
   $('mClose').onclick = () => { clearInterval(tick); closeModal(); };
 }
+
+// remove-ads owners see no "AD" badges
+function refreshAdButtons() { document.body.classList.toggle('no-ads', !!s.noAds); }
+refreshAdButtons();
 
 // ---------- banner / toast ----------
 function banner(text) { const b = $('banner'); b.textContent = text; b.classList.remove('show'); void b.offsetWidth; b.classList.add('show'); }
@@ -119,8 +128,8 @@ let toastT = 0;
 function toast(text) { const t = $('toast'); t.textContent = text; t.classList.add('show'); clearTimeout(toastT); toastT = setTimeout(() => t.classList.remove('show'), 1800); }
 
 // ---------- modals ----------
-function modal(html) { $('modalCard').innerHTML = html; $('modal').hidden = false; }
-function closeModal() { $('modal').hidden = true; $('modalCard').innerHTML = ''; }
+function modal(html) { $('modalCard').innerHTML = html; $('modal').hidden = false; gameplayStop(); }
+function closeModal() { $('modal').hidden = true; $('modalCard').innerHTML = ''; if (s.taps) gameplayStart(); }
 $('modal').addEventListener('click', e => { if (e.target === $('modal') && !$('mRevive')) closeModal(); });
 
 $('stageChip').addEventListener('click', () => {
@@ -133,18 +142,28 @@ $('stageChip').addEventListener('click', () => {
   $('mClose').onclick = closeModal;
 });
 
+$('btnSkins').addEventListener('click', () => {
+  const rows = skinList().map(k => { const st = k.stages[0]; return `<button class="stg ${k.id === skin.id ? 'cur' : ''}" data-id="${k.id}" style="background:linear-gradient(120deg,${st.bg[0]},${st.glow}66);color:${st.text}">${k.name}<small>${k.blurb} · ${k.stages.map(x => x.name).join(' → ')}</small></button>`; }).join('');
+  modal(`<h2>Skins</h2><p style="margin-top:0">Your progress carries over. Each skin plays a little differently.</p><div class="stages">${rows}</div><button class="btn" id="mClose">Close</button>`);
+  $('modalCard').querySelectorAll('.stg').forEach(b => b.onclick = () => { if (b.dataset.id !== skin.id) { skin = getSkin(b.dataset.id); s.skin = skin.id; applySkin(); track('skin_select', { skin: skin.id }); banner(skin.name); sfx('unlock'); save(); } closeModal(); });
+  $('mClose').onclick = closeModal;
+});
+
 $('btnSettings').addEventListener('click', () => {
   const tg = (id, on) => `<button class="tog ${on ? 'on' : ''}" id="${id}" aria-pressed="${on}"></button>`;
   modal(`<h2>Settings</h2>
     <div class="set">Sound ${tg('tSound', s.settings.sound)}</div>
     <div class="set">Vibration ${tg('tVibe', s.settings.vibe)}</div>
     ${adsInfo().privacyRequired ? '<div class="set">Ad privacy <button class="btn" id="mPriv">Manage</button></div>' : ''}
-    <div class="set">Privacy policy <a href="${PRIVACY_URL}" target="_blank" rel="noopener">Open</a></div>
+    ${billingAvailable() ? (s.noAds ? '<div class="set">Ads removed ✓ <span style="font-size:12px;opacity:.7">bonuses are instant</span></div>' : `<div class="set">Remove ads <button class="btn primary" id="mBuy">${removeAdsPrice()}</button></div><div class="set">Already bought? <button class="btn" id="mRestore">Restore</button></div>`) : ''}
+    ${isPortal ? '' : `<div class="set">Privacy policy <a href="${PRIVACY_URL}" target="_blank" rel="noopener">Open</a></div>`}
     <div class="set" style="font-size:12px;opacity:.7">Total taps ${G.fmt(s.taps)} · Best streak ${s.best.combo} · v${VERSION} · analytics ${analyticsMode()}</div>
     <div class="row" style="margin-top:12px"><button class="btn" id="mClose">Close</button></div>`);
   $('tSound').onclick = e => { s.settings.sound = !s.settings.sound; setSound(s.settings.sound); e.target.classList.toggle('on', s.settings.sound); save(); };
   $('tVibe').onclick = e => { s.settings.vibe = !s.settings.vibe; setVibe(s.settings.vibe); e.target.classList.toggle('on', s.settings.vibe); save(); };
   $('mPriv') && ($('mPriv').onclick = showPrivacyOptions);
+  $('mBuy') && ($('mBuy').onclick = async () => { $('mBuy').disabled = true; if (await buyRemoveAds(s)) { save(); banner('ADS REMOVED!'); sfx('unlock'); closeModal(); refreshAdButtons(); } else { toast('Purchase not completed'); $('mBuy').disabled = false; } });
+  $('mRestore') && ($('mRestore').onclick = async () => { const ok = await restoreRemoveAds(s); save(); toast(ok ? 'Purchase restored' : 'No purchase found'); if (ok) { closeModal(); refreshAdButtons(); } });
   $('mClose').onclick = closeModal;
 });
 
@@ -201,5 +220,7 @@ applySkin(); hud();
 offline();
 requestAnimationFrame(loop);
 initAds();
+initPortal();
+initBilling(s, () => { save(); refreshAdButtons(); });
 // test hook (harmless in production): lets the Playwright smoke test inspect state
 window.__aura = { get state() { return s; }, G, save };

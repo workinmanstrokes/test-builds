@@ -24,12 +24,13 @@ export function createFx(canvas) {
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     const sx = (Math.random() - 0.5) * shake * 14, sy = (Math.random() - 0.5) * shake * 14;
     ctx.save(); ctx.translate(sx, sy);
-    skin.drawBackground(ctx, w, h, si, t);
     const tg = target();
+    skin.drawBackground(ctx, w, h, si, t, { ...o, target: tg, dt });
     for (const r of rings) { r.life -= dt; const k = 1 - r.life / r.max; ctx.strokeStyle = r.color; ctx.globalAlpha = Math.max(0, r.life / r.max) * 0.8; ctx.lineWidth = 6 * r.power * (1 - k) + 1; ctx.beginPath(); ctx.arc(r.x, r.y, r.r * (1 + k * 1.6 * r.power), 0, Math.PI * 2); ctx.stroke(); }
     ctx.globalAlpha = 1;
-    skin.drawTarget(ctx, tg.x, tg.y, tg.r * (1 + pulse * 0.08 + Math.sin(t * 2.2) * 0.02), si, t, { squash, heat: o.heat, locked: o.locked });
+    skin.drawTarget(ctx, tg.x, tg.y, tg.r * (1 + pulse * 0.08 + Math.sin(t * 2.2) * 0.02), si, t, { squash, heat: o.heat, locked: o.locked, combo: o.combo || 0 });
     for (const p of parts) { p.life -= dt; p.vy += p.g * dt; p.x += p.vx * dt; p.y += p.vy * dt; p.rot += p.vr * dt; skin.drawParticle(ctx, p, si); }
+    skin.drawOverlay?.(ctx, w, h, si, t, { ...o, target: tg, squash, dt });
     ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
     for (const f of texts) { f.life -= dt; f.y += f.vy * dt; f.vy *= 0.96; const k = f.life / f.max; ctx.globalAlpha = Math.min(1, k * 2); const sc = 1 + (1 - k) * 0.15 + (k > 0.85 ? (k - 0.85) * 3 : 0); ctx.font = `900 ${f.size * sc}px system-ui, sans-serif`; if (f.stroke) { ctx.lineWidth = 5; ctx.strokeStyle = 'rgba(0,0,0,.55)'; ctx.strokeText(f.text, f.x, f.y); } ctx.fillStyle = f.color; ctx.fillText(f.text, f.x, f.y); }
     ctx.globalAlpha = 1; ctx.restore();
@@ -38,7 +39,7 @@ export function createFx(canvas) {
     if (parts.length > 400) parts.splice(0, parts.length - 400);
   }
   return {
-    frame, burst, float, ring, target, resize,
+    frame, burst, float, ring, target, resize, size: () => ({ w, h }),
     hitTest(x, y) { const t = target(); return Math.hypot(x - t.x, y - t.y) < t.r * 1.5; },
     kick(sq = 1, p = 1) { squash = Math.min(1, squash + sq); pulse = Math.min(1.5, pulse + p); },
     shake(v) { shake = Math.max(shake, v); },

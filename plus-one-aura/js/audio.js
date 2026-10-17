@@ -1,7 +1,7 @@
 // Tiny WebAudio synth. All sounds are generated from the active skin's `sound` spec.
-let ctx = null, master = null, enabled = true, skin = null, root = 57;
+let ctx = null, master = null, enabled = true, skin = null, root = 57, stage = 0;
 const midi = m => 440 * Math.pow(2, (m - 69) / 12);
-export function setSkinAudio(s, stageRoot) { skin = s; root = stageRoot; }
+export function setSkinAudio(s, stageRoot, si = 0) { skin = s; root = stageRoot; stage = si; }
 export function setSound(on) { enabled = on; }
 export function unlockAudio() {
   if (ctx) { if (ctx.state === 'suspended') ctx.resume(); return; }
@@ -15,9 +15,31 @@ function tone(freq, { wave = 'sine', dur = 0.1, gain = 0.15, detune = 0 } = {}, 
   g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(gain, t + 0.008); g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
   o.connect(g); g.connect(master); o.start(t); o.stop(t + dur + 0.02);
 }
+// Filtered noise burst: the building block for clacks, splashes and plinks.
+function noise({ dur = 0.05, gain = 0.2, type = 'bandpass', freq = 2000, q = 1, to = null, at = 0 } = {}) {
+  if (!ctx || !enabled) return;
+  const t = ctx.currentTime + at, len = Math.max(1, Math.floor(ctx.sampleRate * dur));
+  const b = ctx.createBuffer(1, len, ctx.sampleRate), d = b.getChannelData(0);
+  for (let i = 0; i < len; i++) d[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / len, 2);
+  const src = ctx.createBufferSource(), f = ctx.createBiquadFilter(), g = ctx.createGain();
+  src.buffer = b; f.type = type; f.frequency.setValueAtTime(freq, t); f.Q.value = q;
+  if (to) f.frequency.exponentialRampToValueAtTime(to, t + dur);
+  g.gain.value = gain; src.connect(f); f.connect(g); g.connect(master); src.start(t);
+}
+// Pitch-swept tone (water plinks, drops).
+function sweep(from, to, { wave = 'sine', dur = 0.12, gain = 0.15, at = 0 } = {}) {
+  if (!ctx || !enabled) return;
+  const t = ctx.currentTime + at, o = ctx.createOscillator(), g = ctx.createGain();
+  o.type = wave; o.frequency.setValueAtTime(from, t); o.frequency.exponentialRampToValueAtTime(to, t + dur);
+  g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(gain, t + 0.006); g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+  o.connect(g); g.connect(master); o.start(t); o.stop(t + dur + 0.02);
+}
+const api = { tone, noise, sweep, midi, get root() { return root; }, get stage() { return stage; } };
+
 export function sfx(name, arg = 0) {
   if (!ctx || !enabled || !skin) return;
   const S = skin.sound;
+  if (S.play && S.play(name, api, arg) !== false) return;  // skins with fully custom sound design
   switch (name) {
     case 'tap': { const sc = S.scale; const step = Math.min(Math.floor(arg / 2), sc.length * 2 - 1); const m = root + sc[step % sc.length] + 12 * Math.floor(step / sc.length); tone(midi(m), { ...S.tap, detune: (Math.random() - 0.5) * S.tap.detune }); break; }
     case 'burst': tone(midi(root + 24), S.burst); tone(midi(root + 31), S.burst, 0.05); break;

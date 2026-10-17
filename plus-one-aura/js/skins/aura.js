@@ -13,10 +13,13 @@ const stages = [
 export default {
   id: 'aura',
   name: '+1 Aura',
+  blurb: 'The original. Tap Aurie, build your glow.',
+  tuning: {},
   text: {
     title: '+1 Aura', subtitle: 'Tap to Ascend', currency: 'Aura', perSec: 'aura/s',
     tapHint: 'TAP AURIE', streak: 'STREAK', overheat: 'OVERHEAT!', burst: 'AURA BURST',
-    mascot: 'Aurie',
+    mascot: 'Aurie', heat: 'HEAT',
+    overheatMsg: (lost, cur) => `Aurie burned out and dropped your streak of <b>+${lost}</b> ${cur}.`,
     upgrades: {
       power: ['Brighter Glow', '+1 aura per tap'],
       auto:  ['Little Wisps', '+1 aura every second, even offline'],

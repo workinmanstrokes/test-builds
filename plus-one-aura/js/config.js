@@ -27,4 +27,13 @@ export const GAME = {
   skipMinProgress: 0.25,    // stage-skip ad offered once you're 25% of the way to the next stage
 };
 
+// "Remove ads" one-time Play Billing purchase ($1.99). OFF until Michael creates the in-app product in Play Console;
+// then set the repo variable REMOVE_ADS_ENABLED=true (configure.mjs flips this line) or edit it here.
+// Owning it grants every rewarded bonus instantly without watching an ad (there are no forced ads to remove).
+export const BILLING = {
+  removeAdsEnabled: false,          // @cfg billing
+  removeAdsProductId: 'remove_ads', // must match the Play Console product id
+  priceFallback: '$1.99',
+};
+
 export const PRIVACY_URL = 'https://workinmanstrokes.github.io/test-builds/plus-one-aura/privacy.html';
