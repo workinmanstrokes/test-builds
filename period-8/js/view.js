@@ -9,7 +9,7 @@ export class View {
   constructor(canvas, { onTap } = {}) {
     this.cv = canvas; this.ctx = canvas.getContext('2d'); this.onTap = onTap;
     this.camX = 500; this.camY = 500; this.zoom = 1; this.vx = 0; this.S = null; this.base = null; this.t0 = performance.now();
-    this.clockBase = 14 * 3600 + 52 * 60; this.hint = null; this.reveal = null; this.rings = []; this.fade = 0; this.walk = 0; this.shake = 0; this.dim = 0;
+    this.clockBase = 8 * 3600; this.light = [255, 214, 102]; // the clock always reads 8:00 when a loop starts; light = flashlight cosmetic this.hint = null; this.reveal = null; this.rings = []; this.fade = 0; this.walk = 0; this.shake = 0; this.dim = 0;
     this.enabled = true; this.ptrs = new Map(); this.lastTap = 0; this.resize(); addEventListener('resize', () => this.resize());
     this.bind();
   }
@@ -72,7 +72,7 @@ export class View {
     }
     c.setTransform(d, 0, 0, d, 0, 0);
     // screen-space: hint arrow when the highlighted area is off-screen
-    if (this.hint) { const dx = wrapDelta(this.hint.x, this.camX) * s; if (Math.abs(dx) > W / 2 - 20) { const dir = Math.sign(dx), y = H * 0.5; c.save(); c.fillStyle = 'rgba(255,214,102,' + (0.6 + Math.sin(t * 6) * 0.3) + ')'; c.beginPath(); const x = dir > 0 ? W - 18 : 18; c.moveTo(x, y); c.lineTo(x - dir * 26, y - 22); c.lineTo(x - dir * 26, y + 22); c.fill(); c.restore(); } }
+    if (this.hint) { const dx = wrapDelta(this.hint.x, this.camX) * s; if (Math.abs(dx) > W / 2 - 20) { const dir = Math.sign(dx), y = H * 0.5; c.save(); c.fillStyle = `rgba(${this.light},${0.6 + Math.sin(t * 6) * 0.3})`; c.beginPath(); const x = dir > 0 ? W - 18 : 18; c.moveTo(x, y); c.lineTo(x - dir * 26, y - 22); c.lineTo(x - dir * 26, y + 22); c.fill(); c.restore(); } }
     // vignette + grain + dread
     const g = c.createRadialGradient(W / 2, H / 2, Math.min(W, H) * 0.35, W / 2, H / 2, Math.max(W, H) * 0.8); g.addColorStop(0, 'rgba(0,0,0,0)'); g.addColorStop(1, `rgba(5,3,8,${0.55 + this.dim * 0.3})`); c.fillStyle = g; c.fillRect(0, 0, W, H);
     c.save(); c.globalAlpha = 0.5; c.fillStyle = c.createPattern(grain(), 'repeat'); c.translate((Math.random() * 192) | 0, (Math.random() * 192) | 0); c.fillRect(-192, -192, W + 384, H + 384); c.restore();
@@ -80,8 +80,8 @@ export class View {
     if (this.shake > 0) this.shake = Math.max(0, this.shake - dt * 2);
   }
   overlays(c, t) {
-    if (this.hint) { const { x, y, r } = this.hint; const p = 0.5 + Math.sin(t * 5) * 0.5; c.save(); c.strokeStyle = `rgba(255,214,102,${0.5 + p * 0.5})`; c.lineWidth = 6; c.setLineDash([18, 12]); c.lineDashOffset = -t * 40; c.beginPath(); c.arc(x, y, r * (1 + p * 0.08), 0, 7); c.stroke();
-      const g = c.createRadialGradient(x, y, r * 0.2, x, y, r * 1.2); g.addColorStop(0, 'rgba(255,214,102,0.12)'); g.addColorStop(1, 'rgba(255,214,102,0)'); c.fillStyle = g; c.beginPath(); c.arc(x, y, r * 1.2, 0, 7); c.fill(); c.restore(); }
+    if (this.hint) { const { x, y, r } = this.hint; const p = 0.5 + Math.sin(t * 5) * 0.5; c.save(); c.strokeStyle = `rgba(${this.light},${0.5 + p * 0.5})`; c.lineWidth = 6; c.setLineDash([18, 12]); c.lineDashOffset = -t * 40; c.beginPath(); c.arc(x, y, r * (1 + p * 0.08), 0, 7); c.stroke();
+      const g = c.createRadialGradient(x, y, r * 0.2, x, y, r * 1.2); g.addColorStop(0, `rgba(${this.light},0.12)`); g.addColorStop(1, `rgba(${this.light},0)`); c.fillStyle = g; c.beginPath(); c.arc(x, y, r * 1.2, 0, 7); c.fill(); c.restore(); }
     if (this.reveal) { const [x, y, w, h] = this.reveal.region; c.save(); c.strokeStyle = '#ff5a4f'; c.lineWidth = 6; c.beginPath(); c.ellipse(x + w / 2, y + h / 2, w / 2 + 26, h / 2 + 26, 0, 0, 7); c.stroke(); c.restore(); }
     this.rings = this.rings.filter(r => t - r.t < 0.6);
     for (const r of this.rings) { const k = (t - r.t) / 0.6; c.save(); c.strokeStyle = `rgba(255,255,255,${0.7 * (1 - k)})`; c.lineWidth = 3; c.beginPath(); c.arc(r.x, r.y, 14 + k * 40, 0, 7); c.stroke(); c.restore(); }

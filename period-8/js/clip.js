@@ -17,9 +17,12 @@ export class Clip {
   start() {
     this.root.hidden = false; this.score = 0; this.round = 0; this.times = []; this.results = [];
     const bag = [...this.pool].sort(() => Math.random() - 0.5); this.queue = bag.slice(0, ROUNDS);
-    this.running = true; this.resize(); this.next(); const loop = () => { if (!this.running) return; this.draw(); requestAnimationFrame(loop); }; requestAnimationFrame(loop);
+    this.running = true; this.resize(); this.next(); const loop = () => { if (!this.running) return; if (!this.paused) this.draw(); requestAnimationFrame(loop); }; requestAnimationFrame(loop);
   }
-  stop() { this.running = false; this.root.hidden = true; }
+  stop() { this.running = false; this.paused = 0; this.root.hidden = true; }
+  /** Auto-pause (blur / pause menu): freezes the round timer. */
+  pause() { if (this.paused || !this.running) return; this.paused = performance.now(); }
+  resume() { if (!this.paused) return; const d = performance.now() - this.paused; this.paused = 0; if (this.cur) { this.cur.t0 += d; if (this.cur.t1) this.cur.t1 += d; } }
   resize() { const d = Math.min(2, devicePixelRatio || 1); const r = this.cv.getBoundingClientRect(); this.W = r.width; this.H = r.height; this.cv.width = r.width * d; this.cv.height = r.height * d; this.d = d; }
   next() {
     if (this.round >= ROUNDS) return this.finish();
@@ -34,7 +37,7 @@ export class Clip {
   get t() { return (performance.now() - this.cur.t0) / 1000; }
   tap(e) {
     const c = this.cur; if (!c) return;
-    if (this.phase === 'done') return;
+    if (this.phase === 'done' || this.paused) return;
     if (c.phase !== 'play') return;
     const r = this.cv.getBoundingClientRect(), x = e.clientX - r.left, y = e.clientY - r.top, L = this.layout();
     if (y < L.by || y > L.by + L.ph) return;
@@ -45,7 +48,7 @@ export class Clip {
     const c = this.cur; c.phase = 'reveal'; c.hit = hit; c.tap = at; c.rt = this.t - 1.2; c.t1 = performance.now();
     if (hit) { this.score++; this.times.push(c.rt); sfx.correct(this.score); } else sfx.falseAlarm();
     this.results.push({ id: c.a.id, hit, rt: hit ? c.rt : null });
-    setTimeout(() => this.next(), 1700);
+    const go = () => (this.paused ? setTimeout(go, 200) : this.next()); setTimeout(go, 1700);
   }
   finish() {
     this.cur = null; this.phase = 'done'; const best = Math.max(this.save.clipBest || 0, this.score); this.save.clipBest = best; this.onSaveData?.();

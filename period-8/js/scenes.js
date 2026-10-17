@@ -56,7 +56,9 @@ export function drawFace(P, cx, cy, r, o = {}) {
 }
 function clockFace(P, cx, cy, r, thirteen = false) {
   P.circle(cx, cy, r + 7, '#3a3330'); P.circle(cx, cy, r, '#f7f2e4', INK, 2);
-  for (let i = 1; i <= 12; i++) { const a = i / 12 * Math.PI * 2 - Math.PI / 2; const label = (i === 12 && thirteen) ? '13' : String(i); P.text(label, cx + Math.cos(a) * r * 0.78, cy + Math.sin(a) * r * 0.78, r * 0.24, INK, 'center', 'system-ui, sans-serif', 700); }
+  // the '13' anomaly squeezes thirteen numerals onto the face (13 in red at the top), so it reads at a glance
+  const n = thirteen ? 13 : 12;
+  for (let i = 1; i <= n; i++) { const a = i / n * Math.PI * 2 - Math.PI / 2; const odd = i === 13; P.text(String(i), cx + Math.cos(a) * r * 0.78, cy + Math.sin(a) * r * (odd ? 0.72 : 0.78), r * (odd ? 0.36 : 0.24), odd ? '#b3261e' : INK, 'center', 'system-ui, sans-serif', odd ? 900 : 700); }
 }
 export function clockHands(ctx, cx, cy, r, sec) {
   const s = ((sec % 60) + 60) % 60, m = ((sec / 60) % 60 + 60) % 60, h = ((sec / 3600) % 12 + 12) % 12;
@@ -112,7 +114,7 @@ function corridor(P, ox, S, back) {
     const dx0 = x0 + fw * 0.2, dw = fw * 0.3, dy0 = y1 - fh * 0.74;
     for (const k of [0, 1]) { const dx = dx0 + k * dw; P.rect(dx, dy0, dw, y1 - dy0, '#8b8270', INK, 2); P.rect(dx + dw * 0.32, dy0 + fh * 0.07, dw * 0.36, fh * 0.34, '#fbf1d2', INK, 1.5); P.line(dx + dw * 0.1, dy0 + fh * 0.45, dx + dw * 0.9, dy0 + fh * 0.45, 2.5); }
     c.save(); c.globalAlpha = 0.25; c.fillStyle = '#fff6d0'; c.beginPath(); c.ellipse(x0 + fw / 2, y1 - 6, fw * 0.45, 10, 0, 0, 7); c.fill(); c.restore();
-    if (S.handprints) { c.save(); c.fillStyle = 'rgba(70,60,70,0.55)'; for (const [hx, hy, s] of [[dx0 + dw * 0.45, dy0 + fh * 0.16, 1], [dx0 + dw * 1.5, dy0 + fh * 0.22, -1], [dx0 + dw * 1.42, dy0 + fh * 0.33, 1]]) hand(c, hx, hy, fw * 0.028, s); c.restore(); }
+    if (S.handprints) { c.save(); c.fillStyle = 'rgba(55,45,55,0.78)'; for (const [hx, hy, s] of [[dx0 + dw * 0.45, dy0 + fh * 0.16, 1], [dx0 + dw * 0.6, dy0 + fh * 0.3, -1], [dx0 + dw * 1.5, dy0 + fh * 0.22, -1], [dx0 + dw * 1.42, dy0 + fh * 0.36, 1], [dx0 + dw * 1.3, dy0 + fh * 0.08, 1]]) hand(c, hx, hy, fw * 0.042, s); c.restore(); }
     if (S.figure) { const z = zf - 0.35, fx = X(0.56, z), fy = Yf(z), hgt = 0.66 * 1000 / z, wdt = 0.12 * 1000 / z; c.fillStyle = '#16121a';
       c.beginPath(); c.moveTo(fx - wdt * 0.5, fy); c.lineTo(fx - wdt * 0.55, fy - hgt * 0.72); c.quadraticCurveTo(fx, fy - hgt * 0.84, fx + wdt * 0.55, fy - hgt * 0.72); c.lineTo(fx + wdt * 0.5, fy); c.closePath(); c.fill();
       c.beginPath(); c.ellipse(fx, fy - hgt * 0.88, wdt * 0.28, wdt * 0.36, 0, 0, 7); c.fill(); c.fillRect(fx - wdt * 0.75, fy - hgt * 0.7, wdt * 0.14, hgt * 0.55); c.fillRect(fx + wdt * 0.61, fy - hgt * 0.7, wdt * 0.14, hgt * 0.55); }
@@ -139,6 +141,7 @@ function hallRight(P, S) { // face 1 (x 1000-2000): fountain, bulletin board, cl
   // water fountain
   P.at('fountain').poly([[1040, 560], [1150, 560], [1140, 610], [1050, 610]], '#b8bcc0'); P.rect(1060, 610, 70, 40, '#9ea3a8'); P.rect(1088, 548, 14, 14, '#7b8085');
   P.circle(1135, 575, 6, '#7b8085', INK, 1.5);
+  if (S.fountain) { c.save(); c.globalAlpha = 0.55; P.ellipse(1100, 868, 120, 20, '#8ec3e6', null); c.globalAlpha = 0.8; for (const [x, y] of [[1070, 660], [1110, 700], [1090, 760]]) P.ellipse(x, y, 5, 9, '#8ec3e6', null); c.restore(); }
   // bulletin board
   frameBox(P.at('board'), 1195, 290, 285, 265, '#b98a5c', C.wood, 10); P.hatch([[1195, 290], [1480, 290], [1480, 555], [1195, 555]], 9, '#5c3a1c', 0.12);
   const posters = [[1208, 305, 88, 150, '#f3e3a1'], [1306, 318, 82, 160, '#cfe3ef'], [1396, 305, 76, 145, '#f2c7c0']];
@@ -154,17 +157,19 @@ function hallRight(P, S) { // face 1 (x 1000-2000): fountain, bulletin board, cl
   });
   for (let i = 0; i < 4; i++) P.at('card' + i).rect(1212 + i * 66, 490, 54, 40, '#fbf7ea', INK, 1.5);
   // clock above the door
-  clockFace(P.at('hclock'), 1620, 200, 50, S.clock === 'thirteen');
+  clockFace(P.at('hclock'), 1620, 196, 66, S.clock === 'thirteen');
   // door + plaque
   P.at('door8').rect(1530, 270, 180, 552, '#5b4a3b', INK, 3); P.rect(1542, 282, 156, 540, C.wood, INK, 2.5); P.hatch([[1542, 282], [1698, 282], [1698, 822], [1542, 822]], 18, '#4b2e17', 0.12, 1.4);
   P.rect(1595, 330, 50, 150, '#2c3946', INK, 2); c.save(); c.globalAlpha = 0.25; P.line(1600, 470, 1640, 340, 3, '#cfe3ef'); c.restore();
   P.rect(1555, 540, 14, 40, '#c9a64a', INK, 1.5);
-  P.rect(1725, 352, 58, 62, '#2e3a5a', INK, 2); P.text('ROOM', 1754, 368, 11, '#e9e2c8', 'center', 'system-ui, sans-serif', 700); P.text(S.plaque, 1754, 394, 26, '#f4eed6', 'center', 'system-ui, sans-serif', 900);
+  c.save(); if (S.plaque !== '8') { c.translate(1756, 344); c.rotate(0.16); c.translate(-1756, -344); }
+  P.rect(1718, 340, 76, 96, '#2e3a5a', INK, 2.5); P.text('ROOM', 1756, 357, 13, '#e9e2c8', 'center', 'system-ui, sans-serif', 700); P.text(S.plaque, 1756, 402, 56, '#f4eed6', 'center', 'system-ui, sans-serif', 900); c.restore();
   // portrait of the founder
   frameBox(P.at('portrait'), 1812, 262, 136, 176, '#5b6b5e', '#b48a3a', 14);
   P.poly([[1830, 438], [1845, 380], [1915, 380], [1930, 438]], '#2c2c34', INK, 2); P.poly([[1868, 380], [1880, 410], [1892, 380]], '#f2efe6', INK, 1.5);
   drawFace(P, 1880, 335, 34, { skin: '#e9c7a6', hair: '#b9b9b9', eyes: S.portrait === 'watch' ? 'skip' : 'open', look: [-0.6, 0], mouth: S.portrait === 'smile' ? 'smile' : 'flat' });
-  P.line(1866, 357, 1880, 352, 3, '#8d8d8d'); P.line(1880, 352, 1894, 357, 3, '#8d8d8d');
+  if (S.portrait === 'smile') { c.save(); c.fillStyle = '#3a1d1d'; c.strokeStyle = INK; c.lineWidth = 2; c.beginPath(); c.moveTo(1848, 340); c.quadraticCurveTo(1880, 398, 1912, 340); c.quadraticCurveTo(1880, 358, 1848, 340); c.fill(); c.stroke(); c.fillStyle = '#f7f2e4'; c.fillRect(1860, 347, 40, 7); for (let i = 0; i < 5; i++) c.fillRect(1862 + i * 8, 354, 1.6, 6); c.restore(); }
+  else { P.line(1866, 357, 1880, 352, 3, '#8d8d8d'); P.line(1880, 352, 1894, 357, 3, '#8d8d8d'); }
   P.rect(1840, 452, 80, 20, '#c9a64a', INK, 1.5); P.text('E. HARLOW 1958', 1880, 462, 9.5, INK, 'center', 'Georgia, serif', 700);
   // extinguisher cabinet
   P.at('ext').rect(1866, 572, 92, 176, '#f3efe6', INK, 2.5);
@@ -184,13 +189,13 @@ function hallLeft(P, S) { // face 3 (x 3000-4000): lockers, trophy case, window 
     P.rect(x + lw - 13, 500, 6, 34, '#c9c9c9', INK, 1); P.rect(x + lw / 2 - 11, 340, 22, 13, '#f1ead2', INK, 1); P.text(String(101 + i), x + lw / 2, 347, 8.5, INK, 'center', 'system-ui, sans-serif', 700);
   }
   P.rect(3030, 810, 480, 12, '#2b2522', null);
-  if (S.hallPass) { c.save(); c.translate(3171, 420); c.rotate(-0.12); P.at('pass').rect(-17, -11, 34, 22, '#f2c94c', '#8a6a12', 2); P.text('PASS', 0, 0, 9, '#5a3d00', 'center', 'system-ui, sans-serif', 900); c.restore(); P.rect(3160, 404, 22, 6, 'rgba(255,255,255,0.6)', null); }
+  if (S.hallPass) { c.save(); c.translate(3171, 420); c.rotate(-0.12); P.at('pass').rect(-25, -16, 50, 32, '#f2c94c', '#8a6a12', 2.5); P.text('PASS', 0, 1, 13, '#5a3d00', 'center', 'system-ui, sans-serif', 900); c.restore(); P.rect(3156, 400, 30, 7, 'rgba(255,255,255,0.6)', null); }
   // trophy case
   frameBox(P.at('trophy'), 3548, 300, 146, 312, '#3a3240', C.wood2, 10); c.save(); c.globalAlpha = 0.18; P.line(3560, 600, 3680, 320, 6, '#fff'); c.restore();
   P.line(3548, 404, 3694, 404, 3, C.wood2); P.line(3548, 508, 3694, 508, 3, C.wood2);
   P.poly([[3580, 360], [3610, 360], [3604, 384], [3586, 384]], '#d9b44a', INK, 1.5); P.rect(3588, 384, 14, 14, '#d9b44a', INK, 1); P.rect(3580, 396, 30, 8, '#6b4a2a', INK, 1);
   P.circle(3655, 372, 12, '#c0c0c8', INK, 1.5); P.rect(3646, 384, 18, 16, '#6b4a2a', INK, 1);
-  P.rect(3572, 450, 98, 48, '#b07a3a', INK, 1.5); P.rect(3580, 458, 82, 20, '#e8d8a8', INK, 1); P.text(S.trophyYou ? 'YOU   2026' : 'CHAMPS 1987', 3621, 468, 11.5, INK, 'center', 'Georgia, serif', 700);
+  P.rect(3560, 444, 122, 60, '#b07a3a', INK, 1.5); P.rect(3566, 452, 110, 32, '#e8d8a8', INK, 1); P.text(S.trophyYou ? 'YOU' : 'CHAMPS 1987', 3621, 470, S.trophyYou ? 36 : 15, S.trophyYou ? '#9a1f18' : INK, 'center', 'Georgia, serif', 900);
   P.poly([[3600, 540], [3640, 540], [3632, 586], [3608, 586]], '#cf9b52', INK, 1.5); P.rect(3596, 586, 48, 14, '#6b4a2a', INK, 1);
   // window to the courtyard
   const wx = 3740, wy = 220, ww = 220, wh = 250;
@@ -209,6 +214,8 @@ function hallLeft(P, S) { // face 3 (x 3000-4000): lockers, trophy case, window 
     P.at('kid').poly([[3800, 712], [3790, 600], [3878, 600], [3866, 712]], '#7a5aa0', INK, 2.5);
     P.rect(3800, 712, 26, 95, '#3b4a6b', INK, 2); P.rect(3840, 712, 26, 95, '#3b4a6b', INK, 2); P.rect(3796, 800, 34, 14, '#222', INK, 1.5); P.rect(3836, 800, 34, 14, '#222', INK, 1.5);
     drawFace(P, 3833, 556, 36, { skin: C.skin[1], hair: '#2c1c14', eyes: S.student === 'noface' ? 'none' : S.student === 'stare' ? 'skip' : 'down', brows: S.student !== 'noface' });
+    if (S.student !== 'noface') { for (const sx of [-14, 14]) P.circle(3833 + sx, 556, 13, '#cfe3ef', INK, 4); P.line(3829, 556, 3837, 556, 4); }
+    if (S.student === 'stare') { for (const sx of [-14, 14]) { P.circle(3833 + sx, 556, 14, '#fbf8ef', INK, 2.5); P.circle(3833 + sx, 557, 8, INK, null); } P.line(3810, 532, 3826, 538, 4); P.line(3856, 532, 3840, 538, 4); P.line(3822, 584, 3844, 584, 3); }
     P.poly([[3800, 650], [3866, 650], [3874, 690], [3792, 690]], '#c0392b', INK, 2); P.line(3833, 650, 3833, 690, 1.5);
   }
 }
@@ -243,7 +250,7 @@ function classFront(P, S) { // face 0: clock, chalkboard, teacher desk
   P.at('chalktext');
   if (S.board === 'repeat') { for (let i = 0; i < 7; i++) P.chalk('I will stay after class.', 160, 262 + i * 42, 28); }
   else {
-    P.chalk('Period 8 · Ms. Alvarez', 160, 262, 30); P.chalk(S.board === 'date' ? 'Fri. Oct 32' : 'Fri. Oct 16', 846, 262, 28, undefined, 'right');
+    P.chalk('Period 8 · Ms. Alvarez', 160, 262, 30); P.chalk(S.board === 'date' ? 'Fri. Oct 32' : 'Fri. Oct 16', 860, 310, 54, undefined, 'right'); if (S.board === 'date') { c.save(); c.strokeStyle = 'rgba(240,240,230,0.85)'; c.lineWidth = 4; c.beginPath(); c.ellipse(830, 312, 44, 34, -0.1, 0, 7); c.stroke(); c.restore(); }
     P.chalk('Review: The Water Cycle', 160, 318, 32);
     const k = 'rgba(240,240,230,0.85)'; c.save(); c.strokeStyle = k; c.lineWidth = 3; c.globalAlpha = 0.8;
     for (const [x, y, r] of [[300, 420, 30], [335, 405, 36], [372, 422, 28]]) { c.beginPath(); c.arc(x, y, r, Math.PI * 0.9, Math.PI * 2.1); c.stroke(); }
@@ -317,7 +324,7 @@ function classDoor(P, S) { // face 3: hallway door, coat hooks + backpack, READ 
   P.at('hooks').rect(3320, 290, 300, 16, C.wood2, INK, 2); for (let x = 3345; x < 3610; x += 60) P.line(x, 306, x + 6, 326, 4, '#555');
   P.poly([[3520, 320], [3580, 318], [3600, 470], [3500, 470]], '#3f5f8f', INK, 2.5);
   if (!S.backpack) backpack(P, 3440, 384, 1);
-  frameBox(P.at('read'), 3690, 180, 130, 190, '#f3e3a1', '#c66a3a', 6); P.text(S.poster, 3755, 222, 34, '#7a2f22', 'center', HAND, 900);
+  frameBox(P.at('read'), 3690, 180, 130, 190, '#f3e3a1', '#c66a3a', 6); P.text(S.poster, 3755, 226, 46, S.poster === 'READ' ? '#7a2f22' : '#c0261b', 'center', HAND, 900);
   P.poly([[3705, 330], [3755, 312], [3805, 330], [3805, 350], [3755, 334], [3705, 350]], '#fbf7ea', INK, 2);
   P.at('cubby').rect(3660, 580, 300, 230, '#c8a06a', INK, 3);
   for (let r = 0; r < 2; r++) for (let k = 0; k < 3; k++) { const x = 3672 + k * 96, y = 592 + r * 108; P.rect(x, y, 88, 98, '#7d5434', INK, 2); for (let b = 0; b < 4; b++) P.rect(x + 8 + b * 18, y + 30 + (b % 2) * 8, 14, 64 - (b % 2) * 8, ['#c0392b', '#2e86c1', '#e5b532', '#27ae60'][(b + k + r) % 4], INK, 1); }
@@ -344,14 +351,22 @@ export function renderBase(S, q = 1) {
 export function invalidate() { cache.key = ''; }
 
 /** Per-frame layer, drawn in panorama coordinates. t = seconds since the loop began. camX = panorama x at screen centre. */
+/** Accessibility switches shared by the renderers. */
+export const fx = { reduceFlash: false };
 export function drawDynamic(ctx, S, t, camX, clockBase) {
   const P = new Pen(ctx);
   if (S.scene === 'hall') {
-    clockHands(ctx, 1620, 200, 50, S.clock === 'back' ? clockBase - t : clockBase + t);
-    if (S.portrait === 'blink' && (t % 3.6) < 0.18) { for (const s of [-1, 1]) P.at('lid' + s).ellipse(1880 + s * 11.6, 337, 6.5, 5.5, '#e9c7a6', INK, 1.4); }
-    if (S.portrait === 'watch') { const d = wrapDelta(camX, 1880), lx = Math.max(-1, Math.min(1, d / 350)); for (const s of [-1, 1]) { P.at('pw' + s).ellipse(1880 + s * 11.6, 337, 5.6, 4.5, '#fbf8ef', INK, 1.4); ctx.fillStyle = INK; ctx.beginPath(); ctx.arc(1880 + s * 11.6 + lx * 3, 337, 2.6, 0, 7); ctx.fill(); } }
-    if (S.flicker) { const on = Math.sin(t * 23) + Math.sin(t * 7.1) * 0.8 > 0.6 || (t % 2.3) > 1.4; if (!on) { P.at('fl').poly(hallLight(0, 0, S.zf), '#57534c', INK, 1.6); ctx.save(); ctx.globalAlpha = 0.12; ctx.fillStyle = '#000'; ctx.fillRect(250, 150, 500, 500); ctx.restore(); } }
-    if (S.fountain) { ctx.save(); ctx.strokeStyle = 'rgba(120,180,230,0.8)'; ctx.lineWidth = 4; ctx.beginPath(); ctx.moveTo(1095, 554); ctx.quadraticCurveTo(1112 + Math.sin(t * 20) * 2, 520, 1128, 566); ctx.stroke(); ctx.globalAlpha = 0.6; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(1090, 554); ctx.quadraticCurveTo(1108, 528 + Math.sin(t * 17) * 3, 1122, 568); ctx.stroke(); ctx.restore(); }
+    clockHands(ctx, 1620, 196, 66, S.clock === 'back' ? clockBase - t * 40 : clockBase + t);
+    if (S.portrait === 'blink' && (t % 1.5) < 0.3) { for (const s of [-1, 1]) P.at('lid' + s).ellipse(1880 + s * 11.6, 337, 9, 7.5, '#e9c7a6', INK, 2); }
+    if (S.portrait === 'watch') { const d = wrapDelta(camX, 1880), lx = Math.max(-1, Math.min(1, d / 350)); for (const s of [-1, 1]) { P.at('pw' + s).ellipse(1880 + s * 13, 335, 11.5, 10, '#fbf8ef', INK, 2.4); ctx.fillStyle = INK; ctx.beginPath(); ctx.arc(1880 + s * 13 + lx * 5.5, 335, 5.8, 0, 7); ctx.fill(); } }
+    // Reduced flash (Settings): the flicker anomaly becomes a slow dim instead of rapid on/off strobing.
+    if (S.flicker) { const on = fx.reduceFlash ? (t % 2.4) < 1.2 : Math.sin(t * 23) + Math.sin(t * 7.1) * 0.8 > 0.6 || (t % 2.3) > 1.4; if (!on) { P.at('fl').poly(hallLight(0, 0, S.zf), '#57534c', INK, 1.6); ctx.save(); ctx.globalAlpha = 0.12; ctx.fillStyle = '#000'; ctx.fillRect(250, 150, 500, 500); ctx.restore(); } }
+    if (S.titleDoor) { // title screen: light behind Room 8's door window flickers (slow pulse with reduced flash)
+      const k = fx.reduceFlash ? 0.5 + Math.sin(t * 1.6) * 0.35 : (Math.sin(t * 17) + Math.sin(t * 5.3) > 0.4 || (t % 3.1) > 2.6 ? 1 : 0.15);
+      ctx.save(); ctx.globalAlpha = 0.25 + k * 0.6; ctx.fillStyle = '#f6e7a8'; ctx.fillRect(1597, 332, 46, 146);
+      const g = ctx.createRadialGradient(1620, 405, 10, 1620, 405, 190); g.addColorStop(0, `rgba(246,231,168,${0.28 * k})`); g.addColorStop(1, 'rgba(246,231,168,0)'); ctx.globalAlpha = 1; ctx.fillStyle = g; ctx.fillRect(1430, 215, 380, 380);
+      ctx.fillStyle = `rgba(246,231,168,${0.35 * k})`; ctx.fillRect(1544, 816, 152, 8); ctx.restore(); }
+    if (S.fountain) { ctx.save(); ctx.strokeStyle = 'rgba(120,180,230,0.9)'; ctx.lineWidth = 6; ctx.beginPath(); ctx.moveTo(1095, 554); ctx.quadraticCurveTo(1112 + Math.sin(t * 20) * 2, 520, 1128, 566); ctx.stroke(); ctx.globalAlpha = 0.6; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(1090, 554); ctx.quadraticCurveTo(1108, 528 + Math.sin(t * 17) * 3, 1122, 568); ctx.stroke(); ctx.restore(); }
     if (S.student === 'stare') { const d = wrapDelta(camX, 3833), lx = Math.max(-1, Math.min(1, d / 300)); for (const s of [-1, 1]) { P.at('se' + s).ellipse(3833 + s * 12.2, 558, 6, 4.8, '#fbf8ef', INK, 1.4); ctx.fillStyle = INK; ctx.beginPath(); ctx.arc(3833 + s * 12.2 + lx * 3, 558, 2.8, 0, 7); ctx.fill(); } }
   } else {
     clockHands(ctx, 500, 140, 46, S.clock === 'fast' ? clockBase + t * 140 : clockBase + t);

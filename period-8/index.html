@@ -19,19 +19,28 @@
   <link rel="stylesheet" href="styles.css">
 </head>
 <body>
+  <!-- Loading bar with the logo (no splash screens on portals). Removed as soon as the first screen takes input. -->
+  <div id="boot" style="position:fixed;inset:0;z-index:60;display:grid;place-content:center;gap:14px;background:#0a090c;color:#f6efdc;font:900 34px system-ui,sans-serif;letter-spacing:.06em;text-align:center">
+    <div>PERIOD <span style="color:#f2c94c">8</span></div>
+    <div style="width:180px;height:6px;border-radius:3px;background:#2a2530;overflow:hidden"><i id="bootBar" style="display:block;height:100%;width:15%;background:#f2c94c;transition:width .3s"></i></div>
+  </div>
   <canvas id="view" aria-label="Look around: drag to turn, pinch to zoom, tap to inspect"></canvas>
 
   <section id="title" class="screen">
     <div class="logo"><small>an after-school anomaly game</small><h1>PERIOD <b>8</b></h1></div>
+    <button id="locker" class="locker" aria-label="Your locker: stickers and flashlight colours"><span class="lk-door"><i class="lk-vent"></i><span id="lkStickers" class="lk-stickers"></span><i class="lk-handle"></i></span><small>Your locker</small></button>
     <div class="menu">
-      <button class="btn primary big" id="btnContinue" hidden>Continue run</button>
-      <button class="btn primary big" id="btnStart">Start</button>
-      <button class="btn big" id="btnClip">Spot it in 3s · Clip mode</button>
-      <button class="btn" id="btnEndings">Endings &amp; journal</button>
-      <button class="btn" id="btnTitleSettings">Settings</button>
       <p id="endingCount" class="dim"></p>
+      <div class="menu-row">
+        <button class="btn" id="btnClip">Clip mode</button>
+        <button class="btn" id="btnEndings">Notebook</button>
+        <button class="btn sq" id="btnTitleSettings" aria-label="Settings">⚙</button>
+      </div>
+      <button class="btn" id="btnNew" hidden>New run</button>
+      <button class="btn primary big play" id="btnContinue" hidden>Continue</button>
+      <button class="btn primary big play" id="btnStart">Play</button>
+      <p class="foot">Headphones recommended · Gore-free · by Diddlerrr</p>
     </div>
-    <p class="foot">Headphones recommended · Gore-free · by Diddlerrr</p>
   </section>
 
   <section id="hud" hidden>
@@ -64,6 +73,7 @@
     <div class="row col"><button class="btn primary" id="btnEndAgain">Play again</button><button class="btn" id="btnEndShot">Save picture</button><button class="btn" id="btnEndTitle">Title</button></div>
   </section>
 
+  <div id="coldopen" class="coldopen" hidden><p id="coLine" class="co-line"></p><button id="coSkip" class="btn co-skip">Skip ›</button></div>
   <div id="big" class="bigtext"></div>
   <canvas id="scare" class="scare" hidden></canvas>
   <div id="flash" class="flash"></div>

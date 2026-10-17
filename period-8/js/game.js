@@ -16,10 +16,10 @@ export const SAVE_KEY = 'period8.save.v1';
 
 export function defaultSave() {
   return { v: 1, seen: {}, endings: {}, best: 0, runs: 0, loopsTotal: 0, clipBest: 0, noAds: false,
-    settings: { sound: true, scares: 'full', haptics: true, analytics: true }, ads: { day: '', count: 0, lastReward: 0, earned: 0 } };
+    settings: { sound: true, scares: 'full', haptics: true, analytics: true, music: 0.8, sfx: 1, reduceFlash: false }, cosmetics: { light: 'warm' }, unlocks: [], warnedOver: false, ads: { day: '', count: 0, lastReward: 0, earned: 0 } };
 }
 export function loadSave(storage) {
-  try { const d = JSON.parse(storage.getItem(SAVE_KEY)); if (d && d.v === 1) { const def = defaultSave(); return { ...def, ...d, settings: { ...def.settings, ...d.settings }, ads: { ...def.ads, ...d.ads } }; } } catch {}
+  try { const d = JSON.parse(storage.getItem(SAVE_KEY)); if (d && d.v === 1) { const def = defaultSave(); return { ...def, ...d, settings: { ...def.settings, ...d.settings }, ads: { ...def.ads, ...d.ads }, cosmetics: { ...def.cosmetics, ...d.cosmetics } }; } } catch {}
   return defaultSave();
 }
 export function writeSave(storage, s) { try { storage.setItem(SAVE_KEY, JSON.stringify(s)); } catch {} }
@@ -30,10 +30,20 @@ export function newRun(seed = (Math.random() * 2 ** 31) | 0) {
 }
 export const sceneFor = loops => (loops % 2 ? 'class' : 'hall');
 
+// Level design (Exit-8-style mix): after the two "memorize this" loops, anomaly loops draw ~60% easy, ~20% hard and
+// ~20% "game-over" showcase anomalies. Showcase ones only start at loop 5 (index 4); before that it's easy/hard only.
+export const SHOWCASE_FROM = 4;
+export const MIX = { early: { easy: 0.75, hard: 0.25, over: 0 }, main: { easy: 0.6, hard: 0.2, over: 0.2 } };
+export function pickKind(rng, loops) {
+  const m = loops < SHOWCASE_FROM ? MIX.early : MIX.main; let r = rng();
+  for (const k of ['easy', 'hard', 'over']) { r -= m[k]; if (r < 0) return k; }
+  return 'easy';
+}
 function pick(run, save, scene) {
-  const rng = run.rng, hard = run.streak >= 5 ? [1, 2, 3] : run.streak >= 3 ? [2, 3, 2] : [3, 2, 1];
-  const pool = COMMON.filter(a => a.scene === scene && !run.recent.includes(a.id));
-  const w = pool.map(a => hard[a.tier - 1] * (save.seen[a.id] ? 1 : 2.5));
+  const rng = run.rng, kind = pickKind(rng, run.loops), fresh = a => a.scene === scene && !run.recent.includes(a.id);
+  let pool = COMMON.filter(a => fresh(a) && a.kind === kind);
+  if (!pool.length) pool = COMMON.filter(a => fresh(a) && (a.kind !== 'over' || run.loops >= SHOWCASE_FROM));
+  const w = pool.map(a => (save.seen[a.id] ? 1 : 2.5)); // prefer anomalies this player hasn't seen yet
   let r = rng() * w.reduce((x, y) => x + y, 0);
   for (let i = 0; i < pool.length; i++) { r -= w[i]; if (r <= 0) return pool[i]; }
   return pool[pool.length - 1];

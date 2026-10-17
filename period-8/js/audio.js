@@ -1,20 +1,27 @@
 // All sound is synthesized with WebAudio at runtime (no audio files): fluorescent hum, room tone, distant school
 // noises, clock ticks, footsteps, the school bell, the jump-scare sting. A generated impulse response gives the
 // hallway its echo.
-let A = null, master, verb, ambBus, droneGain, amb = [], muted = false, nextDistant = 0, buzzNode = null, waterNode = null;
+let A = null, master, verb, ambBus, droneGain, sfxDry, sfxWet, musicGain, vol = { music: 0.8, sfx: 1 }, paused = false, amb = [], muted = false, nextDistant = 0, buzzNode = null, waterNode = null;
 const now = () => A.currentTime;
 
 export function unlockAudio() {
-  if (A) { if (A.state === 'suspended') A.resume(); return; }
+  if (A) { if (A.state === 'suspended' && !paused) A.resume(); return; }
   const AC = window.AudioContext || window.webkitAudioContext; if (!AC) return;
   A = new AC(); master = A.createGain(); master.gain.value = muted ? 0 : 0.9; master.connect(A.destination);
   verb = A.createConvolver(); verb.buffer = impulse(2.4, 2.6); const vg = A.createGain(); vg.gain.value = 0.35; verb.connect(vg).connect(master);
-  ambBus = A.createGain(); ambBus.gain.value = 0.0; ambBus.connect(master); ambBus.connect(verb);
-  droneGain = A.createGain(); droneGain.gain.value = 0; droneGain.connect(master);
+  // Two user-facing buses (Settings sliders): music = room tone / hum / drone, sfx = everything diegetic and UI.
+  sfxDry = A.createGain(); sfxDry.gain.value = vol.sfx; sfxDry.connect(master); sfxWet = A.createGain(); sfxWet.gain.value = vol.sfx; sfxWet.connect(verb);
+  musicGain = A.createGain(); musicGain.gain.value = vol.music; musicGain.connect(master); musicGain.connect(verb);
+  ambBus = A.createGain(); ambBus.gain.value = 0.0; ambBus.connect(musicGain);
+  droneGain = A.createGain(); droneGain.gain.value = 0; droneGain.connect(musicGain);
   for (const [f, d] of [[55, -6], [55.4, 5], [82.6, 0]]) { const o = A.createOscillator(); o.type = 'sawtooth'; o.frequency.value = f; o.detune.value = d; const lp = A.createBiquadFilter(); lp.type = 'lowpass'; lp.frequency.value = 180; o.connect(lp).connect(droneGain); o.start(); }
 }
 export function setMuted(m) { muted = m; if (master) master.gain.setTargetAtTime(m ? 0 : 0.9, now(), 0.05); }
 export const audioReady = () => !!A;
+/** Music / SFX volume 0..1 (Settings sliders). */
+export function setVolumes({ music = vol.music, sfx = vol.sfx } = {}) { vol = { music, sfx }; if (!A) return; musicGain.gain.setTargetAtTime(music, now(), 0.05); sfxDry.gain.setTargetAtTime(sfx, now(), 0.05); sfxWet.gain.setTargetAtTime(sfx, now(), 0.05); }
+/** Pause everything (auto-pause on blur, portal ad breaks). */
+export function pauseAudio(on) { paused = on; if (!A) return; try { on ? A.suspend() : A.resume(); } catch {} }
 
 function impulse(sec, decay) { const len = A.sampleRate * sec, b = A.createBuffer(2, len, A.sampleRate); for (let ch = 0; ch < 2; ch++) { const d = b.getChannelData(ch); for (let i = 0; i < len; i++) d[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / len, decay); } return b; }
 let noiseBuf = null;
@@ -24,11 +31,11 @@ function env(g, t, a, peak, d) { g.gain.cancelScheduledValues(t); g.gain.setValu
 function burst({ t = now(), type = 'lowpass', freq = 800, q = 1, a = 0.003, peak = 0.3, d = 0.15, wet = false, pan = 0 } = {}) {
   const s = noiseSrc(), f = A.createBiquadFilter(), g = A.createGain(), p = A.createStereoPanner ? A.createStereoPanner() : null;
   f.type = type; f.frequency.value = freq; f.Q.value = q; s.connect(f).connect(g); let out = g; if (p) { p.pan.value = pan; g.connect(p); out = p; }
-  out.connect(master); if (wet) out.connect(verb); env(g, t, a, peak, d); s.start(t, Math.random() * 1.5); s.stop(t + a + d + 0.05);
+  out.connect(sfxDry); if (wet) out.connect(sfxWet); env(g, t, a, peak, d); s.start(t, Math.random() * 1.5); s.stop(t + a + d + 0.05);
 }
 function tone({ t = now(), f = 440, type = 'sine', a = 0.01, peak = 0.2, d = 0.4, f2 = null, wet = true }) {
   const o = A.createOscillator(), g = A.createGain(); o.type = type; o.frequency.setValueAtTime(f, t); if (f2) o.frequency.exponentialRampToValueAtTime(f2, t + a + d);
-  o.connect(g).connect(master); if (wet) g.connect(verb); env(g, t, a, peak, d); o.start(t); o.stop(t + a + d + 0.05);
+  o.connect(g).connect(sfxDry); if (wet) g.connect(sfxWet); env(g, t, a, peak, d); o.start(t); o.stop(t + a + d + 0.05);
 }
 
 /** Start the looping ambience for a scene ('hall' | 'class' | 'menu'). */
@@ -63,7 +70,7 @@ export function pickup() { if (!A) return; [880, 1175, 1568, 2093].forEach((f, i
 export function bell(dur = 2.6) { // electric school bell: metallic partials, hammered at ~22 Hz
   if (!A) return; const t = now(), g = A.createGain(), am = A.createOscillator(), amg = A.createGain();
   am.frequency.value = 22; amg.gain.value = 0.5; am.connect(amg).connect(g.gain); g.gain.setValueAtTime(0.5, t); g.gain.setTargetAtTime(0, t + dur, 0.15);
-  g.connect(master); g.connect(verb);
+  g.connect(sfxDry); g.connect(sfxWet);
   for (const [f, v] of [[1180, 0.08], [2720, 0.04], [3990, 0.025], [590, 0.03]]) { const o = A.createOscillator(), og = A.createGain(); o.type = 'square'; o.frequency.value = f; og.gain.value = v; o.connect(og).connect(g); o.start(t); o.stop(t + dur + 1); }
   am.start(t); am.stop(t + dur + 1);
 }
@@ -75,13 +82,13 @@ export function scare(soft = false) {
 }
 export function buzz(on) { // flickering-light buzz
   if (!A) return;
-  if (on && !buzzNode) { const o = A.createOscillator(), g = A.createGain(), f = A.createBiquadFilter(); o.type = 'sawtooth'; o.frequency.value = 120; f.type = 'bandpass'; f.frequency.value = 1200; f.Q.value = 2; g.gain.value = 0.03; o.connect(f).connect(g).connect(master); o.start(); buzzNode = { o, g }; }
+  if (on && !buzzNode) { const o = A.createOscillator(), g = A.createGain(), f = A.createBiquadFilter(); o.type = 'sawtooth'; o.frequency.value = 120; f.type = 'bandpass'; f.frequency.value = 1200; f.Q.value = 2; g.gain.value = 0.03; o.connect(f).connect(g).connect(sfxDry); o.start(); buzzNode = { o, g }; }
   if (!on && buzzNode) { buzzNode.o.stop(); buzzNode = null; }
 }
 export function buzzLevel(v) { if (buzzNode) buzzNode.g.gain.setTargetAtTime(v * 0.04, now(), 0.01); }
 export function water(on) {
   if (!A) return;
-  if (on && !waterNode) { const s = noiseSrc(true), f = A.createBiquadFilter(), g = A.createGain(); f.type = 'bandpass'; f.frequency.value = 2400; f.Q.value = 0.9; g.gain.value = 0.035; s.connect(f).connect(g).connect(master); s.start(); waterNode = s; }
+  if (on && !waterNode) { const s = noiseSrc(true), f = A.createBiquadFilter(), g = A.createGain(); f.type = 'bandpass'; f.frequency.value = 2400; f.Q.value = 0.9; g.gain.value = 0.035; s.connect(f).connect(g).connect(sfxDry); s.start(); waterNode = s; }
   if (!on && waterNode) { waterNode.stop(); waterNode = null; }
 }
 export function stopLoops() { buzz(false); water(false); }

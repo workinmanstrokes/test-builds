@@ -1,14 +1,14 @@
 // Gore-free jump scare: "the Hall Monitor", a tall figure with a blank paper face and hollow eyes, rushes the screen.
 // No blood, no injury. 'soft' mode (Settings) keeps it at a distance with a gentler sting.
 import { Pen, INK } from './sketch.js';
-export function playScare(canvas, soft = false) {
+export function playScare(canvas, soft = false, noFlash = false) {
   return new Promise(res => {
     const c = canvas.getContext('2d'), d = Math.min(2, devicePixelRatio || 1); canvas.hidden = false;
     const W = canvas.clientWidth || innerWidth, H = canvas.clientHeight || innerHeight; canvas.width = W * d; canvas.height = H * d;
     const dur = soft ? 1.3 : 1.05, t0 = performance.now(), P = new Pen(c);
     const draw = () => {
       const t = (performance.now() - t0) / 1000, k = Math.min(1, t / (soft ? 0.9 : 0.28));
-      c.setTransform(d, 0, 0, d, 0, 0); c.fillStyle = t < 0.06 ? '#fff' : '#060508'; c.fillRect(0, 0, W, H);
+      c.setTransform(d, 0, 0, d, 0, 0); c.fillStyle = t < 0.06 && !noFlash ? '#fff' : '#060508'; c.fillRect(0, 0, W, H);
       const s = (soft ? 0.35 + k * 0.25 : 0.25 + Math.pow(k, 2) * 1.25) * Math.min(W, H) / 400, jx = soft ? 0 : (Math.random() - 0.5) * 14, jy = soft ? 0 : (Math.random() - 0.5) * 14;
       c.save(); c.translate(W / 2 + jx, H * 0.55 + jy); c.scale(s, s); c.globalAlpha = soft ? Math.min(1, t * 2) : 1;
       // body
@@ -21,7 +21,7 @@ export function playScare(canvas, soft = false) {
       c.beginPath(); c.ellipse(0, -18, 26, 6 + k * 22, 0, 0, 7); c.fill();
       P.line(-80, -170, 80, -175, 3, '#8f8875'); // paper crease
       c.restore();
-      if (!soft && t > 0.12 && t < 0.4 && Math.random() < 0.5) { c.fillStyle = 'rgba(255,255,255,0.15)'; c.fillRect(0, 0, W, H); }
+      if (!soft && !noFlash && t > 0.12 && t < 0.4 && Math.random() < 0.5) { c.fillStyle = 'rgba(255,255,255,0.15)'; c.fillRect(0, 0, W, H); }
       if (t < dur) requestAnimationFrame(draw); else { canvas.hidden = true; res(); }
     };
     requestAnimationFrame(draw);

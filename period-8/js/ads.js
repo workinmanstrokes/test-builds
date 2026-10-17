@@ -1,7 +1,10 @@
 // AdMob rewarded ads + UMP consent. Placements: 'hint' (highlight the area of an anomaly), 'keep' (keep your streak
-// after a miss). There are no interstitials. On the web build a 3-second "TEST AD" overlay stands in for the video.
+// after a miss). There are no interstitials. On Poki / CrazyGames the portal's rewarded break is used (portal.js);
+// on other web builds a 3-second "TEST AD" overlay stands in for the video.
 import { ADS } from './config.js';
 import { track } from './analytics.js';
+import { isPortal, portalRewarded } from './portal.js';
+import { pauseAudio } from './audio.js';
 const cap = window.Capacitor;
 const native = !!cap?.isNativePlatform?.();
 const AdMob = native ? cap.Plugins?.AdMob : null;
@@ -42,7 +45,7 @@ export async function showRewarded(save, placement) {
   if (showing) return false;
   const g = rewardGate(save, placement); if (!g.ok) return false; if (g.free) { track('reward_free', { placement }); return true; }
   showing = true; track('ad_reward_shown', { placement }); let earned = false;
-  try { earned = AdMob ? await nativeRewarded() : await simulated(); } finally { showing = false; }
+  try { earned = AdMob ? await nativeRewarded() : isPortal() ? await portalRewarded({ onPause: () => pauseAudio(true), onResume: () => pauseAudio(false) }) : await simulated(); } finally { showing = false; }
   if (earned) { save.ads.count++; save.ads.lastReward = Date.now(); save.ads.earned++; track('ad_reward_earned', { placement }); }
   return earned;
 }
