@@ -16,7 +16,7 @@ export const SAVE_KEY = 'period8.save.v1';
 
 export function defaultSave() {
   return { v: 1, seen: {}, endings: {}, best: 0, runs: 0, loopsTotal: 0, clipBest: 0, noAds: false,
-    settings: { sound: true, scares: 'full', haptics: true }, ads: { day: '', count: 0, lastReward: 0, earned: 0 } };
+    settings: { sound: true, scares: 'full', haptics: true, analytics: true }, ads: { day: '', count: 0, lastReward: 0, earned: 0 } };
 }
 export function loadSave(storage) {
   try { const d = JSON.parse(storage.getItem(SAVE_KEY)); if (d && d.v === 1) { const def = defaultSave(); return { ...def, ...d, settings: { ...def.settings, ...d.settings }, ads: { ...def.ads, ...d.ads } }; } } catch {}

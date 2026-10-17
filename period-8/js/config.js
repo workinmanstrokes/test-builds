@@ -16,5 +16,5 @@ export const IAP = { enabled: false, removeAdsSku: 'period8_remove_ads', price: 
 export const ANALYTICS = {
   native: false,  // @cfg analytics-native
 };
-export const PRIVACY_URL = 'https://workinmanstrokes.github.io/test-builds/period-8/privacy.html';
+export const PRIVACY_URL = 'https://workinmanstrokes.github.io/test-builds/privacy/period-8.html';
 export const PLAY_URL = 'https://workinmanstrokes.github.io/test-builds/period-8/';

@@ -5,8 +5,13 @@ import { track } from './analytics.js';
 const cap = window.Capacitor;
 const native = !!cap?.isNativePlatform?.();
 const AdMob = native ? cap.Plugins?.AdMob : null;
-let ready = false, canRequest = !native, privacyRequired = false, loaded = false, showing = false;
-export const adsInfo = () => ({ native, ready, canRequest, privacyRequired, testing: ADS.testing });
+let ready = false, canRequest = !native, privacyRequired = false, loaded = false, showing = false, consentStatus = native ? 'UNKNOWN' : 'NO_UMP';
+export const adsInfo = () => ({ native, ready, canRequest, privacyRequired, consentStatus, testing: ADS.testing });
+/** Does the UMP result allow analytics? Native: only after UMP says consent is OBTAINED (with ads allowed) or NOT_REQUIRED.
+ *  Unknown / required / UMP failure (e.g. offline) => false, so Firebase stays disabled. Web build has no UMP => true
+ *  (the in-game "Share gameplay stats" toggle still applies). */
+export const consentAllowsAnalytics = () => !native || ((consentStatus === 'OBTAINED' && canRequest) || consentStatus === 'NOT_REQUIRED');
+function applyConsent(info) { consentStatus = info.status || 'UNKNOWN'; canRequest = info.canRequestAds !== false; privacyRequired = info.privacyOptionsRequirementStatus === 'REQUIRED'; }
 
 export async function initAds() {
   if (!ADS.enabled || !AdMob) return;
@@ -14,11 +19,11 @@ export async function initAds() {
     await AdMob.initialize({ initializeForTesting: ADS.testing });
     let info = await AdMob.requestConsentInfo();
     if (info.isConsentFormAvailable && info.status === 'REQUIRED') info = await AdMob.showConsentForm();
-    canRequest = info.canRequestAds !== false; privacyRequired = info.privacyOptionsRequirementStatus === 'REQUIRED';
-    ready = true; preload();
+    applyConsent(info); ready = true; preload();
   } catch (e) { console.warn('ads init failed', e); }
 }
-export async function showPrivacyOptions() { try { await AdMob?.showPrivacyOptionsForm(); } catch {} }
+/** Re-open Google's UMP privacy options form, then refresh the consent result. */
+export async function showPrivacyOptions() { if (!AdMob) return; try { await AdMob.showPrivacyOptionsForm(); } catch {} try { applyConsent(await AdMob.requestConsentInfo()); preload(); } catch {} }
 async function preload() { if (!ready || !canRequest || loaded) return; try { await AdMob.prepareRewardVideoAd({ adId: ADS.rewardedId, isTesting: ADS.testing }); loaded = true; } catch { loaded = false; } }
 
 export function rewardGate(save, placement, now = Date.now()) {

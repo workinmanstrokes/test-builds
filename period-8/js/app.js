@@ -3,9 +3,9 @@ import { View, FACES } from './view.js';
 import { byId } from './anomalies.js';
 import * as G from './game.js';
 import * as sfx from './audio.js';
-import { initAds, showRewarded, rewardGate, adsInfo, showPrivacyOptions } from './ads.js';
+import { initAds, showRewarded, rewardGate, adsInfo, showPrivacyOptions, consentAllowsAnalytics } from './ads.js';
 import { iapInfo, buyRemoveAds } from './iap.js';
-import { track, initAnalytics } from './analytics.js';
+import { track, setAnalyticsAllowed } from './analytics.js';
 import { buzzPhone, thud, setHaptics } from './haptics.js';
 import { playScare } from './scare.js';
 import { drawEnding } from './endings.js';
@@ -139,7 +139,7 @@ async function ending(id) {
   const E = G.ENDINGS[id], mins = Math.max(1, Math.round((Date.now() - run.startedAt) / 60000)), spotted = run.log.filter(l => l.anomaly && l.correct).length;
   show('#ending'); drawEnding($('#endArt'), id);
   $('#endTitle').textContent = E.title; $('#endBlurb').textContent = E.blurb;
-  $('#endStats').textContent = `${run.loops} loops · ${spotted} anomalies spotted · ${run.misses} misses · ${mins} min`;
+  $('#endStats').textContent = `${run.loops} loops · ${spotted} ${spotted === 1 ? 'anomaly' : 'anomalies'} spotted · ${run.misses} ${run.misses === 1 ? 'miss' : 'misses'} · ${mins} min`;
   $('#endTag').textContent = `Ending ${Object.keys(save.endings).length}/3 found`;
 }
 $('#btnEndAgain').onclick = () => { sfx.ui(); startRun(); };
@@ -165,8 +165,9 @@ function settings() {
     <label class="tog"><span>Sound</span><input type="checkbox" id="sSound" ${s.sound ? 'checked' : ''}></label>
     <label class="tog"><span>Jump scares</span><select id="sScare"><option value="full">Full</option><option value="soft">Gentle</option></select></label>
     <label class="tog"><span>Vibration</span><input type="checkbox" id="sHap" ${s.haptics ? 'checked' : ''}></label>
-    <button class="btn" id="sIap" ${ia.enabled ? '' : 'disabled'}>Remove ads · ${ia.price}${ia.enabled ? '' : ' (coming soon)'}</button>
-    ${ad.privacyRequired ? '<button class="btn" id="sPriv">Ad privacy choices</button>' : ''}
+    <label class="tog"><span>Share anonymous gameplay stats</span><input type="checkbox" id="sStats" ${s.analytics !== false ? 'checked' : ''}></label>
+    ${ia.enabled ? `<button class="btn" id="sIap">Remove ads · ${ia.price}</button>` : ''}
+    ${ad.privacyRequired ? '<button class="btn" id="sPriv">Privacy options</button>' : ''}
     <a class="btn" href="${PRIVACY_URL}" target="_blank" rel="noopener">Privacy policy</a>
     <button class="btn danger" id="sReset">Reset progress</button>
     <p class="dim">Period 8 v0.1.0 · Diddlerrr · Rewarded ads only, never forced.</p>
@@ -175,8 +176,9 @@ function settings() {
   $('#sSound').onchange = e => { s.sound = e.target.checked; sfx.setMuted(!s.sound); persist(); };
   $('#sScare').onchange = e => { s.scares = e.target.value; persist(); };
   $('#sHap').onchange = e => { s.haptics = e.target.checked; setHaptics(s.haptics); persist(); };
-  $('#sIap').onclick = async () => { const r = await buyRemoveAds(save); toast(r.ok ? 'Ads removed. Thank you!' : r.why); persist(); };
-  if ($('#sPriv')) $('#sPriv').onclick = showPrivacyOptions;
+  if ($('#sIap')) $('#sIap').onclick = async () => { const r = await buyRemoveAds(save); toast(r.ok ? 'Ads removed. Thank you!' : r.why); persist(); };
+  $('#sStats').onchange = e => { s.analytics = e.target.checked; persist(); applyAnalyticsChoice(); };
+  if ($('#sPriv')) $('#sPriv').onclick = async () => { await showPrivacyOptions(); applyAnalyticsChoice(); };
   $('#sReset').onclick = () => { if (confirm('Erase all progress, endings and the anomaly journal?')) { localStorage.removeItem(G.SAVE_KEY); location.reload(); } };
   $('#mClose').onclick = closeModal;
 }
@@ -213,12 +215,13 @@ function frame(t) {
   requestAnimationFrame(frame);
 }
 document.addEventListener('visibilitychange', () => { if (document.hidden) { snapshotRun(); } });
-window.__p8 = { get run() { return run; }, save, view, choose, G, byId, persist, title, openClip, get clip() { return clip; } };
+window.__p8 = { get run() { return run; }, save, view, choose, G, byId, persist, title, openClip, settings, endingsModal, get clip() { return clip; } };
 // first launch + day-N / D1 return (Firebase also logs first_open / session_start automatically on Android)
 const DAY = 86400e3, firstOpen = !save.installedAt; if (firstOpen) save.installedAt = Date.now();
 const day = Math.floor((new Date().setHours(0, 0, 0, 0) - new Date(save.installedAt).setHours(0, 0, 0, 0)) / DAY);
-initAnalytics(); initAds();
+initAds().finally(applyAnalyticsChoice);
 if (firstOpen) track('first_launch');
 if (day > 0 && day !== save.lastDayLogged) { track('return_day', { day }); if (day === 1) track('d1_return'); save.lastDayLogged = day; }
 track('session_begin', { day, endings_found: Object.keys(save.endings).length, best: save.best }); persist();
+function applyAnalyticsChoice() { return setAnalyticsAllowed(save.settings.analytics !== false && consentAllowsAnalytics()); }
 title(); requestAnimationFrame(frame);
