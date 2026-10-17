@@ -56,24 +56,73 @@
       box(c, 9, -26, 3, 9, 1.4, '#22d3ee', 0.9);                            // toast lever = blaster
       shine(c, -6, -24.5, 3, 1.4);
     } },
-    // Squad commander: pink flamingo with helicopter rotor hair, hovers behind the squad.
-    leader: { name: 'Flamenco Rotorina', role: 'Squad commander', w: 46, h: 62, frames: 2, draw(c, f) {
-      c.save(); c.translate(0, -6);
-      c.lineWidth = 2.2; c.lineCap = 'round'; c.strokeStyle = '#be185d'; c.beginPath(); c.moveTo(-3, -2); c.lineTo(-4, -12); c.moveTo(3, -2); c.lineTo(5, -12); c.stroke();
-      blob(c, 0, -20, 13, 10, '#f472b6');                                     // body
-      blob(c, -12, -22, 6, 4, '#ec4899', 1, -0.6); blob(c, 12, -22, 6, 4, '#ec4899', 1, 0.6); // wings
-      c.lineWidth = 6; c.strokeStyle = OUT; c.beginPath(); c.moveTo(4, -26); c.quadraticCurveTo(13, -33, 4, -38); c.stroke();
-      c.lineWidth = 4; c.strokeStyle = '#f9a8d4'; c.stroke();                 // neck
-      blob(c, 2, -41, 8, 7.5, '#f472b6');                                     // head
-      c.beginPath(); c.moveTo(7, -41); c.quadraticCurveTo(16, -40, 14, -34); c.lineTo(8, -37); c.closePath(); c.fillStyle = '#facc15'; c.fill(); c.lineWidth = 1; c.strokeStyle = OUT; c.stroke();
-      c.beginPath(); c.moveTo(13, -36); c.lineTo(14, -34); c.lineTo(10.5, -35.5); c.fillStyle = OUT; c.fill();
-      eye(c, -1, -43, 3.2, 0.4, -0.2); eye(c, 5.2, -43.5, 2.6, 0.4, -0.2);
-      box(c, 0, -52, 3, 4, 1, '#64748b', 0.9);                               // rotor mast
-      const a = f ? 0.5 : 0; c.save(); c.translate(1.5, -52); c.scale(1, 0.42);
-      for (let i = 0; i < 2; i++) { c.save(); c.rotate(a + i * Math.PI / 2); rr(c, -21, -2.2, 42, 4.4, 2); c.fillStyle = 'rgba(203,213,225,0.95)'; c.fill(); c.lineWidth = 2.5; c.strokeStyle = OUT; c.stroke(); c.restore(); }
-      c.restore(); blob(c, 1.5, -52, 2.2, 1.6, '#facc15', 0.8);
-      shine(c, -5, -24, 4, 2);
-      c.restore();
+    // Squad commander: plump glossy flamingo pilot with aviator goggles, a flowing scarf and a 3-blade rotor cap.
+    leader: { name: 'Flamenco Rotorina', role: 'Squad commander', w: 78, h: 98, frames: 2, draw(c, f) {
+      const PINK = '#f472b6', DEEP = '#db2777', flap = f ? 1 : 0;
+      // legs: knee joint + webbed orange feet (one leg tucks on frame 1)
+      c.lineCap = 'round'; c.lineJoin = 'round';
+      const leg = (x0, kx, ky, fx, fy) => {
+        c.beginPath(); c.moveTo(x0, -26); c.lineTo(kx, ky); c.lineTo(fx, fy); c.lineWidth = 4.4; c.strokeStyle = OUT; c.stroke(); c.lineWidth = 2.6; c.strokeStyle = '#f9a8d4'; c.stroke();
+        blob(c, kx, ky, 1.9, 1.9, DEEP, 0.8);
+      };
+      leg(-4, -6, -14, -5, -3);
+      if (flap) leg(5, 11, -18, 6, -15); else leg(5, 7, -14, 6, -3);
+      const foot = (x, y) => { c.beginPath(); c.moveTo(x - 6, y + 1); c.quadraticCurveTo(x, y - 4, x + 6, y + 1); c.quadraticCurveTo(x, y + 2.5, x - 6, y + 1); c.fillStyle = glossFill(c, x, y, 6, 3, '#fb923c'); c.fill(); c.lineWidth = 1; c.strokeStyle = OUT; c.stroke(); };
+      foot(-5, -2); if (!flap) foot(6, -2);
+      // tail tuft
+      blob(c, -19, -33, 6, 4, DEEP, 1.1, 0.5); blob(c, -21, -29, 5, 3.5, '#be185d', 1.1, 0.2);
+      // back wing (behind body)
+      c.save(); c.translate(14, -37); c.rotate(flap ? -0.9 : -0.35);
+      for (let k = 2; k >= 0; k--) blob(c, 6 + k * 3.5, 1 + k * 1.5, 7, 3, k ? '#ec4899' : '#f9a8d4', 1, 0.15 * k); c.restore();
+      // plump egg body
+      c.save(); c.translate(0, -36); c.rotate(-0.12); blob(c, 0, 0, 16, 13.5, PINK, 1.5);
+      c.save(); ell(c, 0, 0, 16, 13.5); c.clip(); ell(c, 3, 8, 12, 7); c.fillStyle = 'rgba(253,242,248,0.55)'; c.fill(); c.restore();
+      shine(c, -6, -7, 6, 2.6, 0.8); c.restore();
+      // front wing with layered feather tips
+      c.save(); c.translate(-12, -38); c.rotate(flap ? 0.95 : 0.4);
+      for (let k = 2; k >= 0; k--) blob(c, -6 - k * 3.5, 1 + k * 1.5, 7.5, 3.2, k ? '#ec4899' : '#fbcfe8', 1, -0.15 * k);
+      blob(c, -18, 4.5, 3, 1.6, '#1a1033', 0); c.restore();
+      // thick glossy S-neck
+      c.beginPath(); c.moveTo(6, -46); c.bezierCurveTo(16, -52, 14, -60, 6, -62);
+      c.lineWidth = 9; c.strokeStyle = OUT; c.stroke(); c.lineWidth = 6.6; c.strokeStyle = PINK; c.stroke(); c.lineWidth = 2; c.strokeStyle = 'rgba(255,255,255,0.55)'; c.beginPath(); c.moveTo(8, -48); c.bezierCurveTo(14, -52, 12, -58, 6, -60); c.stroke();
+      // flowing scarf (red with yellow stripe), tail streams behind
+      c.save(); c.translate(7, -55);
+      c.beginPath(); c.moveTo(-1, 0); c.quadraticCurveTo(-12, 2 + flap * 2, -22, -2 + flap * 3); c.lineTo(-21, 4 + flap * 3); c.quadraticCurveTo(-12, 7, -1, 5); c.closePath();
+      c.fillStyle = glossFill(c, -11, 2, 11, 4, '#ef4444'); c.fill(); c.lineWidth = 1.1; c.strokeStyle = OUT; c.stroke();
+      c.beginPath(); c.moveTo(-6, 1.6); c.lineTo(-6, 5.6); c.moveTo(-13, 1); c.lineTo(-13, 5.5); c.lineWidth = 1.2; c.strokeStyle = '#facc15'; c.stroke();
+      box(c, -5.5, -2.5, 11, 6, 3, '#ef4444', 1.1); c.restore();
+      // big round head
+      blob(c, 4, -68, 11, 10, PINK, 1.5); shine(c, -1, -73, 4, 2, 0.75);
+      // curved beak: pale base, black hooked tip, little open smile
+      c.beginPath(); c.moveTo(12, -71); c.quadraticCurveTo(24, -71, 25, -63); c.quadraticCurveTo(21, -62, 18, -64.5); c.quadraticCurveTo(15, -63, 12, -64); c.closePath();
+      c.fillStyle = glossFill(c, 18, -67, 7, 4, '#fde68a'); c.fill(); c.lineWidth = 1.2; c.strokeStyle = OUT; c.stroke();
+      c.beginPath(); c.moveTo(21, -70.2); c.quadraticCurveTo(25, -69, 25, -63); c.quadraticCurveTo(22.5, -62.6, 20.5, -64.2); c.closePath(); c.fillStyle = '#1a1033'; c.fill();
+      c.beginPath(); c.moveTo(13, -66.5); c.quadraticCurveTo(17, -64.6, 20, -66); c.lineWidth = 1; c.strokeStyle = OUT; c.stroke();
+      // aviator goggles: strap + two gold-rimmed lenses with big eyes behind
+      c.beginPath(); c.moveTo(-7, -69); c.quadraticCurveTo(4, -73, 15, -70); c.lineWidth = 3.2; c.strokeStyle = '#7c2d12'; c.stroke();
+      for (const [gx, gr] of [[1.5, 5], [10.5, 4.3]]) {
+        blob(c, gx, -70, gr + 1.4, gr + 1.4, '#f59e0b', 1.1);
+        ell(c, gx, -70, gr, gr); c.fillStyle = glossFill(c, gx, -70, gr, gr, '#a5f3fc'); c.fill();
+        eye(c, gx + 0.4, -69.6, gr * 0.72, 0.5, 0.1, 0.25);
+        ell(c, gx - gr * 0.45, -70 - gr * 0.5, gr * 0.35, gr * 0.18, -0.6); c.fillStyle = 'rgba(255,255,255,0.85)'; c.fill();
+      }
+      // pilot cap with rotor mast
+      c.beginPath(); c.moveTo(-6, -75); c.quadraticCurveTo(4, -86, 14, -75); c.closePath(); c.fillStyle = glossFill(c, 4, -79, 10, 5, '#0d9488'); c.fill(); c.lineWidth = 1.3; c.strokeStyle = OUT; c.stroke();
+      box(c, 2.4, -84, 3.2, 5, 1.2, '#64748b', 0.9);
+      // 3-blade rotor, seen in perspective, with a motion-blur disc and speed streaks
+      c.save(); c.translate(4, -84); c.scale(1, 0.34);
+      const disc = c.createRadialGradient(0, 0, 3, 0, 0, 30); disc.addColorStop(0, 'rgba(226,232,240,0.55)'); disc.addColorStop(1, 'rgba(226,232,240,0.05)');
+      ell(c, 0, 0, 30, 30); c.fillStyle = disc; c.fill();
+      c.lineWidth = 2.2; c.strokeStyle = 'rgba(255,255,255,0.7)';
+      for (let k = 0; k < 3; k++) { const a0 = (f ? 0.5 : 0) + k * 2.094; c.beginPath(); c.arc(0, 0, 25, a0 - 0.75, a0 - 0.1); c.stroke(); }
+      for (let k = 0; k < 3; k++) {
+        c.save(); c.rotate((f ? 0.5 : 0) + k * 2.094);
+        c.globalAlpha = 0.35; rr(c, 2, -3.2, 27, 6.4, 3); c.fillStyle = '#cbd5e1'; c.fill(); c.globalAlpha = 1; // trailing blur copy
+        c.rotate(0.22); rr(c, 2, -2.6, 27, 5.2, 2.6); c.fillStyle = glossFill(c, 15, 0, 13, 3, '#e2e8f0'); c.fill(); c.lineWidth = 1.6; c.strokeStyle = OUT; c.stroke();
+        rr(c, 22, -2.6, 7, 5.2, 2.6); c.fillStyle = '#ef4444'; c.fill();                       // red blade tips
+        c.restore();
+      }
+      c.restore(); blob(c, 4, -84, 3, 2, '#facc15', 1);
     } },
     // Swarm enemy: pineapple knight with a tin visor and a tiny sword.
     swarmA: { name: 'Ananasso Spadino', role: 'Swarm grunt', w: 46, h: 52, frames: 2, draw(c, f) {
