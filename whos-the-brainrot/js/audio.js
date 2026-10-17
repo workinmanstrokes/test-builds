@@ -1,11 +1,15 @@
 // All sounds are synthesized in code with WebAudio (no samples, no songs). Original sound bites only.
-let ctx = null, master = null, on = true;
-export function setSound(v) { on = v; if (master) master.gain.value = v ? 0.55 : 0; }
+let ctx = null, master = null, on = true, vol = 0.8;
+const level = () => (on ? 0.7 * vol : 0);
+export function setSound(v) { on = v; if (master) master.gain.value = level(); }
+export function setVolume(v) { vol = Math.max(0, Math.min(1, v)); if (master) master.gain.value = level(); }
+/** Silence everything while the game is paused / in the background. */
+export function suspendAudio(yes) { if (!ctx) return; try { yes ? ctx.suspend() : ctx.resume(); } catch {} }
 export function unlockAudio() {
-  if (!ctx) { const AC = window.AudioContext || window.webkitAudioContext; if (!AC) return; ctx = new AC(); master = ctx.createGain(); master.gain.value = on ? 0.55 : 0; master.connect(ctx.destination); }
+  if (!ctx) { const AC = window.AudioContext || window.webkitAudioContext; if (!AC) return; ctx = new AC(); master = ctx.createGain(); master.gain.value = level(); master.connect(ctx.destination); }
   if (ctx.state === 'suspended') ctx.resume();
 }
-const ok = () => on && ctx && ctx.state === 'running';
+const ok = () => on && vol > 0 && ctx && ctx.state === 'running';
 function tone(f, t0, dur, { type = 'sine', vol = 0.3, to = null, attack = 0.005, curve = 'exp' } = {}) {
   const o = ctx.createOscillator(), g = ctx.createGain();
   o.type = type; o.frequency.setValueAtTime(f, t0);

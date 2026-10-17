@@ -11,8 +11,9 @@ export function rng32(seed = Date.now()) { let a = seed >>> 0; return () => { a 
 export function shuffle(arr, rnd = Math.random) { const a = arr.slice(); for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(rnd() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; }
 const pick = (arr, rnd) => arr[Math.floor(rnd() * arr.length)];
 
+/** Blank name boxes become "Player N", so a first-time group can hit Play -> Start round in 2 taps. */
 export function validPlayers(names) {
-  const clean = names.map(n => String(n || '').trim()).filter(Boolean);
+  const clean = names.map((n, i) => String(n || '').trim() || `Player ${i + 1}`);
   if (clean.length < MIN_PLAYERS) return { ok: false, why: `Need at least ${MIN_PLAYERS} players` };
   if (clean.length > MAX_PLAYERS) return { ok: false, why: `Max ${MAX_PLAYERS} players` };
   if (new Set(clean.map(n => n.toLowerCase())).size !== clean.length) return { ok: false, why: 'Names must be different' };
@@ -107,3 +108,37 @@ export function applyScores(scores, names, points) {
   return out;
 }
 export const leaderboard = (scores, names) => names.map(n => ({ name: n, score: scores[n] || 0 })).sort((a, b) => b.score - a.score);
+
+/** Comeback mechanic: if scores are uneven, players in last place who score this round get +1 "underdog" bonus. */
+export function underdogBonus(scores, names, points) {
+  const cur = names.map(n => scores[n] || 0), lo = Math.min(...cur), hi = Math.max(...cur);
+  return names.map((_, i) => (hi > lo && cur[i] === lo && points[i] > 0 ? 1 : 0));
+}
+
+/** Party Level: one XP per completed round (lifetime). Level L needs (L-1)(L+2)/2 rounds: 2, 5, 9, 14, 20, ... */
+export const roundsForLevel = L => (L <= 1 ? 0 : ((L - 1) * (L + 2)) / 2);
+export function partyLevel(rounds) { let L = 1; while (rounds >= roundsForLevel(L + 1)) L++; return { level: L, into: rounds - roundsForLevel(L), need: roundsForLevel(L + 1) - roundsForLevel(L) }; }
+/** Cosmetic voting-screen themes unlocked by Party Level (no gameplay effect). */
+export const THEMES = [
+  { id: 'classic', name: 'Classic', level: 1 }, { id: 'neon', name: 'Neon Arcade', level: 2 }, { id: 'spooky', name: 'Spooky Fog', level: 3 },
+  { id: 'candy', name: 'Candy Pop', level: 4 }, { id: 'gold', name: 'Golden Throne', level: 6 },
+];
+/** Every FREE_PACK_EVERY completed rounds, the next locked pack unlocks for good. Returns the pack id or null. */
+export const FREE_PACK_EVERY = 5;
+export function freePackDue(lifetimeRounds, lockedIdsInOrder) { return lifetimeRounds > 0 && lifetimeRounds % FREE_PACK_EVERY === 0 && lockedIdsInOrder.length ? lockedIdsInOrder[0] : null; }
+
+/** Host commentary that reacts to how the table voted. */
+export function hostLine(round, res) {
+  const t = tally(round), n = round.roles.length, name = i => round.roles[i].name;
+  const onHidden = Object.values(round.votes).filter(v => round.hidden.includes(v)).length;
+  const hid = round.mode === 'reverse' ? 'the one who knew' : 'the Brainrot';
+  if (t.tie) return 'A tie?! Nobody trusts anybody. Classic.';
+  const max = t.counts[t.voted];
+  if (max >= n - 1 && res.caught) return `Unanimous! The whole squad pointed at ${name(t.voted)}.`;
+  if (max >= n - 1) return `Everyone ganged up on ${name(t.voted)}… and they were innocent. Brutal.`;
+  if (onHidden === 0) return `Zero votes for ${hid}. That's elite acting.`;
+  if (res.caught && res.guessed) return `Caught red-handed, then stole the win anyway. Respect.`;
+  if (res.caught && max * 2 <= n) return `Caught by a whisker. ${name(t.voted)} almost got away.`;
+  if (res.caught) return `${name(t.voted)} never stood a chance.`;
+  return `${onHidden} ${onHidden === 1 ? 'person' : 'people'} smelled it. Everyone else got played.`;
+}
