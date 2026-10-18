@@ -49,11 +49,22 @@
     <div class="t-tap">tap anywhere</div>
     <div class="t-menu">
       <button id="tPlay" class="play">▶ PLAY</button>
+      <button id="tEscape" class="play esc-btn">⚡ +1 SPEED ESCAPE<small id="tEscBest"></small></button>
       <div class="t-row"><button id="tSkins" class="tbtn">🎨<small>Skins</small></button><button id="tDaily" class="tbtn">🎁<small>Daily</small></button><button id="tSettings" class="tbtn">⚙<small>Settings</small></button></div>
     </div>
   </div>
+  <!-- +1 Speed Escape HUD (runner mode) -->
+  <div id="esc" hidden>
+    <header class="top">
+      <div class="esc-best"><small>BEST</small><b id="escBest">0 m</b></div>
+      <div class="total"><div id="escDist" class="big">0 m</div><div class="sub" id="escWisps">✦ 0</div></div>
+      <div id="escSpeed" class="esc-spd"><b id="escSpd">10</b><small>SPEED</small><i id="escPlus">+1</i></div>
+      <button id="escPause" class="icon" aria-label="Pause">⏸</button>
+    </header>
+    <div id="escHint" class="hint">SWIPE OR TAP ◀ ▶ TO DODGE</div>
+  </div>
   <div id="pause" class="modal" hidden><div class="card"><h2>Paused</h2><div class="row">
-    <button class="btn primary" id="pResume">Resume</button><button class="btn" id="pSkins">Skins</button><button class="btn" id="pDaily">Daily gift</button><button class="btn" id="pSettings">Settings</button><button class="btn" id="pHome">Home</button>
+    <button class="btn primary" id="pResume">Resume</button><button class="btn" id="pEscape">⚡ Speed Escape</button><button class="btn" id="pSkins">Skins</button><button class="btn" id="pDaily">Daily gift</button><button class="btn" id="pSettings">Settings</button><button class="btn" id="pHome">Home</button>
   </div></div></div>
   <div id="modal" class="modal" hidden><div class="card" id="modalCard"></div></div>
   <div id="banner" class="banner"></div>

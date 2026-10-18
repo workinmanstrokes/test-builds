@@ -13,7 +13,7 @@
 
   // 1. Service worker: only on http(s) web hosts, never in the native app or inside a portal iframe.
   var capHost = location.protocol === 'https:' && location.hostname === 'localhost' && !location.port; // Capacitor Android origin
-  if (!native && !capHost && topLevel && 'serviceWorker' in navigator && /^https?:$/.test(location.protocol)) {
+  if (!native && !capHost && topLevel && !window.__noSW && 'serviceWorker' in navigator && /^https?:$/.test(location.protocol)) {
     w.addEventListener('load', function () {
       navigator.serviceWorker.register('sw.js').then(function (reg) {
         reg.update && reg.update();

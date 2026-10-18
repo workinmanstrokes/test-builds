@@ -4,6 +4,8 @@ import * as G from './game.js';
 import { GAME, PRIVACY_URL } from './config.js';
 import { getSkin, skinList } from './skins/index.js';
 import { createFx } from './fx.js';
+import * as R from './runner.js';
+import { createEscapeView } from './escape.js';
 import { unlockAudio, sfx, setSkinAudio, setSound, setVolumes, suspendAudio } from './audio.js';
 import { buzz, setVibe } from './haptics.js';
 import { initAds, showRewarded, rewardGate, adsInfo, showPrivacyOptions } from './ads.js';
@@ -54,15 +56,17 @@ track('session_begin', { day, stage: s.stage, floor: s.floor, level: s.level });
 // Portals: first-time players skip the title entirely (Poki "easy access", CrazyGames 1-click rule).
 let screen = 'title', paused = false;
 function showTitle() {
-  screen = 'title'; document.body.classList.add('on-title'); $('title').hidden = false; gameplayStop();
+  exitEscape();
+  screen = 'title'; refreshEscBest(); document.body.classList.add('on-title'); $('title').hidden = false; gameplayStop();
 }
 function startPlay(via) {
   if (screen === 'play') return;
+  exitEscape();
   screen = 'play'; document.body.classList.remove('on-title'); $('title').hidden = true;
   track('title_play', { via }); unlockAudio(); gameplayStart();
 }
 function pause(why) {
-  if (paused || screen !== 'play' || !$('modal').hidden) return;
+  if (paused || (screen !== 'play' && screen !== 'escape') || !$('modal').hidden) return;
   paused = true; $('pause').hidden = false; gameplayStop(); suspendAudio(true); save(); track('pause', { why });
 }
 function resume() {
@@ -70,6 +74,9 @@ function resume() {
 }
 $('tPlay').addEventListener('click', () => { startPlay('button'); fx.hop(); });
 $('btnPause').addEventListener('click', () => pause('button'));
+$('escPause').addEventListener('click', () => pause('button'));
+$('tEscape').addEventListener('click', () => startEscape('title'));
+$('pEscape').addEventListener('click', () => { $('pause').hidden = true; paused = false; suspendAudio(false); startEscape('pause'); });
 $('pResume').addEventListener('click', resume);
 $('pHome').addEventListener('click', () => { paused = false; $('pause').hidden = true; suspendAudio(false); showTitle(); });
 $('pSettings').addEventListener('click', () => { $('pause').hidden = true; paused = false; openSettings(); });
@@ -85,10 +92,11 @@ window.addEventListener('pagehide', save);
 
 // ---------- input ----------
 const canvas = $('stage');
-canvas.addEventListener('pointerdown', e => { e.preventDefault(); unlockAudio(); doTap(e.clientX, e.clientY); });
+canvas.addEventListener('pointerdown', e => { e.preventDefault(); unlockAudio(); if (screen !== 'escape') doTap(e.clientX, e.clientY); });
 canvas.addEventListener('contextmenu', e => e.preventDefault());
 window.addEventListener('keydown', e => {
   if (e.code === 'Escape' || e.code === 'KeyP') { if (paused) resume(); else pause('key'); return; }
+  if (screen === 'escape') { const d = { ArrowLeft: -1, KeyA: -1, ArrowRight: 1, KeyD: 1 }[e.code]; if (d) { e.preventDefault(); escMove(d); } return; }
   if ((e.code === 'Space' || e.code === 'Enter') && $('modal').hidden && !paused && (document.activeElement === document.body || screen === 'title')) {
     e.preventDefault(); unlockAudio(); const t = fx.target(); doTap(t.x + (Math.random() - .5) * t.r, t.y - t.r * .5);
   }
@@ -234,8 +242,8 @@ function toast(text) { const t = $('toast'); t.textContent = text; t.classList.a
 // ---------- modals ----------
 let lastFocus = null;
 function modal(html) { lastFocus = document.activeElement; $('modalCard').innerHTML = html; $('modal').hidden = false; gameplayStop(); setTimeout(() => $('modalCard').querySelector('button')?.focus({ preventScroll: true }), 30); }
-function closeModal() { $('modal').hidden = true; $('modalCard').innerHTML = ''; if (screen === 'play' && !paused) gameplayStart(); lastFocus?.focus?.({ preventScroll: true }); }
-$('modal').addEventListener('click', e => { if (e.target === $('modal') && !$('mRevive')) closeModal(); });
+function closeModal() { $('modal').hidden = true; $('modalCard').innerHTML = ''; if ((screen === 'play' || (screen === 'escape' && run?.alive)) && !paused) gameplayStart(); lastFocus?.focus?.({ preventScroll: true }); }
+$('modal').addEventListener('click', e => { if (e.target === $('modal') && !$('mRevive') && !$('escOver')) closeModal(); });
 
 $('stageChip').addEventListener('click', () => {
   const rows = skin.stages.map((st, i) => {
@@ -305,6 +313,76 @@ function offline() {
   $('mDouble').onclick = async () => { $('mDouble').disabled = true; const ok = await showRewarded(s, 'offline'); collect(ok ? g.value * 2 : g.value); };
 }
 
+// ---------- +1 Speed Escape (runner mode; logic in runner.js, art in escape.js) ----------
+// Cosmetic tie-ins only: current skin + stage, aura ring tier and halos are drawn on the runner. Aura earned is paid into
+// the main game (scaled by the value of one tap). Nothing bought or upgraded changes speed, hitboxes or revives.
+const escView = createEscapeView(canvas, fx);
+let run = null, escHud = { d: -1, spd: -1, w: -1 };
+escView.bindInput(() => (screen === 'escape' && run?.alive && !paused && $('modal').hidden ? run : null), d => escMove(d));
+function escMove(d) { if (!run?.alive || paused || !$('modal').hidden) return; if (R.move(run, d)) { sfx('buy'); buzz('tap'); if (!$('escHint').classList.contains('gone') && run.t > 1.5) $('escHint').classList.add('gone'); } }
+function refreshEscBest() { $('tEscBest').textContent = s.escape.best > 0 ? `BEST ${s.escape.best} m · TOP SPEED ${s.escape.bestSpeed}` : 'speed +1 every second · dodge the walls'; }
+function startEscape(via) {
+  if (!$('modal').hidden) closeModal();
+  if (screen === 'play') gameplayStop();
+  screen = 'escape'; document.body.classList.remove('on-title'); document.body.classList.add('on-escape');
+  $('title').hidden = true; $('esc').hidden = false; $('escHint').classList.remove('gone');
+  run = R.newRun(); escHud = { d: -1, spd: -1, w: -1 }; $('escBest').textContent = `${s.escape.best} m`;
+  track('escape_start', { via, best: s.escape.best, runs: s.escape.runs }); unlockAudio(); gameplayStart(); save();
+}
+function exitEscape() {
+  if (screen !== 'escape') return;
+  run = null; document.body.classList.remove('on-escape'); $('esc').hidden = true; gameplayStop();
+}
+function escEvents(evs) {
+  const st = skin.stages[s.curStage], g = escView.geom(), px = g.laneCx(R.laneX(run));
+  for (const e of evs) {
+    if (e.type === 'speed') {
+      const p = $('escPlus'); p.classList.remove('pop'); void p.offsetWidth; p.classList.add('pop');
+      sfx('tap', Math.min(38, e.speed - R.RUN.startSpeed));
+      if (e.speed % 10 === 0) { banner(`SPEED ${e.speed}!`); fx.flash(st.glow, .5); buzz('success'); }
+    } else if (e.type === 'wisp') {
+      fx.burst(px, g.py, st.colors, 12, 220, 3.5); fx.float(px, g.py - 50, '+1 ✦', st.accent, 24); sfx('levelUp'); buzz('tap');
+    } else if (e.type === 'dead') {
+      fx.shake(1); fx.flash('#ff2a1a', 1); fx.burst(px, g.py, ['#ff6a5a', '#fff', st.accent], 30, 360, 5); sfx('overheat'); buzz('error');
+      track('escape_crash', { dist: Math.floor(e.dist), speed: e.speed, revived: run.revived });
+      setTimeout(() => { if (screen === 'escape' && run && !run.alive) escOver(); }, 450);
+    }
+  }
+}
+function escOver() {
+  const d = Math.floor(run.dist), canRev = R.canRevive(run) && rewardGate(s, 'escape_revive').ok;
+  if (!canRev) return escResults();
+  const until = Date.now() + GAME.reviveWindowMs;
+  modal(`<div id="escOver"></div><h2>CAUGHT!</h2><p class="esc-res"><b>${d} m</b>speed ${run.speed}${d > s.escape.best ? ' · <span class="esc-new">NEW BEST!</span>' : ` · best ${s.escape.best} m`}</p>
+    <div class="countdown" id="cd"></div><div class="row"><button class="btn primary" id="mERevive"><span class="tv">AD</span>Revive &amp; keep speed</button><button class="btn" id="mENo">No thanks</button></div>`);
+  const tick = setInterval(() => { const k = (until - Date.now()) / GAME.reviveWindowMs; const cd = $('cd'); if (!cd) return clearInterval(tick); cd.style.transform = `scaleX(${Math.max(0, k)})`; if (k <= 0) { clearInterval(tick); escResults(); } }, 50);
+  $('mERevive').onclick = async () => {
+    clearInterval(tick); $('mERevive').disabled = true;
+    const ok = await reward('escape_revive', () => { R.revive(run); track('escape_revive', { dist: d, speed: run.speed }); });
+    if (ok && run?.alive) { closeModal(); banner('REVIVED! GO GO GO'); sfx('unlock'); fx.flash('#7dffb0', .7); } else escResults();
+  };
+  $('mENo').onclick = () => { clearInterval(tick); escResults(); };
+}
+function escResults() {
+  if (!run || run.alive || run.paid) return; run.paid = true;
+  const d = Math.floor(run.dist), { newBest } = R.recordRun(s.escape, run), v = R.runAura(run, G.basePerTap(s, Date.now()));
+  const evs = G.grant(s, v); bumpTotal();
+  track('escape_end', { dist: d, speed: run.speed, wisps: run.wisps, revived: run.revived, aura: v, new_best: newBest });
+  modal(`<div id="escOver"></div><h2>${newBest ? 'NEW BEST! 🏆' : 'RUN OVER'}</h2><p class="esc-res"><b>${d} m</b>top speed ${run.speed} · ✦ ${run.wisps} wisps<br>Best ${s.escape.best} m</p>
+    <p>+${G.fmt(v)} ${skin.text.currency}</p><div class="row"><button class="btn primary" id="mEAgain">⚡ Run again</button><button class="btn" id="mETap">Tap mode</button><button class="btn" id="mEHome">Home</button></div>`);
+  if (newBest) { sfx('unlock'); fx.flash('#ffe27a', .6); } else sfx('bank');
+  handle(evs); save();
+  $('mEAgain').onclick = () => { closeModal(); run = null; screen = 'title'; startEscape('again'); };
+  $('mETap').onclick = () => { closeModal(); startPlay('escape'); };
+  $('mEHome').onclick = () => { closeModal(); showTitle(); };
+}
+function escHudTick() {
+  const d = Math.floor(run.dist); if (d !== escHud.d) { escHud.d = d; $('escDist').textContent = `${d} m`; }
+  if (run.speed !== escHud.spd) { escHud.spd = run.speed; $('escSpd').textContent = run.speed; }
+  if (run.wisps !== escHud.w) { escHud.w = run.wisps; $('escWisps').textContent = `✦ ${run.wisps}`; }
+  if (d > s.escape.best && s.escape.best > 0) $('escBest').textContent = `${d} m`;
+}
+
 // ---------- HUD ----------
 let shownAura = s.aura;
 function bumpTotal() { const el = $('aura'); el.classList.remove('bump'); void el.offsetWidth; el.classList.add('bump'); }
@@ -334,6 +412,12 @@ let last = performance.now(), acc = 0, saveT = 0;
 function loop(tms) {
   const dt = Math.min(0.1, (tms - last) / 1000); last = tms; now = Date.now(); const t = tms / 1000;
   if (!paused) { handle(G.update(s, dt, now)); s.lastSeen = now; tickWisp(dt, t); }
+  if (screen === 'escape' && run) {
+    if (!paused && $('modal').hidden && run.alive) escEvents(R.step(run, dt));
+    escView.frame(run, skin, s.curStage, t, paused ? 0 : dt, { tier: G.auraTier(s), halos: s.halos, best: s.escape.best, reduced: s.settings.reduceMotion });
+    escHudTick(); saveT += dt; if (saveT > 5) { saveT = 0; save(); }
+    return requestAnimationFrame(loop);
+  }
   fx.frame(skin, s.curStage, t, paused ? 0 : dt, { heat: s.rt.heat, locked: now < s.rt.lockUntil, tier: G.auraTier(s), halos: s.halos, wisp, pulse: G.hasTwist(s, 'pulse') && screen === 'play' ? pulsePhase(t) : null });
   acc += dt; if (acc > 0.1) { acc = 0; hud(); refreshShop(); }
   saveT += dt; if (saveT > 5) { saveT = 0; save(); }
@@ -351,4 +435,4 @@ initAds();
 initPortal();
 initBilling(s, () => { save(); refreshAdButtons(); });
 // test hook (harmless in production): lets the Playwright smoke test inspect state
-window.__aura = { get state() { return s; }, G, save, get screen() { return screen; }, get paused() { return paused; }, pause, resume };
+window.__aura = { get state() { return s; }, G, save, get screen() { return screen; }, get paused() { return paused; }, pause, resume, R, get run() { return run; }, startEscape };

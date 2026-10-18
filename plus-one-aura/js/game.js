@@ -41,6 +41,7 @@ export function newState(now = Date.now()) {
     ads: { day: '', count: 0, lastReward: 0, earned: 0, last: {} },
     settings: { sound: true, vibe: true, analytics: true, sfx: 0.8, reduceMotion: false, bigText: false },
     flags: { shop: false }, skin: null, noAds: false, best: { combo: 0, floor: 0 },
+    escape: { best: 0, bestSpeed: 0, runs: 0, wisps: 0 },   // +1 Speed Escape records (kept through Ascend)
     rt: freshRuntime(),
   };
 }
@@ -213,7 +214,8 @@ export function deserialize(str, now = Date.now()) {
   try {
     let d = JSON.parse(str); if (!d || (d.v !== 1 && d.v !== 2)) return base;
     if (d.v === 1) d = migrateV1(d);
-    const s = { ...base, ...d, up: { ...base.up, ...pick(d.up, UP_IDS) }, ads: { ...base.ads, ...d.ads, last: { ...(d.ads?.last || {}) } }, settings: { ...base.settings, ...d.settings }, flags: { ...base.flags, ...d.flags }, best: { ...base.best, ...d.best }, rt: freshRuntime() };
+    const s = { ...base, ...d, up: { ...base.up, ...pick(d.up, UP_IDS) }, ads: { ...base.ads, ...d.ads, last: { ...(d.ads?.last || {}) } }, settings: { ...base.settings, ...d.settings }, flags: { ...base.flags, ...d.flags }, best: { ...base.best, ...d.best }, escape: { ...base.escape, ...d.escape }, rt: freshRuntime() };
+    for (const k of Object.keys(base.escape)) if (!Number.isFinite(s.escape[k]) || s.escape[k] < 0) s.escape[k] = 0;
     for (const k of ['aura', 'lifetime', 'ever', 'taps', 'halos']) if (!Number.isFinite(s[k]) || s[k] < 0) s[k] = 0;
     for (const id of UP_IDS) s.up[id] = Math.min(UPGRADES[id].max, Math.max(0, s.up[id] | 0));
     s.ever = Math.max(s.ever, s.lifetime);

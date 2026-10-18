@@ -1,5 +1,6 @@
 // AdMob rewarded ads with UMP consent (Google TEST ids by default, see config.js).
-// Placements: boost (2x for 120 s, every 5 min), free (next upgrade, every 10 min), revive (after overheat), skip (next wall), offline + daily (double).
+// Placements: boost (2x for 120 s, every 5 min), free (next upgrade, every 10 min), revive (after overheat), skip (next wall), offline + daily (double),
+// escape_revive (+1 Speed Escape: once per run, enforced by runner.js).
 // Web build: no AdMob, so a 3-second "TEST AD" overlay stands in for a rewarded ad.
 import { ADS } from './config.js';
 import { track, setAnalyticsConsent } from './analytics.js';
@@ -35,7 +36,7 @@ export async function showPrivacyOptions() {
 }
 async function preload() { if (!ready || !canRequest || loaded) return; try { await AdMob.prepareRewardVideoAd({ adId: ADS.rewardedId, isTesting: ADS.testing }); loaded = true; } catch { loaded = false; } }
 
-/** Optional-ad gating (cooldown + daily cap) stored in the save so it survives restarts. Revive bypasses cooldown. */
+/** Optional-ad gating (cooldown + daily cap) stored in the save so it survives restarts. Revives bypass the global cooldown. */
 export function rewardGate(s, placement, now = Date.now()) {
   if (!ADS.enabled) return { ok: false, why: 'Ads off' };
   if (native && !s.noAds && (!ready || !canRequest)) return { ok: false, why: 'Ads unavailable' };
@@ -44,7 +45,7 @@ export function rewardGate(s, placement, now = Date.now()) {
   if (s.ads.day !== today) { s.ads.day = today; s.ads.count = 0; }
   if (s.ads.count >= ADS.rewardDailyCap) return { ok: false, why: 'Daily limit reached' };
   const wait = (s.ads.lastReward || 0) + ADS.rewardCooldownMs - now;
-  if (placement !== 'revive' && wait > 0) return { ok: false, why: `Ready in ${Math.ceil(wait / 1000)}s`, wait };
+  if (placement !== 'revive' && placement !== 'escape_revive' && wait > 0) return { ok: false, why: `Ready in ${Math.ceil(wait / 1000)}s`, wait };
   // per-placement cooldowns (plan: x2 boost once per 5 min, free upgrade once per 10 min). Same limits with or without remove-ads.
   const pw = ((s.ads.last || {})[placement] || 0) + (ADS.placementCooldownMs[placement] || 0) - now;
   if (pw > 0) return { ok: false, why: `Ready in ${pw >= 60e3 ? Math.ceil(pw / 60e3) + ' min' : Math.ceil(pw / 1000) + 's'}`, wait: pw };

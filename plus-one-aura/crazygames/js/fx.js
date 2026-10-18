@@ -75,8 +75,24 @@ export function createFx(canvas) {
     ctx.fillStyle = g; ctx.beginPath(); ctx.arc(0, 0, 26 + Math.sin(t * 8) * 3, 0, Math.PI * 2); ctx.fill();
     ctx.fillStyle = '#5a3b00'; ctx.beginPath(); ctx.arc(-4, -2, 2, 0, 7); ctx.arc(4, -2, 2, 0, 7); ctx.fill(); ctx.restore();
   }
+  // Particles + floating text + shake/flash only (used by the +1 Speed Escape renderer, which draws its own scene).
+  function overlay(skin, si, dt) {
+    shake *= Math.pow(0.004, dt); flash *= Math.pow(0.01, dt);
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    ctx.save(); ctx.translate((Math.random() - 0.5) * shake * 14, (Math.random() - 0.5) * shake * 14);
+    for (const p of parts) { if (p.amb) { p.life = 0; continue; } p.life -= dt; p.vy += p.g * dt; p.x += p.vx * dt; p.y += p.vy * dt; p.rot += p.vr * dt; skin.drawParticle(ctx, p, si); }
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    for (const f of texts) { f.life -= dt; f.y += f.vy * dt; f.vy *= 0.96; const k = f.life / f.max; ctx.globalAlpha = Math.min(1, k * 2); ctx.font = `900 ${f.size}px system-ui, sans-serif`; if (f.stroke) { ctx.lineWidth = 5; ctx.strokeStyle = 'rgba(0,0,0,.55)'; ctx.strokeText(f.text, f.x, f.y); } ctx.fillStyle = f.color; ctx.fillText(f.text, f.x, f.y); }
+    ctx.globalAlpha = 1; ctx.restore();
+    if (flash > 0.01) { ctx.fillStyle = flashColor; ctx.globalAlpha = flash * 0.35; ctx.fillRect(0, 0, w, h); ctx.globalAlpha = 1; }
+    for (const arr of [parts, texts]) for (let i = arr.length - 1; i >= 0; i--) if (arr[i].life <= 0 || arr[i].y < -50 || arr[i].y > h + 60) arr.splice(i, 1);
+    rings.length = 0;
+  }
   return {
-    frame, burst, float, ring, target, resize, size: () => ({ w, h }),
+    frame, overlay, burst,
+    auraRingAt: (x, y, r, tier, t) => drawAuraRing(x, y, r, tier, t),
+    halosAt: (x, y, r, n, t) => drawHalos(x, y, r, n, t),
+    get dpr() { return dpr; }, ctx, float, ring, target, resize, size: () => ({ w, h }),
     hitTest(x, y) { const t = target(); return Math.hypot(x - t.x, y - t.y) < t.r * 1.5; },
     kick(sq = 1, p = 1) { squash = Math.min(1, squash + sq); pulse = Math.min(1.5, pulse + p); },
     shake(v) { if (!reduced) shake = Math.max(shake, v); },
