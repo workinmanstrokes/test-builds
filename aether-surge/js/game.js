@@ -287,6 +287,7 @@ function dmgE(e,dmg,hx,hy,kb,type,fcrit){
   if(ef.leech&&G.lsBudget>0){var h=Math.min(G.lsBudget,dmg*ef.leech);G.lsBudget-=h;P.hp=Math.min(P.maxHp,P.hp+h);}
   if(kb&&!e.boss){var kf=e.el?0.35:1;e.kx+=kb.x*kf;e.ky+=kb.y*kf;}
   var st=FTS[type]||FTS.blast,sz=st[1];
+  if(R.fx&&type!=="burn"&&R.fxCount()<90){R.fx("fx_hit_spark_4f",hx,hy,0.2,crit?1.4:1);if(crit)R.fx("fx_crit_star",e.x,e.y-e.r-4,0.35,1);} // sprite FX (visual only)
   if(crit){ // crits: star-burst sparks, bigger pink number
     sz=Math.min(2,sz+1);
     if(G.partCount<240)for(var k=0;k<4;k++){var a=k*Math.PI/2+0.4;addP(hx,hy,Math.cos(a)*220,Math.sin(a)*220,0.22,2.6,k%2?"#ffffff":"#ff6ae0");}
@@ -298,7 +299,7 @@ function dmgE(e,dmg,hx,hy,kb,type,fcrit){
 function killE(e){
   e.dead=true;G.kills++;AS.world.onKill(e);G.combo++;G.comboT=2;if(G.combo>G.bestCombo)G.bestCombo=G.combo;
   if(e.mod&&e.mod.id==="volatile"){G.haz.push({x:e.x,y:e.y,t:0.9,max:0.9,R:95,dmg:e.d*1.3});S.tele();}
-  S.death();boom(e.x,e.y,e.c,e.el?12:5);if(AS.FX.bursts&&(e.el||G.fxQ))AS.FX.bursts.push({x:e.x,y:e.y,c:e.c,r:e.boss?220:(e.el?90:e.r*2.6),life:e.boss?0.8:0.32,max:e.boss?0.8:0.32});
+  S.death();boom(e.x,e.y,e.c,e.el?12:5);if(R.fx)R.fx("fx_death_poof_5f",e.x,e.y,0.4,Math.max(0.7,e.r/11)*(e.boss?1.4:1),e.c);if(AS.FX.bursts&&(e.el||G.fxQ))AS.FX.bursts.push({x:e.x,y:e.y,c:e.c,r:e.boss?220:(e.el?90:e.r*2.6),life:e.boss?0.8:0.32,max:e.boss?0.8:0.32});
   if(e.boss){
     var b=e.boss,n=6;for(var k=0;k<n;k++)addShard(e.x+(Math.random()-0.5)*50,e.y+(Math.random()-0.5)*50,Math.ceil(b.xp/n)+1);
     G.bossKills++;boom(e.x,e.y,"#ffe040",24);G.cam.sh=0.7;N.haptic("HEAVY");
@@ -339,7 +340,7 @@ function checkDeath(){
 
 /* ---------------- ascension ---------------- */
 function startAsc(){if(P.form===1){P.formT=P.formMax;P.pl=Math.floor(P.pl*1.2);G.cam.sh=0.4;S.transform();return;}P.chargeT=1.0;P.inv=1.2;G.cam.sh=0.3;S.transform();}
-function finishAsc(){N.haptic("HEAVY");P.form=1;P.formT=P.formMax;P.dmgM*=1.45;P.spdM*=1.2;P.pl=Math.floor(P.pl*1.7);P.inv=0.7;G.cam.sh=0.55;for(var k=0;k<30;k++){var a=Math.random()*TAU,s=90+Math.random()*300;addP(P.x,P.y,Math.cos(a)*s,Math.sin(a)*s,0.5+Math.random()*0.4,2.5+Math.random()*3,k%2?"#fff":"#ffe040");}}
+function finishAsc(){N.haptic("HEAVY");if(R.fx)R.fx("fx_levelup_ring_4f",P.x,P.y,0.6,1.6,null,true);P.form=1;P.formT=P.formMax;P.dmgM*=1.45;P.spdM*=1.2;P.pl=Math.floor(P.pl*1.7);P.inv=0.7;G.cam.sh=0.55;for(var k=0;k<30;k++){var a=Math.random()*TAU,s=90+Math.random()*300;addP(P.x,P.y,Math.cos(a)*s,Math.sin(a)*s,0.5+Math.random()*0.4,2.5+Math.random()*3,k%2?"#fff":"#ffe040");}}
 
 /* ---------------- active combat: dash, energy melee, charged attack ---------------- */
 var CB=AS.COMBAT;
@@ -584,7 +585,7 @@ function compact(){
 }
 function gainXp(v){
   v*=P.eff.xp;P.xp+=v;G.xpTotal+=v;
-  while(P.xp>=P.xpN){P.xp-=P.xpN;P.lv++;P.xpN=AS.xpNeed(P.lv);G.queue.push({k:"lvl"});P.pl=Math.floor(P.pl*1.04+40);
+  while(P.xp>=P.xpN){P.xp-=P.xpN;P.lv++;P.xpN=AS.xpNeed(P.lv);G.queue.push({k:"lvl"});P.pl=Math.floor(P.pl*1.04+40);if(R.fx)R.fx("fx_levelup_ring_4f",P.x,P.y,0.5,1,null,true);
     var nt=tierOfLv(P.lv);if(nt>P.tier){P.tier=nt;banner("Resonance "+AS.ROMAN[nt+1]+" — your aura grows",false);for(var k=0;k<20;k++){var a=k/20*TAU;addP(P.x,P.y,Math.cos(a)*260,Math.sin(a)*260,0.5,3,TIER_C[nt]);}shake(0.2);}}
 }
 
@@ -676,7 +677,8 @@ function renderOffers(){
     var extra="";
     if(o.tg)extra+='<div class="tags">'+o.tg.map(function(t){return '<span class="tagc">'+(AS.TAG_INFO[t]?AS.TAG_INFO[t].i+" ":"")+t+'</span>';}).join("")+'</div>';
     if(o.combo)extra+='<div class="combo'+(o.combo.ready?" rdy":"")+'">⚭ '+o.combo.txt+'</div>';
-    c.innerHTML='<div class="ui">'+o.icon+'</div><div class="uf"><h3>'+o.name+badge+'</h3><p>'+o.desc+'</p>'+extra+pips+'</div>';
+    var art=AS.art&&AS.art.iconHTML?AS.art.iconHTML(o.name,o.icon):o.icon;
+    c.innerHTML='<div class="ui'+(o.cls==="asc"?" asc":"")+(art!==o.icon?" hasart":"")+'">'+art+'</div><div class="uf"><h3>'+o.name+badge+'</h3><p>'+o.desc+'</p>'+extra+pips+'</div>';
     c.onclick=function(){choose(idx);};
     g.appendChild(c);
   });
@@ -860,7 +862,7 @@ function startGame(cfg){
   AS.sigils.reset();charInit();
   G.cam.x=0;G.cam.y=0;G.cam.sh=0;
   ["start","end","lvlUp","pause","altar","towerOv","bossSel"].forEach(function(id){$(id).style.display="none";});
-  $("mute").textContent=S.isMuted()?"🔇":"🔊";
+  setMuteBtn(S.isMuted());
   showHud(true);IN.reset();N.hideBanner();renderSigRow();
   G.state="playing";hud(true);
   if(G.mode==="tower")banner("TOWER — FLOOR 1. Clear floors, pick a path between them.",false);
@@ -1006,14 +1008,16 @@ function renderGfx(){var t="✨ Graphics: "+(GF.q==="high"?"HIGH":"LOW");$("gfxB
 function toggleGfx(){GF.autoLowered=false;GF.set(GF.q==="high"?"low":"high","user");renderGfx();}
 $("gfxBtn").addEventListener("click",toggleGfx);$("gfxBtn2").addEventListener("click",toggleGfx);renderGfx();
 GF.listeners.push(function(q,why){renderGfx();if(why==="auto")banner("Graphics set to LOW to keep it smooth",false);});
-$("go").addEventListener("click",function(){startGame(AS.menu?AS.menu.selected():G.modeCfg);});
+$("go").addEventListener("click",function(){var cfg=AS.menu?AS.menu.selected():G.modeCfg;if(AS.art&&!AS.art.ready)AS.art.onReady(function(){if(G.state==="start")startGame(cfg);});else startGame(cfg);}); // sprite art is local + small; only waits on a cold first load
 $("privacyBtn").addEventListener("click",function(){N.showPrivacyOptions();});
 $("nx").addEventListener("click",function(){N.maybeInterstitial(function(){startGame(G.modeCfg);});});
 $("menuBtn").addEventListener("click",backToStart);
 $("pauseBtn").addEventListener("click",function(e){e.stopPropagation();pauseGame();});
 $("resumeBtn").addEventListener("click",resumeGame);
 $("quitBtn").addEventListener("click",backToStart);
-$("mute").addEventListener("click",function(e){e.stopPropagation();var m=S.toggleMute();$("mute").textContent=m?"🔇":"🔊";if(!m&&G.state==="playing")S.startMusic();});
+function setMuteBtn(m){if(AS.art&&AS.art.setBtn)AS.art.setBtn($("mute"),m?"sound_off":"sound_on",m?"🔇":"🔊");else $("mute").textContent=m?"🔇":"🔊";}
+if(AS.art&&AS.art.setBtn)AS.art.setBtn($("pauseBtn"),"pause","⏸");setMuteBtn(S.isMuted());
+$("mute").addEventListener("click",function(e){e.stopPropagation();var m=S.toggleMute();setMuteBtn(m);if(!m&&G.state==="playing")S.startMusic();});
 $("reviveBtn").addEventListener("click",function(){
   if(G.revived||G.doubled||G.state!=="dead")return;
   N.showReward().then(function(){if(G.state==="dead"&&!G.revived)revivePlayer();}).catch(function(){updateAdBtns();});

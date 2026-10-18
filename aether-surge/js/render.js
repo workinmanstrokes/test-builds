@@ -36,12 +36,44 @@ function resize(){
   canvas.width=Math.floor(V.W*dpr);canvas.height=Math.floor(V.H*dpr);
   canvas.style.width=V.W+"px";canvas.style.height=V.H+"px";
   ctx.setTransform(dpr,0,0,dpr,0,0);
-  if(spriteDpr!==dpr){spriteDpr=dpr;cache={};enemySprites={};bossSprites={};floorTiles={};decals={};}
+  if(spriteDpr!==dpr){spriteDpr=dpr;cache={};enemySprites={};bossSprites={};floorTiles={};decals={};artTiles={};whiteC={};tintC={};}
   buildVignette();buildGlowLayer();
 }
 function mk(w,h,fn){
   var c=document.createElement("canvas");c.width=Math.max(1,Math.ceil(w*spriteDpr));c.height=Math.max(1,Math.ceil(h*spriteDpr));
   var x=c.getContext("2d");x.scale(spriteDpr,spriteDpr);fn(x);c.lw=w;c.lh=h;return c;
+}
+/* ---------- sprite art (assets/, see art.js): pre-baked into the same canvas sprite caches; shapes stay as fallback ---------- */
+var ART=AS.art||{img:{},meta:{},has:function(){return false;}},IMG=ART.img,AM=ART.meta;
+function art(k){return IMG[k]||null;}
+var whiteC={},tintC={};
+function whiteOf(k){var c=whiteC[k];if(c)return c;var im=IMG[k];if(!im)return null;c=document.createElement("canvas");c.width=im.naturalWidth;c.height=im.naturalHeight;
+  var x=c.getContext("2d");x.drawImage(im,0,0);x.globalCompositeOperation="source-in";x.fillStyle="#fff";x.fillRect(0,0,c.width,c.height);return (whiteC[k]=c);}
+function tintOf(k,col){var id=k+col,c=tintC[id];if(c)return c;var im=IMG[k];if(!im)return null;c=document.createElement("canvas");c.width=im.naturalWidth;c.height=im.naturalHeight;
+  var x=c.getContext("2d");x.drawImage(im,0,0);x.globalCompositeOperation="multiply";x.fillStyle=col;x.fillRect(0,0,c.width,c.height);x.globalCompositeOperation="destination-in";x.drawImage(im,0,0);return (tintC[id]=c);}
+// draw a character image anchored bottom-centre at (x,footY); dir -1 mirrors; flash = white overlay alpha; sc = extra scale
+function drawCharTo(x2,k,x,footY,dir,tilt,flash,sc){
+  var m=AM[k],im=IMG[k];if(!m||!im)return false;sc=sc||1;
+  x2.save();x2.translate(x,footY);if(tilt)x2.rotate(tilt);x2.scale(dir<0?-sc:sc,sc);
+  x2.drawImage(im,m[0],m[1]-m[4],m[2],m[3]);
+  if(flash>0){var w=whiteOf(k);if(w){x2.globalAlpha=flash;x2.drawImage(w,m[0],m[1]-m[4],m[2],m[3]);}}
+  x2.restore();return true;
+}
+// a centred art sprite (shots, orbs, gems): rotation a, scale sc
+function drawCenteredTo(x2,k,x,y,a,sc){var m=AM[k],im=IMG[k];if(!m||!im)return false;x2.save();x2.translate(x,y);if(a)x2.rotate(a);if(sc&&sc!==1)x2.scale(sc,sc);x2.drawImage(im,m[0],m[1],m[2],m[3]);x2.restore();return true;}
+/* FX strips (hit spark, tinted death poof, level-up ring, crit star): pooled, world-space, drawn over the entities */
+var FXM=ART.fxMeta||{},MAX_FX=120,fxPool=[],fxCount=0;
+for(var fi=0;fi<MAX_FX;fi++)fxPool.push({x:0,y:0,t:0,dur:0,k:"",sc:1,tint:null,follow:false});
+function addFx(k,x,y,dur,sc,tint,follow){if(!IMG[k]||fxCount>=MAX_FX)return;var f=fxPool[fxCount++];f.x=x;f.y=y;f.t=0;f.dur=dur;f.k=k;f.sc=sc||1;f.tint=tint||null;f.follow=!!follow;}
+function updFx(dt){for(var i=fxCount-1;i>=0;i--){var f=fxPool[i];f.t+=dt;if(f.t>=f.dur){fxCount--;if(i<fxCount){var t=fxPool[i];fxPool[i]=fxPool[fxCount];fxPool[fxCount]=t;}}}}
+function drawFx(G,ox,oy){
+  for(var i=0;i<fxCount;i++){
+    var f=fxPool[i],fm=FXM[f.k],src=f.tint?tintOf(f.k,f.tint):IMG[f.k];if(!src||!fm)continue;
+    var n=fm[0],fr=Math.min(n-1,Math.floor(f.t/f.dur*n)),sw=(src.naturalWidth||src.width)/n,sh=src.naturalHeight||src.height,sz=fm[1]*f.sc;
+    var x=(f.follow?G.P.x:f.x)+ox,y=(f.follow?G.P.y:f.y)+oy;if(x<-sz||x>V.W+sz||y<-sz||y>V.H+sz)continue;
+    if(n===1)ctx.globalAlpha=Math.max(0,1-f.t/f.dur);
+    ctx.drawImage(src,fr*sw,0,sw,sh,x-sz/2,y-sz/2,sz,sz);ctx.globalAlpha=1;
+  }
 }
 // per arena phase: floor palette, vignette tint, colour grade (multiply), ambient motes, light pools
 var PH={
@@ -115,6 +147,21 @@ function floorFor(id){
   x.beginPath();x.arc(160,96,14,0,Math.PI*2);x.stroke();
   return t;
 }
+/* stage ground art (s1..s6, 384px = 128 game units) as a device-pixel pattern tile; procedural floorFor() is the fallback */
+var artTiles={},GT=128;
+function groundTile(th){
+  var k="s"+th+"_ground",t=artTiles[k];if(t)return t;var im=IMG[k];if(!im)return null;
+  var px=Math.round(GT*spriteDpr);t=artTiles[k]=document.createElement("canvas");t.width=px;t.height=px;
+  var x=t.getContext("2d");x.imageSmoothingQuality="high";x.drawImage(im,0,0,px,px);return t;
+}
+// which stage art a run uses: Surge follows the arena phase, Tower cycles stages by floor, Boss Fights use the boss's home stage
+var PH_STAGE={calm:1,ember:4,frost:5,void:3,collapse:6},BOSS_STAGE={warden:2,tyrant:3,sentinel:4};
+function stageFor(G,ph){
+  if(G.state==="start"){var sel=AS.menu&&AS.menu.selected?AS.menu.selected():null,m=sel&&sel.mode;return m==="tower"?6:m==="boss"?4:1;}
+  if(G.mode==="tower")return ((Math.max(1,G.floor||1)-1)%6)+1;
+  if(G.mode==="boss"){var L=G.bossList||[],k=L[Math.min(G.bossIdx||0,L.length-1)];if(BOSS_STAGE[k])return BOSS_STAGE[k];}
+  return PH_STAGE[ph]||1;
+}
 /* ground decals: deterministic per 300px cell, phase-specific art (rune circles, craters, crystals, vents, glyphs) */
 var decals={},DC=300;
 function hash2(x,y,i){var n=(Math.imul(x,374761393)+Math.imul(y,668265263)+Math.imul(i,1274126177))|0;n=Math.imul(n^(n>>>13),1274126177);n^=n>>>16;return (n>>>0)/4294967296;}
@@ -180,6 +227,7 @@ function glow(col,r){
   return s;
 }
 function hexA(h,a){var n=parseInt(h.slice(1),16);return "rgba("+(n>>16&255)+","+(n>>8&255)+","+(n&255)+","+a+")";}
+var XP_ART=["xp_small","xp_medium","xp_large"];
 var SHARD_COL=["#5ab8ff","#ffd040","#c070ff"],SHARD_R=[4,5.2,6.8];
 function shardSprite(t){
   var k="shard"+t;var s=cache[k];if(s)return s;
@@ -232,7 +280,34 @@ var enemySprites={};
 // silhouette of a sprite canvas filled with one colour (device-pixel canvas)
 function silhouette(src,col){var c=document.createElement("canvas");c.width=src.width;c.height=src.height;var x=c.getContext("2d");x.drawImage(src,0,0);x.globalCompositeOperation="source-in";x.fillStyle=col;x.fillRect(0,0,c.width,c.height);return c;}
 // returns [walkA, walkB, flashA, flashB]. High quality: dark outline + coloured rim glow; flash = white silhouette with glow
+/* art enemy/boss sprite: image scaled so its feet sit at the hitbox edge (footY*k = r, the same anchor the sprite PR used),
+   baked as [walkA, walkB, flashA, flashB] facing right + the same 4 mirrored (indices 4..7). Hitbox (e.r) is untouched. */
+function artSprite(ak,col,r,ring,ringC,boss){
+  var HQ=hi(),k=ak+"|"+Math.round(r*10)+"|"+(ring?1:0)+(ringC||"")+(HQ?"h":"l")+(boss?"b":"");var s=enemySprites[k];if(s)return s;
+  var m=AM[ak],im=IMG[ak],K=r/m[4],rc=ringC||col,pad=HQ?5:2;
+  var halfW=Math.max(-m[0],m[0]+m[2])*K+pad,y0=r-(m[4]-m[1])*K-pad,yB=r+Math.max(r*0.3,3)+pad;  // feet at y=r (hitbox centre = 0)
+  if(ring){halfW=Math.max(halfW,r+11);y0=Math.min(y0,-r-11);yB=Math.max(yB,r+11);}
+  var w=Math.ceil(halfW*2),h=Math.ceil(yB-y0);
+  s=[];
+  for(var i=0;i<8;i++)(function(i){
+    var flash=(i%4)>=2,dir=i>=4?-1:1,tilt=(i%2?1:-1)*(boss?0.035:0.06);
+    s.push(mk(w,h,function(x){
+      x.translate(w/2,-y0);
+      x.fillStyle="rgba(0,0,0,.32)";x.beginPath();x.ellipse(0,r-1,Math.max(4,r*0.78),Math.max(2,r*0.24),0,0,TAU2);x.fill();
+      if(ring&&!flash){x.save();x.shadowBlur=(ringC?14:10)*spriteDpr/2;x.shadowColor=rc;x.strokeStyle=hexA(rc,ringC?0.85:0.6);x.lineWidth=ringC?3:2;x.beginPath();x.arc(0,0,r+7,0,TAU2);x.stroke();x.restore();}
+      x.save();x.translate(0,r);x.rotate(tilt);x.scale(dir*K,K);
+      if(HQ){x.shadowColor=col;x.shadowBlur=(boss?9:5)*spriteDpr;}
+      x.drawImage(im,m[0],m[1]-m[4],m[2],m[3]);x.shadowBlur=0;
+      if(flash){var wh=whiteOf(ak);if(wh){x.globalAlpha=boss?0.6:0.75;x.drawImage(wh,m[0],m[1]-m[4],m[2],m[3]);x.globalAlpha=1;}}
+      x.restore();
+    }));
+  })(i);
+  s.art=true;s.w=w;s.h=h;s.ax=w/2;s.ay=-y0;s.size=Math.max(w,h);if(boss)s.boss=true;
+  enemySprites[k]=s;return s;
+}
 function enemySprite(key,col,r,shape,scale,ring,ringC){
+  var ak=key.indexOf("boss_")===0?ART.bossArt[key.slice(5)]:key;
+  if(ak&&IMG[ak]&&AM[ak])return artSprite(ak,col,r,ring,ringC,key.indexOf("boss_")===0);
   var HQ=hi(),k=key+"|"+scale+"|"+(ring?1:0)+(ringC||"")+(HQ?"h":"l");var rc=ringC||col;var s=enemySprites[k];if(s)return s;
   // tight bounds: blending cost scales with sprite area, so keep transparent padding minimal
   var br=r/scale,half=(ring?br+15:Math.max(18,br+4))+(HQ?4:0);
@@ -303,6 +378,7 @@ var BOSS_ART={
 };
 // returns [a, b, flashA, flashB] like enemy sprites; art authored at r=36 and scaled to the boss radius
 function bossSprite(key,r){
+  var ak=ART.bossArt&&ART.bossArt[key];if(ak&&IMG[ak]&&AM[ak])return artSprite(ak,AS.BOSSES[key].c,r,false,null,true);
   var k=key+"|"+Math.round(r);var s=bossSprites[k];if(s)return s;
   var sc=r/30,S=Math.ceil(116*sc);s=[];
   for(var i=0;i<4;i++)(function(i){
@@ -332,8 +408,8 @@ function drawPlayer(G,px,py){
   var bodyC=invF?"#fff":(isForm?"#ffb020":pal.body),skinC=invF?"#fff":pal.skin,hairC=isForm?"#ffe866":pal.hair,pantsC=isForm?"#3a2a10":pal.pants;
   ctx.fillStyle="rgba(0,0,0,.3)";ctx.beginPath();ctx.ellipse(px,py+14,11,4.5,0,0,Math.PI*2);ctx.fill();
   var tier=P.tier||0,tc=acc!=="spikes"&&tier<3?pal.aura:TIER_C[tier];
-  var aura=glow(isForm||isCharge?"#ffe040":tc,isForm?16:12+tier*4);
-  ctx.globalAlpha=isForm?0.75:(isCharge?0.6:0.45+tier*0.08);ctx.drawImage(aura,px+lean-aura.lw/2,py+bob-aura.lh/2,aura.lw,aura.lh);ctx.globalAlpha=1;
+  var aura=glow(isForm||isCharge?"#ffe040":tc,isForm?16:12+tier*4),az=P.portrait?0.72:1; // portraits: keep the aura inside the card
+  ctx.globalAlpha=isForm?0.75:(isCharge?0.6:0.45+tier*0.08);ctx.drawImage(aura,px+lean-aura.lw*az/2,py+bob-aura.lh*az/2,aura.lw*az,aura.lh*az);ctx.globalAlpha=1;
   if(tier>=2){ // rune ring(s) orbiting the player
     ctx.strokeStyle=tc;ctx.globalAlpha=0.55;ctx.lineWidth=1.5;ctx.setLineDash([5,7]);ctx.lineDashOffset=-gT*30;ctx.beginPath();ctx.arc(px,py+2,24,0,Math.PI*2);ctx.stroke();
     if(tier>=3){ctx.lineDashOffset=gT*40;ctx.beginPath();ctx.arc(px,py+2,31,0,Math.PI*2);ctx.stroke();var sp=glow("#ffe080",3);for(var q=0;q<3;q++){var qa=gT*2.2+q*2.094;ctx.globalAlpha=0.9;ctx.drawImage(sp,px+Math.cos(qa)*31-sp.lw/2,py+2+Math.sin(qa)*31-sp.lh/2,sp.lw,sp.lh);}}
@@ -341,6 +417,11 @@ function drawPlayer(G,px,py){
   if(P.chgT>0.2){var cq=Math.min(1,(P.chgT-0.2)/AS.COMBAT.charge.max);ctx.strokeStyle=cq>=1?"#ffffff":"#ffe080";ctx.lineWidth=cq>=1?4:3;ctx.globalAlpha=0.9;
     ctx.beginPath();ctx.arc(px,py,20+cq*8,-Math.PI/2,-Math.PI/2+cq*Math.PI*2);ctx.stroke();ctx.globalAlpha=1;}
   if(isCharge&&P.chargeT<0.25){ctx.globalAlpha=0.25*(P.chargeT/0.25);ctx.fillStyle="#fff";ctx.beginPath();ctx.arc(px,py,32,0,Math.PI*2);ctx.fill();ctx.globalAlpha=1;}
+  var hk=heroKey(ch,isForm),mv=!!(joy.x||joy.y||P.moving);
+  if(hk&&drawCharTo(ctx,hk,px+lean*0.4,py+14+bob,P.fx<0?-1:1,mv?Math.sin(P.runT)*0.06:0,invF?0.6:(isCharge?0.25+0.25*Math.sin(gT*30):0))){
+    if(isForm&&hk!=="player_ascended"){var gw=whiteOf(hk),m0=AM[hk];if(gw){ctx.save();ctx.translate(px+lean*0.4,py+14+bob);if(P.fx<0)ctx.scale(-1,1);ctx.globalCompositeOperation="lighter";ctx.globalAlpha=0.18+0.08*Math.sin(gT*8);
+      ctx.drawImage(tintOf(hk,"#ffe040")||gw,m0[0],m0[1]-m0[4],m0[2],m0[3]);ctx.restore();}}
+  }else{
   ctx.fillStyle=pantsC;ctx.fillRect(px-7.5+legL*0.3+lean,py+2+bob,5,10);ctx.fillRect(px+2.5+legR*0.3+lean,py+2+bob,5,10);
   ctx.fillStyle=isForm?"#5a4010":"#1a1a2a";ctx.fillRect(px-8.5+legL*0.3+lean,py+11+bob,6,3);ctx.fillRect(px+2.5+legR*0.3+lean,py+11+bob,6,3);
   var tx=px+lean;
@@ -358,13 +439,18 @@ function drawPlayer(G,px,py){
   }
   if(acc!=="helm"){ctx.fillStyle=isForm?"#ff3020":pal.eye;
   ctx.beginPath();ctx.ellipse(tx-2.9,py-11+bob,1.8,1.2,0,0,Math.PI*2);ctx.fill();ctx.beginPath();ctx.ellipse(tx+2.9,py-11+bob,1.8,1.2,0,0,Math.PI*2);ctx.fill();}
+  }
   if(P.orbit.on){
-    var o=P.orbit,os=glow(isForm?"#ffe040":"#ffcc44",6);
-    for(var j=0;j<o.cnt;j++){var a=o.ang+(j/o.cnt)*Math.PI*2;ctx.drawImage(os,px+Math.cos(a)*o.rad-os.lw/2,py+Math.sin(a)*o.rad-os.lh/2,os.lw,os.lh);}
+    var o=P.orbit,os=glow(isForm?"#ffe040":"#ffcc44",6),oa=IMG.orb_orbit;
+    for(var j=0;j<o.cnt;j++){var a=o.ang+(j/o.cnt)*Math.PI*2,ox2=px+Math.cos(a)*o.rad,oy2=py+Math.sin(a)*o.rad;
+      if(oa){ctx.globalAlpha=0.5;ctx.drawImage(os,ox2-os.lw/2,oy2-os.lh/2,os.lw,os.lh);ctx.globalAlpha=1;drawCenteredTo(ctx,"orb_orbit",ox2,oy2,o.ang*2,1.05);}
+      else ctx.drawImage(os,ox2-os.lw/2,oy2-os.lh/2,os.lw,os.lh);}
   }
 }
 
 
+// sprite art per hero (Riftwalker switches to the ascended sprite in Aether Ascension form)
+function heroKey(ch,isForm){var id=ch&&ch.id||"rift",k=ART.heroArt&&ART.heroArt[id];if(!k)return null;if(id==="rift"&&isForm&&IMG.player_ascended)k="player_ascended";return IMG[k]?k:null;}
 // character accessories (original designs): hood (Vesper), helm (Brakk), halo (Lumen)
 var DEF_CH={pal:{body:"#e07030",pants:"#2a3a6a",hair:"#1a1008",skin:"#e8c8a0",belt:"#d0a030",eye:"#111",aura:"#3a9fff"},acc:"spikes"};
 function drawAcc(acc,tx,y,hairC,bodyC,pal,invF,gT){
@@ -387,13 +473,15 @@ function drawAcc(acc,tx,y,hairC,bodyC,pal,invF,gT){
 }
 // draws a character into a small canvas for menus (cards, chest reveals)
 function portrait(cv,chDef,t){
-  var c2=cv.getContext("2d"),save=ctx,w=cv.width,h=cv.height,k=Math.min(w,h)/40;
-  c2.setTransform(1,0,0,1,0,0);c2.clearRect(0,0,w,h);c2.setTransform(k,0,0,k,w/2-20*k,h/2-22*k);
+  var c2=cv.getContext("2d"),save=ctx,w=cv.width,h=cv.height,useArt=!!heroKey(chDef,false),k=Math.min(w,h)/(useArt?54:40);
+  c2.setTransform(1,0,0,1,0,0);c2.clearRect(0,0,w,h);
+  if(useArt)c2.setTransform(k,0,0,k,w/2-27*k,h-54*k);else c2.setTransform(k,0,0,k,w/2-20*k,h/2-22*k);
   ctx=c2;
-  try{var fake={P:{ch:chDef,inv:0,form:0,chargeT:0,frame:(t||0)*7,runT:0,tier:1,chgT:0,orbit:{on:false}},gT:t||0};drawPlayer(fake,20,26);}catch(e){}
+  try{var fake={P:{ch:chDef,inv:0,form:0,chargeT:0,frame:(t||0)*7,runT:0,tier:1,chgT:0,fx:1,portrait:true,orbit:{on:false}},gT:t||0};if(useArt)drawPlayer(fake,27,37);else drawPlayer(fake,20,26);}catch(e){}
   ctx=save;
 }
 AS.render.portrait=portrait;
+AS.render.fx=addFx;AS.render.fxCount=function(){return fxCount;};AS.render.clearFx=function(){fxCount=0;};
 /* ---------- M2 sprites: loot, sigil auras, blades, sentries ---------- */
 function cached(k,w,h,fn){var s=cache[k];if(s)return s;return (cache[k]=mk(w,h,fn));}
 function lootSprite(kind,tier){
@@ -476,6 +564,19 @@ function drawLootArrows(G,ox,oy){
 }
 
 /* ---------- frame ---------- */
+var curSt=0,prevSt=0,stT=0;
+function menuScale(){return Math.min(2.6,Math.max(1.8,Math.min(V.W,V.H)/170));}
+// menu backdrop (side view, like the sprite PR's stages): fixed sky above the hero's horizon + parallax far row; ground art below
+function drawStageBackdrop(th,ox,hz){
+  if(ART.want)ART.want(th);
+  var sky=IMG["s"+th+"_sky"],far=IMG["s"+th+"_far"],W=V.W,ks=Math.max(W/360,V.H/640);
+  if(sky){var top=hz-352*ks;
+    if(top>0)ctx.drawImage(sky,0,0,sky.naturalWidth,4,0,0,W,top+1);               // tall screens: stretch the sky's top row upward
+    ctx.save();ctx.beginPath();ctx.rect(0,0,W,hz);ctx.clip();ctx.drawImage(sky,(W-360*ks)/2,top,360*ks,640*ks);ctx.restore();}
+  else{var g=ctx.createLinearGradient(0,0,0,hz);g.addColorStop(0,"#05070f");g.addColorStop(1,"#141a33");ctx.fillStyle=g;ctx.fillRect(0,0,W,hz);}
+  if(far){var fw=360*ks,fh=120*ks,par=ox*0.25,fx=((par%fw)+fw)%fw-fw;for(var x2=fx;x2<W;x2+=fw)ctx.drawImage(far,Math.round(x2),hz-fh,fw+1,fh);}
+  var sh=ctx.createLinearGradient(0,hz,0,hz+40);sh.addColorStop(0,"rgba(0,0,0,.45)");sh.addColorStop(1,"rgba(0,0,0,0)");ctx.fillStyle=sh;ctx.fillRect(0,hz,W,40);
+}
 var curPh="calm",prevPh=null,fadeT=1,lastGT=0,FADE=2.2;
 function drawBossFx(G,e,sx,sy,under){
   var b=e.boss,c=b.c,ph=e.phase||0,gT=G.gT,R=e.r;
@@ -540,11 +641,16 @@ function draw(G){
   var d=V.dpr,cw=canvas.width,ch=canvas.height;
   function tiles(t,alpha){var T=t.width,fx=((Math.round(ox*d))%T+T)%T,fy=((Math.round(oy*d))%T+T)%T;ctx.globalAlpha=alpha;
     for(var ty=fy-T;ty<ch;ty+=T)for(var tx=fx-T;tx<cw;tx+=T)ctx.drawImage(t,tx,ty);ctx.globalAlpha=1;}
-  if(fa<1&&prevPh)tiles(floorFor(prevPh),1);
-  tiles(floorFor(curPh),fa<1&&prevPh?fa:1);
+  // stage ground art (crossfades when the stage changes); procedural phase floor if the art is missing
+  var stg=stageFor(G,ph);if(stg!==curSt){prevSt=curSt;curSt=stg;stT=curSt&&prevSt?0:FADE;}
+  if(stT<FADE)stT+=dt;var sa=Math.min(1,stT/FADE),gtC=groundTile(curSt),gtP=prevSt&&sa<1?groundTile(prevSt):null;
+  if(gtC){if(gtP)tiles(gtP,1);tiles(gtC,gtP?sa:1);}
+  else{if(fa<1&&prevPh)tiles(floorFor(prevPh),1);
+  tiles(floorFor(curPh),fa<1&&prevPh?fa:1);}
   ctx.restore();
-  var OFF=GFX.off;
-  if(HQ&&!OFF.decals){if(fa<1&&prevPh)drawDecals(prevPh,ox,oy,1-fa);drawDecals(curPh,ox,oy,fa<1&&prevPh?fa:1);}
+  var OFF=GFX.off,dA=gtC?0.55:1;
+  if(G.state==="start"&&gtC)drawStageBackdrop(curSt,ox,G.P.y+oy+14*menuScale()+3);
+  else if(HQ&&!OFF.decals){if(fa<1&&prevPh)drawDecals(prevPh,ox,oy,(1-fa)*dA);drawDecals(curPh,ox,oy,(fa<1&&prevPh?fa:1)*dA);}
 
   var L=-70,R=W+70,Tp=-70,B=H+70,i,sx,sy,spr;
   if(AS.world)AS.world.drawUnder(ox,oy);
@@ -568,6 +674,7 @@ function draw(G){
   // shards
   for(i=0;i<G.sCount;i++){
     var s=G.S[i];sx=s.x+ox;sy=s.y+oy;if(sx<L||sx>R||sy<Tp||sy>B)continue;
+    if(drawCenteredTo(ctx,XP_ART[s.tier],sx,sy+Math.sin(G.gT*4+i)*1.2,0,1))continue;
     spr=shardSprite(s.tier);ctx.drawImage(spr,sx-spr.lw/2,sy-spr.lh/2,spr.lw,spr.lh);
   }
   // player projectiles (sprite + additive trail ghosts)
@@ -575,6 +682,10 @@ function draw(G){
   for(i=0;i<G.pCount;i++){
     var p=G.PR[i];sx=p.x+ox;sy=p.y+oy;if(sx<L||sx>R||sy<Tp||sy>B)continue;
     if(p.kind===2){ctx.globalCompositeOperation="source-over";var bl=bladeSprite();ctx.save();ctx.translate(sx,sy);ctx.rotate(p.ang);ctx.drawImage(bl,-15,-15,30,30);ctx.restore();if(HQ)ctx.globalCompositeOperation="lighter";continue;}
+    var sk=ART.shotArt&&ART.shotArt[p.col];
+    if(sk&&IMG[sk]){var pa=Math.atan2(p.vy,p.vx),ps=p.r/(sk==="shot_shock"?5:4);spr=glow(p.col,p.r);
+      if(HQ){ctx.globalAlpha=0.3;ctx.drawImage(spr,sx-p.vx*0.02-spr.lw*0.4,sy-p.vy*0.02-spr.lh*0.4,spr.lw*0.8,spr.lh*0.8);}
+      ctx.globalAlpha=1;ctx.globalCompositeOperation="source-over";drawCenteredTo(ctx,sk,sx,sy,pa,ps);if(HQ)ctx.globalCompositeOperation="lighter";continue;}
     spr=glow(p.col,p.r);var hw=spr.lw/2;
     if(HQ){for(var tg=3;tg>=1;tg--){var tz=1-tg*0.2;ctx.globalAlpha=0.38-tg*0.09;ctx.drawImage(spr,sx-p.vx*0.016*tg-hw*tz,sy-p.vy*0.016*tg-hw*tz,spr.lw*tz,spr.lh*tz);}}
     else{ctx.globalAlpha=0.3;ctx.drawImage(spr,sx-p.vx*0.03-hw*0.7,sy-p.vy*0.03-hw*0.7,spr.lw*0.7,spr.lh*0.7);}
@@ -586,27 +697,30 @@ function draw(G){
   for(i=0;i<n;i++){
     var e=E[i];if(e.dead)continue;
     sx=e.x+ox;sy=e.y+oy;
-    var sz=e.spr.size,h=sz/2;
+    var es=e.spr,sz=es.size,h=sz/2;
     if(sx<-h||sx>W+h||sy<-h||sy>H+h)continue;
-    var fr=(Math.sin(e.runT)>0?0:1)+(e.fl>0?2:0);
-    ctx.drawImage(e.spr[fr],sx-h,sy-h-2+Math.sin(e.frame)*1,sz,sz);
+    var fr=(Math.sin(e.runT)>0?0:1)+(e.fl>0?2:0),topY;
+    if(es.art){if(G.P.x<e.x)fr+=4;ctx.drawImage(es[fr],sx-es.ax,sy-es.ay+Math.sin(e.frame)*1,es.w,es.h);topY=sy-es.ay+4;} // art faces the player
+    else{ctx.drawImage(es[fr],sx-h,sy-h-2+Math.sin(e.frame)*1,sz,sz);topY=sy-e.r-6;}
     if(e.boss){drawBossFx(G,e,sx,sy,false);continue;}
     if(e.shield>0||e.shields){var bs=bubbleSprite(e.r+8);ctx.globalAlpha=e.shields&&e.shield<=0?0.35:0.9;ctx.drawImage(bs,sx-bs.lw/2,sy-bs.lh/2,bs.lw,bs.lh);ctx.globalAlpha=1;}
-    if(e.st===5&&e.lunge){ctx.fillStyle="#ff5050";ctx.fillRect(sx-1.5,sy-e.r-20,3,8);ctx.fillRect(sx-1.5,sy-e.r-10,3,3);}
-    if(e.mod){ctx.font="bold 10px system-ui";ctx.textAlign="center";ctx.fillStyle=e.mod.c;ctx.fillText(e.mod.n.toUpperCase(),sx,sy-e.r-14);}
+    if(e.st===5&&e.lunge){ctx.fillStyle="#ff5050";ctx.fillRect(sx-1.5,topY-18,3,8);ctx.fillRect(sx-1.5,topY-8,3,3);}
+    if(e.mod){ctx.font="bold 10px system-ui";ctx.textAlign="center";ctx.fillStyle=e.mod.c;ctx.fillText(e.mod.n.toUpperCase(),sx,topY-8);}
     if((e.el||e.tough)&&e.hp<e.max){
-      var pct=e.hp/e.max,bw=e.el?30:18,yy=sy-e.r-8;
+      var pct=e.hp/e.max,bw=e.el?30:18,yy=topY-2;
       ctx.fillStyle="rgba(0,0,0,.5)";ctx.fillRect(sx-bw/2,yy,bw,3);
       ctx.fillStyle=pct>0.35?"#44ff88":"#ff4455";ctx.fillRect(sx-bw/2,yy,bw*pct,3);
     }
   }
-  if(G.state==="start"){var hx=G.P.x+ox,hy=G.P.y+oy,hs=Math.min(2.6,Math.max(1.8,Math.min(W,H)/170));ctx.save();ctx.translate(hx,hy);ctx.scale(hs,hs);drawPlayer(G,0,0);ctx.restore();} // menu showcase
+  if(G.state==="start"){var hx=G.P.x+ox,hy=G.P.y+oy,hs=menuScale();ctx.save();ctx.translate(hx,hy);ctx.scale(hs,hs);drawPlayer(G,0,0);ctx.restore();} // menu showcase
   else drawPlayer(G,G.P.x+ox,G.P.y+oy);
   drawOver(G,ox,oy);
   // enemy projectiles (additive core + short trail on high)
   if(HQ)ctx.globalCompositeOperation="lighter";
   for(i=0;i<G.epCount;i++){
     var q=G.EP[i];sx=q.x+ox;sy=q.y+oy;if(sx<L||sx>R||sy<Tp||sy>B)continue;
+    var qk=ART.shotArt&&ART.shotArt[q.col];
+    if(qk&&IMG[qk]){ctx.globalCompositeOperation="source-over";drawCenteredTo(ctx,qk,sx,sy,Math.atan2(q.vy,q.vx),q.r/4);if(HQ)ctx.globalCompositeOperation="lighter";continue;}
     spr=glow(q.col,q.r);
     if(HQ){ctx.globalAlpha=0.35;ctx.drawImage(spr,sx-q.vx*0.03-spr.lw*0.4,sy-q.vy*0.03-spr.lh*0.4,spr.lw*0.8,spr.lh*0.8);ctx.globalAlpha=1;}
     ctx.drawImage(spr,sx-spr.lw/2,sy-spr.lh/2,spr.lw,spr.lh);
@@ -618,6 +732,7 @@ function draw(G){
     for(i=0;i<BU.length;i++){var bu=BU[i],ba=bu.life/bu.max;if(!HQ&&bu.r<80)continue;sx=bu.x+ox;sy=bu.y+oy;if(sx<-bu.r||sx>W+bu.r||sy<-bu.r||sy>H+bu.r)continue;
       ctx.globalAlpha=ba*0.9;ctx.strokeStyle=bu.c;ctx.lineWidth=1+ba*(bu.r>80?6:3);ctx.beginPath();ctx.arc(sx,sy,bu.r*(1-ba*ba*0.85),0,TAU2);ctx.stroke();}
     ctx.globalAlpha=1;}
+  updFx(dt);if(fxCount)drawFx(G,ox,oy);
   // particles
   if(HQ&&!OFF.parts)drawParticlesHQ(G,ox,oy,L,R,Tp,B);
   else{for(i=0;i<G.partCount;i++){

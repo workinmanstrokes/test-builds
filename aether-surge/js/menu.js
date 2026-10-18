@@ -65,10 +65,11 @@ function selected(){
 /* ---------- Elite Boss Fights picker ---------- */
 function openBossSel(){renderBossSel();$("start").style.display="none";$("bossSel").style.display="flex";}
 function closeBossSel(){$("bossSel").style.display="none";$("start").style.display="flex";render();}
+function bossIcon(f){var A=AS.art,k=A&&f.bosses.length===1&&A.bossArt[f.bosses[0]];return k&&A.has(k)?'<img class="ai boss" alt="" src="'+A.spriteURL(k)+'">':(f.id==="rush"?"⚔":"☠");}
 function renderBossSel(){
   var s=MT.get(),h="";
   MT.BOSS_FIGHTS.forEach(function(f){var cl=s.boss.clears[f.id]||0;
-    h+='<div class="uc fight'+(f.id===st.fight?" sel":"")+'" data-f="'+f.id+'"><div class="ui">'+(f.id==="rush"?"⚔":"☠")+'</div><div class="uf"><h3>'+f.n+(cl?' <span class="rk">✔ '+cl+'</span>':' <span class="rk new">NEW</span>')+'</h3><p>'+
+    h+='<div class="uc fight'+(f.id===st.fight?" sel":"")+'" data-f="'+f.id+'"><div class="ui">'+bossIcon(f)+'</div><div class="uf"><h3>'+f.n+(cl?' <span class="rk">✔ '+cl+'</span>':' <span class="rk new">NEW</span>')+'</h3><p>'+
       (f.bosses.length>1?"All 3 bosses back to back":"Start at level "+f.lv+" • one elite boss")+' • 💎 '+f.gems+' 🪙 '+f.gold+'</p></div></div>';});
   $("fightList").innerHTML=h;
   h="";MT.BOSS_MODS.forEach(function(m){h+='<button class="modb'+(st.mods.indexOf(m.id)>=0?" on":"")+'" data-m="'+m.id+'"><b>'+m.i+" "+m.n+'</b>'+m.d+'</button>';});
