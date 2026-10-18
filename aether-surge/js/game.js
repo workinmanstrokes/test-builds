@@ -5,7 +5,9 @@ var V=AS.view,N=AS.native,S=AS.sfx,IN=AS.input,R=AS.render;
 function $(id){return document.getElementById(id);}
 function showErr(m){var e=$("err");if(e){e.style.display="block";e.textContent="Error: "+m;}console.error(m);}
 
-var G=AS.G={state:"start",gT:0,runT:0,cam:{x:0,y:0,sh:0},bosses:[],hurtFx:0,loot:[],queue:[],haz:[],evos:{}};
+var G=AS.G={state:"start",gT:0,runT:0,cam:{x:0,y:0,sh:0},bosses:[],hurtFx:0,loot:[],queue:[],haz:[],evos:{},
+  mode:"surge",modeCfg:{mode:"surge"},runLen:AS.RUN_LEN,events:AS.EVENTS,schOff:0,schRate:1,mHp:1,mDmg:1,mRate:1,bossList:[],bossIdx:0,floor:0};
+var MT=AS.meta;
 var P=G.P={blast:{},orbit:{},wave:{},eff:{},sig:{},relics:[],rfx:{},evo:{},dash:{t:0,cd:0},melee:{t:0},chgT:0,tier:0};
 var TAU=Math.PI*2;
 var TIER_C=["#3a9fff","#4fe0ff","#b080ff","#ffd040"];
@@ -119,17 +121,18 @@ function pickMix(row,idx){
 }
 function spawnRegular(row,idx){var k=pickMix(row,idx),p=ringPos(true);spawnE(AS.ETYPES[k],k,p.x,p.y);}
 function director(dt){
-  var sch=AS.SCHEDULE,i=G.schIdx,t=G.runT;
+  var sch=AS.SCHEDULE,i=G.schIdx,t=G.schOff+G.runT*G.schRate;
   while(i+1<sch.length&&sch[i+1].t<=t)i++;
   G.schIdx=i;
   var a=sch[i],b=sch[i+1]||a,f=b===a?0:(t-a.t)/(b.t-a.t);
   var rate=a.rate+(b.rate-a.rate)*f;G.hpMul=a.hp+(b.hp-a.hp)*f;G.spdMul=a.spd+(b.spd-a.spd)*f;G.dmgMul=a.dmg+(b.dmg-a.dmg)*f;
+  G.hpMul*=G.mHp;G.dmgMul*=G.mDmg;rate*=G.mRate;
   if(G.stress){var k=0;while(G.normalN<AS.CAP&&k<30){spawnRegular(a,i);k++;}}
   else{
     G.spawnAcc+=rate*dt;
     while(G.spawnAcc>=1){G.spawnAcc-=1;if(G.normalN>=AS.CAP){G.spawnAcc=0;break;}spawnRegular(a,i);}
   }
-  var EV=AS.EVENTS;
+  var EV=G.events;t=G.runT;
   while(G.evIdx<EV.length&&EV[G.evIdx].t<=t){if(fireEvent(EV[G.evIdx])===false)break;G.evIdx++;}
   if(G.spiral>0){
     G.spiral-=dt;G.spiralAcc+=dt;
@@ -161,11 +164,11 @@ function fireEvent(ev){
 function spawnBoss(key){
   var b=AS.BOSSES[key],p=ringPos(false),sc=b.r/18;
   var def={hp:b.hp,spd:b.spd,r:18,c:b.c,d:b.d,xp:b.xp,shape:4};
-  var e=spawnE(def,"boss_"+key,p.x,p.y,{isBoss:true,scale:sc});
+  var e=spawnE(def,"boss_"+key,p.x,p.y,{isBoss:true,scale:sc,hpX:G.bossHpX||1,dmgX:G.bossDmgX||1});
   if(!e)return false;
   e.boss=b;e.bkey=key;e.st=0;e.stT=1.6;e.el=true;e.phase=0;e.bInv=0;e.spA=0;e.spAng=0;e.dd2=false;if(R.bossSprite)e.spr=R.bossSprite(key,e.r);
   G.bosses.push(e);G.bossFocus=e;
-  if(b.final){G.finalSpawned=true;banner("⚠ THE "+b.n.toUpperCase()+" AWAKENS",true);}
+  if(b.final&&G.mode==="surge"){G.finalSpawned=true;banner("⚠ THE "+b.n.toUpperCase()+" AWAKENS",true);}
   else banner("⚠ "+b.n.toUpperCase(),true);
   S.warn();N.haptic("HEAVY");G.cam.sh=0.4;
   return true;
@@ -258,14 +261,15 @@ function bossAI(e,dt,dx,dy,dist){
 /* ---------------- stats: base (upgrades + altar) x relics -> P.eff ---------------- */
 function recalc(){
   var rs={dmg:0,rate:0,spd:0,pick:0,xp:0,crit:0,critD:0,hp:0,armor:0,regen:0,abil:0,cd:0,area:0,leech:0},fx={storm:0,echo:0,ember:0,thorns:0};
+  var ms=G.metaRs;if(ms)for(var mk in ms)if(mk in rs)rs[mk]+=ms[mk]; // gear + character (meta.js)
   for(var k=0;k<P.relics.length;k++){var it=P.relics[k];if(!it)continue;var def=it.def,m=AS.RARITY[it.rar].m;
     if(def.st)for(var s in def.st)rs[s]+=def.st[s]*m;
     if(def.fx)fx[def.fx]+=def.v*m;}
   var e=P.eff;
-  e.dmg=P.dmgM*(1+rs.dmg);e.rate=Math.max(0.35,1-rs.rate)*(P.hasteT>0?0.75:1);e.spd=P.spdM*(1+rs.spd);e.pick=P.pick*(1+rs.pick);
+  e.dmg=P.dmgM*(1+rs.dmg)*(G.towerDmg||1);e.rate=Math.max(0.35,1-rs.rate)*(P.hasteT>0?0.75:1);e.spd=P.spdM*(1+rs.spd);e.pick=P.pick*(1+rs.pick);
   e.xp=P.xpM*(1+rs.xp);e.crit=Math.min(0.85,P.critChance+rs.crit);e.critMult=P.critMult+rs.critD;
-  e.armor=Math.min(0.5,rs.armor);e.regen=rs.regen;e.abil=1+rs.abil;e.cd=Math.max(0.5,1-rs.cd);e.area=1+rs.area;e.leech=P.lifesteal+rs.leech;
-  var mh=P.baseMaxHp+Math.round(rs.hp);if(mh!==P.maxHp){var d=mh-P.maxHp;P.maxHp=mh;P.hp=Math.max(1,Math.min(mh,P.hp+Math.max(0,d)));}
+  e.armor=Math.min(0.6,rs.armor);e.regen=rs.regen;e.abil=1+rs.abil;e.cd=Math.max(0.5,1-rs.cd);e.area=1+rs.area;e.leech=P.lifesteal+rs.leech;
+  var mh=Math.max(20,Math.round((P.baseMaxHp+rs.hp)*(G.hpScale||1)));if(mh!==P.maxHp){var d=mh-P.maxHp;P.maxHp=mh;P.hp=Math.max(1,Math.min(mh,P.hp+Math.max(0,d)));}
   P.rfx=fx;
 }
 
@@ -300,7 +304,8 @@ function killE(e){
     G.bossKills++;boom(e.x,e.y,"#ffe040",24);G.cam.sh=0.7;N.haptic("HEAVY");
     var bi=G.bosses.indexOf(e);if(bi>=0)G.bosses.splice(bi,1);
     if(G.bossFocus===e)G.bossFocus=G.bosses.length?G.bosses[G.bosses.length-1]:null;
-    if(b.final){P.pl=Math.floor(P.pl*1.3)+1000;G.winT=1.6;P.inv=99;banner(b.n+" destroyed!",false);S.clear();}
+    if(G.mode==="boss"){P.pl=Math.floor(P.pl*1.2)+500;P.hp=Math.min(P.maxHp,P.hp+P.maxHp*AS.HEAL.mini);vacuum();bossModeNext(b);return;}
+    if(b.final&&G.mode==="surge"){P.pl=Math.floor(P.pl*1.3)+1000;G.winT=1.6;P.inv=99;banner(b.n+" destroyed!",false);S.clear();}
     else{G.miniKills++;P.pl=Math.floor(P.pl*1.15)+300;P.hp=Math.min(P.maxHp,P.hp+P.maxHp*AS.HEAL.mini);vacuum();dropLoot("chest",e.x,e.y,1);banner(b.n+" defeated! A Relic Chest drops",false);}
     return;
   }
@@ -341,7 +346,7 @@ var CB=AS.COMBAT;
 function tryDash(dx,dy){
   var ds=P.dash;if(ds.cd>0||ds.t>0||G.state!=="playing")return false;
   if(!dx&&!dy){var j=IN.joy;if(j.x||j.y){dx=j.x;dy=j.y;}else{dx=P.fx;dy=P.fy;}}
-  var l=Math.hypot(dx,dy)||1;ds.dx=dx/l;ds.dy=dy/l;ds.t=CB.dash.dur;ds.cd=CB.dash.cd*(AS.world.cores.chrono?0.4:1);ds.id++;AS.world.onDash();
+  var l=Math.hypot(dx,dy)||1;ds.dx=dx/l;ds.dy=dy/l;ds.t=CB.dash.dur;ds.cd=CB.dash.cd*(AS.world.cores.chrono?0.4:1)*(P.dashM||1);ds.id++;AS.world.onDash();P.dashEnd=true;
   P.inv=Math.max(P.inv,CB.dash.dur+0.12);S.dash();N.haptic("LIGHT");G.dashes++;
   return true;
 }
@@ -406,6 +411,7 @@ function update(dt){
     for(var di=0;di<dn;di++){var de=E[QB[di]];if(de.dead||de.dashId===dsh.id)continue;var ddx=de.x-P.x,ddy=de.y-P.y,drr=P.r+de.r+6;
       if(ddx*ddx+ddy*ddy<drr*drr){de.dashId=dsh.id;dmgE(de,CB.dash.dmg*ef.dmg*(1+0.04*(P.lv-1)),de.x,de.y,{x:dsh.dx*300,y:dsh.dy*300},"dash");}}
   }else{var zs=(P.slowZ?0.6:1)*(P.hasteT>0?1.3:1);P.x+=jx*spd*zs*dt;P.y+=jy*spd*zs*dt;}
+  if(P.dashEnd&&dsh.t<=0){P.dashEnd=false;charDashEnd();}
   AS.world.pushOut(P,P.r);
   P.moving=!!(jx||jy)||dsh.t>0;
   if(jx||jy){P.fx=jx;P.fy=jy;}
@@ -493,13 +499,15 @@ function update(dt){
       var oa=ob.ang+(oi/ob.cnt)*TAU,ox=P.x+Math.cos(oa)*ob.rad,oy=P.y+Math.sin(oa)*ob.rad;
       var m=gridQuery(ox,oy,48);
       for(var qi=0;qi<m;qi++){var oe=E[QB[qi]];if(oe.dead||oe.orbT>0)continue;var ex=oe.x-ox,ey=oe.y-oy,rr2=oe.r+7;
-        if(ex*ex+ey*ey<rr2*rr2){oe.orbT=0.4;dmgE(oe,ob.dmg*dm,ox,oy,{x:ex*4,y:ey*4},"orb",!!P.evo.starstorm);}}
+        if(ex*ex+ey*ey<rr2*rr2){oe.orbT=0.4;dmgE(oe,ob.dmg*dm,ox,oy,{x:ex*4,y:ey*4},"orb",!!P.evo.starstorm);
+          if(P.ch&&P.ch.ab==="radiant"&&G.lsBudget>0&&P.hp<P.maxHp){var rh=Math.min(G.lsBudget,0.8);G.lsBudget-=rh;P.hp=Math.min(P.maxHp,P.hp+rh);}}}
     }
   }
   if(P.wave.on){
     var wv=P.wave;wv.t-=dt;
     if(wv.t<=0){wv.t=wv.rate;var wc=P.form===1?"#ffcc30":"#ffb040";for(var w=0;w<12;w++){var wp=spawnPr(P.x,P.y,w/12*TAU,wv.dmg*dm,330,0.42,wc,5,2);if(wp){wp.type="wave";wp.burn=!!P.evo.inferno;}}boom(P.x,P.y,wc,6);G.cam.sh=Math.max(G.cam.sh,0.12);}
   }
+  charTick(dt);
   // sigils (extra abilities) + relic behaviours
   AS.sigils.update(dt);
   AS.world.update(dt);if(G.state!=="playing")return;
@@ -558,6 +566,7 @@ function update(dt){
     if(sd<colR2){gainXp(s.v);G.sCount--;if(i<G.sCount){var ts=SH[i];SH[i]=SH[G.sCount];SH[G.sCount]=ts;}}
   }
   updateLoot(dt);
+  modeTick(dt);if(G.state!=="playing")return;
   // particles & damage numbers
   for(i=G.partCount-1;i>=0;i--){var pt=PT[i];pt.x+=pt.vx*dt;pt.y+=pt.vy*dt;var dmp=Math.pow(0.006,dt);pt.vx*=dmp;pt.vy*=dmp;pt.life-=dt;
     if(pt.life<=0){G.partCount--;if(i<G.partCount){var tpp=PT[i];PT[i]=PT[G.partCount];PT[G.partCount]=tpp;}}}
@@ -609,7 +618,7 @@ function rollLevel(){
   AS.UPGRADES.forEach(function(u){var r=G.ranks[u.id]||0;if(r>=u.max)return;pool.push(upgradeOffer(u));w.push(u.weapon&&r===0&&P.lv<=8?3:1);});
   AS.SIGILS.forEach(function(s){var o=P.sig[s.id];if(!o||o.r>=5)return;pool.push(sigilOffer(s));w.push(1.6);});
   var picks=weightedPick(pool,w,3);
-  if(P.lv>=AS.ASC_MIN_LV&&P.lv-G.lastAscOffer>=AS.ASC_GAP&&Math.random()<AS.ASC_CHANCE){
+  if((!P.ch||P.ch.ab==="ascend")&&P.lv>=AS.ASC_MIN_LV&&P.lv-G.lastAscOffer>=AS.ASC_GAP&&Math.random()<AS.ASC_CHANCE){
     G.lastAscOffer=P.lv;var A=AS.ASCENSION,asc={icon:A.i,name:A.n,desc:A.d(),cls:"asc",apply:startAsc};
     if(picks.length>=3)picks[2]=asc;else picks.push(asc);
   }
@@ -699,8 +708,8 @@ function hud(){
   setW("xpF",Math.min(100,P.xp/P.xpN*100));setT("xpT","LV "+P.lv);
   setT("pl","PL "+P.pl.toLocaleString()+(P.form===1?" ★":""));
   setT("kc",G.kills+" kills");
-  var left=AS.RUN_LEN-G.runT;
-  setT("tm",left>0?fmt(left):"BOSS");
+  var left=G.runLen-G.runT;
+  setT("tm",G.mode==="boss"?"BOSS "+Math.min(G.bossIdx+1,G.bossList.length)+"/"+G.bossList.length:left>0?fmt(left):(G.mode==="tower"&&!G.bosses.length?"CLEAR":"BOSS"));
   var isB=left<=0;if(hc.tmB!==isB){hc.tmB=isB;$("tm").classList.toggle("boss",isB);}
   var bf=G.bossFocus&&!G.bossFocus.dead?G.bossFocus:null;
   var bv=!!bf;if(hc.bossV!==bv){hc.bossV=bv;$("bossBar").style.display=bv?"block":"none";$("st").style.display=bv?"none":"block";}
@@ -746,8 +755,90 @@ function resetP(){
   P.wave={on:false,dmg:18,rate:1.8,t:0};
   P.sig={};P.relics=[null,null,null,null,null,null,null];P.rfx={};P.eff={};P.evo={};
   P.dash={t:0,cd:0,dx:1,dy:0,id:0};P.melee={t:0.5};P.chgT=0;P.fx=1;P.fy=0;P.tier=0;
+  // meta: equipped gear + selected character
+  var ms=MT.get();G.metaRs=MT.runStats(ms);P.ch=MT.charDef(ms.ch);P.dashM=Math.max(0.5,1-(G.metaRs.dash||0));P.staticT=2.5;P.dashEnd=false;
   recalc();
 }
+/* ---------------- characters: ability hooks ---------------- */
+function charInit(){
+  if(P.ch.ab==="radiant"){P.orbit.on=true;G.ranks.orbit=1;}
+}
+function charTick(dt){
+  if(P.ch.ab==="static"){P.staticT-=dt;if(P.staticT<=0){var tg=nearest(P.x,P.y,280,true);
+    if(tg){P.staticT=2.5*P.eff.cd;AS.sigils.chain(tg,(14+2.2*P.lv)*P.eff.dmg*P.eff.abil,4,"#bfefff");}else P.staticT=0.2;}}
+}
+function charDashEnd(){
+  if(P.ch.ab!=="quake")return;
+  var R2=110*P.eff.area;aoe(P.x,P.y,R2,(18+2*P.lv)*P.eff.dmg,380,"charge");
+  AS.FX.novas.push({x:P.x,y:P.y,r:R2,life:0.4,max:0.4,c:"#ffb040",w:7});boom(P.x,P.y,"#ffb040",10);shake(0.25);
+}
+/* ---------------- modes: surge (classic 5:00), tower (floors), boss (elite boss fights) ---------------- */
+function has(a,x){return (a||[]).indexOf(x)>=0;}
+function setupMode(cfg){
+  G.modeCfg=cfg;G.mode=cfg.mode;G.schOff=0;G.schRate=1;G.mHp=1;G.mDmg=1;G.mRate=1;G.bossHpX=1;G.bossDmgX=1;G.hpScale=1;G.towerDmg=1;
+  G.bossList=[];G.bossIdx=0;G.floor=0;G.towerGold=0;G.towerGems=0;G.trial=false;G.cashOut=false;G.paid=null;
+  if(cfg.mode==="tower"){G.floor=1;towerFloorSetup();}
+  else if(cfg.mode==="boss"){
+    var f=MT.bossFight(cfg.fight)||MT.BOSS_FIGHTS[0],mods=cfg.mods||[];G.fight=f;
+    G.runLen=0;G.events=[];G.bossList=f.bosses.slice();G.bossHpX=f.hpX*(has(mods,"fortified")?1.5:1);G.bossDmgX=has(mods,"enraged")?1.3:1;
+    G.hpScale=has(mods,"fragile")?0.7:1;G.schOff=50;G.schRate=has(mods,"horde")?0.9:0.3;G.mRate=has(mods,"horde")?1:0.35;G.bossDelay=2.5;
+  }else{G.mode="surge";G.runLen=AS.RUN_LEN;G.events=AS.EVENTS;}
+}
+function towerFloorSetup(){
+  var c=MT.towerFloor(G.floor);G.floorCfg=c;
+  G.runLen=c.len;G.schOff=c.schOff;G.schRate=c.schRate;G.mHp=c.hpX*(G.trial?1.3:1);G.mDmg=c.dmgX;G.mRate=1;G.bossHpX=c.bossHpX;G.bossDmgX=c.dmgX;
+  var ev=[];
+  if(G.floor===1)ev.push({t:10,kind:"cache"});
+  if(c.swarm)ev.push({t:Math.round(c.len*0.35),kind:"swarm",pattern:G.floor%2?"ring":"spiral"});
+  if(c.elite)ev.push({t:Math.round(c.len*0.55),kind:"elite",count:G.floor>=10?2:1});
+  if(c.boss)ev.push({t:Math.max(10,c.len-30),kind:"boss",boss:c.boss});
+  ev.sort(function(a,b){return a.t-b.t;});G.events=ev;G.evIdx=0;G.schIdx=0;mixCache.idx=-1;
+}
+function modeTick(dt){
+  if(G.mode==="tower"){
+    if(G.runT>=G.runLen&&G.evIdx>=G.events.length&&!G.bosses.length)floorClear();
+  }else if(G.mode==="boss"){
+    if(!G.bosses.length&&G.bossIdx<G.bossList.length&&G.queue.length===0){G.bossDelay-=dt;
+      if(G.bossDelay<=0&&spawnBoss(G.bossList[G.bossIdx])){G.bossIdx++;G.bossDelay=4;}}
+  }
+}
+function bossModeNext(b){
+  if(G.bossIdx>=G.bossList.length&&!G.bosses.length){G.winT=1.6;P.inv=99;banner(b.n+" defeated! VICTORY",false);S.clear();}
+  else{banner(b.n+" defeated! Next boss incoming…",false);dropLoot("chest",P.x+40,P.y-30,1);G.bossDelay=4;}
+}
+function clearField(){
+  for(var k=0;k<G.eCount;k++)E[k].dead=true;G.eCount=0;G.normalN=0;G.pCount=0;G.epCount=0;G.haz=[];G.bosses=[];G.bossFocus=null;
+  vacuumAll();
+}
+function vacuumAll(){var t=0;for(var k=0;k<G.sCount;k++)t+=SH[k].v;G.sCount=0;if(t)gainXp(t/(P.eff.xp||1));}
+var rooms=[];
+function floorClear(){
+  G.state="floor";clearField();
+  if(G.trial){G.towerGems+=5;G.trial=false;}
+  G.cleared=G.floor;MT.track(MT.get(),"tower_floor",G.floor);MT.save();
+  rooms=MT.rollRooms(G.floor);
+  $("towerT").textContent="FLOOR "+G.floor+" CLEARED";
+  var nf=MT.towerFloor(G.floor+1);
+  $("towerS").textContent="Next: floor "+(G.floor+1)+(nf.boss?" — BOSS: "+AS.BOSSES[nf.boss].n:"")+" • Best "+Math.max(MT.get().tower.best,G.floor);
+  var h="";rooms.forEach(function(r,i){h+='<div class="uc room" data-i="'+i+'"><div class="ui">'+r.i+'</div><div class="uf"><h3>'+r.n+'</h3><p>'+r.d+'</p></div></div>';});
+  $("rooms").innerHTML=h;S.clear();N.haptic("MEDIUM");
+  showHud(false);$("towerOv").style.display="flex";
+}
+function chooseRoom(i){
+  var r=rooms[i];if(!r||G.state!=="floor")return;
+  if(r.id==="forge")G.towerDmg*=1.15;
+  else if(r.id==="spring"){P.baseMaxHp+=10;recalc();P.hp=Math.min(P.maxHp,P.hp+P.maxHp*0.5);}
+  else if(r.id==="vault")G.towerGold+=60+G.floor*20;
+  else if(r.id==="trial")G.trial=true;
+  else if(r.id==="sanctum")G.queue.push({k:"cache"});
+  else if(r.id==="armory")G.queue.push({k:"relic",tier:1});
+  else if(r.id==="shrine"){P.spdM*=1.1;P.blast.rate*=0.92;}
+  G.floor++;towerFloorSetup();G.runT=0;AS.world.mi=0;AS.world.mission=null;
+  $("towerOv").style.display="none";showHud(true);renderSigRow();G.state="playing";hud(true);
+  banner("FLOOR "+G.floor+(G.floorCfg.boss?" — BOSS FLOOR":""),!!G.floorCfg.boss);
+}
+$("rooms").addEventListener("click",function(e){var c=e.target.closest&&e.target.closest(".room");if(c)chooseRoom(+c.getAttribute("data-i"));});
+$("towerLeave").addEventListener("click",function(){if(G.state!=="floor")return;G.cashOut=true;$("towerOv").style.display="none";G.state="won";S.stopMusic();showResults(false);});
 function showHud(v){
   ["pl","kc","tm","st","sigs"].forEach(function(id){$(id).style.display=v?(id==="sigs"?"flex":"block"):"none";});
   $("hud").style.display=v?"flex":"none";$("mute").style.display=v?"flex":"none";$("pauseBtn").style.display=v?"flex":"none";
@@ -755,7 +846,9 @@ function showHud(v){
   if(!v){$("bossBar").style.display="none";$("banner").style.opacity="0";}
   IN.show(v);hc={};
 }
-function startGame(){
+function startGame(cfg){
+  if(!cfg||!cfg.mode)cfg=G.modeCfg||{mode:"surge"};
+  setupMode(cfg);
   S.ensure();S.resume().then(function(){S.startMusic();}).catch(function(){});S.startMusic();
   resetP();
   for(var k=0;k<G.eCount;k++)E[k].dead=true;
@@ -763,23 +856,29 @@ function startGame(){
   G.bosses=[];G.bossFocus=null;G.kills=0;G.eliteKills=0;G.bossKills=0;G.miniKills=0;G.runT=0;G.spawnAcc=0;G.schIdx=0;G.evIdx=0;G.hpMul=1;G.spdMul=1;G.dmgMul=1;
   G.spiral=0;G.spiralAcc=0;G.spiralAng=0;G.finalSpawned=false;G.winT=0;G.queue=[];G.ranks={};G.rerolls=AS.FREE_REROLLS+altarV("resolve");G.lastAscOffer=-99;
   G.revived=false;G.doubled=false;G.motesAwarded=0;G.lsBudget=15;G.hurtFx=0;G.bannerT=0;G.loot=[];G.coffers=0;G.cachesOpened=0;G.relicsFound=0;G.shotN=0;G.echoCd=0;
-  G.evos={};G.haz=[];G.bonusMotes=0;G.desBroken=0;G.missionsDone=0;G.coreDrops=0;G.pickups=0;P.hasteT=0;P.slowZ=false;AS.world.reset();G.combo=0;G.comboT=0;G.bestCombo=0;G.dmgDealt=0;G.dmgTaken=0;G.xpTotal=0;G.dashes=0;G.charges=0;G.trailT=0;G.build={tag:null,label:"Training Rift"};IN.act.dash=IN.act.up=0;IN.act.held=false;
-  AS.sigils.reset();
+  G.evos={};G.haz=[];G.bonusMotes=0;G.metaPaid=null;G.metaOut=null;G.desBroken=0;G.missionsDone=0;G.coreDrops=0;G.pickups=0;P.hasteT=0;P.slowZ=false;AS.world.reset();G.combo=0;G.comboT=0;G.bestCombo=0;G.dmgDealt=0;G.dmgTaken=0;G.xpTotal=0;G.dashes=0;G.charges=0;G.trailT=0;G.build={tag:null,label:"Training Rift"};IN.act.dash=IN.act.up=0;IN.act.held=false;
+  AS.sigils.reset();charInit();
   G.cam.x=0;G.cam.y=0;G.cam.sh=0;
-  ["start","end","lvlUp","pause","altar"].forEach(function(id){$(id).style.display="none";});
+  ["start","end","lvlUp","pause","altar","towerOv","bossSel"].forEach(function(id){$(id).style.display="none";});
   $("mute").textContent=S.isMuted()?"🔇":"🔊";
   showHud(true);IN.reset();N.hideBanner();renderSigRow();
   G.state="playing";hud(true);
-  banner("Survive 5:00. Then destroy the Rift Sentinel.",false);
+  if(G.mode==="tower")banner("TOWER — FLOOR 1. Clear floors, pick a path between them.",false);
+  else if(G.mode==="boss"){
+    // head start: level up to the fight's starting level (you choose each pick), plus one Sigil
+    var need=0;for(var lv=1;lv<G.fight.lv;lv++)need+=AS.xpNeed(lv);gainXp(need/(P.eff.xp||1));G.xpTotal=0;G.queue.push({k:"cache"});
+    banner(G.fight.n.toUpperCase()+" — build up, then fight!",true);
+  }else banner("Survive 5:00. Then destroy the Rift Sentinel.",false);
 }
 function runStats(won){return {pl:P.pl,time:Math.floor(G.runT),won:!!won,lv:P.lv,kills:G.kills,elites:G.eliteKills,minis:G.miniKills,combo:G.bestCombo};}
 function showResults(won){
-  var st=runStats(won),f=AS.save.record(st);
+  var st=runStats(won),f=G.mode==="surge"?AS.save.record(st):{}; // classic records are for the 5:00 Surge only
   // Aether Motes: award only what this run earned beyond what an earlier results screen (before a revive) already paid
   var total=Math.floor(AS.motesFor(st)*(1+altarV("fortune")))+G.bonusMotes,delta=Math.max(0,total-G.motesAwarded);
   G.motesAwarded=total;AS.save.addMotes(delta);
+  payMeta(won);
   var nb=function(x){return x?'<span class="nb">★ BEST</span>':"";};
-  $("endT").textContent=won?"SURGE CLEARED":"DEFEATED";
+  $("endT").textContent=G.mode==="tower"?"TOWER — FLOOR "+G.floor:G.mode==="boss"?(won?"VICTORY":"DEFEATED"):(won?"SURGE CLEARED":"DEFEATED");
   var evn=AS.EVOS.filter(function(ev){return G.evos[ev.id];}).map(function(ev){return ev.n;});
   var rec=f.pl||f.time||f.kills||f.lv||f.fast||f.combo;
   $("endRec").style.display=rec?"block":"none";
@@ -788,7 +887,8 @@ function showResults(won){
     "<span>Time</span><b>"+fmt(st.time)+(won?nb(f.fast):nb(f.time))+"</b>"+
     "<span>Kills</span><b>"+nf(st.kills)+nb(f.kills)+"</b>"+
     "<span>Elites slain</span><b>"+G.eliteKills+"</b>"+
-    "<span>Bosses slain</span><b>"+G.bossKills+" / 3</b>"+
+    (G.mode==="tower"?"<span>Floors cleared</span><b>"+(G.cleared||0)+(G.metaOut&&G.metaOut.newBest?'<span class="nb">★ BEST</span>':"")+"</b>":"")+
+    "<span>Bosses slain</span><b>"+G.bossKills+(G.mode==="surge"?" / 3":G.mode==="boss"?" / "+G.bossList.length:"")+"</b>"+
     "<span>Level / XP</span><b>"+st.lv+nb(f.lv)+" • "+nf(G.xpTotal)+" XP</b>"+
     "<span>Damage dealt</span><b>"+nf(G.dmgDealt)+"</b>"+
     "<span>Damage taken</span><b>"+nf(G.dmgTaken)+"</b>"+
@@ -803,7 +903,23 @@ function showResults(won){
   updateAdBtns();
   $("end").style.display="flex";showHud(false);N.showBanner();
 }
-function renderMotes(){$("endM").innerHTML='<span class="mote">✦</span> +'+G.motesAwarded.toLocaleString()+' Aether Motes'+(G.doubled?' <b>(doubled)</b>':'')+' • bank '+AS.save.get().motes.toLocaleString();}
+function renderMotes(){
+  var mo=G.metaOut||{gold:0,gems:0,notes:[]};
+  $("endM").innerHTML='<span class="mote">✦</span> +'+G.motesAwarded.toLocaleString()+' Aether Motes'+(G.doubled?' <b>(doubled)</b>':'')+' • bank '+AS.save.get().motes.toLocaleString()+
+    '<div class="endCur">🪙 +'+mo.gold.toLocaleString()+' gold'+(mo.gems?' • 💎 +'+mo.gems+' gems':'')+'</div>'+(mo.notes.length?'<div class="endNote">'+mo.notes.join(" • ")+'</div>':'');
+}
+// meta currencies + mission progress. Pays once per results screen; after a revive only the extra progress is paid.
+function payMeta(won){
+  var ms=MT.get(),cur={kills:G.kills,time:Math.floor(G.runT),elites:G.eliteKills,minis:G.miniKills,bosses:G.bossKills},prev=G.metaPaid||{kills:0,time:0,elites:0,minis:0,bosses:0},d={};
+  for(var k in cur)d[k]=Math.max(0,cur[k]-prev[k]);
+  d.won=!!won;d.maxTime=cur.time;d.floor=G.floor;d.cleared=G.mode==="tower"?(G.cleared||0):0;d.bonusGold=G.mode==="tower"?G.towerGold:0;d.bonusGems=G.mode==="tower"?G.towerGems:0;
+  if(G.metaPaid){d.bonusGold=0;d.bonusGems=0;}
+  var out=MT.recordRun(ms,d,G.mode,Date.now(),!!G.metaPaid);
+  if(G.mode==="boss"&&won){var br=MT.recordBossWin(ms,G.fight.id,G.modeCfg.mods||[],Date.now());out.gold+=br.gold;out.gems+=br.gems;out.notes.push(G.fight.n+(br.first?" first win! (2x gems)":br.repeat?" (repeat win today: 25%)":" daily win"));}
+  MT.save();
+  var o=G.metaOut;if(o){o.gold+=out.gold;o.gems+=out.gems;o.notes=o.notes.concat(out.notes);o.newBest=o.newBest||out.newBest;}else G.metaOut=out;
+  G.metaPaid=cur;
+}
 function updateAdBtns(){
   var ready=N.AD.rewardReady,over=G.state==="dead"||G.state==="won";
   $("reviveBtn").style.display=(G.state==="dead"&&!G.revived&&!G.doubled&&ready)?"block":"none";
@@ -834,8 +950,21 @@ function resumeGame(){if(G.state!=="paused")return;G.state=G.prevState||"playing
 function togglePause(){if(G.state==="paused")resumeGame();else pauseGame();}
 function backToStart(){
   S.stopMusic();G.state="start";
-  ["pause","end","lvlUp","altar"].forEach(function(id){$(id).style.display="none";});
-  showHud(false);renderBest();$("start").style.display="flex";N.showBanner();
+  ["pause","end","lvlUp","altar","towerOv","bossSel"].forEach(function(id){$(id).style.display="none";});
+  G.sCount=0;clearField();G.loot=[];G.partCount=0;G.ftCount=0;AS.FX.bursts.length=0;
+  showHud(false);renderBest();menuInit();$("start").style.display="flex";N.showBanner();
+  if(AS.menu)AS.menu.show();
+}
+/* ---------------- main menu: live animated background (hero walks through the Rift) ---------------- */
+function menuInit(){resetP();P.tier=1;P.x=G.cam.x;P.y=G.cam.y;
+  if(AS.world&&AS.world.reset){AS.world.reset();AS.world.obs=[];AS.world.des=[];AS.world.pk=[];AS.world.zones=[];}}
+function menuTick(dt){
+  var cam=G.cam,W=V.W,H=V.H;cam.sh=0;
+  cam.x+=dt*42;cam.y+=Math.sin(G.gT*0.35)*dt*16;
+  P.x=cam.x;P.y=cam.y-H*0.14;P.runT+=dt*9;P.frame+=dt*7.5;P.moving=true;P.fx=1;P.fy=0;
+  if(Math.random()<dt*14&&G.partCount<120)addP(cam.x+(Math.random()-0.5)*W,cam.y+H*0.55,(Math.random()-0.5)*20,-40-Math.random()*60,3+Math.random()*2,1.5+Math.random()*2,Math.random()<0.5?"#5ab8ff":(Math.random()<0.5?"#b080ff":"#ffd040"));
+  G.trailT=(G.trailT||0)-dt;if(G.trailT<=0){G.trailT=0.07;addP(P.x+(Math.random()-0.5)*8,P.y+8,-30,-10,0.45,2.2,(P.ch&&P.ch.pal.aura)||"#4fe0ff");}
+  for(var i=G.partCount-1;i>=0;i--){var pt=PT[i];pt.x+=pt.vx*dt;pt.y+=pt.vy*dt;pt.life-=dt;if(pt.life<=0){G.partCount--;if(i<G.partCount){var tp=PT[i];PT[i]=PT[G.partCount];PT[G.partCount]=tp;}}}
 }
 function renderBest(){
   var sv=AS.save.get(),b=sv.best,parts=[];
@@ -877,9 +1006,9 @@ function renderGfx(){var t="✨ Graphics: "+(GF.q==="high"?"HIGH":"LOW");$("gfxB
 function toggleGfx(){GF.autoLowered=false;GF.set(GF.q==="high"?"low":"high","user");renderGfx();}
 $("gfxBtn").addEventListener("click",toggleGfx);$("gfxBtn2").addEventListener("click",toggleGfx);renderGfx();
 GF.listeners.push(function(q,why){renderGfx();if(why==="auto")banner("Graphics set to LOW to keep it smooth",false);});
-$("go").addEventListener("click",startGame);
+$("go").addEventListener("click",function(){startGame(AS.menu?AS.menu.selected():G.modeCfg);});
 $("privacyBtn").addEventListener("click",function(){N.showPrivacyOptions();});
-$("nx").addEventListener("click",function(){N.maybeInterstitial(startGame);});
+$("nx").addEventListener("click",function(){N.maybeInterstitial(function(){startGame(G.modeCfg);});});
 $("menuBtn").addEventListener("click",backToStart);
 $("pauseBtn").addEventListener("click",function(e){e.stopPropagation();pauseGame();});
 $("resumeBtn").addEventListener("click",resumeGame);
@@ -903,7 +1032,8 @@ function loop(now){
   var t0=performance.now();
   try{
     update(dt);
-    if(G.state==="playing"&&G.queue.length)openPick();
+    if(G.state==="start")menuTick(dt);
+    if(G.state==="playing"&&G.queue.length&&!(G.winT>0))openPick(); // no picks once victory is pending
     if(G.state!=="start")tickHud(dt);
     R.draw(G);
     if(perf.flush)R.flush();
@@ -916,13 +1046,15 @@ function loop(now){
 
 AS.core={G:G,P:P,E:E,QB:QB,gridQuery:gridQuery,nearest:nearest,dmgE:dmgE,aoe:aoe,spawnPr:spawnPr,addP:addP,boom:boom,ignite:ignite,
   banner:banner,hurtPlayer:hurtPlayer,checkDeath:checkDeath,vacuum:vacuum,spawnElite:spawnElite,shake:shake,addFt:addFt};
-AS.save.load();renderBest();
+AS.save.load();MT.load();renderBest();menuInit();
 N.init({
   onBack:function(){
     if(G.state==="playing"||G.state==="levelup")pauseGame();
     else if(G.state==="paused")resumeGame();
     else if(G.state==="dead"||G.state==="won")backToStart();
     else if($("altar").style.display==="flex"){$("altar").style.display="none";renderBest();$("start").style.display="flex";}
+    else if(G.state==="floor"){} // choose a path (or leave) first
+    else if(G.state==="start"&&AS.menu&&AS.menu.back())return;
     else if(G.state==="start")N.exitApp();
   },
   onBackground:function(){pauseGame();},
@@ -933,7 +1065,7 @@ N.showBanner();
 $("start").style.display="flex";
 requestAnimationFrame(loop);
 
-AS.game={G:G,dropLoot:dropLoot,start:startGame,step:function(dt){update(dt);if(G.state==="playing"&&G.queue.length)openPick();},togglePause:togglePause,pause:pauseGame,resume:resumeGame,choose:choose,spawnBoss:spawnBoss,fireEvent:fireEvent,
+AS.game={G:G,dropLoot:dropLoot,start:startGame,chooseRoom:chooseRoom,floorClear:floorClear,menuInit:menuInit,step:function(dt){update(dt);if(G.state==="playing"&&G.queue.length&&!(G.winT>0))openPick();},togglePause:togglePause,pause:pauseGame,resume:resumeGame,choose:choose,spawnBoss:spawnBoss,fireEvent:fireEvent,
   update:update,hud:hud,recalc:recalc,dropLoot:dropLoot,offers:function(){return offers;},dash:tryDash,melee:doMelee,charge:doCharge,applyEvo:applyEvo,buildInfo:buildInfo,spawnElite:spawnElite,spawnType:function(key,x,y){return spawnE(AS.ETYPES[key],key,x,y);},
   _spawnRegular:function(n){var row=AS.SCHEDULE[G.schIdx||0];for(var k=0;k<n;k++)spawnRegular(row,G.schIdx||0);},
   _gameOver:gameOver,_revive:revivePlayer,_win:winRun,_backToStart:backToStart};

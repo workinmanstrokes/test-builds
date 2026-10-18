@@ -328,9 +328,10 @@ function drawPlayer(G,px,py){
   var legL=Math.sin(P.runT)*5,legR=Math.sin(P.runT+Math.PI)*5;
   var armL=Math.sin(P.runT+Math.PI)*4,armR=Math.sin(P.runT)*4;
   var lean=joy.x*2.5;
-  var bodyC=invF?"#fff":(isForm?"#ffb020":"#e07030"),skinC=invF?"#fff":"#e8c8a0",hairC=isForm?"#ffe866":"#1a1008",pantsC=isForm?"#3a2a10":"#2a3a6a";
+  var ch=P.ch||DEF_CH,pal=ch.pal,acc=ch.acc;
+  var bodyC=invF?"#fff":(isForm?"#ffb020":pal.body),skinC=invF?"#fff":pal.skin,hairC=isForm?"#ffe866":pal.hair,pantsC=isForm?"#3a2a10":pal.pants;
   ctx.fillStyle="rgba(0,0,0,.3)";ctx.beginPath();ctx.ellipse(px,py+14,11,4.5,0,0,Math.PI*2);ctx.fill();
-  var tier=P.tier||0,tc=TIER_C[tier];
+  var tier=P.tier||0,tc=acc!=="spikes"&&tier<3?pal.aura:TIER_C[tier];
   var aura=glow(isForm||isCharge?"#ffe040":tc,isForm?16:12+tier*4);
   ctx.globalAlpha=isForm?0.75:(isCharge?0.6:0.45+tier*0.08);ctx.drawImage(aura,px+lean-aura.lw/2,py+bob-aura.lh/2,aura.lw,aura.lh);ctx.globalAlpha=1;
   if(tier>=2){ // rune ring(s) orbiting the player
@@ -344,15 +345,19 @@ function drawPlayer(G,px,py){
   ctx.fillStyle=isForm?"#5a4010":"#1a1a2a";ctx.fillRect(px-8.5+legL*0.3+lean,py+11+bob,6,3);ctx.fillRect(px+2.5+legR*0.3+lean,py+11+bob,6,3);
   var tx=px+lean;
   ctx.fillStyle=bodyC;ctx.beginPath();ctx.moveTo(tx-9,py-5+bob);ctx.lineTo(tx+9,py-5+bob);ctx.lineTo(tx+8,py+4+bob);ctx.lineTo(tx-8,py+4+bob);ctx.closePath();ctx.fill();
-  ctx.fillStyle=isForm?"#ffe040":"#d0a030";ctx.fillRect(tx-8.5,py+1+bob,17,2.5);
+  ctx.fillStyle=isForm?"#ffe040":pal.belt;ctx.fillRect(tx-8.5,py+1+bob,17,2.5);
+  if(acc==="helm"){ctx.fillStyle=invF?"#fff":"#8a96aa";ctx.fillRect(tx-13,py-7+bob,7,5);ctx.fillRect(tx+6,py-7+bob,7,5);} // pauldrons
   ctx.fillStyle=skinC;ctx.fillRect(tx-13,py-3+bob+armL*0.3,4,9);ctx.fillRect(tx+9,py-3+bob+armR*0.3,4,9);
   ctx.beginPath();ctx.arc(tx-11,py+7+bob+armL*0.3,2.8,0,Math.PI*2);ctx.fill();ctx.beginPath();ctx.arc(tx+11,py+7+bob+armR*0.3,2.8,0,Math.PI*2);ctx.fill();
   ctx.beginPath();ctx.arc(tx,py-10+bob,7.2,0,Math.PI*2);ctx.fill();
+  if(acc!=="spikes"){drawAcc(acc,tx,py+bob,hairC,bodyC,pal,invF,gT);}
+  else{
   ctx.fillStyle=hairC;
   var spikes=isForm?[[-7,-5],[-4,-13],[-1,-17],[1,-19],[3,-17],[6,-13],[7.5,-5],[2.5,-15],[-2.5,-16]]:[[-6,-2],[-3.5,-7],[0,-9.5],[3.5,-7],[6,-2],[1.5,-10.5],[-1.5,-9.5]];
   for(var i=0;i<spikes.length;i++){var sx=spikes[i][0],sy=spikes[i][1];ctx.beginPath();ctx.moveTo(tx+sx*0.3,py-10+bob+sy*0.2);ctx.lineTo(tx+sx,py-10+bob+sy);ctx.lineTo(tx+sx*0.5+(sx>0?1.8:-1.8),py-10+bob+sy*0.3);ctx.fill();}
-  ctx.fillStyle=isForm?"#ff3020":"#111";
-  ctx.beginPath();ctx.ellipse(tx-2.9,py-11+bob,1.8,1.2,0,0,Math.PI*2);ctx.fill();ctx.beginPath();ctx.ellipse(tx+2.9,py-11+bob,1.8,1.2,0,0,Math.PI*2);ctx.fill();
+  }
+  if(acc!=="helm"){ctx.fillStyle=isForm?"#ff3020":pal.eye;
+  ctx.beginPath();ctx.ellipse(tx-2.9,py-11+bob,1.8,1.2,0,0,Math.PI*2);ctx.fill();ctx.beginPath();ctx.ellipse(tx+2.9,py-11+bob,1.8,1.2,0,0,Math.PI*2);ctx.fill();}
   if(P.orbit.on){
     var o=P.orbit,os=glow(isForm?"#ffe040":"#ffcc44",6);
     for(var j=0;j<o.cnt;j++){var a=o.ang+(j/o.cnt)*Math.PI*2;ctx.drawImage(os,px+Math.cos(a)*o.rad-os.lw/2,py+Math.sin(a)*o.rad-os.lh/2,os.lw,os.lh);}
@@ -360,6 +365,35 @@ function drawPlayer(G,px,py){
 }
 
 
+// character accessories (original designs): hood (Vesper), helm (Brakk), halo (Lumen)
+var DEF_CH={pal:{body:"#e07030",pants:"#2a3a6a",hair:"#1a1008",skin:"#e8c8a0",belt:"#d0a030",eye:"#111",aura:"#3a9fff"},acc:"spikes"};
+function drawAcc(acc,tx,y,hairC,bodyC,pal,invF,gT){
+  if(acc==="hood"){ // deep storm hood with a pointed tip and glowing trim
+    ctx.fillStyle=invF?"#fff":"#262a78";ctx.beginPath();ctx.moveTo(tx-9,y-6);ctx.quadraticCurveTo(tx-10,y-19,tx+1,y-22);ctx.lineTo(tx+5,y-26);ctx.quadraticCurveTo(tx+11,y-17,tx+9,y-6);
+    ctx.lineTo(tx+6,y-7);ctx.quadraticCurveTo(tx,y-17,tx-6,y-7);ctx.closePath();ctx.fill();
+    ctx.strokeStyle=pal.belt;ctx.lineWidth=1.2;ctx.beginPath();ctx.moveTo(tx-6,y-7);ctx.quadraticCurveTo(tx,y-17,tx+6,y-7);ctx.stroke();
+    ctx.fillStyle=hairC;ctx.fillRect(tx-5,y-16,10,2);
+    var sp=glow(pal.eye,3);ctx.globalAlpha=0.6+0.4*Math.sin(gT*6);ctx.drawImage(sp,tx+5-sp.lw/2,y-26-sp.lh/2,sp.lw,sp.lh);ctx.globalAlpha=1;
+  }else if(acc==="helm"){ // round iron helm with a glowing visor slit and crest
+    ctx.fillStyle=invF?"#fff":"#7a8698";ctx.beginPath();ctx.arc(tx,y-11,8.6,Math.PI,0);ctx.lineTo(tx+8.6,y-6);ctx.lineTo(tx-8.6,y-6);ctx.closePath();ctx.fill();
+    ctx.fillStyle=invF?"#fff":"#566070";ctx.fillRect(tx-8.6,y-8,17.2,2.2);
+    ctx.fillStyle=pal.eye;ctx.fillRect(tx-6,y-12,12,2.2);
+    ctx.fillStyle=hairC;ctx.beginPath();ctx.moveTo(tx-2,y-19);ctx.lineTo(tx,y-25);ctx.lineTo(tx+2,y-19);ctx.closePath();ctx.fill();
+  }else if(acc==="halo"){ // soft swept hair + floating star halo
+    ctx.fillStyle=hairC;ctx.beginPath();ctx.arc(tx,y-12,7.6,Math.PI*1.05,Math.PI*1.95);ctx.lineTo(tx+8,y-7);ctx.quadraticCurveTo(tx+6,y-12,tx+2,y-13);ctx.quadraticCurveTo(tx-4,y-12,tx-8,y-7);ctx.closePath();ctx.fill();
+    ctx.strokeStyle=pal.belt;ctx.lineWidth=1.8;ctx.globalAlpha=0.9;ctx.beginPath();ctx.ellipse(tx,y-22+Math.sin(gT*2.4)*1.2,7.5,2.4,0,0,Math.PI*2);ctx.stroke();ctx.globalAlpha=1;
+    var hs=glow("#fff0a0",3);for(var q=0;q<3;q++){var a=gT*1.6+q*2.094;ctx.drawImage(hs,tx+Math.cos(a)*7.5-hs.lw/2,y-22+Math.sin(a)*2.4-hs.lh/2,hs.lw,hs.lh);}
+  }
+}
+// draws a character into a small canvas for menus (cards, chest reveals)
+function portrait(cv,chDef,t){
+  var c2=cv.getContext("2d"),save=ctx,w=cv.width,h=cv.height,k=Math.min(w,h)/40;
+  c2.setTransform(1,0,0,1,0,0);c2.clearRect(0,0,w,h);c2.setTransform(k,0,0,k,w/2-20*k,h/2-22*k);
+  ctx=c2;
+  try{var fake={P:{ch:chDef,inv:0,form:0,chargeT:0,frame:(t||0)*7,runT:0,tier:1,chgT:0,orbit:{on:false}},gT:t||0};drawPlayer(fake,20,26);}catch(e){}
+  ctx=save;
+}
+AS.render.portrait=portrait;
 /* ---------- M2 sprites: loot, sigil auras, blades, sentries ---------- */
 function cached(k,w,h,fn){var s=cache[k];if(s)return s;return (cache[k]=mk(w,h,fn));}
 function lootSprite(kind,tier){
@@ -566,7 +600,8 @@ function draw(G){
       ctx.fillStyle=pct>0.35?"#44ff88":"#ff4455";ctx.fillRect(sx-bw/2,yy,bw*pct,3);
     }
   }
-  drawPlayer(G,G.P.x+ox,G.P.y+oy);
+  if(G.state==="start"){var hx=G.P.x+ox,hy=G.P.y+oy,hs=Math.min(2.6,Math.max(1.8,Math.min(W,H)/170));ctx.save();ctx.translate(hx,hy);ctx.scale(hs,hs);drawPlayer(G,0,0);ctx.restore();} // menu showcase
+  else drawPlayer(G,G.P.x+ox,G.P.y+oy);
   drawOver(G,ox,oy);
   // enemy projectiles (additive core + short trail on high)
   if(HQ)ctx.globalCompositeOperation="lighter";

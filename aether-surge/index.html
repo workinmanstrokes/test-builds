@@ -138,6 +138,77 @@ body.ad-banner #start,body.ad-banner #end{padding-bottom:calc(76px + env(safe-ar
 .btn{transition:transform .12s,filter .12s}.btn:active{transform:scale(.96);filter:brightness(1.15)}
 #banner.pop{animation:pop .32s ease-out}
 .rbtn,.abt{transition:transform .1s}
+/* ---- meta menu (tabs, gear, store, heroes) ---- */
+#start{background:linear-gradient(180deg,rgba(4,6,16,.82) 0%,rgba(4,6,16,.15) 26%,rgba(4,6,16,0) 40%,rgba(4,6,16,.25) 55%,rgba(4,6,16,.9) 78%);padding:0;justify-content:stretch;align-items:stretch;overflow:hidden;animation:none}
+#start>*{margin:0!important}
+#mTop{display:flex;align-items:center;gap:6px;padding:max(10px,env(safe-area-inset-top)) 10px 6px;flex-shrink:0}
+.cur{font-size:13px;font-weight:900;background:rgba(10,16,40,.75);border:1px solid rgba(120,160,255,.35);border-radius:14px;padding:4px 9px;white-space:nowrap}
+.ico{margin-left:auto;width:36px;height:36px;border-radius:50%;background:rgba(10,16,40,.75);border:1px solid rgba(120,160,255,.4);color:#cfe0ff;font-size:17px}
+#mBody{flex:1;position:relative;min-height:0}
+.tab{position:absolute;inset:0;display:none;flex-direction:column;align-items:center;padding:4px 14px 8px;overflow-y:auto;touch-action:pan-y}
+.tab.on{display:flex}
+.tab .grow{flex:1;min-height:120px}
+.panel{background:rgba(6,10,26,.93)}
+.panel h2{font-size:18px;font-weight:900;letter-spacing:1px;color:#cfe0ff;margin:6px 0 8px}
+#mTitle h1{margin:0}
+#mTitle p{margin:2px auto 4px}
+#heroTag{font-size:12px;font-weight:800;color:#cfe0ff;background:rgba(10,16,40,.6);border-radius:10px;padding:3px 10px;margin-bottom:8px}
+#modeRow{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;width:100%;max-width:420px}
+.mode{position:relative;background:rgba(14,22,52,.88);border:2px solid #34508f;border-radius:12px;color:#e8f0ff;padding:7px 2px;display:flex;flex-direction:column;align-items:center;gap:1px;font-size:12px;font-weight:800}
+.mode b{font-size:20px}.mode i{font-style:normal;font-size:9.5px;color:#8aaddd;font-weight:700;white-space:nowrap}
+.mode.sel{border-color:#ffe566;box-shadow:0 0 12px rgba(255,229,102,.45)}
+.badge{position:absolute;top:-6px;right:-4px;min-width:18px;height:18px;border-radius:9px;background:#ff3a5a;color:#fff;font-size:11px;font-style:normal;font-weight:900;line-height:18px;display:none;padding:0 4px}
+.badge.on{display:block}
+#modeDesc{font-size:12px;color:#a8c8ff;margin:8px auto 4px;min-height:32px}
+#go{font-size:20px;padding:14px 0;width:min(86vw,340px);margin:2px 0 4px;background:linear-gradient(135deg,#ffb020,#ff6a20);border-color:#ffe08a;box-shadow:0 0 18px rgba(255,150,40,.45)}
+#mTabs{display:flex;flex-shrink:0;background:rgba(6,10,26,.96);border-top:1px solid rgba(120,160,255,.25);padding-bottom:env(safe-area-inset-bottom)}
+.tb{position:relative;flex:1;background:none;border:0;color:#8aa0c8;font-size:11px;font-weight:800;padding:7px 0 8px;display:flex;flex-direction:column;align-items:center;gap:1px}
+.tb b{font-size:18px}.tb.on{color:#ffe566}
+body.ad-banner #start{padding-bottom:calc(60px + env(safe-area-inset-bottom))}
+#slotRow{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;width:100%;max-width:420px;margin-bottom:8px}
+.slot{background:rgba(16,24,55,.95);border:2px solid #3a5aaa;border-radius:12px;padding:6px 2px;color:#e8f0ff;display:flex;flex-direction:column;align-items:center;font-size:10px;font-weight:800}
+.slot b{font-size:22px}.slot.sel{box-shadow:0 0 0 2px #ffe566}
+.slot small{font-size:9px;color:#9ab8e8}
+#gearDetail{width:100%;max-width:420px;background:rgba(16,24,55,.95);border:2px solid #3a5aaa;border-radius:12px;padding:10px;text-align:left;margin-bottom:8px}
+#gearDetail h3{font-size:15px}#gearDetail p{font-size:12px;color:#a8c8ff;margin:3px 0;max-width:none}
+.row{display:flex;gap:6px;margin-top:6px}.row .btn{min-width:0;flex:1;margin:0;font-size:13px;padding:9px 6px}
+#gearList,#storeList,#charList{display:flex;flex-direction:column;gap:7px;width:100%;max-width:420px}
+.gi{background:rgba(16,24,55,.95);border:2px solid #3a5aaa;border-radius:10px;padding:7px 10px;display:flex;align-items:center;gap:10px;text-align:left;color:#e8f0ff}
+.gi .ui{width:34px;height:34px;font-size:17px}.gi h3{font-size:13px}.gi p{font-size:11px;color:#8aaddd;margin:0;max-width:none}
+.gi.eq{box-shadow:0 0 0 2px #ffe566 inset}
+.gi.lock{opacity:.45}
+.chest{background:rgba(16,24,55,.95);border:2px solid #3a5aaa;border-radius:12px;padding:10px;display:flex;align-items:center;gap:10px;text-align:left}
+.chest .ci{font-size:30px;width:44px;text-align:center}.chest h3{font-size:14px}.chest p{font-size:11px;color:#8aaddd;margin:2px 0 0;max-width:none}
+.chest .cb{display:flex;flex-direction:column;gap:4px}
+.sbtn{min-width:86px;padding:8px 6px;border-radius:16px;border:1px solid #ffe08a;background:linear-gradient(135deg,#a8661a,#704010);color:#fff;font-weight:900;font-size:12px}
+.sbtn:disabled{opacity:.4}.sbtn.odds{background:none;border-color:#6a88c8;color:#bcd4ff;font-size:11px;padding:4px 6px}
+.chest.prem{border-color:#c07aff;background:linear-gradient(135deg,rgba(40,20,70,.97),rgba(16,24,55,.97))}
+.shead{font-size:11px;font-weight:900;letter-spacing:1px;color:#7aa8dd;margin:8px 0 0;text-align:left}
+.cc{background:rgba(16,24,55,.95);border:2px solid #3a5aaa;border-radius:12px;padding:8px;display:flex;gap:10px;align-items:center;text-align:left}
+.cc canvas{width:72px;height:72px;border-radius:10px;background:radial-gradient(circle,#1e2a5a,#0a0f24);flex-shrink:0}
+.cc h3{font-size:15px}.cc h3 i{font-size:11px;color:#9ab8e8;font-style:normal;font-weight:700}.cc p{font-size:11.5px;color:#a8c8ff;margin:3px 0;max-width:none}
+.cc.sel{border-color:#ffe566}.cc.lock canvas{filter:brightness(.25) saturate(0)}
+#sheet{z-index:70;background:rgba(4,6,16,.8)}
+#sheetBox{width:100%;max-width:400px;background:#0c1330;border:2px solid #3a5aaa;border-radius:16px;padding:14px;max-height:84vh;overflow-y:auto;touch-action:pan-y}
+#sheetBody{text-align:left;font-size:13px;color:#dce8ff}
+#sheetBody h2{text-align:center;font-size:18px;margin-bottom:8px}
+#sheetBody table{width:100%;border-collapse:collapse;margin:6px 0 10px;font-size:12.5px}
+#sheetBody td{padding:4px 6px;border-bottom:1px solid rgba(100,140,220,.18)}
+#sheetBody td:last-child{text-align:right;font-weight:900}
+#sheetBody .note{font-size:11.5px;color:#9ab8e8;margin:4px 0}
+.reveal{display:flex;flex-direction:column;gap:7px;margin:8px 0}
+.reveal .gi{animation:cardIn .35s cubic-bezier(.2,.9,.3,1.15) both}
+.reveal .gi:nth-child(2){animation-delay:.12s}.reveal .gi:nth-child(3){animation-delay:.24s}.reveal .gi:nth-child(4){animation-delay:.36s}
+.ms{background:rgba(16,24,55,.95);border:1px solid #3a5aaa;border-radius:10px;padding:8px 10px;margin:5px 0;display:flex;align-items:center;gap:8px}
+.ms .mf{flex:1}.ms .mbar{height:6px;background:rgba(0,0,0,.5);border-radius:3px;overflow:hidden;margin-top:4px}.ms .mbar i{display:block;height:100%;background:linear-gradient(90deg,#3affc0,#ffe566)}
+.ms small{color:#9ab8e8;font-size:11px}
+.fight{cursor:pointer}.fight.sel{border-color:#ffe566}
+#modList{display:grid;grid-template-columns:1fr 1fr;gap:6px;width:100%;max-width:330px;margin:10px 0 6px}
+.modb{background:rgba(16,24,55,.95);border:2px solid #3a5aaa;border-radius:10px;padding:6px;color:#dce8ff;font-size:11px;font-weight:700;text-align:left}
+.modb b{display:block;font-size:12.5px}.modb.on{border-color:#ff8a50;background:rgba(60,24,14,.95)}
+#fightReward{font-size:13px;font-weight:800;color:#ffe566;margin:2px 0 6px}
+.room{cursor:pointer}
+.endCur{font-size:15px;color:#ffe9a0;margin-top:6px}.endNote{font-size:12px;color:#9affe0;margin-top:3px}
 /* short phones: compact end-of-run screen */
 @media (max-height:700px){.stats{gap:2px 14px;font-size:12px;margin-bottom:10px}#end .btn{padding:10px 28px;margin:4px}#end h1{font-size:28px}}
 </style>
@@ -166,16 +237,57 @@ body.ad-banner #start,body.ad-banner #end{padding-bottom:calc(76px + env(safe-ar
   <button class="rbtn" id="pauseBtn" aria-label="Pause">⏸</button>
 </div>
 <div class="ov" id="start">
-  <h1>AETHER SURGE</h1>
-  <p>Survive five minutes in the Training Rift, then destroy the Rift Sentinel.</p>
-  <p id="bestP" style="font-size:12px;color:#7aa8dd;margin-top:-8px;margin-bottom:14px"></p>
-  <p id="motesP"></p>
-  <button class="btn" id="go">TAP TO BEGIN</button>
-  <button class="btn alt" id="altarBtn">✦ RESONANCE ALTAR</button>
-  <button class="btn alt" id="shakeBtn2">📳 Screen shake: ON</button>
-  <button class="btn alt" id="gfxBtn2">✨ Graphics: HIGH</button>
-  <button class="btn alt" id="privacyBtn" style="display:none">🔒 Privacy choices</button>
+  <div id="mTop">
+    <span class="cur" id="cGold" title="Gold">🪙 0</span><span class="cur" id="cGems" title="Gems">💎 0</span><span class="cur" id="cShards" title="Shards">🔹 0</span>
+    <button class="ico" id="setBtn" aria-label="Settings">⚙</button>
+  </div>
+  <div id="mBody">
+    <section class="tab on" id="tabPlay">
+      <div id="mTitle"><h1>AETHER SURGE</h1><p id="bestP"></p><p id="motesP"></p></div>
+      <div class="grow"></div>
+      <div id="heroTag"></div>
+      <div id="modeRow">
+        <button class="mode" data-m="surge"><b>⚡</b><span>Surge</span><i>5:00 run</i></button>
+        <button class="mode" data-m="tower"><b>🗼</b><span>Tower</span><i id="towerBest">Best —</i></button>
+        <button class="mode" data-m="boss"><b>☠</b><span>Bosses</span><i id="bossInfo">Elite fights</i></button>
+        <button class="mode" data-m="missions"><b>🎯</b><span>Missions</span><i id="missInfo">Daily</i><em class="badge" id="missBadge"></em></button>
+      </div>
+      <p id="modeDesc"></p>
+      <button class="btn" id="go">▶ PLAY</button>
+    </section>
+    <section class="tab panel" id="tabGear">
+      <h2>GEAR <span id="gPower"></span></h2>
+      <div id="slotRow"></div>
+      <div id="gearDetail"></div>
+      <div id="gearList"></div>
+      <button class="btn alt" id="altarBtn">✦ RESONANCE ALTAR</button>
+    </section>
+    <section class="tab panel" id="tabStore">
+      <h2>STORE</h2>
+      <div id="storeList"></div>
+    </section>
+    <section class="tab panel" id="tabChars">
+      <h2>HEROES</h2>
+      <div id="charList"></div>
+    </section>
+  </div>
+  <nav id="mTabs">
+    <button class="tb on" data-t="Play"><b>▶</b>Play</button>
+    <button class="tb" data-t="Gear"><b>⚔</b>Gear</button>
+    <button class="tb" data-t="Store"><b>📦</b>Store<em class="badge" id="storeBadge"></em></button>
+    <button class="tb" data-t="Chars"><b>🧙</b>Heroes</button>
+  </nav>
 </div>
+<div id="settingsBox" style="display:none;flex-direction:column;align-items:center"><h2>SETTINGS</h2>
+  <button class="btn alt" id="shakeBtn2">📳 Screen shake: ON</button><button class="btn alt" id="gfxBtn2">✨ Graphics: HIGH</button>
+  <button class="btn alt" id="muteBtn2">🔊 Sound: ON</button><button class="btn alt" id="privacyBtn" style="display:none">🔒 Privacy choices</button>
+  <p class="note" style="text-align:center;margin-top:8px">Aether Surge • everything is earnable by playing</p></div>
+<div class="ov" id="sheet"><div id="sheetBox"><div id="sheetBody"></div><button class="btn alt" id="sheetClose">CLOSE</button></div></div>
+<div class="ov" id="bossSel"><h1 style="font-size:24px">ELITE BOSS FIGHTS</h1><p style="margin-bottom:8px">Pick a fight and optional modifiers (+25% rewards each). Full rewards on your first win of each fight per day.</p>
+  <div id="fightList" class="ug"></div><div id="modList"></div><div id="fightReward"></div>
+  <button class="btn" id="fightGo">▶ FIGHT</button><button class="btn alt" id="fightBack">BACK</button></div>
+<div class="ov" id="towerOv"><h1 id="towerT" style="font-size:24px">FLOOR CLEARED</h1><p id="towerS"></p><p style="margin-bottom:8px">Choose your path</p><div class="ug" id="rooms"></div>
+  <button class="btn alt" id="towerLeave">LEAVE TOWER (keep rewards)</button></div>
 <div class="ov" id="lvlUp"><h1 id="lvlTitle" style="font-size:22px;margin-bottom:4px">POWER UP</h1><p id="lvlSub" style="font-size:12px;margin-bottom:10px"></p><div class="ug" id="ug"></div><button class="btn alt" id="reroll">↻ REROLL</button></div>
 <div class="ov" id="end"><h1 id="endT">DEFEATED</h1><div id="endRec">★ NEW RECORD ★</div><div class="stats" id="endS"></div><div id="endM"></div><button class="btn" id="doubleBtn" style="display:none;background:linear-gradient(135deg,#1a8a8a,#0f5a6a);border-color:#9affe0">✦ DOUBLE MOTES (Watch Ad)</button><button class="btn" id="reviveBtn" style="display:none;background:linear-gradient(135deg,#22a05a,#157a3f);border-color:#8affc0">▶ REVIVE (Watch Ad)</button><button class="btn" id="nx">PLAY AGAIN</button><button class="btn alt" id="menuBtn">MENU</button></div>
 <div class="ov" id="pause"><h1 style="font-size:26px">PAUSED</h1><div id="pauseInv"></div><button class="btn" id="resumeBtn">RESUME</button><button class="btn alt" id="shakeBtn">📳 Screen shake: ON</button><button class="btn alt" id="gfxBtn">✨ Graphics: HIGH</button><button class="btn" id="quitBtn" style="background:linear-gradient(135deg,#7a2a2a,#4a1a1a);border-color:#ff8a8a">QUIT RUN</button></div>
@@ -187,6 +299,7 @@ window.AS={};
 window.onerror=function(m,s,l){var e=document.getElementById("err");if(e){e.style.display="block";e.textContent="Error: "+m+" @"+(s||"").split("/").pop()+":"+l;}return false;};
 </script>
 <script src="js/data.js"></script>
+<script src="js/meta.js"></script>
 <script src="js/native.js"></script>
 <script src="js/audio.js"></script>
 <script src="js/input.js"></script>
@@ -194,6 +307,7 @@ window.onerror=function(m,s,l){var e=document.getElementById("err");if(e){e.styl
 <script src="js/game.js"></script>
 <script src="js/sigils.js"></script>
 <script src="js/world.js"></script>
+<script src="js/menu.js"></script>
 <script src="js/debug.js"></script>
 </body>
 </html>
