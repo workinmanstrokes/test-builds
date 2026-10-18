@@ -219,6 +219,11 @@ body.ad-banner #start{padding-bottom:calc(60px + env(safe-area-inset-bottom))}
 .chest .ci{height:44px;display:flex;align-items:center;justify-content:center;font-size:26px;background:url(assets/icons/icon_tile_frame_76.png) center/100% 100% no-repeat;border-radius:10px;flex-shrink:0}
 .rbtn.art{background:none;border:none;padding:0}.rbtn.art img{width:40px;height:40px;display:block;pointer-events:none}
 @media (min-resolution:2dppx){.ui{background-image:url(assets/icons/icon_tile_frame_114.png)}.ui.asc,.uc.asc .ui,.chest.prem .ci,.gi.eq .ui{background-image:url(assets/icons/icon_tile_frame_ascension_114.png)}.chest .ci{background-image:url(assets/icons/icon_tile_frame_114.png)}.chest.prem .ci{background-image:url(assets/icons/icon_tile_frame_ascension_114.png)}}
+#xpOffer{width:min(92vw,400px);margin:8px auto 4px;padding:8px 10px;border:2px solid #4ad8c0;border-radius:12px;background:rgba(10,40,48,.92);text-align:center}
+#xpOffer .xpt{font-weight:900;font-size:14px;color:#9affe0}#xpOffer small{display:block;font-weight:600;font-size:11px;color:#8ac8c0;margin-top:2px}
+#xpOffer .xpb{display:flex;gap:8px;justify-content:center;margin-top:6px}#xpOffer .sbtn{min-width:120px}
+#kbdHint{display:none;font-size:11px;color:#8aa4d0;margin:2px 0 0}
+@media (hover:hover) and (pointer:fine){#kbdHint{display:block}}
 </style>
 </head>
 <body>
@@ -261,6 +266,7 @@ body.ad-banner #start{padding-bottom:calc(60px + env(safe-area-inset-bottom))}
         <button class="mode" data-m="missions"><b>🎯</b><span>Missions</span><i id="missInfo">Daily</i><em class="badge" id="missBadge"></em></button>
       </div>
       <p id="modeDesc"></p>
+      <p id="kbdHint">⌨ WASD / arrows move • J hold to strike • Space dash • Esc pause</p>
       <button class="btn" id="go">▶ PLAY</button>
     </section>
     <section class="tab panel" id="tabGear">
@@ -297,6 +303,7 @@ body.ad-banner #start{padding-bottom:calc(60px + env(safe-area-inset-bottom))}
 <div class="ov" id="towerOv"><h1 id="towerT" style="font-size:24px">FLOOR CLEARED</h1><p id="towerS"></p><p style="margin-bottom:8px">Choose your path</p><div class="ug" id="rooms"></div>
   <button class="btn alt" id="towerLeave">LEAVE TOWER (keep rewards)</button></div>
 <div class="ov" id="lvlUp"><h1 id="lvlTitle" style="font-size:22px;margin-bottom:4px">POWER UP</h1><p id="lvlSub" style="font-size:12px;margin-bottom:10px"></p><div class="ug" id="ug"></div><button class="btn alt" id="reroll">↻ REROLL</button></div>
+<div id="xpOffer" style="display:none"><div class="xpt">🎁 2× XP CHEST <small>Wave bonus • optional • double XP for 60s</small></div><div class="xpb"><button class="sbtn" id="xpAd">▶ Watch ad</button><button class="sbtn" id="xpGold">🪙 150</button></div></div>
 <div class="ov" id="end"><h1 id="endT">DEFEATED</h1><div id="endRec">★ NEW RECORD ★</div><div class="stats" id="endS"></div><div id="endM"></div><button class="btn" id="doubleBtn" style="display:none;background:linear-gradient(135deg,#1a8a8a,#0f5a6a);border-color:#9affe0">✦ DOUBLE MOTES (Watch Ad)</button><button class="btn" id="reviveBtn" style="display:none;background:linear-gradient(135deg,#22a05a,#157a3f);border-color:#8affc0">▶ REVIVE (Watch Ad)</button><button class="btn" id="nx">PLAY AGAIN</button><button class="btn alt" id="menuBtn">MENU</button></div>
 <div class="ov" id="pause"><h1 style="font-size:26px">PAUSED</h1><div id="pauseInv"></div><button class="btn" id="resumeBtn">RESUME</button><button class="btn alt" id="shakeBtn">📳 Screen shake: ON</button><button class="btn alt" id="gfxBtn">✨ Graphics: HIGH</button><button class="btn" id="quitBtn" style="background:linear-gradient(135deg,#7a2a2a,#4a1a1a);border-color:#ff8a8a">QUIT RUN</button></div>
 <div class="ov" id="altar"><h1 style="font-size:24px">RESONANCE ALTAR</h1><p style="margin-bottom:6px">Permanent upgrades. Refund any time.</p><div id="altarMotes"></div><div id="altarList"></div><button class="btn alt" id="refundBtn">REFUND ALL</button><button class="btn" id="altarBack">BACK</button></div>
@@ -309,6 +316,7 @@ window.onerror=function(m,s,l){var e=document.getElementById("err");if(e){e.styl
 <script src="js/data.js"></script>
 <script src="js/meta.js"></script>
 <script src="js/native.js"></script>
+<script src="js/portal.js"></script>
 <script src="js/audio.js"></script>
 <script src="js/input.js"></script>
 <script src="js/art.js"></script>

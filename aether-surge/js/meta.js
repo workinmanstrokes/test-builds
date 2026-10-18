@@ -108,7 +108,7 @@ function num(x){return typeof x==="number"&&isFinite(x)&&x>=0;}
 function int(x,d){return num(x)?Math.floor(x):(d||0);}
 M.blank=function(){
   var s={v:M.VERSION,gold:0,gems:0,shards:0,inv:{},eq:{},chars:{rift:1},ch:"rift",pity:0,
-    freeAt:0,ad:{day:"",n:0},stats:{chests:0,premium:0,upgrades:0,runs:0},
+    freeAt:0,ad:{day:"",n:0},rw:{day:"",revive:0,xp:0},stats:{chests:0,premium:0,upgrades:0,runs:0},
     tower:{best:0,milestones:0},boss:{clears:{},day:"",today:{}},
     ms:{day:"",week:"",daily:[],weekly:[]},welcome:null};
   M.GEAR.forEach(function(g){if(g.starter){s.inv[g.id]={r:0,lv:1};s.eq[g.slot]=g.id;}});
@@ -133,6 +133,7 @@ M.migrate=function(raw,legacy){
   if(raw.chars&&typeof raw.chars==="object")for(var c in raw.chars)if(raw.chars[c]&&M.charDef(c).id===c)s.chars[c]=1;
   if(typeof raw.ch==="string"&&s.chars[raw.ch])s.ch=raw.ch;
   if(raw.ad&&typeof raw.ad.day==="string")s.ad={day:raw.ad.day,n:int(raw.ad.n)};
+  if(raw.rw&&typeof raw.rw.day==="string")s.rw={day:raw.rw.day,revive:int(raw.rw.revive),xp:int(raw.rw.xp)};
   if(raw.stats)for(var k in s.stats)s.stats[k]=int(raw.stats[k]);
   if(raw.tower){s.tower.best=int(raw.tower.best);s.tower.milestones=int(raw.tower.milestones);}
   if(raw.boss){if(raw.boss.clears)for(var b in raw.boss.clears)s.boss.clears[b]=int(raw.boss.clears[b]);
@@ -201,6 +202,15 @@ M.weekKey=function(t){var d=new Date(t);d.setHours(0,0,0,0);var wd=(d.getDay()+6
 function pad(n){return n<10?"0"+n:""+n;}
 M.freeReady=function(s,now){return now>=s.freeAt;};
 M.adLeft=function(s,now){var k=M.dayKey(now);return s.ad.day===k?Math.max(0,M.CHESTS.ad.daily-s.ad.n):M.CHESTS.ad.daily;};
+/* ---------------- optional rewarded ads in runs: daily caps (the store's Bonus Chest keeps its own cap above) ---------------- */
+// revive: once per run (game.js) and at most 5 a day; xp: the 2x XP chest offered at the end of a wave, 6 a day, 1 per wave, 3 per run
+M.REWARDS={revive:{daily:5},xp:{daily:6,perRun:3,mins:60,goldCost:150}};
+function rwDay(s,now){var k=M.dayKey(now);if(!s.rw||s.rw.day!==k)s.rw={day:k,revive:0,xp:0};return s.rw;}
+M.rewardLeft=function(s,kind,now){var R=M.REWARDS[kind];if(!R)return 0;var k=M.dayKey(now),used=s.rw&&s.rw.day===k?int(s.rw[kind]):0;return Math.max(0,R.daily-used);};
+// call only after the rewarded ad completed; returns false when the daily cap is already used up
+M.useReward=function(s,kind,now){if(M.rewardLeft(s,kind,now)<=0)return false;rwDay(s,now)[kind]++;return true;};
+// the 2x XP chest can also be opened with gold (no ad needed); doesn't touch the ad cap
+M.buyXpChest=function(s){var c=M.REWARDS.xp.goldCost;if(s.gold<c)return false;s.gold-=c;return true;};
 // opens a gear chest; returns {ok, results:[grantItem results]}. For "ad", call only after the rewarded ad completed.
 M.openChest=function(s,id,now,rng){
   var C=M.CHESTS[id];if(!C||id==="premium")return {ok:false,reason:"bad"};

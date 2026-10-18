@@ -386,6 +386,8 @@ function update(dt){
   G.gT+=dt;G.ftFrame=0;
   if(G.state!=="playing")return;
   G.runT+=dt;
+  if(P.xpBoostT>0)P.xpBoostT=Math.max(0,P.xpBoostT-dt);
+  if(G.mode==="surge"&&G.runT<G.runLen){var wv=Math.floor(G.runT/60);if(wv>G.xpWave){G.xpWave=wv;armXp();}} // each minute of Surge = one wave
   recalc();
   var ef=P.eff;
   G.lsBudget=Math.min(AS.HEAL.lsPerSec,G.lsBudget+AS.HEAL.lsPerSec*dt);
@@ -584,7 +586,7 @@ function compact(){
   G.normalN=n-bn;
 }
 function gainXp(v){
-  v*=P.eff.xp;P.xp+=v;G.xpTotal+=v;
+  v*=P.eff.xp*(P.xpBoostT>0?2:1);P.xp+=v;G.xpTotal+=v;
   while(P.xp>=P.xpN){P.xp-=P.xpN;P.lv++;P.xpN=AS.xpNeed(P.lv);G.queue.push({k:"lvl"});P.pl=Math.floor(P.pl*1.04+40);if(R.fx)R.fx("fx_levelup_ring_4f",P.x,P.y,0.5,1,null,true);
     var nt=tierOfLv(P.lv);if(nt>P.tier){P.tier=nt;banner("Resonance "+AS.ROMAN[nt+1]+" — your aura grows",false);for(var k=0;k<20;k++){var a=k/20*TAU;addP(P.x,P.y,Math.cos(a)*260,Math.sin(a)*260,0.5,3,TIER_C[nt]);}shake(0.2);}}
 }
@@ -682,6 +684,7 @@ function renderOffers(){
     c.onclick=function(){choose(idx);};
     g.appendChild(c);
   });
+  renderXpOffer("lvlUp");
   var rb=$("reroll");rb.textContent="↻ REROLL ("+G.rerolls+" free)";rb.disabled=G.rerolls<=0;
   var more=G.queue.length;
   $("lvlSub").textContent=(curPick.k==="lvl"?"Level "+P.lv:curPick.k==="cache"?"Sigils "+Object.keys(P.sig).length+"/"+AS.SIG_SLOTS:curPick.k==="core"?"A run-defining power — choose one":"Equip one relic (lost when the run ends)")+(more>0?" • "+more+" more queued":"");
@@ -695,7 +698,8 @@ function openPick(){
 function choose(idx){
   var o=offers[idx];if(!o||G.state!=="levelup")return;
   o.apply();
-  $("lvlUp").style.display="none";G.state="playing";hud(true);renderSigRow();
+  if($("xpOffer").style.display==="block"&&$("xpOffer").parentNode===$("lvlUp"))G.xpArm=false; // offered once per wave; skipping is just picking a card
+  $("xpOffer").style.display="none";$("lvlUp").style.display="none";G.state="playing";hud(true);renderSigRow();
   if(G.queue.length)openPick();
 }
 $("reroll").addEventListener("click",function(){if(G.state!=="levelup"||G.rerolls<=0)return;G.rerolls--;offers=rollFor(curPick);renderOffers();});
@@ -707,7 +711,7 @@ function setW(id,v){v=Math.round(v*10)/10;if(hc[id]!==v){hc[id]=v;$(id).style.wi
 function fmt(s){s=Math.max(0,Math.floor(s));var m=Math.floor(s/60),x=s%60;return m+":"+(x<10?"0":"")+x;}
 function hud(){
   setW("hpF",Math.max(0,P.hp/P.maxHp*100));setW("hpG",Math.max(0,P.hp/P.maxHp*100));setT("hpT",String(Math.ceil(Math.max(0,P.hp))));
-  setW("xpF",Math.min(100,P.xp/P.xpN*100));setT("xpT","LV "+P.lv);
+  setW("xpF",Math.min(100,P.xp/P.xpN*100));setT("xpT","LV "+P.lv+(P.xpBoostT>0?" • 2× XP "+Math.ceil(P.xpBoostT)+"s":""));
   setT("pl","PL "+P.pl.toLocaleString()+(P.form===1?" ★":""));
   setT("kc",G.kills+" kills");
   var left=G.runLen-G.runT;
@@ -806,7 +810,7 @@ function modeTick(dt){
 }
 function bossModeNext(b){
   if(G.bossIdx>=G.bossList.length&&!G.bosses.length){G.winT=1.6;P.inv=99;banner(b.n+" defeated! VICTORY",false);S.clear();}
-  else{banner(b.n+" defeated! Next boss incoming…",false);dropLoot("chest",P.x+40,P.y-30,1);G.bossDelay=4;}
+  else{banner(b.n+" defeated! Next boss incoming…",false);dropLoot("chest",P.x+40,P.y-30,1);G.bossDelay=4;armXp();}
 }
 function clearField(){
   for(var k=0;k<G.eCount;k++)E[k].dead=true;G.eCount=0;G.normalN=0;G.pCount=0;G.epCount=0;G.haz=[];G.bosses=[];G.bossFocus=null;
@@ -825,6 +829,7 @@ function floorClear(){
   var h="";rooms.forEach(function(r,i){h+='<div class="uc room" data-i="'+i+'"><div class="ui">'+r.i+'</div><div class="uf"><h3>'+r.n+'</h3><p>'+r.d+'</p></div></div>';});
   $("rooms").innerHTML=h;S.clear();N.haptic("MEDIUM");
   showHud(false);$("towerOv").style.display="flex";
+  armXp();renderXpOffer("towerOv");
 }
 function chooseRoom(i){
   var r=rooms[i];if(!r||G.state!=="floor")return;
@@ -835,6 +840,7 @@ function chooseRoom(i){
   else if(r.id==="sanctum")G.queue.push({k:"cache"});
   else if(r.id==="armory")G.queue.push({k:"relic",tier:1});
   else if(r.id==="shrine"){P.spdM*=1.1;P.blast.rate*=0.92;}
+  G.xpArm=false;$("xpOffer").style.display="none";
   G.floor++;towerFloorSetup();G.runT=0;AS.world.mi=0;AS.world.mission=null;
   $("towerOv").style.display="none";showHud(true);renderSigRow();G.state="playing";hud(true);
   banner("FLOOR "+G.floor+(G.floorCfg.boss?" — BOSS FLOOR":""),!!G.floorCfg.boss);
@@ -857,6 +863,7 @@ function startGame(cfg){
   G.eCount=0;G.normalN=0;G.pCount=0;G.epCount=0;G.sCount=0;G.partCount=0;G.ftCount=0;
   G.bosses=[];G.bossFocus=null;G.kills=0;G.eliteKills=0;G.bossKills=0;G.miniKills=0;G.runT=0;G.spawnAcc=0;G.schIdx=0;G.evIdx=0;G.hpMul=1;G.spdMul=1;G.dmgMul=1;
   G.spiral=0;G.spiralAcc=0;G.spiralAng=0;G.finalSpawned=false;G.winT=0;G.queue=[];G.ranks={};G.rerolls=AS.FREE_REROLLS+altarV("resolve");G.lastAscOffer=-99;
+  G.xpArm=false;G.xpChests=0;G.xpWave=0;P.xpBoostT=0;
   G.revived=false;G.doubled=false;G.motesAwarded=0;G.lsBudget=15;G.hurtFx=0;G.bannerT=0;G.loot=[];G.coffers=0;G.cachesOpened=0;G.relicsFound=0;G.shotN=0;G.echoCd=0;
   G.evos={};G.haz=[];G.bonusMotes=0;G.metaPaid=null;G.metaOut=null;G.desBroken=0;G.missionsDone=0;G.coreDrops=0;G.pickups=0;P.hasteT=0;P.slowZ=false;AS.world.reset();G.combo=0;G.comboT=0;G.bestCombo=0;G.dmgDealt=0;G.dmgTaken=0;G.xpTotal=0;G.dashes=0;G.charges=0;G.trailT=0;G.build={tag:null,label:"Training Rift"};IN.act.dash=IN.act.up=0;IN.act.held=false;
   AS.sigils.reset();charInit();
@@ -923,8 +930,9 @@ function payMeta(won){
   G.metaPaid=cur;
 }
 function updateAdBtns(){
-  var ready=N.AD.rewardReady,over=G.state==="dead"||G.state==="won";
-  $("reviveBtn").style.display=(G.state==="dead"&&!G.revived&&!G.doubled&&ready)?"block":"none";
+  var ready=N.rewardAvailable(),over=G.state==="dead"||G.state==="won",rl=MT.rewardLeft(MT.get(),"revive",Date.now());
+  var rv=G.state==="dead"&&!G.revived&&!G.doubled&&ready&&rl>0;
+  $("reviveBtn").style.display=rv?"block":"none";if(rv)$("reviveBtn").textContent="▶ REVIVE (Watch Ad • "+rl+" left today)";
   $("doubleBtn").style.display=(over&&!G.doubled&&G.motesAwarded>0&&ready)?"block":"none";
 }
 function gameOver(){G.state="dead";S.stopMusic();N.haptic("HEAVY");showResults(false);}
@@ -937,6 +945,25 @@ function revivePlayer(){
   $("end").style.display="none";N.hideBanner();showHud(true);renderSigRow();
   G.state="playing";if(!S.isMuted())S.startMusic();hud(true);
 }
+/* ---------------- 2x XP chest: optional end-of-wave bonus (Surge: every minute, Tower: floor clear, Boss Fights: between bosses).
+   Offered only on a break screen (level-up picks / tower path choice), never over live gameplay. Open it with a rewarded ad
+   (daily cap) or with gold. Max 1 per wave and 3 per run. */
+function armXp(){if(G.xpChests<MT.REWARDS.xp.perRun)G.xpArm=true;}
+function renderXpOffer(ovId){
+  var el=$("xpOffer"),s=MT.get(),R=MT.REWARDS.xp,left=MT.rewardLeft(s,"xp",Date.now()),ad=N.rewardAvailable()&&left>0,gold=s.gold>=R.goldCost;
+  if(!G.xpArm||(!ad&&!gold)){el.style.display="none";return;}
+  var ov=$(ovId),anchor=ov.querySelector("#reroll,#towerLeave");if(el.parentNode!==ov)ov.insertBefore(el,anchor);
+  $("xpAd").style.display=ad?"inline-block":"none";$("xpAd").textContent="▶ Watch ad ("+left+" left today)";
+  $("xpGold").disabled=!gold;$("xpGold").textContent="🪙 "+R.goldCost;
+  el.style.display="block";
+}
+function grantXpBoost(){
+  G.xpArm=false;G.xpChests++;P.xpBoostT+=MT.REWARDS.xp.mins;$("xpOffer").style.display="none";
+  addFt(P.x,P.y-30,"2× XP!","#7affe0",2);S.lvl();N.haptic("MEDIUM");hud(true);
+}
+$("xpAd").addEventListener("click",function(e){e.stopPropagation();if(!G.xpArm)return;var b=this;b.disabled=true;
+  N.showReward().then(function(){b.disabled=false;if(G.xpArm&&MT.useReward(MT.get(),"xp",Date.now())){MT.save();grantXpBoost();}}).catch(function(){b.disabled=false;renderXpOffer(G.state==="floor"?"towerOv":"lvlUp");});});
+$("xpGold").addEventListener("click",function(e){e.stopPropagation();if(!G.xpArm)return;if(MT.buyXpChest(MT.get())){MT.save();grantXpBoost();}});
 function doubleMotes(){G.doubled=true;AS.save.addMotes(G.motesAwarded);G.motesAwarded*=2;renderMotes();updateAdBtns();N.haptic("MEDIUM");}
 function renderInventory(){
   var h='<div class="inv-h">SIGILS '+Object.keys(P.sig).length+'/'+AS.SIG_SLOTS+'</div>';
@@ -1008,7 +1035,7 @@ function renderGfx(){var t="✨ Graphics: "+(GF.q==="high"?"HIGH":"LOW");$("gfxB
 function toggleGfx(){GF.autoLowered=false;GF.set(GF.q==="high"?"low":"high","user");renderGfx();}
 $("gfxBtn").addEventListener("click",toggleGfx);$("gfxBtn2").addEventListener("click",toggleGfx);renderGfx();
 GF.listeners.push(function(q,why){renderGfx();if(why==="auto")banner("Graphics set to LOW to keep it smooth",false);});
-$("go").addEventListener("click",function(){var cfg=AS.menu?AS.menu.selected():G.modeCfg;if(AS.art&&!AS.art.ready)AS.art.onReady(function(){if(G.state==="start")startGame(cfg);});else startGame(cfg);}); // sprite art is local + small; only waits on a cold first load
+$("go").addEventListener("click",function(){var cfg=AS.menu?AS.menu.selected():G.modeCfg,go=function(){N.breakBeforePlay(function(){if(G.state==="start")startGame(cfg);});};if(AS.art&&!AS.art.ready)AS.art.onReady(go);else go();}); // sprite art is local + small; only waits on a cold first load
 $("privacyBtn").addEventListener("click",function(){N.showPrivacyOptions();});
 $("nx").addEventListener("click",function(){N.maybeInterstitial(function(){startGame(G.modeCfg);});});
 $("menuBtn").addEventListener("click",backToStart);
@@ -1020,7 +1047,7 @@ if(AS.art&&AS.art.setBtn)AS.art.setBtn($("pauseBtn"),"pause","⏸");setMuteBtn(S
 $("mute").addEventListener("click",function(e){e.stopPropagation();var m=S.toggleMute();setMuteBtn(m);if(!m&&G.state==="playing")S.startMusic();});
 $("reviveBtn").addEventListener("click",function(){
   if(G.revived||G.doubled||G.state!=="dead")return;
-  N.showReward().then(function(){if(G.state==="dead"&&!G.revived)revivePlayer();}).catch(function(){updateAdBtns();});
+  N.showReward().then(function(){if(G.state==="dead"&&!G.revived){MT.useReward(MT.get(),"revive",Date.now());MT.save();revivePlayer();}}).catch(function(){updateAdBtns();});
 });
 $("doubleBtn").addEventListener("click",function(){
   if(G.doubled||(G.state!=="dead"&&G.state!=="won"))return;
@@ -1041,6 +1068,7 @@ function loop(now){
     if(G.state!=="start")tickHud(dt);
     R.draw(G);
     if(perf.flush)R.flush();
+    N.gameplay(G.state==="playing"&&!AS.adActive); // portal analytics: gameplay start/stop on every state change
   }catch(err){showErr((err&&err.message)||String(err));}
   var t1=performance.now();perf.last=t1-t0;
   if(perf.on&&perf.cpu.length<perf.max){perf.cpu.push(t1-t0);perf.raf.push(rafDt);perf.ents.push(G.eCount);}
@@ -1069,7 +1097,8 @@ N.showBanner();
 $("start").style.display="flex";
 requestAnimationFrame(loop);
 
-AS.game={G:G,dropLoot:dropLoot,start:startGame,chooseRoom:chooseRoom,floorClear:floorClear,menuInit:menuInit,step:function(dt){update(dt);if(G.state==="playing"&&G.queue.length&&!(G.winT>0))openPick();},togglePause:togglePause,pause:pauseGame,resume:resumeGame,choose:choose,spawnBoss:spawnBoss,fireEvent:fireEvent,
+if(AS.art&&AS.art.onReady)AS.art.onReady(function(){N.loadingDone();});else N.loadingDone(); // portals: loading finished once the menu + art are up
+AS.game={G:G,_armXp:armXp,dropLoot:dropLoot,start:startGame,chooseRoom:chooseRoom,floorClear:floorClear,menuInit:menuInit,step:function(dt){update(dt);if(G.state==="playing"&&G.queue.length&&!(G.winT>0))openPick();},togglePause:togglePause,pause:pauseGame,resume:resumeGame,choose:choose,spawnBoss:spawnBoss,fireEvent:fireEvent,
   update:update,hud:hud,recalc:recalc,dropLoot:dropLoot,offers:function(){return offers;},dash:tryDash,melee:doMelee,charge:doCharge,applyEvo:applyEvo,buildInfo:buildInfo,spawnElite:spawnElite,spawnType:function(key,x,y){return spawnE(AS.ETYPES[key],key,x,y);},
   _spawnRegular:function(n){var row=AS.SCHEDULE[G.schIdx||0];for(var k=0;k<n;k++)spawnRegular(row,G.schIdx||0);},
   _gameOver:gameOver,_revive:revivePlayer,_win:winRun,_backToStart:backToStart};

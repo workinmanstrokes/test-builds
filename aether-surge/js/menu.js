@@ -79,7 +79,7 @@ function renderBossSel(){
 }
 $("fightList").addEventListener("click",function(e){var c=e.target.closest&&e.target.closest(".fight");if(!c)return;tap();st.fight=c.getAttribute("data-f");remember();renderBossSel();});
 $("modList").addEventListener("click",function(e){var b=e.target.closest&&e.target.closest(".modb");if(!b)return;tap();var m=b.getAttribute("data-m"),i=st.mods.indexOf(m);if(i>=0)st.mods.splice(i,1);else st.mods.push(m);remember();renderBossSel();});
-$("fightGo").addEventListener("click",function(){st.mode="boss";remember();$("bossSel").style.display="none";AS.game.start(selected());});
+$("fightGo").addEventListener("click",function(){st.mode="boss";remember();$("bossSel").style.display="none";var cfg=selected();AS.native.breakBeforePlay(function(){AS.game.start(cfg);});});
 $("fightBack").addEventListener("click",function(){st.mode="boss";remember();closeBossSel();});
 
 /* ---------- sheet (missions, odds, chest results, settings) ---------- */
@@ -144,13 +144,13 @@ $("gearList").addEventListener("click",function(e){var b=e.target.closest&&e.tar
 /* ---------- Store ---------- */
 function costTxt(c){var p=[];if(c.gold)p.push("🪙 "+fmt(c.gold));if(c.gems)p.push("💎 "+fmt(c.gems));return p.join(" ")||"FREE";}
 function renderStore(){
-  var s=MT.get(),now=Date.now(),C=MT.CHESTS,h="",adOK=N.isNative&&N.AD.rewardReady,adLeft=MT.adLeft(s,now);
+  var s=MT.get(),now=Date.now(),C=MT.CHESTS,h="",adOK=N.rewardAvailable(),adLeft=MT.adLeft(s,now);
   var chest=function(c,btn,desc,cls){return '<div class="chest'+(cls?" "+cls:"")+'"><div class="ci">'+c.i+'</div><div class="uf"><h3>'+c.n+'</h3><p>'+desc+'</p></div><div class="cb">'+btn+'<button class="sbtn odds" data-odds="'+c.id+'">Odds</button></div></div>';};
   h+='<div class="shead">GEAR CHESTS • bought with gold from runs</div>';
   var fr=MT.freeReady(s,now);
   h+=chest(C.free,'<button class="sbtn buy" data-c="free"'+(fr?"":" disabled")+'>'+(fr?"OPEN":untilTxt(s.freeAt-now))+'</button>',"A free gear chest every 4 hours.");
   h+=chest(C.ad,'<button class="sbtn buy" data-c="ad"'+(adOK&&adLeft>0?"":" disabled")+'>'+(adLeft<=0?"TOMORROW":"▶ WATCH")+'</button>',
-    (N.isNative?(adOK?"Watch an optional ad for a chest with better odds.":"Loading ad…"):"Optional ad chest (Android app only).")+" "+adLeft+"/"+C.ad.daily+" left today.");
+    (N.isNative||N.portal?(adOK?"Watch an optional ad for a chest with better odds.":"Loading ad…"):"Optional ad chest (Android app only).")+" "+adLeft+"/"+C.ad.daily+" left today.");
   h+=chest(C.gear,'<button class="sbtn buy" data-c="gear"'+(MT.canAfford(s,C.gear.cost)?"":" disabled")+'>'+costTxt(C.gear.cost)+'</button>',"1 random gear piece.");
   h+=chest(C.grand,'<button class="sbtn buy" data-c="grand"'+(MT.canAfford(s,C.grand.cost)?"":" disabled")+'>'+costTxt(C.grand.cost)+'</button>',C.grand.note);
   var locked=MT.lockedChars(s).length,left=MT.PREMIUM.pity-s.pity;

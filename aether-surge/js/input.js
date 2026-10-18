@@ -61,7 +61,10 @@ function btn(id,down,up){var el=document.getElementById(id);
 }
 btn("dashBtn",function(){act.dash=1;});
 btn("atkBtn",function(){act.held=true;},function(){if(act.held){act.held=false;act.up++;}});
-window.addEventListener("keydown",function(e){var k=e.key.toLowerCase();if(e.repeat&&(k===" "||k==="shift"||k==="j"||k==="k"))return;
+// embedded on web portals the page around the game can scroll: keep arrows/space/wheel inside the game
+window.addEventListener("keydown",function(e){if(["ArrowDown","ArrowUp","ArrowLeft","ArrowRight"," "].indexOf(e.key)>=0&&!(e.target&&/INPUT|TEXTAREA/.test(e.target.tagName)))e.preventDefault();},{capture:true});
+window.addEventListener("wheel",function(e){if(!(e.target&&e.target.closest&&e.target.closest(".ov,#sheetBox")))e.preventDefault();},{passive:false});
+window.addEventListener("keydown",function(e){if(AS.adActive){keys={};return;}var k=e.key.toLowerCase();if(e.repeat&&(k===" "||k==="shift"||k==="j"||k==="k"))return;
   if(k===" "||k==="shift"){act.dash=1;e.preventDefault();}
   if(k==="j"||k==="k")act.held=true;
   keys[k]=true;keyJoy();if((k==="escape"||k==="p")&&AS.game)AS.game.togglePause();});

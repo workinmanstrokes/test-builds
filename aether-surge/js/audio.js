@@ -5,11 +5,14 @@ var actx=null,master=null,musicG=null,sfxG=null,muted=AS.save.getMuted(),musicOn
 var lastT={};
 function ensure(){if(actx)return true;try{var AC=window.AudioContext||window.webkitAudioContext;if(!AC)return false;actx=new AC();master=actx.createGain();master.gain.value=muted?0:0.6;master.connect(actx.destination);musicG=actx.createGain();musicG.gain.value=0.14;musicG.connect(master);sfxG=actx.createGain();sfxG.gain.value=0.38;sfxG.connect(master);return true;}catch(e){return false;}}
 function gate(key,ms){var now=performance.now();if(lastT[key]&&now-lastT[key]<ms)return false;lastT[key]=now;return true;}
-function tone(f,type,dur,vol,slide){if(!actx||muted)return;try{var t=actx.currentTime,o=actx.createOscillator(),g=actx.createGain();o.type=type||"square";o.frequency.setValueAtTime(f,t);if(slide)o.frequency.exponentialRampToValueAtTime(Math.max(40,f+slide),t+dur);g.gain.setValueAtTime(vol||0.2,t);g.gain.exponentialRampToValueAtTime(0.001,t+dur);o.connect(g);g.connect(sfxG);o.start(t);o.stop(t+dur+0.03);}catch(e){}}
+var ducked=false;
+function tone(f,type,dur,vol,slide){if(!actx||muted||ducked)return;try{var t=actx.currentTime,o=actx.createOscillator(),g=actx.createGain();o.type=type||"square";o.frequency.setValueAtTime(f,t);if(slide)o.frequency.exponentialRampToValueAtTime(Math.max(40,f+slide),t+dur);g.gain.setValueAtTime(vol||0.2,t);g.gain.exponentialRampToValueAtTime(0.001,t+dur);o.connect(g);g.connect(sfxG);o.start(t);o.stop(t+dur+0.03);}catch(e){}}
 function later(fn,ms){setTimeout(fn,ms);}
 var S={
   ensure:ensure,
   isMuted:function(){return muted;},
+  // silence everything while a video ad plays (doesn't touch the saved mute setting)
+  duck:function(on){ducked=!!on;if(master)master.gain.value=(muted||ducked)?0:0.6;},
   toggleMute:function(){muted=!muted;AS.save.setMuted(muted);if(master)master.gain.value=muted?0:0.6;if(muted)S.stopMusic();return muted;},
   shoot:function(){if(gate("shoot",70))tone(680,"square",0.05,0.07,-200);},
   hit:function(){if(gate("hit",45))tone(170,"sawtooth",0.07,0.12,-50);},

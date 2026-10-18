@@ -61,8 +61,15 @@ function showPrivacyOptions(){
   if(!isNative||!Plugins.AdMob||!Plugins.AdMob.showPrivacyOptionsForm)return;
   try{Plugins.AdMob.showPrivacyOptionsForm().then(function(){return Plugins.AdMob.requestConsentInfo({tagForUnderAgeOfConsent:false});}).then(function(info){if(info&&info.canRequestAds&&!adsOK)enableAds();}).catch(function(){});}catch(e){}
 }
+// one place for "can we show a rewarded ad right now?" (native AdMob here; web portals override these in portal.js)
+function rewardAvailable(){return !!(isNative&&Plugins.AdMob&&AD.rewardReady);}
+// natural break before a run starts: native keeps its every-2nd-retry interstitial rule, so this is a pass-through
+function breakBeforePlay(after){if(after)after();}
+// web portal analytics hooks (no-ops in the app)
+function gameplay(on){}
+function loadingDone(){}
 function exitApp(){try{if(Plugins.App)Plugins.App.exitApp();}catch(e){}}
-AS.native={isNative:isNative,AD:AD,haptic:haptic,showBanner:showBanner,hideBanner:hideBanner,maybeInterstitial:maybeInterstitial,showReward:showReward,loadReward:loadReward,init:init,exitApp:exitApp,showPrivacyOptions:showPrivacyOptions,privacyRequired:function(){return privacyRequired;}};
+AS.native={isNative:isNative,AD:AD,rewardAvailable:rewardAvailable,breakBeforePlay:breakBeforePlay,gameplay:gameplay,loadingDone:loadingDone,portal:null,haptic:haptic,showBanner:showBanner,hideBanner:hideBanner,maybeInterstitial:maybeInterstitial,showReward:showReward,loadReward:loadReward,init:init,exitApp:exitApp,showPrivacyOptions:showPrivacyOptions,privacyRequired:function(){return privacyRequired;}};
 
 /* ---------- Save data ----------
    v1 (legacy): localStorage "as_best" = {pl, stage}; "as_m" = "1" when muted.
