@@ -46,5 +46,5 @@ export const PRIVACY_URL = 'https://workinmanstrokes.github.io/test-builds/priva
 // OFF until Michael enables Firestore + Anonymous sign-in and deploys firebase/firestore.rules; the game then shows
 // an offline Ranks screen (your bests, sharing and challenge links still work). configure.mjs flips this from SOCIAL_ONLINE=true.
 export const SOCIAL = {
-  online: false,   // @cfg social
+  online: true,    // @cfg social
 };
