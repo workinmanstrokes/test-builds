@@ -89,6 +89,7 @@ function openSheet(html,kind){
 }
 function closeSheet(){restoreSettings();$("sheet").style.display="none";sheetKind=null;render();}
 $("sheetClose").addEventListener("click",function(){tap();closeSheet();});
+$("ctlBtn").addEventListener("click",function(){tap();closeSheet();AS.controls.open();});
 function restoreSettings(){var b=$("settingsBox");if(b.parentNode!==document.body){b.style.display="none";document.body.appendChild(b);}}
 $("setBtn").addEventListener("click",function(){tap();openSheet("","settings");var b=$("settingsBox");b.style.display="flex";$("sheetBody").appendChild(b);renderMute();});
 function renderMute(){$("muteBtn2").textContent=S.isMuted()?"🔇 Sound: OFF":"🔊 Sound: ON";}

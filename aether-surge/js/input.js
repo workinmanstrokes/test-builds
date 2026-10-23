@@ -1,7 +1,7 @@
 /* Input: floating virtual joystick (appears where the thumb lands) + mouse + keyboard. */
 (function(AS){
 "use strict";
-var JR=44,DEAD=0.12;
+var JR=44,DEAD=0.12,home=null;
 var joy={a:false,x:0,y:0,id:null,ox:0,oy:0};
 // action state consumed by game.js: dash request (+ optional direction), attack button held / released
 var act={dash:0,ddx:0,ddy:0,held:false,up:0};
@@ -11,7 +11,7 @@ function place(x,y){
   var m=64;x=Math.max(m,Math.min(window.innerWidth-m,x));y=Math.max(m+60,Math.min(window.innerHeight-m,y));
   joy.ox=x;joy.oy=y;jEl.style.left=x+"px";jEl.style.top=y+"px";
 }
-function rest(){jEl.style.left="";jEl.style.top="";jEl.classList.remove("on");jK.style.transform="translate(0,0)";}
+function rest(){jEl.style.left=home?home.x+"px":"";jEl.style.top=home?home.y+"px":"";jEl.classList.remove("on");jK.style.transform="translate(0,0)";}
 function move(cx,cy){
   var dx=cx-joy.ox,dy=cy-joy.oy,d=Math.hypot(dx,dy);
   if(d>JR){dx=dx/d*JR;dy=dy/d*JR;d=JR;}
@@ -72,5 +72,5 @@ window.addEventListener("keyup",function(e){var k=e.key.toLowerCase();if((k==="j
 window.addEventListener("blur",function(){keys={};if(joy.id==="kbd"||joy.id==="m")end();});
 document.body.addEventListener("touchmove",function(e){if(!joy.a&&e.target&&e.target.closest&&e.target.closest(".ov"))return;e.preventDefault();},{passive:false});
 
-AS.input={joy:joy,act:act,reset:function(){keys={};end();act.held=false;act.up=0;act.dash=0;},show:function(v){zone.style.display=v?"block":"none";jEl.style.display=v?"block":"none";if(!v)end();}};
+AS.input={setHome:function(x,y,s){home={x:x,y:y};JR=44*(s||1);if(!joy.a)rest();},joy:joy,act:act,reset:function(){keys={};end();act.held=false;act.up=0;act.dash=0;},show:function(v){zone.style.display=v?"block":"none";jEl.style.display=v?"block":"none";if(!v)end();}};
 })(window.AS);
