@@ -48,8 +48,19 @@ function renderLocker() {
   const got = stickersEarned(save);
   $('#lkStickers').innerHTML = got.map((st, i) => `<i class="stk" style="background:${st.col};--r:${(i * 37) % 24 - 12}deg" title="${st.label}">${st.icon}</i>`).join('');
 }
-$('#btnStart').onclick = () => { sfx.unlockAudio(); sfx.ui(); startRun(); };
-$('#btnNew').onclick = () => { sfx.unlockAudio(); sfx.ui(); if (save.run) { modal(`<h2>Start over?</h2><p>Your current run (${save.run.streak}/8) will be lost.</p><div class="row"><button class="btn" id="mNo">Cancel</button><button class="btn primary" id="mYes">New run</button></div>`); $('#mNo').onclick = closeModal; $('#mYes').onclick = () => { closeModal(); startRun(); }; } else startRun(); };
+// Difficulty + speedrun picker before every fresh run (not the first-launch cold open, not resumes).
+function pickRun() {
+  const d0 = save.lastDiff || 'normal', bests = save.speedBest || {};
+  modal(`<h2>New run</h2><div class="diffs">${Object.entries(G.DIFFICULTY).map(([k, D]) => `<button class="btn diff${k === d0 ? ' sel' : ''}" data-d="${k}"><b>${D.label}</b><small>${k === 'easy' ? 'Obvious anomalies, a few more of them' : k === 'normal' ? 'The intended experience' : `Subtle anomalies · ${D.loopMs / 1000}s per loop`}</small></button>`).join('')}</div>
+    <label class="srun"><input type="checkbox" id="mSpeed" ${save.lastSpeed ? 'checked' : ''}> Speedrun timer <small class="dim" id="mBest"></small></label>
+    <div class="row"><button class="btn" id="mNo">Cancel</button><button class="btn primary" id="mGo">Start</button></div>`);
+  let d = d0; const best = () => { $('#mBest').textContent = bests[d] ? `best ${G.fmtTime(bests[d])}` : ''; }; best();
+  document.querySelectorAll('.diff').forEach(b => b.onclick = () => { sfx.ui(); d = b.dataset.d; document.querySelectorAll('.diff').forEach(x => x.classList.toggle('sel', x === b)); best(); });
+  $('#mNo').onclick = closeModal;
+  $('#mGo').onclick = () => { save.lastDiff = d; save.lastSpeed = $('#mSpeed').checked; persist(); closeModal(); startRun(null, { diff: d, speedrun: save.lastSpeed }); };
+}
+$('#btnStart').onclick = () => { sfx.unlockAudio(); sfx.ui(); pickRun(); };
+$('#btnNew').onclick = () => { sfx.unlockAudio(); sfx.ui(); if (save.run) { modal(`<h2>Start over?</h2><p>Your current run (${save.run.streak}/8) will be lost.</p><div class="row"><button class="btn" id="mNo">Cancel</button><button class="btn primary" id="mYes">New run</button></div>`); $('#mNo').onclick = closeModal; $('#mYes').onclick = () => { closeModal(); pickRun(); }; } else pickRun(); };
 $('#btnContinue').onclick = () => { sfx.unlockAudio(); sfx.ui(); startRun(save.run); };
 $('#btnClip').onclick = () => { sfx.unlockAudio(); sfx.ui(); openClip(); };
 $('#btnEndings').onclick = () => { sfx.unlockAudio(); sfx.ui(); endingsModal(); };
@@ -57,9 +68,9 @@ $('#btnTitleSettings').onclick = () => { sfx.unlockAudio(); settings(); };
 $('#locker').onclick = () => { sfx.unlockAudio(); sfx.ui(); lockerModal(); };
 
 /* ------------------------------------------------------------ run flow */
-async function startRun(resume = null, { coldOpen = false } = {}) {
-  run = G.newRun(); if (resume) Object.assign(run, { streak: resume.streak, loops: resume.loops, misses: resume.misses, pass: resume.pass, log: Array.isArray(resume.log) ? resume.log : [], startedAt: Date.now() - (resume.playedMs || 0) });
-  save.runsStarted = (save.runsStarted || 0) + 1; track(resume ? 'run_resume' : 'run_start');
+async function startRun(resume = null, { coldOpen = false, diff = 'normal', speedrun = false } = {}) {
+  run = G.newRun(undefined, resume ? { diff: resume.diff, speedrun: resume.speedrun } : { diff, speedrun }); if (resume) Object.assign(run, { speedMs: resume.speedMs || 0, streak: resume.streak, loops: resume.loops, misses: resume.misses, pass: resume.pass, log: Array.isArray(resume.log) ? resume.log : [], startedAt: Date.now() - (resume.playedMs || 0) });
+  save.runsStarted = (save.runsStarted || 0) + 1; track(resume ? 'run_resume' : 'run_start', { difficulty: run.diff, speedrun: run.speedrun ? 1 : 0 });
   show('#hud'); view.dim = 0;
   beginLoop({ coldOpen });
 }
@@ -80,13 +91,13 @@ function endColdOpen(silent = false) {
 }
 $('#coSkip').onclick = () => { sfx.unlockAudio(); endColdOpen(); };
 // The snapshot keeps the loop log + play time so a resumed run's ending stats (anomalies spotted, minutes) stay correct.
-function snapshotRun() { save.run = run && !run.ending ? { streak: run.streak, loops: run.loops, misses: run.misses, pass: run.pass, log: run.log.map(({ scene, anomaly, correct }) => ({ scene, anomaly, correct })), playedMs: Date.now() - run.startedAt } : null; persist(); }
+function snapshotRun() { save.run = run && !run.ending ? { streak: run.streak, loops: run.loops, misses: run.misses, pass: run.pass, diff: run.diff, speedrun: run.speedrun, speedMs: run.speedMs, log: run.log.map(({ scene, anomaly, correct }) => ({ scene, anomaly, correct })), playedMs: Date.now() - run.startedAt } : null; persist(); }
 
 function beginLoop({ coldOpen: cold = false } = {}) {
   const cur = G.nextLoop(run, save), S = G.stateFor(cur);
   view.setScene(S, { camX: 500 }); view.enabled = true; view.fade = 1; view.walk = 0;
   sfx.ambience(cur.scene); sfx.stopLoops(); if (S.flicker) sfx.buzz(true); if (S.fountain) sfx.water(true);
-  hud(); busy = false; track('loop_start', { loop: run.loops, scene: cur.scene, anomaly: cur.anomaly || 'none' });
+  run.loopLeft = G.diffOf(run).loopMs; hud(); busy = false; track('loop_start', { loop: run.loops, scene: cur.scene, anomaly: cur.anomaly || 'none' });
   animate(600, k => { view.fade = 1 - k; });
   if (cold) return coldOpen();
   // warn once before "game-over" anomalies can appear (level plan: warn before mean traps)
@@ -97,9 +108,21 @@ function beginLoop({ coldOpen: cold = false } = {}) {
 function hud() {
   const pips = $('#pips'); pips.innerHTML = ''; for (let i = 0; i < G.GOAL; i++) { const b = document.createElement('i'); if (i < run.streak) b.className = 'on'; pips.appendChild(b); }
   $('#loopNum').textContent = `${run.streak}/${G.GOAL}`; $('#misses').textContent = run.misses ? `${run.misses}/${G.MAX_MISSES} misses` : '';
+  $('#speed').hidden = !run.speedrun; $('#loopTimer').hidden = !G.diffOf(run).loopMs; tickHud();
   $('#passIcon').hidden = !run.pass; $('#btnHint').classList.toggle('used', !!run.hintUsed);
   $('#btnBack').textContent = run.current.scene === 'hall' ? '↩ Turn back' : '↩ Leave';
   $('#btnFwd').textContent = run.current.scene === 'hall' ? 'Keep going →' : 'Next period →';
+}
+function tickHud() { if (!run) return; if (run.speedrun) $('#speed').textContent = G.fmtTime(run.speedMs);
+  if (G.diffOf(run).loopMs) { const s = Math.ceil((run.loopLeft || 0) / 1000); $('#loopTimer').textContent = `⏱ ${s}s`; $('#loopTimer').classList.toggle('low', s <= 5); } }
+// Run clocks: advance only while the player can act (not in modals, ads, cold open, scares or pause).
+let clockT = 0;
+function runClock(t) {
+  const dt = clockT ? Math.min(100, t - clockT) : 0; clockT = t;
+  if (mode !== 'hud' || !run || run.ending || busy || coActive || !$('#modal').hidden || !view.enabled || document.hidden) return;
+  if (run.speedrun) run.speedMs += dt;
+  if (G.diffOf(run).loopMs) { run.loopLeft -= dt; if (run.loopLeft <= 0) { run.loopLeft = 0; tickHud(); toast('Too slow. The hallway moved you on.', 2000); return choose('forward'); } }
+  tickHud();
 }
 let lastFace = -1, lastSec = -1;
 function compass() {
@@ -163,18 +186,18 @@ $('#btnPause').onclick = () => { sfx.ui(); pauseMenu(); };
 
 /* ------------------------------------------------------------ endings */
 async function ending(id) {
-  save.run = null; persist(); track('ending_reached', { ending: id, loops: run.loops, misses: run.misses, minutes: Math.round((Date.now() - run.startedAt) / 60000), pass: run.pass ? 1 : 0, endings_found: Object.keys(save.endings).length });
+  const rec = G.recordSpeed(save, run); save.run = null; persist(); track('ending_reached', { ending: id, loops: run.loops, misses: run.misses, minutes: Math.round((Date.now() - run.startedAt) / 60000), pass: run.pass ? 1 : 0, endings_found: Object.keys(save.endings).length });
   view.enabled = false; sfx.stopLoops(); P8.gameplay(false);
   if (id !== 'bad') { sfx.bell(); view.fade = 1; await sleep(1400); }
   else { sfx.falseAlarm(); await sleep(900); }
   const E = G.ENDINGS[id], mins = Math.max(1, Math.round((Date.now() - run.startedAt) / 60000)), spotted = run.log.filter(l => l.anomaly && l.correct).length;
   show('#ending'); drawEnding($('#endArt'), id);
   $('#endTitle').textContent = E.title; $('#endBlurb').textContent = E.blurb;
-  $('#endStats').textContent = `${run.loops} loops · ${spotted} ${spotted === 1 ? 'anomaly' : 'anomalies'} spotted · ${run.misses} ${run.misses === 1 ? 'miss' : 'misses'} · ${mins} min`;
+  $('#endStats').textContent = `${G.diffOf(run).label} · ${run.speedrun && id !== 'bad' ? `⏱ ${G.fmtTime(run.speedMs)}${rec ? ' NEW BEST' : ` (best ${G.fmtTime(save.speedBest[run.diff])})`} · ` : ''}${run.loops} loops · ${spotted} ${spotted === 1 ? 'anomaly' : 'anomalies'} spotted · ${run.misses} ${run.misses === 1 ? 'miss' : 'misses'} · ${mins} min`;
   $('#endTag').textContent = `Ending ${Object.keys(save.endings).length}/3 found`;
   unlockToasts();
 }
-$('#btnEndAgain').onclick = () => { sfx.ui(); startRun(); };
+$('#btnEndAgain').onclick = () => { sfx.ui(); startRun(null, { diff: run?.diff, speedrun: run?.speedrun }); };
 $('#btnEndTitle').onclick = () => { sfx.ui(); title(); };
 $('#btnEndShot').onclick = async () => { const r = await saveImage($('#endArt'), 'period8-ending'); if (r.ok) toast('Saved'); };
 function endingsModal() {
@@ -273,6 +296,7 @@ addEventListener('resize', () => { if (mode === 'clip') clip?.resize(); });
 /* ------------------------------------------------------------ main loop */
 let lastT = performance.now();
 function frame(t) {
+  runClock(t);
   const dt = Math.min(0.05, (t - lastT) / 1000); lastT = t;
   if (mode !== 'clip') view.frame(dt);
   if (mode === 'hud' && view.S) {

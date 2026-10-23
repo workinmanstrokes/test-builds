@@ -24,8 +24,15 @@ export function loadSave(storage) {
 }
 export function writeSave(storage, s) { try { storage.setItem(SAVE_KEY, JSON.stringify(s)); } catch {} }
 
-export function newRun(seed = (Math.random() * 2 ** 31) | 0) {
-  return { seed, rng: makeRng(seed), streak: 0, loops: 0, misses: 0, pass: false, lostStreak: 0, keptThisMiss: false,
+// Difficulty: easy = only obvious (tier 1-2, 'easy' kind) anomalies a bit more often; hard = mostly subtle ones + a loop timer.
+export const DIFFICULTY = {
+  easy: { label: 'Easy', chance: 0.66, maxTier: 2, mix: { early: { easy: 1, hard: 0, over: 0 }, main: { easy: 0.85, hard: 0, over: 0.15 } }, loopMs: 0 },
+  normal: { label: 'Normal', chance: ANOMALY_CHANCE, maxTier: 3, mix: null, loopMs: 0 },
+  hard: { label: 'Hard', chance: 0.58, maxTier: 3, mix: { early: { easy: 0.4, hard: 0.6, over: 0 }, main: { easy: 0.25, hard: 0.5, over: 0.25 } }, loopMs: 20000 },
+};
+export const diffOf = run => DIFFICULTY[run?.diff] || DIFFICULTY.normal;
+export function newRun(seed = (Math.random() * 2 ** 31) | 0, { diff = 'normal', speedrun = false } = {}) {
+  return { seed, diff: DIFFICULTY[diff] ? diff : 'normal', speedrun: !!speedrun, speedMs: 0, rng: makeRng(seed), streak: 0, loops: 0, misses: 0, pass: false, lostStreak: 0, keptThisMiss: false,
     recent: [], normalsInRow: 0, anomaliesInRow: 0, current: null, hintUsed: false, startedAt: Date.now(), ending: null, log: [] };
 }
 export const sceneFor = loops => (loops % 2 ? 'class' : 'hall');
@@ -34,15 +41,16 @@ export const sceneFor = loops => (loops % 2 ? 'class' : 'hall');
 // ~20% "game-over" showcase anomalies. Showcase ones only start at loop 5 (index 4); before that it's easy/hard only.
 export const SHOWCASE_FROM = 4;
 export const MIX = { early: { easy: 0.75, hard: 0.25, over: 0 }, main: { easy: 0.6, hard: 0.2, over: 0.2 } };
-export function pickKind(rng, loops) {
-  const m = loops < SHOWCASE_FROM ? MIX.early : MIX.main; let r = rng();
+export function pickKind(rng, loops, mix = MIX) {
+  const m = loops < SHOWCASE_FROM ? mix.early : mix.main; let r = rng();
   for (const k of ['easy', 'hard', 'over']) { r -= m[k]; if (r < 0) return k; }
   return 'easy';
 }
 function pick(run, save, scene) {
-  const rng = run.rng, kind = pickKind(rng, run.loops), fresh = a => a.scene === scene && !run.recent.includes(a.id);
+  const D = diffOf(run), rng = run.rng, kind = pickKind(rng, run.loops, D.mix || MIX), fresh = a => a.scene === scene && !run.recent.includes(a.id) && (a.kind === 'over' || a.tier <= D.maxTier);
   let pool = COMMON.filter(a => fresh(a) && a.kind === kind);
   if (!pool.length) pool = COMMON.filter(a => fresh(a) && (a.kind !== 'over' || run.loops >= SHOWCASE_FROM));
+  if (!pool.length) pool = COMMON.filter(a => a.scene === scene && a.kind !== 'over');
   const w = pool.map(a => (save.seen[a.id] ? 1 : 2.5)); // prefer anomalies this player hasn't seen yet
   let r = rng() * w.reduce((x, y) => x + y, 0);
   for (let i = 0; i < pool.length; i++) { r -= w[i]; if (r <= 0) return pool[i]; }
@@ -55,7 +63,7 @@ export function nextLoop(run, save) {
   if (run.loops >= 2) {
     if (scene === 'hall' && !run.pass && run.streak >= 2 && rng() < PASS_CHANCE) a = byId.hall_pass;
     else {
-      let p = ANOMALY_CHANCE; if (run.normalsInRow >= 2) p = 1; if (run.anomaliesInRow >= 3) p = 0;
+      let p = diffOf(run).chance; if (run.normalsInRow >= 2) p = 1; if (run.anomaliesInRow >= 3) p = 0;
       if (rng() < p) a = pick(run, save, scene);
     }
   }
@@ -99,3 +107,10 @@ export function inRegion(region, x, y, pad = 30, W = 4000) {
   const [rx, ry, rw, rh] = region; let dx = x - rx; dx = ((dx % W) + W) % W; if (dx > W - pad) dx -= W;
   return dx >= -pad && dx <= rw + pad && y >= ry - pad && y <= ry + rh + pad;
 }
+/** Speedrun best (ms) per difficulty; returns true if it's a new record. Only clean finishes (normal/secret) count. */
+export function recordSpeed(save, run) {
+  if (!run.speedrun || !run.ending || run.ending === 'bad') return false;
+  save.speedBest = save.speedBest || {}; const b = save.speedBest[run.diff];
+  if (!b || run.speedMs < b) { save.speedBest[run.diff] = Math.round(run.speedMs); return true; } return false;
+}
+export const fmtTime = ms => { const t = Math.max(0, Math.floor(ms / 10)), cs = t % 100, s = Math.floor(t / 100) % 60, m = Math.floor(t / 6000); return `${m}:${String(s).padStart(2, '0')}.${String(cs).padStart(2, '0')}`; };

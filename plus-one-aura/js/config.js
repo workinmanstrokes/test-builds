@@ -41,3 +41,10 @@ export const BILLING = {
 };
 
 export const PRIVACY_URL = 'https://workinmanstrokes.github.io/test-builds/privacy/plus-one-aura.html'; // permanent path
+
+// Leaderboards + friends (Firebase Spark: Firestore + Anonymous Auth, no Cloud Functions). See docs/SOCIAL.md.
+// OFF until Michael enables Firestore + Anonymous sign-in and deploys firebase/firestore.rules; the game then shows
+// an offline Ranks screen (your bests, sharing and challenge links still work). configure.mjs flips this from SOCIAL_ONLINE=true.
+export const SOCIAL = {
+  online: false,   // @cfg social
+};

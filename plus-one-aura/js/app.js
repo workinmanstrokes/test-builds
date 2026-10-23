@@ -11,6 +11,8 @@ import { buzz, setVibe } from './haptics.js';
 import { initAds, showRewarded, rewardGate, adsInfo, showPrivacyOptions } from './ads.js';
 import { initAnalytics, track, analyticsMode, setAnalyticsOptIn, analyticsStatus } from './analytics.js';
 import { initPortal, gameplayStart, gameplayStop, isPortal } from './portal.js';
+import * as SOC from './social.js';
+import * as SC from './social-core.js';
 import { initBilling, billingAvailable, buyRemoveAds, restoreRemoveAds, removeAdsPrice } from './billing.js';
 
 const $ = id => document.getElementById(id);
@@ -85,6 +87,8 @@ $('pDaily').addEventListener('click', () => { $('pause').hidden = true; paused =
 $('tSettings').addEventListener('click', () => openSettings());
 $('tSkins').addEventListener('click', () => openSkins());
 $('tDaily').addEventListener('click', () => openDaily());
+$('tRanks').addEventListener('click', () => openRanks());
+$('pRanks').addEventListener('click', () => { $('pause').hidden = true; paused = false; openRanks(); });
 // auto-pause on blur / tab switch (resume is always the player's tap)
 document.addEventListener('visibilitychange', () => { if (document.hidden) { pause('hidden'); save(); } else { offline(); } });
 window.addEventListener('blur', () => pause('blur'));
@@ -156,7 +160,7 @@ function handle(events) {
     } else if (e.type === 'floor_up') {
       fx.hop(); fx.ring('#fff', 1.3); sfx('levelUp'); buzz('success'); buildTower();
       if (themeChange(events)) {} else banner(`FLOOR ${e.floor + 1}`);
-      track('floor_up', { floor: e.floor, via: e.via, seconds_played: Math.round((Date.now() - s.installedAt) / 1000) }); save();
+      track('floor_up', { floor: e.floor, via: e.via, seconds_played: Math.round((Date.now() - s.installedAt) / 1000) }); save(); syncScores(true);
     } else if (e.type === 'stage_unlock') {
       applySkin(); const nm = skin.stages[e.stage].name; banner(skin.text.stageUnlock(nm)); sfx('unlock'); buzz('success');
       const t = fx.target(); fx.burst(t.x, t.y, skin.stages[e.stage].colors, 60, 520, 6); fx.flash('#fff', 1); fx.shake(.6);
@@ -369,12 +373,14 @@ function escResults() {
   const evs = G.grant(s, v); bumpTotal();
   track('escape_end', { dist: d, speed: run.speed, wisps: run.wisps, revived: run.revived, aura: v, new_best: newBest });
   modal(`<div id="escOver"></div><h2>${newBest ? 'NEW BEST! 🏆' : 'RUN OVER'}</h2><p class="esc-res"><b>${d} m</b>top speed ${run.speed} · ✦ ${run.wisps} wisps<br>Best ${s.escape.best} m</p>
-    <p>+${G.fmt(v)} ${skin.text.currency}</p><div class="row"><button class="btn primary" id="mEAgain">⚡ Run again</button><button class="btn" id="mETap">Tap mode</button><button class="btn" id="mEHome">Home</button></div>`);
+    <p>+${G.fmt(v)} ${skin.text.currency}</p><div class="row"><button class="btn primary" id="mEAgain">⚡ Run again</button><button class="btn" id="mETap">Tap mode</button><button class="btn" id="mEHome">Home</button></div><div class="row"><button class="btn" id="mEShare">📤 Share · Beat my score</button></div>`);
   if (newBest) { sfx('unlock'); fx.flash('#ffe27a', .6); } else sfx('bank');
   handle(evs); save();
   $('mEAgain').onclick = () => { closeModal(); run = null; screen = 'title'; startEscape('again'); };
   $('mETap').onclick = () => { closeModal(); startPlay('escape'); };
   $('mEHome').onclick = () => { closeModal(); showTitle(); };
+  $('mEShare').onclick = () => shareScore('escape', d);
+  syncScores(true);
 }
 function escHudTick() {
   const d = Math.floor(run.dist); if (d !== escHud.d) { escHud.d = d; $('escDist').textContent = `${d} m`; }
@@ -424,6 +430,65 @@ function loop(tms) {
   requestAnimationFrame(loop);
 }
 
+// ---------- social: leaderboards, profile, friends, share card, challenge links (docs/SOCIAL.md) ----------
+const syncScores = (force) => { if (isPortal) return; SOC.submitScores(s, isPortal, !!force).catch(() => {}); };
+setInterval(() => syncScores(false), 120e3);
+let rk = { mode: 'aura', scope: 'all' };
+const esc = t => String(t).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+async function openRanks(mode = rk.mode, scope = rk.scope) {
+  rk = { mode, scope }; const p = SOC.profile();
+  const tabs = (list, cur, key) => `<div class="tabs">${list.map(([id, lbl]) => `<button data-${key}="${id}" class="${id === cur ? 'on' : ''}">${lbl}</button>`).join('')}</div>`;
+  modal(`<h2>🏆 Ranks</h2>${tabs(SC.MODE_IDS.map(m => [m, SC.MODES[m].icon + ' ' + SC.MODES[m].label]), mode, 'm')}${tabs([['all', 'Global'], ['week', 'This week'], ['friends', 'Friends']], scope, 's')}
+    <ul class="lb" id="lb"><li><span></span><span></span><span>Loading…</span><span></span></li></ul><p class="soc-note" id="lbNote"></p>
+    <div class="row"><button class="btn" id="mProf">${p.avatar} ${esc(p.name)}</button><button class="btn" id="mFriends">👥 Friends</button><button class="btn primary" id="mShare">📤 Share</button></div><div class="row"><button class="btn" id="mClose">Close</button></div>`);
+  $('modalCard').querySelectorAll('[data-m]').forEach(b => b.onclick = () => openRanks(b.dataset.m, rk.scope));
+  $('modalCard').querySelectorAll('[data-s]').forEach(b => b.onclick = () => openRanks(rk.mode, b.dataset.s));
+  $('mProf').onclick = openProfile; $('mFriends').onclick = openFriends; $('mClose').onclick = closeModal;
+  $('mShare').onclick = () => shareScore(mode, SC.scoresFrom(s)[mode]);
+  syncScores(true);
+  const r = await SOC.fetchBoard(mode, scope, s, isPortal);
+  if (!$('lb') || rk.mode !== mode || rk.scope !== scope) return;
+  $('lb').innerHTML = r.rows.length ? r.rows.map((x, i) => `<li class="${x.me ? 'me' : ''}"><span class="rk">${x.rank || i + 1}</span><span>${esc(x.avatar || '😇')}</span><span>${esc(x.name)}</span><span class="sc">${SC.fmtScore(mode, x.score)}</span></li>`).join('') : '<li><span></span><span></span><span>No scores yet. Be the first!</span><span></span></li>';
+  $('lbNote').textContent = r.online ? (scope === 'week' ? `Resets every Monday (UTC) · ${SC.weekId()}` : scope === 'friends' ? 'You and the friends you added by code' : 'Top 50 players') : 'Offline mode: showing your best. Online ranks are coming soon. Share your score to challenge friends!';
+}
+function openProfile() {
+  const p = SOC.profile(); let av = p.avatar;
+  modal(`<h2>Your profile</h2><input id="pName" class="soc-in" maxlength="16" value="${esc(p.name)}" aria-label="Player name"><div class="avs">${SC.AVATARS.map(a => `<button data-a="${a}" class="${a === av ? 'on' : ''}">${a}</button>`).join('')}</div>
+    <p class="soc-note" id="pWhy">Shown on leaderboards. No real names please.</p><div class="row"><button class="btn primary" id="pSave">Save</button><button class="btn" id="pBack">Back</button></div>`);
+  $('modalCard').querySelectorAll('[data-a]').forEach(b => b.onclick = () => { av = b.dataset.a; $('modalCard').querySelectorAll('[data-a]').forEach(x => x.classList.toggle('on', x === b)); });
+  $('pSave').onclick = async () => { const r = await SOC.setProfile($('pName').value, av); if (!r.ok) { $('pWhy').textContent = r.why; return; } toast('Profile saved'); track('profile_set'); syncScores(true); openRanks(); };
+  $('pBack').onclick = () => openRanks();
+}
+function openFriends() {
+  const p = SOC.profile();
+  modal(`<h2>👥 Friends</h2><p>Your friend code</p><div class="soc-code" id="fMine">${p.code}</div>
+    <div class="row"><button class="btn" id="fShareCode">📤 Send my code</button></div>
+    <input id="fCode" class="soc-in" maxlength="7" placeholder="Enter a friend's code" aria-label="Friend code" autocapitalize="characters"><p class="soc-note" id="fWhy">${p.friends.length} friend${p.friends.length === 1 ? '' : 's'}${SOC.isOnline() ? '' : ' · friends need the online leaderboard'}</p>
+    <div class="row"><button class="btn primary" id="fAdd">Add friend</button><button class="btn" id="fBack">Back</button></div>`);
+  $('fShareCode').onclick = () => SOC.share({ text: `Add me on +1 Aura! My friend code: ${p.code}`, url: SC.challengeUrl({ code: p.code, name: p.name, mode: 'aura', score: SC.scoresFrom(s).aura }) }).then(r => r === 'copied' && toast('Copied!'));
+  $('fAdd').onclick = async () => { $('fAdd').disabled = true; const r = await SOC.addFriend($('fCode').value); $('fAdd').disabled = false; $('fWhy').textContent = r.ok ? `Added ${r.name}!` : r.why; if (r.ok) { track('friend_add'); sfx('unlock'); } };
+  $('fBack').onclick = () => openRanks(rk.mode, 'friends');
+}
+async function shareScore(mode, score) {
+  const p = SOC.profile(); const st = skin.stages[s.curStage];
+  const c = { code: p.code, name: p.name, mode, score }, url = SC.challengeUrl(c);
+  const canvas = SOC.drawCard(null, { mode, score, name: p.name, avatar: p.avatar, accent: st.accent?.startsWith('#') && st.accent.length === 7 ? st.accent : '#ffb347' });
+  window.__aura_card = canvas;
+  const r = await SOC.share({ text: SC.challengeText(c, url), url, canvas }); track('share_score', { mode, how: r });
+  if (r === 'copied') toast('Challenge link copied!'); else if (r === 'failed') toast('Sharing not available');
+}
+// incoming "beat my score" link
+const challenge = SC.parseChallenge(location.search);
+if (challenge && !isPortal) {
+  const mine = SC.scoresFrom(s)[challenge.mode];
+  const el = document.createElement('button'); el.className = 'challenge'; el.id = 'challenge';
+  el.textContent = `${challenge.name} challenges you: beat ${SC.fmtScore(challenge.mode, challenge.score)} in ${SC.MODES[challenge.mode].label}!${mine > challenge.score ? ' (you already did ✓)' : ''}`;
+  el.onclick = () => { el.remove(); if (challenge.mode === 'escape') startEscape('challenge'); else startPlay('challenge'); };
+  document.body.appendChild(el); setTimeout(() => el.remove(), 12000);
+  track('challenge_open', { mode: challenge.mode });
+  if (challenge.code) SOC.connect(isPortal).then(ok => ok && SOC.addFriend(challenge.code)).catch(() => {});
+}
+
 applySkin(); hud();
 if (isPortal && firstOpen) { screen = 'play'; document.body.classList.remove('on-title'); } else showTitle();
 offline();
@@ -435,4 +500,4 @@ initAds();
 initPortal();
 initBilling(s, () => { save(); refreshAdButtons(); });
 // test hook (harmless in production): lets the Playwright smoke test inspect state
-window.__aura = { get state() { return s; }, G, save, get screen() { return screen; }, get paused() { return paused; }, pause, resume, R, get run() { return run; }, startEscape };
+window.__aura = { get state() { return s; }, G, save, get screen() { return screen; }, get paused() { return paused; }, pause, resume, R, get run() { return run; }, startEscape, openRanks, shareScore, SOC };
