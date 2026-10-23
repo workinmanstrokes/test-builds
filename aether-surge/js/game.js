@@ -360,7 +360,7 @@ function doMelee(){
     dmgE(e,dmg,e.x,e.y,{x:dx/d*CB.melee.kb,y:dy/d*CB.melee.kb},"melee");hit++;}
   AS.world.aoeDes(P.x+ux*rng*0.5,P.y+uy*rng*0.5,rng*0.6,dmg);
   AS.FX.slashes.push({x:P.x,y:P.y,ang:ang,r:rng,life:0.16,max:0.16});
-  P.melee.t=CB.melee.cd;S.slash();if(hit)N.haptic("LIGHT");
+  P.melee.t=CB.melee.cd;P.atkT=0.22;P.atkK=(P.atkN=(P.atkN||0)+1)%3;S.slash();if(hit)N.haptic("LIGHT");
 }
 function doCharge(c){
   var q=Math.min(1,(c-CB.charge.min)/(CB.charge.max-CB.charge.min));if(q<0)q=0;
@@ -368,7 +368,7 @@ function doCharge(c){
   aoe(P.x,P.y,R2,dmg,CB.charge.kb*(0.5+q*0.5),"charge",full);
   AS.FX.novas.push({x:P.x,y:P.y,r:R2,life:0.45,max:0.45,c:full?"#ffffff":"#ffe080",w:full?10:6});
   boom(P.x,P.y,full?"#ffffff":"#ffe080",full?22:12);shake(0.2+0.35*q);S.burst();N.haptic(full?"HEAVY":"MEDIUM");
-  P.melee.t=Math.max(P.melee.t,0.3);G.charges++;
+  P.melee.t=Math.max(P.melee.t,0.3);P.atkT=0.35;P.atkK=3;G.charges++;
 }
 function combat(dt){
   var A=IN.act,ds=P.dash;
@@ -376,7 +376,7 @@ function combat(dt){
   if(A.dash){A.dash=0;tryDash(A.ddx,A.ddy);A.ddx=A.ddy=0;}
   if(A.held)P.chgT+=dt;
   if(A.up){A.up=0;var c=P.chgT-0.2;P.chgT=0;if(c>=CB.charge.min)doCharge(c);else if(P.melee.t<=0.35)doMelee();}
-  P.melee.t-=dt;
+  P.melee.t-=dt;if(P.atkT>0)P.atkT-=dt;
   if(P.melee.t<=0&&!A.held&&nearest(P.x,P.y,CB.melee.rng+6,false))doMelee(); // auto melee when foes are close
 }
 function tierOfLv(lv){var T=AS.LV_TIERS,t=0;for(var k=0;k<T.length;k++)if(lv>=T[k])t=k;return t;}

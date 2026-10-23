@@ -418,7 +418,8 @@ function drawPlayer(G,px,py){
     ctx.beginPath();ctx.arc(px,py,20+cq*8,-Math.PI/2,-Math.PI/2+cq*Math.PI*2);ctx.stroke();ctx.globalAlpha=1;}
   if(isCharge&&P.chargeT<0.25){ctx.globalAlpha=0.25*(P.chargeT/0.25);ctx.fillStyle="#fff";ctx.beginPath();ctx.arc(px,py,32,0,Math.PI*2);ctx.fill();ctx.globalAlpha=1;}
   var hk=heroKey(ch,isForm),mv=!!(joy.x||joy.y||P.moving);
-  if(hk&&drawCharTo(ctx,hk,px+lean*0.4,py+14+bob,P.fx<0?-1:1,mv?Math.sin(P.runT)*0.06:0,invF?0.6:(isCharge?0.25+0.25*Math.sin(gT*30):0))){
+  if(hk==="player"&&drawPlayerAnim(P,px+lean*0.4,py+14+bob,mv,invF,isCharge,gT)){}
+  else if(hk&&drawCharTo(ctx,hk,px+lean*0.4,py+14+bob,P.fx<0?-1:1,mv?Math.sin(P.runT)*0.06:0,invF?0.6:(isCharge?0.25+0.25*Math.sin(gT*30):0))){
     if(isForm&&hk!=="player_ascended"){var gw=whiteOf(hk),m0=AM[hk];if(gw){ctx.save();ctx.translate(px+lean*0.4,py+14+bob);if(P.fx<0)ctx.scale(-1,1);ctx.globalCompositeOperation="lighter";ctx.globalAlpha=0.18+0.08*Math.sin(gT*8);
       ctx.drawImage(tintOf(hk,"#ffe040")||gw,m0[0],m0[1]-m0[4],m0[2],m0[3]);ctx.restore();}}
   }else{
@@ -448,6 +449,24 @@ function drawPlayer(G,px,py){
   }
 }
 
+
+// Riftwalker fighter: pick a frame from the 10-frame strip by state (cosmetic only; hitbox/gameplay untouched)
+function playerFrame(P,mv,gT){
+  var PA=ART.playerAnim;if(!PA)return 0;
+  if(P.dash&&P.dash.t>0)return PA.dash;
+  if(P.atkT>0){if(P.atkK===3||P.chgT>0.2)return PA.slam;var seq=P.atkK===2?PA.kick:PA.punch;return seq[P.atkT>0.11?0:1];}
+  if(P.chgT>0.2)return PA.slam;
+  var s=mv?PA.run:PA.idle;return s[Math.floor((mv?P.runT*0.5:gT*2.2))%s.length|0]||0;
+}
+function drawPlayerAnim(P,x,footY,mv,invF,isCharge,gT){
+  var im=IMG.player_anim,m=AM.player;if(!im||!m||P.portrait)return false;
+  var PA=ART.playerAnim,n=PA.frames,fw=im.naturalWidth/n,fh=im.naturalHeight,f=playerFrame(P,mv,gT);
+  ctx.save();ctx.translate(x,footY);ctx.scale(P.fx<0?-1:1,1);
+  ctx.drawImage(im,f*fw,0,fw,fh,m[0],m[1]-m[4],m[2],m[3]);
+  var fl=invF?0.6:(isCharge?0.25+0.25*Math.sin(gT*30):0);
+  if(fl>0){var w=whiteOf("player_anim");if(w){ctx.globalAlpha=fl;ctx.drawImage(w,f*fw,0,fw,fh,m[0],m[1]-m[4],m[2],m[3]);}}
+  ctx.restore();return true;
+}
 
 // sprite art per hero (Riftwalker switches to the ascended sprite in Aether Ascension form)
 function heroKey(ch,isForm){var id=ch&&ch.id||"rift",k=ART.heroArt&&ART.heroArt[id];if(!k)return null;if(id==="rift"&&isForm&&IMG.player_ascended)k="player_ascended";return IMG[k]?k:null;}

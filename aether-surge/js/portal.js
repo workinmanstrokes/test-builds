@@ -7,7 +7,7 @@
 var kind=window.AS_PORTAL,N=AS.native;
 if(!N||(kind!=="poki"&&kind!=="crazygames"))return;
 var P={kind:kind,ready:false,inGameplay:false,log:[],lastMidgame:0,adOpen:false};
-N.portal=P;N.AD.bannerId=N.AD.interId=N.AD.rewardId="";   // no AdMob on the web build
+N.portal=P;N.AD.bannerId=N.AD.rewardId="";   // no AdMob on the web build
 function ev(n){P.log.push(n);}
 function sdk(){return kind==="poki"?window.PokiSDK:(window.CrazyGames&&window.CrazyGames.SDK);}
 // pause sound + keyboard while an ad is on screen
