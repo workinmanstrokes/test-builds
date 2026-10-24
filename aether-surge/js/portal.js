@@ -39,14 +39,14 @@ N.showReward=function(){
   });
 };
 // commercial break at natural pauses (before a run starts / retry). Poki decides itself whether to show one;
-// CrazyGames midgames are additionally spaced >= 3 min apart on our side.
+// CrazyGames: no midgame ads at all (rewarded only).
 function commercial(after){
   var done=false,fin=function(){if(done)return;done=true;adEnd();if(after)after();};
   if(!P.ready){fin();return;}
   var S=sdk();ev("commercialBreak");
   try{
     if(kind==="poki"){S.commercialBreak(function(){adStart();}).then(fin,fin);}
-    else{var now=Date.now();if(now-P.lastMidgame<180000){fin();return;}P.lastMidgame=now;S.ad.requestAd("midgame",{adStarted:adStart,adFinished:fin,adError:fin});}
+    else{fin();return;} // CrazyGames: rewarded ads only, never midgame/interstitial
   }catch(e){fin();}
   setTimeout(fin,45000); // never strand the player if the SDK never calls back
 }

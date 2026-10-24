@@ -146,6 +146,8 @@ body.ad-banner #start,body.ad-banner #end{padding-bottom:calc(76px + env(safe-ar
 .btn{transition:transform .12s,filter .12s}.btn:active{transform:scale(.96);filter:brightness(1.15)}
 #banner.pop{animation:pop .32s ease-out}
 .rbtn,.abt{transition:transform .1s}
+/* Desktop (no touch screen): keyboard controls, so hide the on-screen joystick + action buttons */
+@media not (any-pointer: coarse){#joy,.abt{display:none!important}}
 /* ---- meta menu (tabs, gear, store, heroes) ---- */
 #start{background:linear-gradient(180deg,rgba(4,6,16,.82) 0%,rgba(4,6,16,.15) 26%,rgba(4,6,16,0) 40%,rgba(4,6,16,.25) 55%,rgba(4,6,16,.9) 78%);padding:0;justify-content:stretch;align-items:stretch;overflow:hidden;animation:none}
 #start>*{margin:0!important}
