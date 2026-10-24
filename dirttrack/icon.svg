@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <defs>
+    <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#2f5d3a"/><stop offset="1" stop-color="#1f3f28"/></linearGradient>
+    <clipPath id="r"><rect width="512" height="512" rx="112"/></clipPath>
+  </defs>
+  <g clip-path="url(#r)">
+    <rect width="512" height="512" fill="url(#sky)"/>
+    <path d="M0 300 Q128 236 256 250 T512 284 V512 H0Z" fill="#c9a66b"/>
+    <path d="M0 352 Q140 300 270 318 T512 340 V512 H0Z" fill="#8a5a34"/>
+    <path d="M0 412 Q150 372 280 386 T512 400 V512 H0Z" fill="#4a3020"/>
+    <g fill="#e8d9b5" opacity=".55"><circle cx="96" cy="370" r="7"/><circle cx="210" cy="352" r="5"/><circle cx="350" cy="362" r="6"/><circle cx="430" cy="430" r="5"/><circle cx="160" cy="448" r="6"/><circle cx="300" cy="458" r="4"/></g>
+    <g transform="rotate(28 300 210)">
+      <rect x="290" y="70" width="22" height="190" rx="9" fill="#f3ead2"/>
+      <rect x="268" y="52" width="66" height="26" rx="12" fill="#f3ead2"/>
+      <path d="M256 250 h90 v40 q0 52 -45 70 q-45 -18 -45 -70z" fill="#cfd8dc" stroke="#263238" stroke-width="8" stroke-linejoin="round"/>
+    </g>
+    <path d="M148 214 c0 -42 32 -62 32 -62 s32 20 32 62 c0 22 -14 36 -32 36 s-32 -14 -32 -36z" fill="#7fbf6a"/>
+    <path d="M180 250 V176" stroke="#2f5d3a" stroke-width="7" stroke-linecap="round"/>
+  </g>
+</svg>
