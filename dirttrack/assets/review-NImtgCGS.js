@@ -1,0 +1,1 @@
+function e(e,t,n=new Date){return{...e,price_per_yard:t.price_per_yard,availability:t.availability,source:`User`,last_verified:n.toISOString()}}export{e as t};
