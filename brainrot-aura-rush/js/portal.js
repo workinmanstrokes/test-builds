@@ -2,7 +2,7 @@
 // Active only in a portal build (window.PORTAL_BUILD set by portal-config.js), with ?portal=poki|crazygames for testing,
 // or on the portal's own domain. Everywhere else (Android app, test site) every call is a cheap no-op.
 // Events: loadingFinished once the first screen takes input; gameplayStart/Stop around real play (deduplicated);
-// commercialBreak ONLY at natural breaks (between levels / before a new run), never mid-play; rewarded = opt-in only.
+// No interstitials: commercialBreak/midgame ads are never called. Ads are opt-in rewarded only.
 (function (root) {
   'use strict';
   const SDK_URL = { poki: 'https://game-cdn.poki.com/scripts/v2/poki-sdk.js', crazygames: 'https://sdk.crazygames.com/crazygames-sdk-v3.js' };
@@ -42,16 +42,6 @@
   }
   async function loadingFinished() { if (!id || loaded) return; loaded = true; await init(); call('loadingFinished'); }
   async function gameplay(on) { if (!id || on === playing) return; playing = on; await init(); call(on ? 'gameplayStart' : 'gameplayStop'); }
-  /** Natural-break ad slot (portal decides whether an ad actually plays). Resolves when the game may continue. */
-  async function commercialBreak(onPause, onResume) {
-    if (!id || busy) return; await init(); busy = true; log.push('commercialBreak');
-    const was = playing; if (was) await gameplay(false);
-    try {
-      if (sdk && id === 'poki') await sdk.commercialBreak(() => onPause && onPause());
-      else if (sdk) await new Promise(res => sdk.ad.requestAd('midgame', { adStarted: () => onPause && onPause(), adFinished: res, adError: res }));
-    } catch (e) { /* no ad */ }
-    busy = false; if (onResume) onResume();
-  }
   /** Opt-in rewarded video. Resolves true only if the reward was earned. */
   async function rewarded(onPause, onResume) {
     if (!id || busy) return false; await init(); busy = true; log.push('rewarded');
@@ -64,6 +54,6 @@
     busy = false; if (onResume) onResume(); if (was) await gameplay(true);
     return ok;
   }
-  root.Portal = { id, active: !!id, log, init, loadingFinished, gameplayStart: () => gameplay(true), gameplayStop: () => gameplay(false), commercialBreak, rewarded, available: () => !!id && !busy };
+  root.Portal = { id, active: !!id, log, init, loadingFinished, gameplayStart: () => gameplay(true), gameplayStop: () => gameplay(false), rewarded, available: () => !!id && !busy };
   if (id) init();
 })(typeof window !== 'undefined' ? window : globalThis);

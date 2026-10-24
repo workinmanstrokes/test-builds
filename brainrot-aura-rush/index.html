@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <!-- ios-pwa -->
+      <!-- ios-pwa -->
   <link rel="manifest" href="manifest.webmanifest">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="mobile-web-app-capable" content="yes">
@@ -1141,12 +1141,9 @@
     }
     window.onAdsReady = () => { renderChest(); renderAdOffers(); $('privOptBtn').style.display = BRAds.privacyRequired() ? '' : 'none'; };
 
-    // Between zones / before a new run is a natural break: portal builds may show a commercial break there
-    // (the portal decides frequency). Never mid-play. Android/test-site builds: Portal is a no-op.
-    let breaking = false;
+    // No interstitial ads between zones or runs (rewarded only).
     async function nextLevel() {
-      if (breaking || (state !== 'VICTORY' && state !== 'GAMEOVER')) return;
-      if (Portal.active) { breaking = true; $('nextBtn').disabled = true; await Portal.commercialBreak(window.onAdPause, window.onAdResume); $('nextBtn').disabled = false; breaking = false; }
+      if ((state !== 'VICTORY' && state !== 'GAMEOVER')) return;
       if (state === 'VICTORY') { carrySquad = Math.min(40, Math.round(squad.count * 0.5)); level++; initLevel(); }
       else if (state === 'GAMEOVER') newRun();
       else return;
