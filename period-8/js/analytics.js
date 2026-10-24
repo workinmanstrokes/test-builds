@@ -50,8 +50,27 @@ async function initWeb() {
   } catch (e) { analyticsStatus.web = 'error:' + (e?.code || e?.message); console.warn('analytics off', e); }
 }
 
+
+// Mirror key events to the shared per-session Firestore logger (window.DA from /analytics.js). No-op without DA_CONFIG.
+// Respects the player's analytics opt-out. Only counts and short placement names are sent, never names or IDs.
+const RW = { escape_revive: 'revive', keep: 'keep' };
+function toDA(name, p) {
+  const DA = window.DA; if (!DA || !(allowed !== false)) return;
+  const pl = RW[p.placement] || String(p.placement || '').slice(0, 12);
+  switch (name) {
+    case 'ad_reward_offer': DA.rewardedShown(pl); break;
+    case 'ad_reward_shown': if (!['keep', 'hint'].includes(p.placement)) DA.rewardedShown(pl); DA.rewardedAccepted(pl); break;
+    case 'ad_reward_declined': DA.rewardedDeclined(pl); break;
+    case 'remove_ads_shown': DA.removeAdsShown(); break;
+    case 'iap_purchase': DA.removeAdsPurchased(); break;
+    case 'da_level_start': DA.levelStart(p.level); break;
+    case 'da_level_complete': DA.levelComplete(p.level, p.deaths); break;
+    case 'da_level_fail': DA.levelFail(p.level, p.deaths); break;
+  }
+}
 /** Log an event (snake_case name, flat params). Never throws. */
 export function track(name, params = {}) {
+  try { toDA(name, params); } catch {}
   log.push({ name, params, t: Date.now() }); if (log.length > 300) log.shift();
   if (allowed === false || (!nativeFA && !FIREBASE_WEB)) return;
   if (allowed === null) { if (queue.length < 50) queue.push([name, params]); return; }

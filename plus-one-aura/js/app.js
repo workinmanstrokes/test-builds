@@ -298,6 +298,7 @@ function openSettings() {
   $('rSfx').onchange = () => { unlockAudio(); sfx('buy'); };
   $('tAnalytics') && ($('tAnalytics').onclick = e => { s.settings.analytics = !s.settings.analytics; setAnalyticsOptIn(s.settings.analytics); e.target.classList.toggle('on', s.settings.analytics); track('analytics_opt', { on: s.settings.analytics }); save(); });
   $('mPriv') && ($('mPriv').onclick = async () => { await showPrivacyOptions(); toast('Privacy choices updated'); });
+  if ($('mBuy')) track('remove_ads_shown');
   $('mBuy') && ($('mBuy').onclick = async () => { $('mBuy').disabled = true; if (await buyRemoveAds(s)) { save(); banner('ADS REMOVED!'); sfx('unlock'); closeModal(); refreshAdButtons(); } else { toast('Purchase not completed'); $('mBuy').disabled = false; } });
   $('mRestore') && ($('mRestore').onclick = async () => { const ok = await restoreRemoveAds(s); save(); toast(ok ? 'Purchase restored' : 'No purchase found'); if (ok) { closeModal(); refreshAdButtons(); } });
   $('mClose').onclick = closeModal;
@@ -331,7 +332,7 @@ function startEscape(via) {
   screen = 'escape'; document.body.classList.remove('on-title'); document.body.classList.add('on-escape');
   $('title').hidden = true; $('esc').hidden = false; $('escHint').classList.remove('gone');
   run = R.newRun(); escHud = { d: -1, spd: -1, w: -1 }; $('escBest').textContent = `${s.escape.best} m`;
-  track('escape_start', { via, best: s.escape.best, runs: s.escape.runs }); unlockAudio(); gameplayStart(); save();
+  track('escape_start', { via, best: s.escape.best, runs: s.escape.runs }); track('da_level_start', { level: s.floor }); unlockAudio(); gameplayStart(); save();
 }
 function exitEscape() {
   if (screen !== 'escape') return;
@@ -359,19 +360,21 @@ function escOver() {
   const until = Date.now() + GAME.reviveWindowMs;
   modal(`<div id="escOver"></div><h2>CAUGHT!</h2><p class="esc-res"><b>${d} m</b>speed ${run.speed}${d > s.escape.best ? ' · <span class="esc-new">NEW BEST!</span>' : ` · best ${s.escape.best} m`}</p>
     <div class="countdown" id="cd"></div><div class="row"><button class="btn primary" id="mERevive"><span class="tv">AD</span>Revive &amp; keep speed</button><button class="btn" id="mENo">No thanks</button></div>`);
-  const tick = setInterval(() => { const k = (until - Date.now()) / GAME.reviveWindowMs; const cd = $('cd'); if (!cd) return clearInterval(tick); cd.style.transform = `scaleX(${Math.max(0, k)})`; if (k <= 0) { clearInterval(tick); escResults(); } }, 50);
+  track('ad_reward_offer', { placement: 'escape_revive' });
+  const tick = setInterval(() => { const k = (until - Date.now()) / GAME.reviveWindowMs; const cd = $('cd'); if (!cd) return clearInterval(tick); cd.style.transform = `scaleX(${Math.max(0, k)})`; if (k <= 0) { clearInterval(tick); track('ad_reward_declined', { placement: 'escape_revive' }); escResults(); } }, 50);
   $('mERevive').onclick = async () => {
     clearInterval(tick); $('mERevive').disabled = true;
     const ok = await reward('escape_revive', () => { R.revive(run); track('escape_revive', { dist: d, speed: run.speed }); });
     if (ok && run?.alive) { closeModal(); banner('REVIVED! GO GO GO'); sfx('unlock'); fx.flash('#7dffb0', .7); } else escResults();
   };
-  $('mENo').onclick = () => { clearInterval(tick); escResults(); };
+  $('mENo').onclick = () => { clearInterval(tick); track('ad_reward_declined', { placement: 'escape_revive' }); escResults(); };
 }
 function escResults() {
   if (!run || run.alive || run.paid) return; run.paid = true;
   const d = Math.floor(run.dist), { newBest } = R.recordRun(s.escape, run), v = R.runAura(run, G.basePerTap(s, Date.now()));
   const evs = G.grant(s, v); bumpTotal();
   track('escape_end', { dist: d, speed: run.speed, wisps: run.wisps, revived: run.revived, aura: v, new_best: newBest });
+  track(newBest ? 'da_level_complete' : 'da_level_fail', { level: s.floor, deaths: 1 + (run.revived ? 1 : 0) });
   modal(`<div id="escOver"></div><h2>${newBest ? 'NEW BEST! 🏆' : 'RUN OVER'}</h2><p class="esc-res"><b>${d} m</b>top speed ${run.speed} · ✦ ${run.wisps} wisps<br>Best ${s.escape.best} m</p>
     <p>+${G.fmt(v)} ${skin.text.currency}</p><div class="row"><button class="btn primary" id="mEAgain">⚡ Run again</button><button class="btn" id="mETap">Tap mode</button><button class="btn" id="mEHome">Home</button></div><div class="row"><button class="btn" id="mEShare">📤 Share · Beat my score</button></div>`);
   if (newBest) { sfx('unlock'); fx.flash('#ffe27a', .6); } else sfx('bank');

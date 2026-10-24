@@ -97,7 +97,7 @@ function beginLoop({ coldOpen: cold = false } = {}) {
   const cur = G.nextLoop(run, save), S = G.stateFor(cur);
   view.setScene(S, { camX: 500 }); view.enabled = true; view.fade = 1; view.walk = 0;
   sfx.ambience(cur.scene); sfx.stopLoops(); if (S.flicker) sfx.buzz(true); if (S.fountain) sfx.water(true);
-  run.loopLeft = G.diffOf(run).loopMs; hud(); busy = false; track('loop_start', { loop: run.loops, scene: cur.scene, anomaly: cur.anomaly || 'none' });
+  run.loopLeft = G.diffOf(run).loopMs; hud(); busy = false; track('loop_start', { loop: run.loops, scene: cur.scene, anomaly: cur.anomaly || 'none' }); track('da_level_start', { level: run.loops });
   animate(600, k => { view.fade = 1 - k; });
   if (cold) return coldOpen();
   // warn once before "game-over" anomalies can appear (level plan: warn before mean traps)
@@ -134,6 +134,7 @@ async function choose(choice) {
   if (busy || !run) return; busy = true; view.enabled = false; sfx.unlockAudio();
   const cur = run.current, res = G.decide(run, save, choice); persist();
   track('loop_result', { result: res.kind, choice, correct: res.correct ? 1 : 0, scene: cur.scene, anomaly: cur.anomaly || 'none', streak: res.streak, loop: run.loops, misses: run.misses });
+  track(res.correct ? 'da_level_complete' : 'da_level_fail', { level: run.loops, deaths: res.correct ? 0 : 1 });
   if (choice === 'back') { sfx.turn(); const from = view.camX; await animate(520, k => { view.camX = from + ease(k) * 2000; view.fade = k * 0.3; }); }
   unlockToasts();
   // Only "game-over" anomalies bring the Hall Monitor; missing an easy/hard one is a quieter fail.
@@ -159,15 +160,17 @@ async function reveal(res) {
     <div class="row col">${canKeep ? `<button class="btn reward" id="mKeep" ${gate.ok ? '' : 'disabled'}><span class="tv">▶</span> Keep my ${lost}-loop streak${gate.ok ? '' : ` (${gate.why})`}</button>` : ''}
     <button class="btn primary" id="mNext">Try again</button></div>`, { cls: 'reveal' });
   card.parentElement.classList.add('low');
+  if (canKeep && gate.ok) track('ad_reward_offer', { placement: 'keep' });
   const go = () => { card.parentElement.classList.remove('low'); closeModal(); view.reveal = null; view.enabled = false; snapshotRun(); animate(400, k => { view.fade = k; }).then(beginLoop); };
-  $('#mNext').onclick = () => { sfx.ui(); go(); };
+  $('#mNext').onclick = () => { sfx.ui(); if (canKeep && gate.ok) track('ad_reward_declined', { placement: 'keep' }); go(); };
   if (canKeep) $('#mKeep').onclick = async () => { const ok = await showRewarded(save, 'keep'); persist(); if (ok && G.keepStreak(run)) { toast(`Streak kept: ${run.streak}/8`); track('streak_kept', { streak: run.streak }); go(); } else toast('No reward this time.'); };
 }
 async function hint() {
   if (!run || busy) return; if (run.hintUsed) return toast('One hint per loop.');
   const g = rewardGate(save, 'hint'); if (!g.ok) return toast(g.why);
   modal(`<h2>Need a hint?</h2><p>Watch a short video and your gut will point you to the spot that feels wrong, or tell you all is well.</p><div class="row"><button class="btn" id="mNo">No thanks</button><button class="btn reward primary" id="mYes"><span class="tv">▶</span> Watch</button></div>`);
-  $('#mNo').onclick = closeModal;
+  track('ad_reward_offer', { placement: 'hint' });
+  $('#mNo').onclick = () => { track('ad_reward_declined', { placement: 'hint' }); closeModal(); };
   $('#mYes').onclick = async () => { closeModal(); const ok = await showRewarded(save, 'hint'); persist(); if (!ok) return toast('No reward this time.');
     run.hintUsed = true; hud(); track('hint_used', { anomaly: run.current.anomaly || 'none' });
     const a = run.current.anomaly && byId[run.current.anomaly];
@@ -264,7 +267,8 @@ function settings() {
   $('#sSfx').oninput = e => { s.sfx = +e.target.value; applyAccess(); persist(); };
   $('#sFlash').onchange = e => { s.reduceFlash = e.target.checked; applyAccess(); persist(); };
   $('#sHap').onchange = e => { s.haptics = e.target.checked; setHaptics(s.haptics); persist(); };
-  if ($('#sIap')) $('#sIap').onclick = async () => { const r = await buyRemoveAds(save); toast(r.ok ? 'Ads removed. Thank you!' : r.why); persist(); };
+  if ($('#sIap')) track('remove_ads_shown');
+  if ($('#sIap')) $('#sIap').onclick = async () => { const r = await buyRemoveAds(save); if (r.ok) track('iap_purchase'); toast(r.ok ? 'Ads removed. Thank you!' : r.why); persist(); };
   $('#sStats').onchange = e => { s.analytics = e.target.checked; persist(); applyAnalyticsChoice(); };
   if ($('#sPriv')) $('#sPriv').onclick = async () => { await showPrivacyOptions(); applyAnalyticsChoice(); };
   $('#sReset').onclick = () => { if (confirm('Erase all progress, endings and the anomaly journal?')) { localStorage.removeItem(G.SAVE_KEY); location.reload(); } };
