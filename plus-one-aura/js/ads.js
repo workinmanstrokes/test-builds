@@ -1,5 +1,5 @@
 // AdMob rewarded ads with UMP consent (Google TEST ids by default, see config.js).
-// Placements: boost (2x for 120 s, every 5 min), free (next upgrade, every 10 min), revive (after overheat), skip (next wall), offline + daily (double),
+// Placements: boost (2x for 120 s, every 5 min), free (next upgrade, every 10 min), revive (after overheat), skip (next wall), offline + daily (double), streak (keep a login streak after one missed day, once a week),
 // escape_revive (+1 Speed Escape: once per run, enforced by runner.js).
 // Web build: no AdMob, so a 3-second "TEST AD" overlay stands in for a rewarded ad.
 import { ADS } from './config.js';

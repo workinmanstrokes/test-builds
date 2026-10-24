@@ -6,13 +6,15 @@ import { getSkin, skinList } from './skins/index.js';
 import { createFx } from './fx.js';
 import * as R from './runner.js';
 import { createEscapeView } from './escape.js';
-import { unlockAudio, sfx, setSkinAudio, setSound, setVolumes, suspendAudio } from './audio.js';
+import { unlockAudio, sfx, setSkinAudio, setSound, setVolumes, suspendAudio, setTapSound } from './audio.js';
+import { ALL, HATS, FACES, TRAILS, GOLDEN, REG, unlocked, hint, lookOf } from './skins/render.js';
 import { buzz, setVibe } from './haptics.js';
 import { initAds, showRewarded, rewardGate, adsInfo, showPrivacyOptions } from './ads.js';
 import { initAnalytics, track, analyticsMode, setAnalyticsOptIn, analyticsStatus } from './analytics.js';
 import { initPortal, gameplayStart, gameplayStop, isPortal } from './portal.js';
 import * as SOC from './social.js';
 import * as SC from './social-core.js';
+import * as D from './daily.js';
 import { initBilling, billingAvailable, buyRemoveAds, restoreRemoveAds, removeAdsPrice } from './billing.js';
 
 const $ = id => document.getElementById(id);
@@ -36,7 +38,30 @@ function applySkin() {
   $('heatLbl').textContent = skin.text.heat || 'HEAT';
   $('cur').textContent = skin.text.currency; $('rateLbl').textContent = skin.text.perSec; $('tapHint').textContent = skin.text.tapHint;
   $('tName').textContent = skin.text.title.toUpperCase(); $('tSub').textContent = skin.text.subtitle.toUpperCase();
+  setTapSound(cosLook()?.tapSound);
   buildShop(); buildTower();
+}
+// ---------- Aurie looks + accessories (classic aura skin only; see docs/SKINS.md) ----------
+const GOLD_CHANCE = 1 / 250, GOLD_MULT = 24;   // golden tap pays 24x extra = 25x the tap in total
+const cosOn = () => skin.id === 'aura';
+const cosLook = () => cosOn() ? lookOf(s) : null;
+const cosOk = k => cosOn() && s.cos[k] && REG[k][s.cos[k]] && unlocked(k, s.cos[k], s) ? s.cos[k] : null;
+function cosFrame() { if (!cosOn()) return {}; const L = cosLook(); return { look: L ? s.cos.look : null, hat: cosOk('hat'), face: cosOk('face') }; }
+function cosTap(x, y, r, st) {
+  // returns true when the look handled the burst + number itself
+  const tg = fx.target(); let gold = false;
+  if (cosOn() && screen === 'play' && Math.random() < GOLD_CHANCE) {
+    gold = true; const bonus = Math.max(1, Math.round(r.value * GOLD_MULT)); const ev = G.grant(s, bonus); const first = !s.cos.golden; s.cos.golden++;
+    fx.golden(); const o = GOLDEN.onTap({ x: tg.x, y: tg.y, r: tg.r }); fx.push(o.parts, GOLDEN.particle); fx.ring(o.ring, 1.6); fx.flash(o.flash, 1); fx.shake(o.shake);
+    const F = GOLDEN.float; fx.float(tg.x, tg.y - tg.r * 1.6, `${F.prefix}+${G.fmt(bonus + r.value)}`, F.color, F.size, { life: F.life, vy: F.vy, stroke: F.stroke });
+    sfx('golden'); buzz('heavy'); track('golden_tap', { first }); if (first) banner(`${s.cos.name || 'Aurie'} went GOLDEN! New look unlocked`); handle(ev); save();
+  }
+  const tr = cosOk('trail'); if (tr) { const T = TRAILS[tr]; fx.push([0, 1, 2].map(() => T.spawn(x, y, Math.random)), T.particle); }
+  const L = cosLook(); if (!L || !L.onTap) return gold;
+  fx.lookTap(); const o = L.onTap({ x: tg.x, y: tg.y, r: tg.r, combo: r.combo, crit: r.crit, rand: Math.random });
+  fx.push(o.parts, L.particle); if (o.ring) fx.ring(o.ring, 0.6); if (o.flash) fx.flash(o.flash, 0.5); if (o.shake) fx.shake(o.shake);
+  if (!gold && !r.crit && !r.perfect) { const F = L.float; fx.float(x, y - 20, `${F.prefix ?? '+'}${G.fmt(r.value)}${F.suffix || ''}`, F.color, F.size + Math.min(10, r.mult * 2), { life: F.life, vy: F.vy, jitter: F.jitter }); }
+  return true;
 }
 function applySettings() {
   setSound(s.settings.sound); setVibe(s.settings.vibe); setVolumes(s.settings.sfx, s.settings.music ?? 0.5);
@@ -78,6 +103,7 @@ $('tPlay').addEventListener('click', () => { startPlay('button'); fx.hop(); });
 $('btnPause').addEventListener('click', () => pause('button'));
 $('escPause').addEventListener('click', () => pause('button'));
 $('tEscape').addEventListener('click', () => startEscape('title'));
+$('tDailyRun').addEventListener('click', () => startEscape('title', { daily: true }));
 $('pEscape').addEventListener('click', () => { $('pause').hidden = true; paused = false; suspendAudio(false); startEscape('pause'); });
 $('pResume').addEventListener('click', resume);
 $('pHome').addEventListener('click', () => { paused = false; $('pause').hidden = true; suspendAudio(false); showTitle(); });
@@ -120,8 +146,11 @@ function doTap(x, y) {
   if (!hinted && s.taps > 12) { hinted = true; $('tapHint').classList.add('gone'); }
   const onTarget = fx.hitTest(x, y);
   fx.kick(onTarget ? 0.9 : 0.4, 0.6);
-  fx.float(x + (Math.random() - .5) * 24, y - 20, `+${G.fmt(r.value)}`, r.crit || r.perfect ? '#fff' : st.text, r.crit ? 40 : r.perfect ? 34 : 26 + Math.min(10, r.mult * 2));
-  fx.burst(x, y, st.colors, r.crit ? 26 : 5 + Math.min(8, r.combo / 6), r.crit ? 420 : 200, r.crit ? 6 : 3.5);
+  const lookDone = cosTap(x, y, r, st);   // Aurie look / trail / golden tap hooks
+  if (!lookDone || r.crit || r.perfect) {
+    fx.float(x + (Math.random() - .5) * 24, y - 20, `+${G.fmt(r.value)}`, r.crit || r.perfect ? '#fff' : st.text, r.crit ? 40 : r.perfect ? 34 : 26 + Math.min(10, r.mult * 2));
+    fx.burst(x, y, st.colors, r.crit ? 26 : 5 + Math.min(8, r.combo / 6), r.crit ? 420 : 200, r.crit ? 6 : 3.5);
+  }
   if (r.combo % 10 === 0) fx.ring(st.accent, 0.6 + r.mult * 0.15);
   sfx('tap', r.combo); buzz('tap');
   if (r.perfect) { fx.float(fx.target().x, fx.target().y - fx.target().r * 1.9, 'PERFECT x3', '#fff', 26, { life: 1 }); fx.ring('#fff', 1.2); }
@@ -261,8 +290,32 @@ $('stageChip').addEventListener('click', () => {
 
 function openSkins() {
   const rows = skinList().map(k => { const st = k.stages[0]; return `<button class="stg ${k.id === skin.id ? 'cur' : ''}" data-id="${k.id}" style="background:linear-gradient(120deg,${st.bg?.[0] || st.sky?.[0]},${st.glow}66);color:${st.text}">${k.name}<small>${k.blurb} · ${k.stages.map(x => x.name).join(' → ')}</small></button>`; }).join('');
-  modal(`<h2>Skins</h2><p style="margin-top:0">Your progress carries over. Each skin plays a little differently.</p><div class="stages">${rows}</div><button class="btn" id="mClose">Close</button>`);
+  modal(`<h2>Skins</h2><p style="margin-top:0">Your progress carries over. Each skin plays a little differently.</p><div class="stages">${rows}</div>${skin.id === 'aura' ? '<button class="btn primary" id="mLooks">✨ Aurie looks &amp; hats</button>' : ''}<button class="btn" id="mClose">Close</button>`);
+  $('mLooks')?.addEventListener('click', () => openLooks());
   $('modalCard').querySelectorAll('.stg').forEach(b => b.onclick = () => { if (b.dataset.id !== skin.id) { skin = getSkin(b.dataset.id); s.skin = skin.id; applySkin(); track('skin_select', { skin: skin.id }); banner(skin.name); sfx('unlock'); save(); } closeModal(); });
+  $('mClose').onclick = closeModal;
+}
+
+// Aurie gallery: name, looks, hats, faces, trails. Everything unlocks by playing (no purchases, no timers).
+let looksTab = 'look';
+function openLooks() {
+  const kinds = { look: 'Looks', hat: 'Hats', face: 'Faces', trail: 'Trails' };
+  const ids = Object.keys(REG[looksTab]);
+  const cards = ids.map(id => { const ok = unlocked(looksTab, id, s), cur = looksTab === 'look' ? (s.cos.look || 'aurie') === id : s.cos[looksTab] === id;
+    return `<button class="lk ${cur ? 'cur' : ''}" data-id="${id}" ${ok ? '' : 'disabled'} aria-pressed="${cur}"><canvas width="96" height="80"></canvas><b>${ok ? '' : '🔒 '}${REG[looksTab][id].name}</b>${ok ? '' : `<small>${hint(looksTab, id)}</small>`}</button>`; }).join('');
+  modal(`<h2>Aurie</h2><label class="lkname">✏️ <input id="lkName" maxlength="14" placeholder="Name your Aurie" value="${(s.cos.name || '').replace(/[<>&"]/g, '')}"></label>
+    <div class="lktabs">${Object.entries(kinds).map(([k, n]) => `<button class="${k === looksTab ? 'on' : ''}" data-k="${k}">${n}</button>`).join('')}</div>
+    <div class="lkgrid">${cards}</div><button class="btn" id="mClose">Done</button>`);
+  const card = $('modalCard');
+  card.querySelectorAll('.lk').forEach((b, i) => { const id = ids[i], ok = unlocked(looksTab, id, s); const c = b.querySelector('canvas').getContext('2d');
+    const o = { look: s.cos.look && unlocked('look', s.cos.look, s) ? s.cos.look : 'aurie', hat: cosOk('hat'), face: cosOk('face'), silhouette: !ok };
+    if (looksTab === 'look') o.look = id; else if (looksTab !== 'trail') o[looksTab] = id;
+    skin.drawCard(c, 48, 44, 22, 0.7, o);
+    if (looksTab === 'trail' && ok) { const T = TRAILS[id]; for (let n = 0; n < 4; n++) { const p = T.spawn(48 + (n - 1.5) * 14, 22, Math.random); c.save(); c.fillStyle = p.color; c.translate(p.x, p.y - n * 3); c.rotate(p.rot); T.particle(c, { ...p, size: p.size * 0.7 }); c.restore(); } }
+    b.onclick = () => { if (!ok) return; if (looksTab === 'look') s.cos.look = id === 'aurie' ? null : id; else s.cos[looksTab] = s.cos[looksTab] === id ? null : id;
+      setTapSound(cosLook()?.tapSound); track('look_select', { kind: looksTab, id }); sfx('buy'); save(); openLooks(); }; });
+  card.querySelectorAll('.lktabs button').forEach(b => b.onclick = () => { looksTab = b.dataset.k; openLooks(); });
+  $('lkName').addEventListener('change', e => { s.cos.name = e.target.value.replace(/[<>&"]/g, '').trim().slice(0, 14); save(); });
   $('mClose').onclick = closeModal;
 }
 
@@ -324,15 +377,25 @@ function offline() {
 const escView = createEscapeView(canvas, fx);
 let run = null, escHud = { d: -1, spd: -1, w: -1 };
 escView.bindInput(() => (screen === 'escape' && run?.alive && !paused && $('modal').hidden ? run : null), d => escMove(d));
-function escMove(d) { if (!run?.alive || paused || !$('modal').hidden) return; if (R.move(run, d)) { sfx('buy'); buzz('tap'); if (!$('escHint').classList.contains('gone') && run.t > 1.5) $('escHint').classList.add('gone'); } }
+function escMove(d) { if (!run?.alive || paused || !$('modal').hidden) return; if (R.move(run, d)) { run.moves.push([run.t, run.lane]); sfx('buy'); buzz('tap'); if (!$('escHint').classList.contains('gone') && run.t > 1.5) $('escHint').classList.add('gone'); } }
 function refreshEscBest() { $('tEscBest').textContent = s.escape.best > 0 ? `BEST ${s.escape.best} m · TOP SPEED ${s.escape.bestSpeed}` : 'speed +1 every second · dodge the walls'; }
-function startEscape(via) {
+// extras (daily challenge best, own ghost, login streak) live in their own key so the main save format is unchanged
+const XKEY = 'plusoneaura.extra.v1';
+let X = (() => { try { return JSON.parse(localStorage.getItem(XKEY)) || {}; } catch { return {}; } })();
+const saveX = () => { try { localStorage.setItem(XKEY, JSON.stringify(X)); } catch {} };
+let raceGhost = null;   // { g (decoded), name, avatar, own } chosen in the Ghosts picker; default = your own best
+const ownGhost = () => { const g = X.ghost && D.decodeGhost(X.ghost); return g ? { g, name: 'Your best', avatar: '👻', own: true } : null; };
+function startEscape(via, opts = {}) {
   if (!$('modal').hidden) closeModal();
   if (screen === 'play') gameplayStop();
   screen = 'escape'; document.body.classList.remove('on-title'); document.body.classList.add('on-escape');
   $('title').hidden = true; $('esc').hidden = false; $('escHint').classList.remove('gone');
-  run = R.newRun(); escHud = { d: -1, spd: -1, w: -1 }; $('escBest').textContent = `${s.escape.best} m`;
-  track('escape_start', { via, best: s.escape.best, runs: s.escape.runs }); track('da_level_start', { level: s.floor }); unlockAudio(); gameplayStart(); save();
+  const day = D.dayId();
+  run = opts.daily ? R.newRun(D.daySeed(day)) : R.newRun(); run.moves = []; run.daily = opts.daily ? day : null;
+  run.ghost = s.settings.ghosts === false ? null : (raceGhost || ownGhost());
+  $('esc').classList.toggle('daily', !!opts.daily); $('escDaily').hidden = !opts.daily;
+  escHud = { d: -1, spd: -1, w: -1 }; $('escBest').textContent = `${s.escape.best} m`;
+  track('escape_start', { via, daily: !!opts.daily, ghost: run.ghost ? (run.ghost.own ? 'own' : 'friend') : 'none', best: s.escape.best, runs: s.escape.runs }); track('da_level_start', { level: s.floor }); unlockAudio(); gameplayStart(); save();
 }
 function exitEscape() {
   if (screen !== 'escape') return;
@@ -372,14 +435,24 @@ function escOver() {
 function escResults() {
   if (!run || run.alive || run.paid) return; run.paid = true;
   const d = Math.floor(run.dist), { newBest } = R.recordRun(s.escape, run), v = R.runAura(run, G.basePerTap(s, Date.now()));
+  // ghost: keep the timeline of your best distance (local), upload it for friends to race
+  const og = X.ghost && D.decodeGhost(X.ghost);
+  if (d > 0 && (!og || d > og.dist)) { X.ghost = D.encodeGhost(run.moves, run.t); saveX(); if (!isPortal) SOC.uploadGhost(X.ghost, D.distAt(run.t), isPortal).catch(() => {}); }
+  const beatGhost = run.ghost && d > run.ghost.g.dist;
+  let dailyNew = false;
+  if (run.daily) { const r = D.recordDaily(X.daily, run.daily, d); X.daily = r.d; dailyNew = r.newBest; saveX(); if (!isPortal) SOC.submitDaily(run.daily, X.daily.best, isPortal).catch(() => {}); }
   const evs = G.grant(s, v); bumpTotal();
   track('escape_end', { dist: d, speed: run.speed, wisps: run.wisps, revived: run.revived, aura: v, new_best: newBest });
   track(newBest ? 'da_level_complete' : 'da_level_fail', { level: s.floor, deaths: 1 + (run.revived ? 1 : 0) });
   modal(`<div id="escOver"></div><h2>${newBest ? 'NEW BEST! 🏆' : 'RUN OVER'}</h2><p class="esc-res"><b>${d} m</b>top speed ${run.speed} · ✦ ${run.wisps} wisps<br>Best ${s.escape.best} m</p>
-    <p>+${G.fmt(v)} ${skin.text.currency}</p><div class="row"><button class="btn primary" id="mEAgain">⚡ Run again</button><button class="btn" id="mETap">Tap mode</button><button class="btn" id="mEHome">Home</button></div><div class="row"><button class="btn" id="mEShare">📤 Share · Beat my score</button></div>`);
+    ${run.daily ? `<p class="esc-daily">📅 Daily ${run.daily} · today's best <b>${X.daily.best} m</b>${dailyNew ? ' · NEW!' : ''}</p>` : ''}${run.ghost ? `<p class="esc-ghost">👻 ${beatGhost ? 'You beat' : 'You lost to'} ${esc(run.ghost.name)} (${run.ghost.g.dist} m)</p>` : ''}
+    <p>+${G.fmt(v)} ${skin.text.currency}</p><div class="row"><button class="btn primary" id="mEAgain">⚡ Run again</button><button class="btn" id="mETap">Tap mode</button><button class="btn" id="mEHome">Home</button></div><div class="row"><button class="btn" id="mEShare">📤 Share · Beat my score</button><button class="btn" id="mEGhost">👻 Ghosts</button>${run.daily ? '<button class="btn" id="mEDRank">📅 Daily ranks</button>' : ''}</div>`);
   if (newBest) { sfx('unlock'); fx.flash('#ffe27a', .6); } else sfx('bank');
   handle(evs); save();
-  $('mEAgain').onclick = () => { closeModal(); run = null; screen = 'title'; startEscape('again'); };
+  const wasDaily = !!run.daily;
+  $('mEAgain').onclick = () => { closeModal(); run = null; screen = 'title'; startEscape('again', { daily: wasDaily }); };
+  $('mEGhost').onclick = () => openGhosts();
+  $('mEDRank') && ($('mEDRank').onclick = () => openRanks('daily', 'all'));
   $('mETap').onclick = () => { closeModal(); startPlay('escape'); };
   $('mEHome').onclick = () => { closeModal(); showTitle(); };
   $('mEShare').onclick = () => shareScore('escape', d);
@@ -423,11 +496,11 @@ function loop(tms) {
   if (!paused) { handle(G.update(s, dt, now)); s.lastSeen = now; tickWisp(dt, t); }
   if (screen === 'escape' && run) {
     if (!paused && $('modal').hidden && run.alive) escEvents(R.step(run, dt));
-    escView.frame(run, skin, s.curStage, t, paused ? 0 : dt, { tier: G.auraTier(s), halos: s.halos, best: s.escape.best, reduced: s.settings.reduceMotion });
+    escView.frame(run, skin, s.curStage, t, paused ? 0 : dt, { tier: G.auraTier(s), halos: s.halos, best: s.escape.best, reduced: s.settings.reduceMotion, ghost: run.ghost ? { ...D.ghostAt(run.ghost.g, run.t), name: run.ghost.name, avatar: run.ghost.avatar } : null });
     escHudTick(); saveT += dt; if (saveT > 5) { saveT = 0; save(); }
     return requestAnimationFrame(loop);
   }
-  fx.frame(skin, s.curStage, t, paused ? 0 : dt, { heat: s.rt.heat, locked: now < s.rt.lockUntil, tier: G.auraTier(s), halos: s.halos, wisp, pulse: G.hasTwist(s, 'pulse') && screen === 'play' ? pulsePhase(t) : null });
+  fx.frame(skin, s.curStage, t, paused ? 0 : dt, { heat: s.rt.heat, locked: now < s.rt.lockUntil, tier: G.auraTier(s), halos: s.halos, wisp, ...cosFrame(), pulse: G.hasTwist(s, 'pulse') && screen === 'play' ? pulsePhase(t) : null });
   acc += dt; if (acc > 0.1) { acc = 0; hud(); refreshShop(); }
   saveT += dt; if (saveT > 5) { saveT = 0; save(); }
   requestAnimationFrame(loop);
@@ -441,18 +514,21 @@ const esc = t => String(t).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;',
 async function openRanks(mode = rk.mode, scope = rk.scope) {
   rk = { mode, scope }; const p = SOC.profile();
   const tabs = (list, cur, key) => `<div class="tabs">${list.map(([id, lbl]) => `<button data-${key}="${id}" class="${id === cur ? 'on' : ''}">${lbl}</button>`).join('')}</div>`;
-  modal(`<h2>🏆 Ranks</h2>${tabs(SC.MODE_IDS.map(m => [m, SC.MODES[m].icon + ' ' + SC.MODES[m].label]), mode, 'm')}${tabs([['all', 'Global'], ['week', 'This week'], ['friends', 'Friends']], scope, 's')}
+  modal(`<h2>🏆 Ranks</h2>${tabs([...SC.MODE_IDS.map(m => [m, SC.MODES[m].icon + ' ' + SC.MODES[m].label]), ['daily', '📅 Daily']], mode, 'm')}${tabs(mode === 'daily' ? [['all', 'Today'], ['friends', 'Friends']] : [['all', 'Global'], ['week', 'This week'], ['friends', 'Friends']], scope, 's')}
     <ul class="lb" id="lb"><li><span></span><span></span><span>Loading…</span><span></span></li></ul><p class="soc-note" id="lbNote"></p>
     <div class="row"><button class="btn" id="mProf">${p.avatar} ${esc(p.name)}</button><button class="btn" id="mFriends">👥 Friends</button><button class="btn primary" id="mShare">📤 Share</button></div><div class="row"><button class="btn" id="mClose">Close</button></div>`);
   $('modalCard').querySelectorAll('[data-m]').forEach(b => b.onclick = () => openRanks(b.dataset.m, rk.scope));
   $('modalCard').querySelectorAll('[data-s]').forEach(b => b.onclick = () => openRanks(rk.mode, b.dataset.s));
   $('mProf').onclick = openProfile; $('mFriends').onclick = openFriends; $('mClose').onclick = closeModal;
-  $('mShare').onclick = () => shareScore(mode, SC.scoresFrom(s)[mode]);
+  const day = D.dayId(), dBest = X.daily?.id === day ? X.daily.best : 0;
+  $('mShare').onclick = () => mode === 'daily' ? shareScore('escape', dBest) : shareScore(mode, SC.scoresFrom(s)[mode]);
+  if (mode === 'daily') { $('mShare').textContent = '📅 Play today'; $('mShare').onclick = () => startEscape('ranks', { daily: true }); }
   syncScores(true);
-  const r = await SOC.fetchBoard(mode, scope, s, isPortal);
+  const r = mode === 'daily' ? await SOC.fetchDaily(day, dBest, scope === 'week' ? 'all' : scope, isPortal) : await SOC.fetchBoard(mode, scope, s, isPortal);
+  const fm = mode === 'daily' ? 'escape' : mode;
   if (!$('lb') || rk.mode !== mode || rk.scope !== scope) return;
-  $('lb').innerHTML = r.rows.length ? r.rows.map((x, i) => `<li class="${x.me ? 'me' : ''}"><span class="rk">${x.rank || i + 1}</span><span>${esc(x.avatar || '😇')}</span><span>${esc(x.name)}</span><span class="sc">${SC.fmtScore(mode, x.score)}</span></li>`).join('') : '<li><span></span><span></span><span>No scores yet. Be the first!</span><span></span></li>';
-  $('lbNote').textContent = r.online ? (scope === 'week' ? `Resets every Monday (UTC) · ${SC.weekId()}` : scope === 'friends' ? 'You and the friends you added by code' : 'Top 50 players') : 'Offline mode: showing your best. Online ranks are coming soon. Share your score to challenge friends!';
+  $('lb').innerHTML = r.rows.length ? r.rows.map((x, i) => `<li class="${x.me ? 'me' : ''}"><span class="rk">${x.rank || i + 1}</span><span>${esc(x.avatar || '😇')}</span><span>${esc(x.name)}</span><span class="sc">${SC.fmtScore(fm, x.score)}</span></li>`).join('') : '<li><span></span><span></span><span>No scores yet. Be the first!</span><span></span></li>';
+  $('lbNote').textContent = mode === 'daily' ? (r.online ? `Daily Challenge ${day} (UTC): same track for everyone. New track at midnight UTC.` : `Offline: your best today. Daily Challenge ${day}, same track for everyone.`) : r.online ? (scope === 'week' ? `Resets every Monday (UTC) · ${SC.weekId()}` : scope === 'friends' ? 'You and the friends you added by code' : 'Top 50 players') : 'Offline mode: showing your best. Online ranks are coming soon. Share your score to challenge friends!';
 }
 function openProfile() {
   const p = SOC.profile(); let av = p.avatar;
@@ -492,9 +568,53 @@ if (challenge && !isPortal) {
   if (challenge.code) SOC.connect(isPortal).then(ok => ok && SOC.addFriend(challenge.code)).catch(() => {});
 }
 
+// ---------- ghost races: pick your own best or a friend's best run ----------
+async function openGhosts() {
+  const own = ownGhost();
+  modal(`<h2>👻 Ghost race</h2><p>Race a see-through replay of a best Speed Escape run.</p><ul class="lb" id="gl"><li><span></span><span></span><span>Loading friends…</span><span></span></li></ul>
+    <div class="row"><button class="btn" id="gOff">${s.settings.ghosts === false ? 'Ghosts: OFF' : 'Ghosts: ON'}</button><button class="btn" id="gClose">Close</button></div>`);
+  $('gOff').onclick = () => { s.settings.ghosts = s.settings.ghosts === false; save(); $('gOff').textContent = s.settings.ghosts === false ? 'Ghosts: OFF' : 'Ghosts: ON'; };
+  $('gClose').onclick = closeModal;
+  const fr = (await SOC.fetchFriendGhosts(isPortal)).map(x => ({ g: D.decodeGhost(x.g), name: x.name, avatar: x.avatar })).filter(x => x.g);
+  const list = [...(own ? [own] : []), ...fr]; if (!$('gl')) return;
+  $('gl').innerHTML = list.length ? list.map((x, i) => `<li data-i="${i}" class="${x.own ? 'me' : ''}"><span class="rk">${i + 1}</span><span>${esc(x.avatar || '👻')}</span><span>${esc(x.name)}</span><span class="sc"><button class="btn mini" data-i="${i}">Race ${x.g.dist} m</button></span></li>`).join('')
+    : `<li><span></span><span></span><span>No ghosts yet. Finish a Speed Escape run${SOC.isOnline() ? ' or add friends' : ''}!</span><span></span></li>`;
+  $('gl').querySelectorAll('button[data-i]').forEach(b => b.onclick = () => { raceGhost = list[+b.dataset.i]; s.settings.ghosts = true; save(); track('ghost_pick', { own: !!raceGhost.own }); startEscape('ghost'); });
+}
+
+// ---------- login streak: stacking daily reward, gentle rewarded-ad streak saver ----------
+function streakModal(r) {
+  const base = G.dailyValue(s, Date.now()) / 2;
+  const give = (st) => { X.streak = st; saveX(); const v = D.streakReward(st.streak, base); handle(G.grant(s, v)); bumpTotal(); sfx('bank'); fx.burst(innerWidth / 2, innerHeight * .3, skin.stages[s.curStage].colors, 26, 280, 4); track('streak_claim', { streak: st.streak, value: v }); save(); return v; };
+  const dots = n => Array.from({ length: D.STREAK_CAP }, (_, i) => `<i class="${i < n ? 'on' : ''}">${i + 1}</i>`).join('');
+  if (r.status === 'savable') {
+    modal(`<h2>🔥 Save your streak?</h2><p>You missed a day, so your <b>${r.lost}-day</b> streak is about to reset.</p><div class="streak">${dots(Math.min(D.STREAK_CAP, r.lost))}</div>
+      <div class="row"><button class="btn primary" id="kSave"><span class="tv">AD</span>Keep my streak</button><button class="btn" id="kLet">Start over</button></div><p class="soc-note">Streak saver: once a week.</p>`);
+    const fin = ok => { const st = D.streakResolve(r.st, D.localDay(), ok); const v = give(st); closeModal(); banner(ok ? `STREAK SAVED · DAY ${st.streak} · +${G.fmt(v)}` : `DAY 1 · +${G.fmt(v)}`); };
+    $('kSave').onclick = async () => { $('kSave').disabled = true; const g = rewardGate(s, 'streak'); const ok = g.ok && await showRewarded(s, 'streak'); if (!ok) toast(g.ok ? 'No ad available right now' : g.why); fin(ok); };
+    $('kLet').onclick = () => fin(false);
+    return;
+  }
+  const st = r.st, v = D.streakReward(st.streak, base);
+  modal(`<h2>🔥 Day ${st.streak} streak!</h2><p>Come back every day: the reward stacks up to day ${D.STREAK_CAP}.</p><div class="streak">${dots(Math.min(D.STREAK_CAP, st.streak))}</div><p><b>+${G.fmt(v)}</b> ${skin.text.currency}</p><div class="row"><button class="btn primary" id="kClaim">Claim</button></div>`);
+  $('kClaim').onclick = () => { give(st); closeModal(); };
+}
+function checkStreak() {
+  const r = D.streakCheck(X.streak, D.localDay()); if (r.status === 'same') return;
+  const first = !X.streak;
+  if (r.status !== 'savable') { X.streak = r.st; saveX(); }
+  if (first) return;   // day 1 of a brand-new player: no popup on first launch   // counted now; the reward is claimed from the modal
+  const show = () => { if ($('modal').hidden && screen !== 'escape') streakModal(r); else setTimeout(show, 1500); };
+  setTimeout(show, 600);
+}
+function refreshDailyBtn() { const day = D.dayId(), b = X.daily?.id === day ? X.daily.best : 0; $('tDailyBest').textContent = b ? `Daily ${b} m` : 'Challenge'; $('tStreak').textContent = X.streak?.streak > 1 ? `🔥${X.streak.streak}` : ''; }
+setInterval(refreshDailyBtn, 3000);
+
 applySkin(); hud();
 if (isPortal && firstOpen) { screen = 'play'; document.body.classList.remove('on-title'); } else showTitle();
 offline();
+if (!isPortal) checkStreak();
+refreshDailyBtn();
 requestAnimationFrame(loop);
 // boot done: drop the loading bar as soon as the first frame can take input (target < 3 s)
 bootbar(100);
@@ -503,4 +623,4 @@ initAds();
 initPortal();
 initBilling(s, () => { save(); refreshAdButtons(); });
 // test hook (harmless in production): lets the Playwright smoke test inspect state
-window.__aura = { get state() { return s; }, G, save, get screen() { return screen; }, get paused() { return paused; }, pause, resume, R, get run() { return run; }, startEscape, openRanks, shareScore, SOC };
+window.__aura = { get state() { return s; }, G, save, get screen() { return screen; }, get paused() { return paused; }, pause, resume, R, get run() { return run; }, startEscape, openRanks, shareScore, SOC, D, get X() { return X; }, saveX, openGhosts, checkStreak };

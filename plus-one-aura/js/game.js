@@ -42,6 +42,7 @@ export function newState(now = Date.now()) {
     settings: { sound: true, vibe: true, analytics: true, sfx: 0.8, reduceMotion: false, bigText: false },
     flags: { shop: false }, skin: null, noAds: false, best: { combo: 0, floor: 0 },
     escape: { best: 0, bestSpeed: 0, runs: 0, wisps: 0 },   // +1 Speed Escape records (kept through Ascend)
+    cos: { look: null, hat: null, face: null, trail: null, name: '', golden: 0 },   // Aurie looks/accessories (kept through Ascend)
     rt: freshRuntime(),
   };
 }
@@ -214,10 +215,12 @@ export function deserialize(str, now = Date.now()) {
   try {
     let d = JSON.parse(str); if (!d || (d.v !== 1 && d.v !== 2)) return base;
     if (d.v === 1) d = migrateV1(d);
-    const s = { ...base, ...d, up: { ...base.up, ...pick(d.up, UP_IDS) }, ads: { ...base.ads, ...d.ads, last: { ...(d.ads?.last || {}) } }, settings: { ...base.settings, ...d.settings }, flags: { ...base.flags, ...d.flags }, best: { ...base.best, ...d.best }, escape: { ...base.escape, ...d.escape }, rt: freshRuntime() };
+    const s = { ...base, ...d, up: { ...base.up, ...pick(d.up, UP_IDS) }, ads: { ...base.ads, ...d.ads, last: { ...(d.ads?.last || {}) } }, settings: { ...base.settings, ...d.settings }, flags: { ...base.flags, ...d.flags }, best: { ...base.best, ...d.best }, escape: { ...base.escape, ...d.escape }, cos: { ...base.cos, ...d.cos }, rt: freshRuntime() };
     for (const k of Object.keys(base.escape)) if (!Number.isFinite(s.escape[k]) || s.escape[k] < 0) s.escape[k] = 0;
     for (const k of ['aura', 'lifetime', 'ever', 'taps', 'halos']) if (!Number.isFinite(s[k]) || s[k] < 0) s[k] = 0;
     for (const id of UP_IDS) s.up[id] = Math.min(UPGRADES[id].max, Math.max(0, s.up[id] | 0));
+    s.cos.name = typeof s.cos.name === 'string' ? s.cos.name.slice(0, 14) : ''; s.cos.golden = Math.max(0, s.cos.golden | 0);
+    for (const k of ['look', 'hat', 'face', 'trail']) if (typeof s.cos[k] !== 'string') s.cos[k] = null;
     s.ever = Math.max(s.ever, s.lifetime);
     s.floor = Math.min(Math.max(0, s.floor | 0), FLOORS - 1);
     s.stage = themeOf(s.floor);

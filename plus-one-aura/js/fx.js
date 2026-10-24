@@ -1,8 +1,10 @@
+import { ALL, GOLDEN } from './skins/render.js';
 // Canvas renderer: skin background, the tap target, particles, floating "+1" text, shockwave rings, screen pulse/shake.
 export function createFx(canvas) {
   const ctx = canvas.getContext('2d');
   let w = 0, h = 0, dpr = 1;
   const parts = [], texts = [], rings = [];
+  let tapAge = 9, goldAge = 9; // seconds since the last look tap / golden tap (Aurie looks)
   let squash = 0, pulse = 0, shake = 0, flash = 0, flashColor = '#fff', hop = 0, reduced = false;
   function resize() { dpr = Math.min(2, window.devicePixelRatio || 1); w = canvas.clientWidth; h = canvas.clientHeight; canvas.width = w * dpr; canvas.height = h * dpr; }
   resize(); window.addEventListener('resize', resize);
@@ -12,15 +14,28 @@ export function createFx(canvas) {
     if (reduced) n = Math.ceil(n / 2);
     for (let i = 0; i < n; i++) { const a = Math.random() * Math.PI * 2, v = speed * (0.4 + Math.random()); parts.push({ x, y, vx: Math.cos(a) * v, vy: Math.sin(a) * v - 60, life: 0.7 + Math.random() * 0.5, max: 1.2, size: size * (0.6 + Math.random()), rot: Math.random() * 6, vr: (Math.random() - 0.5) * 8, color: colors[i % colors.length], g: 320 }); }
   }
-  function float(x, y, text, color, size = 26, opts = {}) { texts.push({ x, y, text, color, size, life: opts.life || 0.9, max: opts.life || 0.9, vy: opts.vy || -110, stroke: opts.stroke ?? true }); if (texts.length > 60) texts.shift(); }
+  function float(x, y, text, color, size = 26, opts = {}) { if (opts.jitter) x += (Math.random() - .5) * 2 * opts.jitter; texts.push({ x, y, text, color, size, life: opts.life || 0.9, max: opts.life || 0.9, vy: opts.vy || -110, stroke: opts.stroke ?? true }); if (texts.length > 60) texts.shift(); }
   function ring(color, power = 1) { const t = target(); rings.push({ x: t.x, y: t.y, r: t.r, life: 0.5, max: 0.5, color, power }); }
   function ambient(skin, si, dt) {
     const a = skin.ambient(si); const st = skin.stages[si];
     if (Math.random() < dt * 14) parts.push({ x: Math.random() * w, y: a.vy < 0 ? h + 5 : a.vy > 0 ? -5 : Math.random() * h, vx: a.vx, vy: a.vy, life: 4, max: 4, size: 1.5 + Math.random() * 2, rot: 0, vr: 0.5, color: st.colors[(Math.random() * 3) | 0], g: 0, amb: true });
   }
 
+  // Aurie looks hook: body pose for drawTarget (idle / tap reaction / golden tap). Cheap trig only.
+  function lookPose(o, t) {
+    const L = o.look ? ALL[o.look] : null; let T = null, reactK = null, goldK = null;
+    if (goldAge < GOLDEN.dur) { goldK = goldAge / GOLDEN.dur; T = GOLDEN.react(goldK); }
+    else if (L) { const k = tapAge / (L.reactDur || 0.4); if (L.react && k < 1) { reactK = k; T = L.react(k); } else if (L.idle) T = L.idle(t); }
+    if (T && reduced) T = { ...T, dx: T.dx * 0.3, dy: T.dy * 0.3, rot: T.rot * 0.3 };
+    return { look: o.look || null, hat: o.hat || null, face: o.face || null, T, reactK, goldK };
+  }
+  // particles carrying their own draw fn (look / trail / golden) bypass the skin's drawParticle
+  function drawPart(skin, p, si) {
+    if (!p.draw) return skin.drawParticle(ctx, p, si);
+    ctx.save(); ctx.globalAlpha = Math.max(0, p.life / p.max); ctx.fillStyle = p.color; ctx.translate(p.x, p.y); ctx.rotate(p.rot); p.draw(ctx, p); ctx.restore();
+  }
   function frame(skin, si, t, dt, o) {
-    hop = Math.max(0, hop - dt * 2.2);
+    hop = Math.max(0, hop - dt * 2.2); tapAge += dt; goldAge += dt;
     squash *= Math.pow(0.0005, dt); pulse *= Math.pow(0.02, dt); shake *= Math.pow(0.004, dt); flash *= Math.pow(0.01, dt);
     ambient(skin, si, dt);
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
@@ -35,11 +50,11 @@ export function createFx(canvas) {
     drawAuraRing(tg.x, tg.y + hy, tg.r, o.tier || 0, t);
     if (o.halos) drawHalos(tg.x, tg.y + hy - tg.r * 1.55, tg.r, o.halos, t);
     if (o.wisp) drawWisp(o.wisp, t);
-    skin.drawTarget(ctx, tg.x, tg.y + hy, tg.r * (1 + pulse * 0.08 + Math.sin(t * 2.2) * 0.02), si, t, { squash, heat: o.heat, locked: o.locked, combo: o.combo || 0 });
-    for (const p of parts) { p.life -= dt; p.vy += p.g * dt; p.x += p.vx * dt; p.y += p.vy * dt; p.rot += p.vr * dt; skin.drawParticle(ctx, p, si); }
+    skin.drawTarget(ctx, tg.x, tg.y + hy, tg.r * (1 + pulse * 0.08 + Math.sin(t * 2.2) * 0.02), si, t, { squash, heat: o.heat, locked: o.locked, combo: o.combo || 0, ...lookPose(o, t) });
+    for (const p of parts) { p.life -= dt; p.vy += p.g * dt; p.x += p.vx * dt; p.y += p.vy * dt; p.rot += p.vr * dt; drawPart(skin, p, si); }
     skin.drawOverlay?.(ctx, w, h, si, t, { ...o, target: tg, squash, dt });
     ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-    for (const f of texts) { f.life -= dt; f.y += f.vy * dt; f.vy *= 0.96; const k = f.life / f.max; ctx.globalAlpha = Math.min(1, k * 2); const sc = 1 + (1 - k) * 0.15 + (k > 0.85 ? (k - 0.85) * 3 : 0); ctx.font = `900 ${f.size * sc}px system-ui, sans-serif`; if (f.stroke) { ctx.lineWidth = 5; ctx.strokeStyle = 'rgba(0,0,0,.55)'; ctx.strokeText(f.text, f.x, f.y); } ctx.fillStyle = f.color; ctx.fillText(f.text, f.x, f.y); }
+    for (const f of texts) { f.life -= dt; f.y += f.vy * dt; f.vy *= 0.96; const k = f.life / f.max; ctx.globalAlpha = Math.min(1, k * 2); const sc = 1 + (1 - k) * 0.15 + (k > 0.85 ? (k - 0.85) * 3 : 0); ctx.font = `900 ${f.size * sc}px system-ui, sans-serif`; if (f.stroke) { ctx.lineWidth = 5; ctx.strokeStyle = typeof f.stroke === 'string' ? f.stroke : 'rgba(0,0,0,.55)'; ctx.strokeText(f.text, f.x, f.y); } ctx.fillStyle = f.color; ctx.fillText(f.text, f.x, f.y); }
     ctx.globalAlpha = 1; ctx.restore();
     if (flash > 0.01) { ctx.fillStyle = flashColor; ctx.globalAlpha = flash * 0.35; ctx.fillRect(0, 0, w, h); ctx.globalAlpha = 1; }
     for (const arr of [parts, texts, rings]) for (let i = arr.length - 1; i >= 0; i--) if (arr[i].life <= 0 || arr[i].y < -50 || arr[i].y > h + 60) arr.splice(i, 1);
@@ -80,9 +95,9 @@ export function createFx(canvas) {
     shake *= Math.pow(0.004, dt); flash *= Math.pow(0.01, dt);
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     ctx.save(); ctx.translate((Math.random() - 0.5) * shake * 14, (Math.random() - 0.5) * shake * 14);
-    for (const p of parts) { if (p.amb) { p.life = 0; continue; } p.life -= dt; p.vy += p.g * dt; p.x += p.vx * dt; p.y += p.vy * dt; p.rot += p.vr * dt; skin.drawParticle(ctx, p, si); }
+    for (const p of parts) { if (p.amb) { p.life = 0; continue; } p.life -= dt; p.vy += p.g * dt; p.x += p.vx * dt; p.y += p.vy * dt; p.rot += p.vr * dt; drawPart(skin, p, si); }
     ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-    for (const f of texts) { f.life -= dt; f.y += f.vy * dt; f.vy *= 0.96; const k = f.life / f.max; ctx.globalAlpha = Math.min(1, k * 2); ctx.font = `900 ${f.size}px system-ui, sans-serif`; if (f.stroke) { ctx.lineWidth = 5; ctx.strokeStyle = 'rgba(0,0,0,.55)'; ctx.strokeText(f.text, f.x, f.y); } ctx.fillStyle = f.color; ctx.fillText(f.text, f.x, f.y); }
+    for (const f of texts) { f.life -= dt; f.y += f.vy * dt; f.vy *= 0.96; const k = f.life / f.max; ctx.globalAlpha = Math.min(1, k * 2); ctx.font = `900 ${f.size}px system-ui, sans-serif`; if (f.stroke) { ctx.lineWidth = 5; ctx.strokeStyle = typeof f.stroke === 'string' ? f.stroke : 'rgba(0,0,0,.55)'; ctx.strokeText(f.text, f.x, f.y); } ctx.fillStyle = f.color; ctx.fillText(f.text, f.x, f.y); }
     ctx.globalAlpha = 1; ctx.restore();
     if (flash > 0.01) { ctx.fillStyle = flashColor; ctx.globalAlpha = flash * 0.35; ctx.fillRect(0, 0, w, h); ctx.globalAlpha = 1; }
     for (const arr of [parts, texts]) for (let i = arr.length - 1; i >= 0; i--) if (arr[i].life <= 0 || arr[i].y < -50 || arr[i].y > h + 60) arr.splice(i, 1);
@@ -98,6 +113,8 @@ export function createFx(canvas) {
     shake(v) { if (!reduced) shake = Math.max(shake, v); },
     flash(color, v = 1) { flashColor = color; flash = Math.max(flash, reduced ? v * 0.25 : v); },
     hop() { if (hop <= 0) hop = 1; },
+    lookTap() { tapAge = 0; }, golden() { goldAge = 0; },
+    push(list, draw) { const n = reduced ? Math.ceil(list.length / 2) : list.length; for (let i = 0; i < n; i++) parts.push({ ...list[i], draw }); if (parts.length > 400) parts.splice(0, parts.length - 400); },
     setReduced(v) { reduced = !!v; },
     counts: () => ({ parts: parts.length, texts: texts.length }),
   };

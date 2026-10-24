@@ -1,9 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-  <!-- ios-pwa -->
+    <!-- ios-pwa -->
   <link rel="manifest" href="manifest.webmanifest">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="mobile-web-app-capable" content="yes">
@@ -13,6 +11,9 @@
   <meta name="theme-color" content="#0f172a">
   <script src="ios.js"></script>
   <!-- /ios-pwa -->
+
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
   <title>Brainrot: Tactical Aura Rush</title>
   <link rel="icon" href="data:,">
   <style>
@@ -102,7 +103,7 @@
     </div>
 
     <div id="bossUI">
-      <span>TESTONE BAFFOLINI</span>
+      <span id="bossName">TESTONE BAFFOLINI</span>
       <div class="boss-hp-container"><div class="boss-hp-fill" id="bossHpBar"></div></div>
     </div>
 
@@ -143,6 +144,15 @@
     </div>
   </div>
 
+  <div id="gateModal" class="modal" style="display:none;">
+    <div class="card" style="border-color:#facc15">
+      <h1 style="color:#facc15;text-shadow:0 4px 0 #a16207">BOSS GATE AHEAD</h1>
+      <p id="gateDesc">The Grump King is waiting.</p>
+      <div id="gateOffer"></div>
+      <button class="btn gold" id="gateFight" onclick="enterBoss()">FIGHT NOW</button>
+    </div>
+  </div>
+
   <div id="pauseModal" class="modal" style="display:none;">
     <div class="card">
       <h1>PAUSED</h1>
@@ -155,6 +165,7 @@
   </div>
 
   <script src="js/config.js"></script>
+  <script src="js/portal.js"></script>
   <script src="js/ads.js"></script>
   <script src="js/sprites.js"></script>
   <script>
@@ -333,8 +344,12 @@
     const upgradeCost = k => Math.round(UPGRADES[k].base * Math.pow(1.6, upgrades[k]) / 50) * 50;
 
     const squad = { x: 0, targetX: 0, drawX: 0, count: 8, visualCount: 8, formation: 'GRID', fireRate: 4.5, fireRange: 550, shootTimer: 0 };
-    const entities = { bullets: [], gates: [], enemies: [], particles: [], texts: [] };
+    const entities = { bullets: [], gates: [], enemies: [], particles: [], texts: [], dust: [] };
     let boss = null;
+    let dustBlind = 0, dustSlow = 0; // Dust Bawl hit: brief haze over the screen + sluggish steering
+    // Boss rotation: odd zones the Grump King (laser), even zones the Sweeping Old Man (Dust Bawl). ?boss=sweeper|grump forces one.
+    const BOSS_FORCE = (new URLSearchParams(location.search).get('boss') || '').toLowerCase();
+    const bossKind = () => BOSS_FORCE === 'sweeper' || BOSS_FORCE === 'grump' ? BOSS_FORCE : (level % 2 === 0 ? 'sweeper' : 'grump');
 
     // Difficulty knobs per zone
     // Hits cost a flat amount early on and a share of the squad later, so big squads still feel pressure.
@@ -373,7 +388,20 @@
     }
     window.addEventListener('mousedown', onPointerDown); window.addEventListener('mousemove', onPointerMove); window.addEventListener('mouseup', onPointerUp);
     window.addEventListener('touchstart', onPointerDown, { passive: true }); window.addEventListener('touchmove', onPointerMove, { passive: true }); window.addEventListener('touchend', onPointerUp); window.addEventListener('touchcancel', onPointerUp);
-    window.addEventListener('keydown', e => { if (e.key === 'Escape' || e.key === 'p') { state === 'PAUSED' ? resumeGame() : pauseGame(); } });
+    // Keyboard (web/portals): ←/→ or A/D steer, Esc/P pause, Enter/Space start or continue.
+    const keys = { l: false, r: false };
+    const keyDir = k => (k === 'ArrowLeft' || k === 'a' || k === 'A') ? 'l' : (k === 'ArrowRight' || k === 'd' || k === 'D') ? 'r' : null;
+    window.addEventListener('keydown', e => {
+      if (e.key === 'Escape' || e.key === 'p') { state === 'PAUSED' ? resumeGame() : pauseGame(); return; }
+      const d = keyDir(e.key); if (d) { keys[d] = true; e.preventDefault(); return; }
+      if ((e.key === 'Enter' || e.key === ' ') && !e.repeat && !(e.target && e.target.closest && e.target.closest('button'))) {
+        if (state === 'START' && $('startModal').style.display !== 'none' && $('metaShop').style.display === 'none') { e.preventDefault(); startGame(); }
+        else if (state === 'GATE') { e.preventDefault(); enterBoss(); }
+        else if (state === 'VICTORY' || state === 'GAMEOVER') { e.preventDefault(); nextLevel(); }
+      }
+    });
+    window.addEventListener('keyup', e => { const d = keyDir(e.key); if (d) keys[d] = false; });
+    window.addEventListener('blur', () => { keys.l = keys.r = false; });
     document.addEventListener('visibilitychange', () => { if (document.hidden) { pauseGame(); recordBest(); } });
 
     // Android back button: pause a run, resume from pause, close a menu, or leave the app from the title screen.
@@ -392,10 +420,10 @@
     if (Native.StatusBar && isNative) { try { Native.StatusBar.hide(); } catch (e) { /* ignore */ } }
 
     function quitToTitle() {
-      if (state === 'PLAYING' || state === 'BOSS' || state === 'PAUSED' || state === 'VICTORY') { recordBest(); endRunEssence(); }
+      if (state === 'PLAYING' || state === 'BOSS' || state === 'PAUSED' || state === 'VICTORY' || state === 'GATE') { recordBest(); endRunEssence(); }
       state = 'START'; pausedFrom = null; dragging = false; boss = null;
       for (const key in entities) entities[key].length = 0;
-      ['pauseModal', 'endModal'].forEach(id => $(id).style.display = 'none'); $('adOffers').innerHTML = '';
+      ['pauseModal', 'endModal', 'gateModal'].forEach(id => $(id).style.display = 'none'); Portal.gameplayStop(); $('adOffers').innerHTML = '';
       $('ui').style.display = 'none'; $('bossUI').style.display = 'none';
       $('damageOverlay').style.opacity = '0'; $('slowmoOverlay').style.opacity = '0'; damageFlash = 0; slowMoTimer = 0;
       $('startBest').textContent = bestText(); renderEssence(); renderChest(); $('startModal').style.display = 'flex';
@@ -404,14 +432,14 @@
 
     function pauseGame() {
       if (state !== 'PLAYING' && state !== 'BOSS') return;
-      pausedFrom = state; state = 'PAUSED'; dragging = false;
+      pausedFrom = state; state = 'PAUSED'; dragging = false; Portal.gameplayStop();
       $('pauseDesc').textContent = `Zone ${level} · ✨ ${Math.round(aura)} aura`;
       $('pauseModal').style.display = 'flex';
       if (actx && actx.state === 'running') actx.suspend();
     }
     function resumeGame() {
       if (state !== 'PAUSED') return;
-      state = pausedFrom; $('pauseModal').style.display = 'none';
+      state = pausedFrom; $('pauseModal').style.display = 'none'; Portal.gameplayStart();
       lastTime = performance.now();
       if (actx) actx.resume();
     }
@@ -419,7 +447,7 @@
     // ----- Run / zone flow -----
     function startGame() {
       initAudio(); $('startModal').style.display = 'none'; $('ui').style.display = 'block';
-      newRun();
+      newRun(); Portal.gameplayStart();
     }
     function newRun() {
       level = 1; aura = 0; carrySquad = 0; runKills = 0; runAuraEarned = 0; runAwarded = false; troopStage = 0; evolveFlash = 0;
@@ -471,8 +499,8 @@
       squad.x = 0; squad.targetX = 0; squad.drawX = 0; squad.formation = 'GRID'; squad.shootTimer = 0;
       squad.fireRate = 4.5 * (1 + 0.15 * upgrades.rate) * (1 + 0.03 * meta.lv.spd);
       squad.count = Math.max(8 + upgrades.recruits * 4 + meta.lv.hp * 2, carrySquad); squad.visualCount = squad.count;
-      shieldCharges = upgrades.shield; lastStandUsed = false; zoneBonusUsed = false;
-      timeScale = 1.0; slowMoTimer = 0; damageFlash = 0; zoneAuraStart = aura;
+      shieldCharges = upgrades.shield; lastStandUsed = false; zoneBonusUsed = false; squadOfferShown = false;
+      timeScale = 1.0; slowMoTimer = 0; damageFlash = 0; zoneAuraStart = aura; dustBlind = 0; dustSlow = 0;
       for (const key in entities) entities[key].length = 0;
       boss = null; $('bossUI').style.display = 'none'; $('endModal').style.display = 'none';
       $('levelBadge').textContent = `ZONE ${level}`;
@@ -495,11 +523,14 @@
       }
     }
 
-    function spawnBoss() {
-      state = 'BOSS';
-      const hp = bossHp();
-      boss = { x: 0, y: trackProgress + 600, hp, maxHp: hp, state: 'IDLE', timer: 1.0, hitTime: 0, active: true, targetX: 0, lanes: [], shielded: false };
+    function spawnBoss(kind) {
+      state = 'BOSS'; kind = kind || bossKind();
+      const hp = Math.round(bossHp() * (kind === 'sweeper' ? 0.9 : 1)); // dust balls can be shot down, so he's a bit tankier per threat
+      boss = { kind, x: 0, y: trackProgress + 600, hp, maxHp: hp, state: 'IDLE', timer: 1.0, hitTime: 0, active: true, targetX: 0, lanes: [], shielded: false, near: 0, attacks: 0 };
+      entities.dust = entities.dust || []; entities.dust.length = 0; dustBlind = 0; dustSlow = 0;
+      $('bossName').textContent = kind === 'sweeper' ? 'THE SWEEPING OLD MAN' : 'TESTONE BAFFOLINI';
       $('bossUI').style.display = 'flex'; $('bossHpBar').style.width = '100%';
+      addFloatText(0, trackProgress + 300, kind === 'sweeper' ? 'DUST BAWL INCOMING!' : 'GRUMP KING!', '#facc15');
       baseSpeed = 80;
     }
 
@@ -585,17 +616,70 @@
       return { slots, hw: hw + 8 };
     }
 
+    // Sweeping Old Man: Dust Bawl (telegraphed wind-up, then rolling dust balls that grow as they roll) and a broom-sweep
+    // melee arc when he shuffles in close. Returns true if the run ended.
+    function updateSweeper(dt) {
+      const b = boss; b.timer -= dt; if (b.hitTime > 0) b.hitTime -= dt;
+      b.near += ((b.state === 'LUNGE' || b.state === 'SWEEP') ? 1 : -1) * dt * 2.2; b.near = Math.max(0, Math.min(1, b.near));
+      b.y = trackProgress + 450 - b.near * 270;
+      if (b.state === 'IDLE') {
+        b.x += (squad.x * 0.5 - b.x) * 1.5 * dt;
+        if (b.timer <= 0) {
+          b.attacks++;
+          if (b.attacks % 3 === 0) { b.state = 'LUNGE'; b.timer = 0.75; b.targetX = squad.x; }
+          else { b.state = 'WINDUP'; b.timer = Math.max(0.7, 1.15 - 0.07 * (level - 1)); b.targetX = squad.x; }
+          playSound('powerup');
+        }
+      } else if (b.state === 'WINDUP') {
+        if (b.timer <= 0) {
+          const n = Math.min(4, 1 + Math.floor(level / 2)), spread = 90;
+          for (let i = 0; i < n; i++) {
+            const tx = Math.max(-160, Math.min(160, b.targetX + (i - (n - 1) / 2) * spread));
+            const T = 2.0; entities.dust.push({ x: b.x, y: b.y - 40, vx: (tx - b.x) / T, vy: -(450 + 120) / T, r: 14, hp: 60 * enemyHpMul(), spin: 0 });
+          }
+          b.state = 'RECOVER'; b.timer = 0.5; playSound('laser'); triggerShake(8);
+        }
+      } else if (b.state === 'LUNGE') {
+        b.x += (b.targetX - b.x) * 3 * dt;
+        if (b.timer <= 0) { b.state = 'SWEEP'; b.timer = 0.45; b.shielded = false; b.swept = false; playSound('laser'); triggerShake(14); buzz('heavy'); }
+      } else if (b.state === 'SWEEP') {
+        if (!b.swept && Math.abs(squad.x - b.x) < 125) {
+          b.swept = true; spawnExplosion(squad.x, trackProgress + 20, '#e7d8bf', 22);
+          if (loseTroops(Math.max(6, Math.round(squad.count * (0.25 + 0.02 * level))), squad.x, trackProgress)) return true;
+        }
+        if (b.timer <= 0) { b.state = 'RECOVER'; b.timer = 0.6; }
+      } else if (b.state === 'RECOVER') {
+        if (b.timer <= 0) { b.state = 'IDLE'; b.timer = Math.max(0.7, 1.7 - 0.2 * (level - 1)); }
+      }
+      // rolling dust balls: grow as they roll toward the squad; bullets chip them down
+      for (let i = entities.dust.length - 1; i >= 0; i--) {
+        const d = entities.dust[i]; d.x += d.vx * dt; d.y += d.vy * dt + baseSpeed * dt * 0.2; d.r = Math.min(40, d.r + 14 * dt); d.spin += dt * 6;
+        let gone = d.hp <= 0 || d.y < trackProgress - 200;
+        if (!gone && Math.abs(d.x - squad.x) < d.r + 22 && Math.abs(d.y - trackProgress) < d.r) {
+          gone = true; spawnExplosion(d.x, d.y, '#e7d8bf', 26, 1.3);
+          if (shieldCharges <= 0) { dustBlind = 1.4; dustSlow = 1.2; addFloatText(squad.x, trackProgress + 90, 'DUSTED!', '#e7d8bf'); }
+          if (loseTroops(Math.max(3, Math.round(squad.count * (0.1 + 0.01 * level))), d.x, d.y)) return true;
+        }
+        if (gone) { if (d.hp <= 0) { spawnExplosion(d.x, d.y, '#e7d8bf', 14); addAura(40); } entities.dust.splice(i, 1); }
+      }
+      $('bossHpBar').style.width = `${Math.max(0, (b.hp / b.maxHp) * 100)}%`;
+      return false;
+    }
+
     function update(dt, rawDt) {
       trackProgress += baseSpeed * dt; zoneTime += dt;
+      if (keys.l !== keys.r && !dragging) { squad.targetX = Math.max(-150, Math.min(150, squad.targetX + (keys.r ? 1 : -1) * 340 * rawDt)); hideHint(); }
       if (zoneTime > 4 && $('hint').style.display !== 'none') hideHint();
       const pct = trackProgress / trackLength;
 
       if (state === 'PLAYING') {
         $('progressBar').style.width = `${Math.min(100, pct * 100)}%`;
-        if (trackProgress > trackLength) spawnBoss();
+        if (trackProgress > trackLength) { if (!offerDoubleSquad()) spawnBoss(); }
       }
 
-      squad.x += (squad.targetX - squad.x) * Math.min(1, 12 * dt);
+      if (dustSlow > 0) dustSlow -= dt; if (dustBlind > 0) dustBlind -= dt;
+      squad.x += (squad.targetX - squad.x) * Math.min(1, (dustSlow > 0 ? 4 : 12) * dt);
+      if (state === 'BOSS' && boss.active && boss.kind === 'sweeper') { if (updateSweeper(dt)) return; }
       if (squad.visualCount < squad.count) {
         squad.visualCount += (squad.count - squad.visualCount) * 4 * dt;
         if (squad.count - squad.visualCount < 0.5) squad.visualCount = squad.count;
@@ -620,7 +704,7 @@
       }
 
       // Boss: telegraphed laser, faster in later zones; the laser takes a share of the squad
-      if (state === 'BOSS' && boss.active) {
+      if (state === 'BOSS' && boss.active && boss.kind !== 'sweeper') {
         boss.y = trackProgress + 450; boss.timer -= dt;
         if (boss.hitTime > 0) boss.hitTime -= dt;
         if (boss.state === 'IDLE') {
@@ -690,11 +774,12 @@
             }
           }
         }
+        for (const d of entities.dust) { if (!hit && Math.hypot(b.x - d.x, b.y - d.y) < d.r + 6) { d.hp -= b.dmg; hit = true; } }
         if (state === 'BOSS' && boss.active && !hit && Math.hypot(b.x - boss.x, b.y - boss.y) < 80) {
           boss.hp -= b.dmg; boss.hitTime = 0.06; hit = true;
           if (Math.random() < 0.35) spawnExplosion(b.x, b.y, '#38bdf8', 1, 0.35);
           if (boss.hp <= 0) {
-            boss.active = false; addAura(5000 + (level - 1) * 1000); playSound('powerup');
+            boss.active = false; entities.dust.length = 0; addAura(5000 + (level - 1) * 1000); playSound('powerup');
             spawnExplosion(boss.x, boss.y, '#facc15', 60); triggerShake(20); buzz('success'); victory(); return;
           }
         }
@@ -807,7 +892,19 @@
 
       ctx.save(); ctx.scale(1, -1); ctx.translate(0, -trackProgress);
 
-      if (state !== 'START' && boss && boss.active && (boss.state === 'TELEGRAPH' || boss.state === 'STRIKE')) {
+      if (state !== 'START' && boss && boss.active && boss.kind === 'sweeper') {
+        if (boss.state === 'WINDUP') { // dust lane telegraph toward where the squad was
+          ctx.strokeStyle = 'rgba(231,216,191,0.85)'; ctx.lineWidth = 4; ctx.setLineDash([12, 10]);
+          ctx.beginPath(); ctx.moveTo(boss.x, boss.y - 40); ctx.lineTo(boss.targetX, trackProgress - 120); ctx.stroke(); ctx.setLineDash([]);
+        }
+        if (boss.state === 'LUNGE' || boss.state === 'SWEEP') { // broom arc
+          const sw = boss.state === 'SWEEP';
+          ctx.fillStyle = sw ? 'rgba(231,216,191,0.75)' : 'rgba(239,68,68,0.25)';
+          ctx.beginPath(); ctx.ellipse(boss.x, trackProgress + 10, 125, 70, 0, 0, Math.PI * 2); ctx.fill();
+          if (!sw) { ctx.strokeStyle = 'rgba(239,68,68,0.9)'; ctx.lineWidth = 3; ctx.setLineDash([14, 10]); ctx.stroke(); ctx.setLineDash([]); }
+        }
+      }
+      if (state !== 'START' && boss && boss.active && boss.kind !== 'sweeper' && (boss.state === 'TELEGRAPH' || boss.state === 'STRIKE')) {
         const strike = boss.state === 'STRIKE';
         const y0 = trackProgress - 260, len = boss.y - trackProgress + 260;
         for (const lx of boss.lanes) {
@@ -837,17 +934,29 @@
       ctx.restore();
 
       if (boss && boss.active) {
-        drawShadow(ctx, boss.x, boss.y - h0boss(), 90);
-        const angry = boss.state === 'TELEGRAPH' || boss.state === 'STRIKE', sc = 0.85, h = Sprites.CAST.boss.h * sc;
+        drawShadow(ctx, boss.x, boss.y - (boss.kind === 'sweeper' ? Sprites.CAST.sweeper.h * 0.85 * 0.8 - 12 : h0boss()), 90);
+        const sk = boss.kind === 'sweeper' ? 'sweeper' : 'boss';
+        const angry = boss.state === 'TELEGRAPH' || boss.state === 'STRIKE' || boss.state === 'WINDUP' || boss.state === 'LUNGE', sc = 0.85, h = Sprites.CAST[sk].h * sc;
         ctx.save(); ctx.scale(1, -1);
-        Sprites.draw(ctx, 'boss', boss.hitTime > 0 ? 'hit' : angry ? 2 : (Math.floor(performance.now() / 420) & 1), boss.x, -boss.y + h * 0.8, sc);
+        const fps = boss.state === 'SWEEP' ? 90 : 420;
+        Sprites.draw(ctx, sk, boss.hitTime > 0 ? 'hit' : angry ? 2 : (Math.floor(performance.now() / fps) & 1), boss.x, -boss.y + h * 0.8, sc);
+        ctx.restore();
+      }
+      for (const d of entities.dust) { // rolling dust balls
+        ctx.save(); ctx.translate(d.x, d.y); ctx.rotate(d.spin);
+        ctx.fillStyle = 'rgba(0,0,0,0.25)'; ctx.beginPath(); ctx.ellipse(0, -d.r * 0.9, d.r, d.r * 0.35, 0, 0, Math.PI * 2); ctx.fill();
+        for (let k = 0; k < 7; k++) { const a = k * 0.9, rr = d.r * (0.45 + (k % 3) * 0.12); ctx.fillStyle = k % 2 ? '#d6c4a3' : '#e7d8bf'; ctx.strokeStyle = '#1a1033'; ctx.lineWidth = 2;
+          ctx.beginPath(); ctx.arc(Math.cos(a) * d.r * 0.45, Math.sin(a) * d.r * 0.45, rr, 0, Math.PI * 2); ctx.fill(); ctx.stroke(); }
+        ctx.fillStyle = 'rgba(255,255,255,0.6)'; ctx.beginPath(); ctx.arc(-d.r * 0.3, d.r * 0.3, d.r * 0.18, 0, Math.PI * 2); ctx.fill();
         ctx.restore();
       }
 
-      ctx.lineWidth = 6; ctx.lineCap = 'round'; ctx.strokeStyle = '#38bdf8';
-      ctx.beginPath();
-      for (const b of entities.bullets) { ctx.moveTo(b.x, b.y); ctx.lineTo(b.x, b.y - 20); }
-      ctx.stroke();
+      ctx.lineCap = 'round'; // purple aura beams (matches the mullet dude's staff beam)
+      for (const [lw, col] of [[9, 'rgba(168,85,247,0.55)'], [4, '#f0abfc']]) {
+        ctx.lineWidth = lw; ctx.strokeStyle = col; ctx.beginPath();
+        for (const b of entities.bullets) { ctx.moveTo(b.x, b.y); ctx.lineTo(b.x, b.y - 22); }
+        ctx.stroke();
+      }
 
       if (state !== 'START') {
         ctx.save(); ctx.translate(squad.drawX, trackProgress);
@@ -860,9 +969,6 @@
         }
         ctx.save(); ctx.scale(1, -1);
         let depth = 0; for (const s of slots) depth = Math.max(depth, -s[1]);
-        // squad commander hovers beside the squad, off to the rear-left
-        const lh = Sprites.CAST.leader.h * 0.6, hover = Math.sin(performance.now() / 260) * 3;
-        Sprites.draw(ctx, 'leader', anim, -(hw + 36), depth * 0.5 + lh * 0.5 + hover, 0.6);
         const tKey = Sprites.EVOLVE[troopStage].key, th = Sprites.CAST.trooper.h * 0.82;
         if (evolveFlash > 0) evolveFlash -= rawDt || 0.016;
         const flashOn = evolveFlash > 0 && (Math.floor(evolveFlash * 16) & 1);
@@ -890,6 +996,13 @@
         ctx.restore();
       }
       ctx.restore(); ctx.restore();
+      if (dustBlind > 0) { // dust haze after a Dust Bawl hit
+        ctx.save(); ctx.setTransform(1, 0, 0, 1, 0, 0);
+        const W = ctx.canvas.width, H = ctx.canvas.height, g = ctx.createRadialGradient(W / 2, H * 0.75, W * 0.15, W / 2, H * 0.6, W * 0.9);
+        const a = Math.min(1, dustBlind / 1.4) * 0.85;
+        g.addColorStop(0, `rgba(214,196,163,${a * 0.35})`); g.addColorStop(1, `rgba(150,128,96,${a})`);
+        ctx.fillStyle = g; ctx.fillRect(0, 0, W, H); ctx.restore();
+      }
     }
 
     // ----- End of zone / run -----
@@ -913,7 +1026,7 @@
       renderShop();
     }
     function victory() {
-      state = 'VICTORY'; recordBest();
+      state = 'VICTORY'; recordBest(); Portal.gameplayStop();
       $('endTitle').textContent = 'STAGE CLEAR!'; $('endTitle').style.color = '#38bdf8';
       $('endDesc').textContent = `Boss defeated! ✨ ${Math.round(aura)} aura to spend. ${Math.min(40, Math.round(squad.count * 0.5))} troopers carry over.`;
       $('endBest').textContent = bestText();
@@ -925,7 +1038,7 @@
     }
     function gameOver() {
       deathState = state === 'BOSS' ? 'BOSS' : 'PLAYING';
-      state = 'GAMEOVER'; recordBest(); const gained = endRunEssence(); lastGained = gained;
+      state = 'GAMEOVER'; recordBest(); const gained = endRunEssence(); lastGained = gained; Portal.gameplayStop();
       $('endTitle').textContent = 'CRASHED OUT!'; $('endTitle').style.color = '#ef4444';
       setGameOverText();
       renderAdOffers();
@@ -940,6 +1053,27 @@
     }
 
     // ----- Opt-in rewarded ads (Android only; see js/ads.js). Every offer is a button the player may ignore. -----
+    // Boss gate: optional "double your squad" right before the boss (once per zone, squadDailyCap per day).
+    // The run is frozen behind a two-button choice; FIGHT NOW is always there and is the default.
+    let squadOfferShown = false;
+    const squadBonus = () => Math.min(60, Math.max(1, Math.ceil(squad.count)));
+    function offerDoubleSquad() {
+      if (squadOfferShown || squad.count < 1 || !BRAds.canOffer(save.ads, 'squad')) return false;
+      squadOfferShown = true; state = 'GATE'; dragging = false; Portal.gameplayStop();
+      $('gateDesc').textContent = `The Grump King is waiting. Your squad: x${Math.ceil(squad.count)}.`;
+      const box = $('gateOffer'); box.innerHTML = '';
+      box.appendChild(adButton('squad', `DOUBLE SQUAD → x${Math.ceil(squad.count) + squadBonus()}`, () => {
+        const add = squadBonus(); squad.count += add; addFloatText(squad.x, trackProgress + 100, `SQUAD x2! +${add}`, '#4ade80');
+        enterBoss();
+      }));
+      $('gateModal').style.display = 'flex';
+      return true;
+    }
+    function enterBoss() {
+      if (state !== 'GATE') return;
+      $('gateModal').style.display = 'none'; $('gateOffer').innerHTML = '';
+      spawnBoss(); lastTime = performance.now(); Portal.gameplayStart();
+    }
     const reviveCount = () => Math.max(12, Math.round((8 + upgrades.recruits * 4 + meta.lv.hp * 2) * 0.75));
     const zoneBonus = () => Math.max(250, Math.round(Math.max(0, aura - zoneAuraStart) * 0.5));
     function adButton(id, label, onTap) {
@@ -975,7 +1109,7 @@
       if (boss && boss.active) { boss.state = 'IDLE'; boss.timer = 2.5; boss.lanes = []; $('bossUI').style.display = 'flex'; }
       addFloatText(squad.x, trackProgress + 100, 'REVIVED!', '#4ade80');
       $('endModal').style.display = 'none'; $('adOffers').innerHTML = '';
-      state = deathState; lastTime = performance.now(); if (actx) actx.resume();
+      state = deathState; lastTime = performance.now(); if (actx) actx.resume(); Portal.gameplayStart();
     }
     function doubleEssence() {
       if (state !== 'GAMEOVER' || runDoubled || lastGained <= 0) return;
@@ -1007,16 +1141,27 @@
     }
     window.onAdsReady = () => { renderChest(); renderAdOffers(); $('privOptBtn').style.display = BRAds.privacyRequired() ? '' : 'none'; };
 
-    function nextLevel() {
+    // Between zones / before a new run is a natural break: portal builds may show a commercial break there
+    // (the portal decides frequency). Never mid-play. Android/test-site builds: Portal is a no-op.
+    let breaking = false;
+    async function nextLevel() {
+      if (breaking || (state !== 'VICTORY' && state !== 'GAMEOVER')) return;
+      if (Portal.active) { breaking = true; $('nextBtn').disabled = true; await Portal.commercialBreak(window.onAdPause, window.onAdResume); $('nextBtn').disabled = false; breaking = false; }
       if (state === 'VICTORY') { carrySquad = Math.min(40, Math.round(squad.count * 0.5)); level++; initLevel(); }
       else if (state === 'GAMEOVER') newRun();
+      else return;
+      Portal.gameplayStart();
     }
+    window.onAdPause = () => { if (actx && actx.state === 'running') actx.suspend(); };
+    window.onAdResume = () => { if (actx) actx.resume(); };
 
     Sprites.build();
+    Portal.loadingFinished();
     $('startBest').textContent = bestText();
     renderEssence();
     updateMuteUI();
     $('privacyLink').href = (window.BR_CONFIG && BR_CONFIG.PRIVACY_URL) || 'privacy-policy.html';
+    if (Portal.active) document.querySelector('.legal').style.display = 'none'; // portals: no external links
     renderChest();
     BRAds.init();
     if (document.fonts && document.fonts.load) document.fonts.load(font(16)).catch(() => {});

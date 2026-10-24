@@ -46,6 +46,24 @@ export function createEscapeView(canvas, fx) {
       const hgt = Math.max(16, y2 - y1), x = g.x0 + g.laneW * ob.lane + 6, wdt = g.laneW - 12;
       drawWall(x, y1, wdt, hgt, ob.kind, st, t);
     }
+    // ghost racer: a semi-transparent replay of a best run (own or a friend's), drawn at its distance for this run time
+    if (o.ghost) {
+      const gy = yOf(o.ghost.dist), gx = g.laneCx(o.ghost.lane);
+      if (gy > -40 && gy < g.h + 60) {
+        ctx.save(); ctx.globalAlpha = o.ghost.done ? 0.25 : 0.45;
+        ctx.fillStyle = '#cfe8ff'; ctx.shadowColor = '#9fd0ff'; ctx.shadowBlur = 18;
+        ctx.beginPath(); ctx.arc(gx, gy - pr * 0.2, pr * 0.8, Math.PI, 0); ctx.lineTo(gx + pr * 0.8, gy + pr * 0.6);
+        for (let i = 0; i < 4; i++) { const x = gx + pr * 0.8 - (i + 0.5) * pr * 0.4; ctx.lineTo(x, gy + pr * (0.35 + 0.15 * Math.sin(t * 8 + i))); ctx.lineTo(x - pr * 0.2, gy + pr * 0.6); }
+        ctx.closePath(); ctx.fill(); ctx.shadowBlur = 0;
+        ctx.fillStyle = '#1b0f3a'; ctx.beginPath(); ctx.arc(gx - pr * 0.28, gy - pr * 0.25, pr * 0.11, 0, TAU); ctx.arc(gx + pr * 0.28, gy - pr * 0.25, pr * 0.11, 0, TAU); ctx.fill();
+        ctx.globalAlpha = 0.85; ctx.fillStyle = '#e6f3ff'; ctx.font = '800 12px system-ui'; ctx.textAlign = 'center';
+        ctx.fillText(`${o.ghost.avatar || '👻'} ${o.ghost.name}${o.ghost.done ? ' · ' + Math.floor(o.ghost.dist) + ' m' : ''}`, gx, gy - pr * 1.25);
+        ctx.restore();
+      } else if (gy <= -40 && !o.ghost.done) { // ghost ahead off-screen: arrow at the top edge
+        ctx.save(); ctx.globalAlpha = 0.6; ctx.fillStyle = '#cfe8ff'; ctx.font = '800 12px system-ui'; ctx.textAlign = 'center';
+        ctx.fillText(`👻 ${o.ghost.name} +${Math.floor(o.ghost.dist - run.dist)} m ▲`, gx, g.top + 4); ctx.restore();
+      }
+    }
     // trail + hero
     ctx.globalAlpha = 1;
     for (let i = 1; i <= 6; i++) { ctx.fillStyle = hexA(st.glow, 0.22 - i * 0.03); ctx.beginPath(); ctx.arc(px, g.py + pr * 0.5 + i * (6 + run.speed * 0.12), pr * (0.8 - i * 0.1), 0, TAU); ctx.fill(); }

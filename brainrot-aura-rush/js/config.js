@@ -9,6 +9,7 @@ window.BR_CONFIG = {
     rewardedId: 'ca-app-pub-3940256099942544/5224354917',  // @cfg rewarded (TEST)
     maxAdContentRating: 'Teen',                            // matches the AdMob app's max ad content rating (T)
     dailyCap: 20,                                          // max rewarded ads per day, all placements together
+    squadDailyCap: 3,                                      // 'double squad' at the boss gate: max per day (and once per zone)
   },
   PRIVACY_URL: 'https://workinmanstrokes.github.io/test-builds/privacy/brainrot-aura-rush.html',
 };

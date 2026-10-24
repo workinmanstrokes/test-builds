@@ -1,5 +1,6 @@
 // Opt-in rewarded ads (AdMob via @capacitor-community/admob) with Google UMP consent. Rewarded only, never interstitials.
-// Android app only: on web and iOS every call is a no-op and no ad buttons are shown.
+// Android app (AdMob) and web-portal builds (Poki/CrazyGames rewarded via js/portal.js). Elsewhere on web/iOS every call
+// is a no-op and no ad buttons are shown.
 // For browser testing, add ?adsim=1 to the URL to get a 2-second "TEST AD" overlay instead of a real ad.
 (function (root) {
   'use strict';
@@ -8,12 +9,13 @@
   // ledger lives in the save: { day, count, chest } - total rewarded ads today and chest rerolls today.
   function gate(led, placement, cfg, now = Date.now()) {
     const day = dayKey(now);
-    if (led.day !== day) { led.day = day; led.count = 0; led.chest = 0; }
+    if (led.day !== day) { led.day = day; led.count = 0; led.chest = 0; led.squad = 0; }
     if (led.count >= (cfg.dailyCap || 20)) return { ok: false, why: 'Daily ad limit reached' };
     if (placement === 'chest' && led.chest >= 1) return { ok: false, why: 'Chest already rerolled today' };
+    if (placement === 'squad' && (led.squad || 0) >= (cfg.squadDailyCap || 3)) return { ok: false, why: 'Double squad used up today' };
     return { ok: true };
   }
-  function record(led, placement) { led.count = (led.count || 0) + 1; if (placement === 'chest') led.chest = (led.chest || 0) + 1; }
+  function record(led, placement) { led.count = (led.count || 0) + 1; if (placement === 'chest') led.chest = (led.chest || 0) + 1; if (placement === 'squad') led.squad = (led.squad || 0) + 1; }
   const core = { dayKey, gate, record };
   if (typeof module !== 'undefined' && module.exports) { module.exports = core; return; }
 
@@ -51,14 +53,15 @@
     if (!ready || !canRequest || loaded) return;
     try { await AdMob.prepareRewardVideoAd({ adId: CFG.rewardedId, isTesting: CFG.testing }); loaded = true; } catch (e) { loaded = false; }
   }
-  const available = () => !!CFG.enabled && !busy && (simulate || (ready && canRequest));
+  const portal = () => !!(root.Portal && root.Portal.active);
+  const available = () => !!CFG.enabled && !busy && (simulate || portal() || (ready && canRequest));
   /** Can this placement be offered right now? (ads available + caps) */
   function canOffer(led, placement) { return available() && gate(led, placement, CFG).ok; }
   /** Resolves true only if the reward was earned. Never forced: only called from a button the player tapped. */
   async function show(led, placement) {
     if (!canOffer(led, placement)) return false;
     busy = true; let earned = false;
-    try { earned = simulate ? await simulated() : await nativeRewarded(); } finally { busy = false; }
+    try { earned = simulate ? await simulated() : portal() ? await root.Portal.rewarded(root.onAdPause, root.onAdResume) : await nativeRewarded(); } finally { busy = false; }
     if (earned) record(led, placement);
     return earned;
   }

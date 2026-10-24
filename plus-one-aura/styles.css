@@ -90,7 +90,7 @@ button { font: inherit; color: inherit; border: 0; cursor: pointer; }
 .t-tap { margin-top: auto; margin-bottom: 18px; font-weight: 800; letter-spacing: 3px; font-size: 13px; opacity: .8; animation: hint 1.4s ease-in-out infinite; text-shadow: 0 2px 6px #000; }
 .t-menu { pointer-events: auto; width: min(92vw, 380px); display: flex; flex-direction: column; gap: 10px; }
 .play { height: 64px; border-radius: 20px; font-size: 24px; font-weight: 900; letter-spacing: 2px; color: #1b0a00; background: linear-gradient(160deg, var(--accent), var(--glow)); box-shadow: 0 8px 24px rgba(0,0,0,.45), 0 0 24px var(--glow); }
-.t-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; }
+.t-row { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; }
 .tbtn { height: 62px; border-radius: 16px; background: var(--panel); border: 1px solid rgba(255,255,255,.14); font-size: 22px; }
 .tbtn small { display: block; font-size: 12px; font-weight: 800; margin-top: 2px; }
 @keyframes tIn { from { opacity: 0; transform: translateY(-12px); } }
@@ -164,3 +164,18 @@ body.reduce-motion .esc-spd i.pop { animation-duration: .01s; }
 .avs { display: grid; grid-template-columns: repeat(6, 1fr); gap: 6px; margin: 8px 0; } .avs button { font-size: 24px; padding: 6px; border-radius: 10px; background: var(--panel); border: 2px solid transparent; }
 .avs button.on { border-color: var(--accent); }
 .challenge { position: fixed; left: 12px; right: 12px; top: calc(env(safe-area-inset-top) + 64px); z-index: 30; padding: 10px 14px; border-radius: 14px; background: #ffb347; color: #1b0f3a; font-weight: 900; text-align: center; }
+/* daily challenge / ghosts / streak */
+#tDailyRun b { color: #ffd27a; font-size: 11px; margin-left: 2px; }
+.esc-daily-tag { position: absolute; top: calc(env(safe-area-inset-top) + 58px); left: 50%; transform: translateX(-50%); background: #2a7bffcc; color: #fff; font: 900 12px system-ui; padding: 3px 10px; border-radius: 99px; letter-spacing: 1px; }
+.esc-daily, .esc-ghost { margin: 4px 0; font-size: 14px; }
+.streak { display: flex; gap: 6px; justify-content: center; margin: 10px 0; }
+.streak i { width: 30px; height: 30px; border-radius: 50%; display: grid; place-items: center; font: 800 12px system-ui; font-style: normal; background: #ffffff1a; color: #fff9; }
+.streak i.on { background: linear-gradient(#ffb347, #ff6a3d); color: #1b0f3a; box-shadow: 0 0 10px #ff8a3d; }
+.btn.mini { padding: 4px 10px; font-size: 12px; min-height: 0; }
+/* Aurie looks gallery */
+.lkname { display: flex; align-items: center; gap: 8px; padding: 8px 12px; border-radius: 12px; background: var(--panel); font-weight: 800; margin-bottom: 10px; }
+.lkname input { flex: 1; min-width: 0; background: none; border: 0; border-bottom: 2px dashed var(--accent); color: #fff; font: 900 18px system-ui, sans-serif; outline: 0; }
+.lktabs { display: flex; gap: 6px; margin-bottom: 10px; } .lktabs button { flex: 1; padding: 7px 0; border-radius: 10px; background: var(--panel); font-weight: 800; font-size: 13px; } .lktabs .on { background: var(--accent); color: #2a0c06; }
+.lkgrid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; max-height: 46vh; overflow-y: auto; margin-bottom: 10px; }
+.lk { border-radius: 12px; background: var(--panel); border: 2px solid transparent; padding: 2px 2px 6px; font-size: 12px; text-align: center; } .lk canvas { width: 96px; height: 80px; display: block; margin: 0 auto; }
+.lk.cur { border-color: #fff; box-shadow: 0 0 12px var(--glow); } .lk[disabled] { opacity: .8; } .lk small { display: block; font-weight: 600; font-size: 10px; opacity: .75; }

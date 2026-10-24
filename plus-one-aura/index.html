@@ -52,13 +52,13 @@
     <div class="t-menu">
       <button id="tPlay" class="play">▶ PLAY</button>
       <button id="tEscape" class="play esc-btn">⚡ +1 SPEED ESCAPE<small id="tEscBest"></small></button>
-      <div class="t-row"><button id="tRanks" class="tbtn">🏆<small>Ranks</small></button><button id="tSkins" class="tbtn">🎨<small>Skins</small></button><button id="tDaily" class="tbtn">🎁<small>Daily</small></button><button id="tSettings" class="tbtn">⚙<small>Settings</small></button></div>
+      <div class="t-row"><button id="tRanks" class="tbtn">🏆<small>Ranks</small></button><button id="tDailyRun" class="tbtn daily-btn">📅<b id="tStreak"></b><small id="tDailyBest">Challenge</small></button><button id="tSkins" class="tbtn">🎨<small>Skins</small></button><button id="tDaily" class="tbtn">🎁<small>Daily</small></button><button id="tSettings" class="tbtn">⚙<small>Settings</small></button></div>
     </div>
   </div>
   <!-- +1 Speed Escape HUD (runner mode) -->
   <div id="esc" hidden>
     <header class="top">
-      <div class="esc-best"><small>BEST</small><b id="escBest">0 m</b></div>
+      <div id="escDaily" class="esc-daily-tag" hidden>📅 DAILY</div><div class="esc-best"><small>BEST</small><b id="escBest">0 m</b></div>
       <div class="total"><div id="escDist" class="big">0 m</div><div class="sub" id="escWisps">✦ 0</div></div>
       <div id="escSpeed" class="esc-spd"><b id="escSpd">10</b><small>SPEED</small><i id="escPlus">+1</i></div>
       <button id="escPause" class="icon" aria-label="Pause">⏸</button>

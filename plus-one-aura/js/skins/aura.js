@@ -1,5 +1,6 @@
 // Default skin: "+1 Aura" starring Aurie, an original wisp of light (no third-party characters or music).
 const TAU = Math.PI * 2;
+import { ALL, HATS, drawBody, drawFaceLayer, drawCard } from './render.js';
 
 const stages = [
   { name: 'Ember Wilds', bg: ['#2a0c06', '#0d0503'], accent: '#ffb347', glow: '#ff7a1a', text: '#ffe2b8',
@@ -76,6 +77,9 @@ export default {
   drawTarget(ctx, x, y, r, si, t, o) {
     const st = stages[si]; const heat = o.heat / 100; const sq = o.squash;
     ctx.save(); ctx.translate(x, y); ctx.scale(1 + sq * 0.12, 1 - sq * 0.12);
+    // Aurie looks / golden tap (js/skins/render.js). Classic look keeps the stage art below.
+    const L = o.look ? ALL[o.look] : null;
+    if (L || o.goldK != null) { drawBody(ctx, r, t, o, L || ALL.aurie, drawFace); ctx.restore(); return; }
     // halo
     const hg = ctx.createRadialGradient(0, 0, r * 0.4, 0, 0, r * 2.1);
     hg.addColorStop(0, hexA(heat > 0.7 ? '#ff3b2f' : st.glow, 0.55)); hg.addColorStop(1, hexA(st.glow, 0));
@@ -105,9 +109,12 @@ export default {
       ctx.fillStyle = body; ctx.beginPath(); ctx.arc(0, 0, r, 0, TAU); ctx.fill();
     }
     if (heat > 0.05) { const hg2 = ctx.createRadialGradient(0, 0, 0, 0, 0, r); hg2.addColorStop(0, `rgba(255,40,20,${heat * 0.45})`); hg2.addColorStop(0.85, `rgba(255,40,20,${heat * 0.35})`); hg2.addColorStop(1, 'rgba(255,40,20,0)'); ctx.fillStyle = hg2; ctx.beginPath(); ctx.arc(0, 0, r, 0, TAU); ctx.fill(); } // tint the body only
-    drawFace(ctx, r, t, o);
+    drawFaceLayer(ctx, r, t, o, null, drawFace, false);
+    if (o.hat && HATS[o.hat]) HATS[o.hat].draw(ctx, r, t);
     ctx.restore();
   },
+  // gallery preview card (same art as in-game)
+  drawCard(ctx, x, y, r, t, opts) { drawCard(ctx, x, y, r, t, opts, drawFace); },
 
   drawParticle(ctx, p, si) {
     ctx.save(); ctx.globalAlpha = Math.max(0, p.life / p.max); ctx.fillStyle = p.color; ctx.translate(p.x, p.y); ctx.rotate(p.rot);
@@ -123,13 +130,14 @@ export default {
 
 function drawFace(ctx, r, t, o) {
   const heat = o.heat / 100, blink = (t % 3.7) < 0.12 || o.locked;
-  ctx.fillStyle = '#2a1030'; ctx.strokeStyle = '#2a1030'; ctx.lineWidth = r * 0.07; ctx.lineCap = 'round';
+  const ink = o.ink || '#2a1030', shine = o.shine || '#fff';
+  ctx.fillStyle = ink; ctx.strokeStyle = ink; ctx.lineWidth = r * 0.07; ctx.lineCap = 'round';
   const ex = r * 0.3, ey = -r * 0.05, er = r * 0.12;
-  for (const s of [-1, 1]) {
+  if (!o.mouthOnly) for (const s of [-1, 1]) {
     ctx.beginPath();
     if (blink) { ctx.moveTo(s * ex - er, ey); ctx.lineTo(s * ex + er, ey); ctx.stroke(); }
     else if (heat > 0.7) { ctx.moveTo(s * ex - er * s, ey - er); ctx.lineTo(s * ex + er * s, ey); ctx.lineTo(s * ex - er * s, ey + er); ctx.stroke(); }
-    else { ctx.ellipse(s * ex, ey, er * 0.8, er * (1.1 + o.squash * 0.4), 0, 0, TAU); ctx.fill(); ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.arc(s * ex + er * 0.25, ey - er * 0.4, er * 0.3, 0, TAU); ctx.fill(); ctx.fillStyle = '#2a1030'; }
+    else { ctx.ellipse(s * ex, ey, er * 0.8, er * (1.1 + o.squash * 0.4), 0, 0, TAU); ctx.fill(); ctx.fillStyle = shine; ctx.beginPath(); ctx.arc(s * ex + er * 0.25, ey - er * 0.4, er * 0.3, 0, TAU); ctx.fill(); ctx.fillStyle = ink; }
   }
   ctx.beginPath();
   if (o.locked) ctx.arc(0, r * 0.32, r * 0.1, 0, TAU);

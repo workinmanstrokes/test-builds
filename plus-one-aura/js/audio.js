@@ -51,12 +51,16 @@ function sweep(from, to, { wave = 'sine', dur = 0.12, gain = 0.15, at = 0 } = {}
 }
 const api = { tone, noise, sweep, midi, get root() { return root; }, get stage() { return stage; } };
 
+// Aurie look tap-sound override (partial tone() opts merged onto skin.sound.tap); null = skin default.
+let tapOv = null;
+export function setTapSound(o) { tapOv = o || null; }
 export function sfx(name, arg = 0) {
   if (!ctx || !enabled || !skin) return;
   const S = skin.sound;
   if (S.play && S.play(name, api, arg) !== false) return;  // skins with fully custom sound design
   switch (name) {
-    case 'tap': { const sc = S.scale; const step = Math.min(Math.floor(arg / 2), sc.length * 2 - 1); const m = root + sc[step % sc.length] + 12 * Math.floor(step / sc.length); tone(midi(m), { ...S.tap, detune: (Math.random() - 0.5) * S.tap.detune }); break; }
+    case 'tap': { const sc = S.scale; const step = Math.min(Math.floor(arg / 2), sc.length * 2 - 1); const m = root + sc[step % sc.length] + 12 * Math.floor(step / sc.length); const T = tapOv ? { ...S.tap, ...tapOv } : S.tap; tone(midi(m), { ...T, detune: (Math.random() - 0.5) * T.detune }); break; }
+    case 'golden': [0, 7, 12, 19, 24].forEach((c, i) => tone(midi(root + 12 + c), { wave: 'triangle', dur: 0.22, gain: 0.14 }, i * 0.05)); break;
     case 'burst': tone(midi(root + 24), S.burst); tone(midi(root + 31), S.burst, 0.05); break;
     case 'bank': S.bank.chord.forEach((c, i) => tone(midi(root + 12 + c), S.bank, i * 0.03)); break;
     case 'unlock': S.unlock.arp.forEach((c, i) => tone(midi(root + c), { wave: S.unlock.wave, dur: 0.25, gain: 0.15 }, i * S.unlock.step)); break;

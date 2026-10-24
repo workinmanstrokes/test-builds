@@ -155,3 +155,41 @@ export async function share({ text, url, canvas, title = '+1 Aura' }) {
   } catch (e) { if (e?.name === 'AbortError' || /cancel/i.test(e?.message)) return 'cancelled'; }
   try { await navigator.clipboard.writeText(`${text}`); return 'copied'; } catch { return 'failed'; }
 }
+
+// ---------- Daily Challenge board (daily/{YYYY-MM-DD}/entries/{uid}) + ghosts (ghosts/{uid}) ----------
+/** Submit today's daily distance if it improved (rules: increase-only, 30 s per entry). */
+export async function submitDaily(day, dist, portal = false) {
+  const v = Math.min(C.MODES.escape.max, Math.floor(dist)); if (!(v > 0)) return false;
+  me.dailySent ||= {}; if ((me.dailySent[day] || 0) >= v) return false;
+  if (!(await connect(portal))) return false;
+  const { F, db, uid } = api;
+  try { await F.setDoc(F.doc(db, 'daily', day, 'entries', uid), { score: v, name: me.name, avatar: me.avatar, at: F.serverTimestamp() }); me.dailySent = { [day]: v }; persist(); return true; }
+  catch (e) { console.warn('daily submit', e?.code); return false; }
+}
+/** Daily rows (top 50, or you + friends). Offline: just your local best. */
+export async function fetchDaily(day, localBest, scope = 'all', portal = false) {
+  const mine = { uid: me.uid || 'me', name: me.name, avatar: me.avatar, score: localBest || 0, me: true };
+  if (!(await connect(portal))) return { online: false, rows: mine.score > 0 ? [mine] : [], why: socialStatus.why };
+  const { F, db, uid } = api;
+  try {
+    const col = F.collection(db, 'daily', day, 'entries');
+    const q = scope === 'friends' ? F.query(col, F.where(F.documentId(), 'in', [uid, ...me.friends].slice(0, 30))) : F.query(col, F.orderBy('score', 'desc'), F.limit(50));
+    const rows = (await F.getDocs(q)).docs.map(d => ({ uid: d.id, ...d.data(), me: d.id === uid })).sort((a, b) => b.score - a.score);
+    if (!rows.some(r => r.me) && mine.score > 0) rows.push({ ...mine, rank: '–' });
+    return { online: true, rows };
+  } catch (e) { return { online: false, rows: mine.score > 0 ? [mine] : [], why: 'error: ' + (e?.code || e?.message) }; }
+}
+/** Upload your best-run ghost (string from daily.encodeGhost). */
+export async function uploadGhost(g, dist, portal = false) {
+  if (!(await connect(portal))) return false;
+  const { F, db, uid } = api;
+  try { await F.setDoc(F.doc(db, 'ghosts', uid), { g, dist: Math.floor(dist), name: me.name, avatar: me.avatar, at: F.serverTimestamp() }); me.ghostSent = Math.floor(dist); persist(); return true; }
+  catch (e) { console.warn('ghost upload', e?.code); return false; }
+}
+/** Friends' ghosts: [{ uid, name, avatar, dist, g }] best first. */
+export async function fetchFriendGhosts(portal = false) {
+  if (!me.friends.length || !(await connect(portal))) return [];
+  const { F, db } = api; const out = [];
+  await Promise.all(me.friends.slice(0, 30).map(async fid => { try { const s = await F.getDoc(F.doc(db, 'ghosts', fid)); if (s.exists()) out.push({ uid: fid, ...s.data() }); } catch {} }));
+  return out.sort((a, b) => b.dist - a.dist);
+}
