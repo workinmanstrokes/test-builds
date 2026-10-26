@@ -12,7 +12,7 @@
 <li>No account, no sign-up. We never ask for your name, email address, phone number, location, contacts, photos or files.</li>
 <li>Your progress stays on your device.</li>
 <li>We use Sentry for crash reports and PostHog for anonymous play statistics. Neither is linked to your identity, and both are switched off if your browser sends Do Not Track or Global Privacy Control.</li>
-<li>The Android app shows no third-party ads. On CrazyGames and Poki, the portal's own ad service can show an optional rewarded video when you choose to watch one, and Poki can also show an ad between runs.</li>
+<li>The Android app can show an optional rewarded video ad from Google AdMob when you choose to watch one for a Sponsor Crate. It never shows ads you did not ask for. On CrazyGames and Poki, the portal's own ad service can show an optional rewarded video when you choose to watch one, and Poki can also show an ad between runs.</li>
 <li>There are no real-money purchases.</li>
 <li>We do not sell personal information.</li>
 </ul>
@@ -25,7 +25,7 @@
 <p><strong>Opting out:</strong> if your browser or device sends Do Not Track or Global Privacy Control, the game does not load Sentry or PostHog at all. Clearing the app's storage or your site data resets the random ID.</p>
 <h2>4. Ads</h2>
 <ul>
-<li><strong>Android app:</strong> no advertising SDK and no advertising ID. The optional Sponsor Crate plays a short in-game countdown and then grants the crate. No information is sent to any ad network.</li>
+<li><strong>Android app (Google AdMob):</strong> the app includes the Google Mobile Ads SDK (AdMob). Ads are rewarded only: a video loads and plays only when you tap to watch one for a Sponsor Crate, and there are no banner, pop-up or between-level ads. To serve and measure these ads, AdMob may collect your device's advertising ID, IP address, device and app information (such as device model, OS version and app version), and ad interaction data (such as whether an ad was shown, completed or tapped). Before any ad is requested, the app uses Google's User Messaging Platform (UMP) to ask for your consent where the law requires it (for example in the EEA, UK and Switzerland); you can change your choice at any time with <em>Ad privacy choices</em> in the Store. You can also reset or delete your advertising ID, or opt out of personalized ads, in your Android settings. Google handles this data under its own policies: <a href="https://policies.google.com/technologies/partner-sites">How Google uses information from apps that use its services</a> and the <a href="https://policies.google.com/privacy">Google Privacy Policy</a>.</li>
 <li><strong>CrazyGames:</strong> when the game runs on CrazyGames, it loads the CrazyGames SDK. Ads are rewarded only: a video plays only when you tap to watch one for a reward. CrazyGames and its ad partners deliver these ads under the <a href="https://www.crazygames.com/privacy-policy">CrazyGames privacy policy</a>.</li>
 <li><strong>Poki:</strong> when the game runs on Poki, it loads the Poki SDK. Poki can show a rewarded video when you choose to watch one, and an ad at a natural break before you start a new run, never during play. Poki delivers these ads under the <a href="https://poki.com/en/privacy">Poki privacy policy</a>.</li>
 <li><strong>Our own website:</strong> no ads.</li>
@@ -36,9 +36,9 @@
 <h2>6. In-app purchases</h2>
 <p>There are no in-app purchases. Crates are opened with in-game currency earned by playing, and the drop odds are shown on every crate. If purchases are ever added, payments will be processed by Google Play, we will never receive your payment details, and we will update this policy first.</p>
 <h2>7. Permissions</h2>
-<p>The Android app requests only internet access, which it uses for the fonts, crash reports and play statistics described above. It does not request location, camera, microphone, contacts, storage or advertising ID permissions.</p>
+<p>The Android app requests internet access, used for the fonts, crash reports, play statistics and ads described above, and the advertising ID permission (<code>com.google.android.gms.permission.AD_ID</code>), used only by Google AdMob for rewarded ads. It does not request location, camera, microphone, contacts or storage permissions.</p>
 <h2>8. Sharing and selling</h2>
-<p>We do not sell personal information. The data described above is processed for us by Sentry, PostHog and Google Fonts, and on game portals by the portal operator. We share it with no one else, except where the law requires us to.</p>
+<p>We do not sell personal information. The data described above is processed for us by Sentry, PostHog, Google Fonts and, in the Android app, Google AdMob, and on game portals by the portal operator. We share it with no one else, except where the law requires us to.</p>
 <h2>9. Data retention and security</h2>
 <p>Progress stays on your device until you delete it. Crash reports are kept in Sentry for up to 90 days. Play statistics are kept in PostHog for as long as our PostHog plan retains them, and we delete them when they are no longer needed. All of the game's network requests use HTTPS. We run no servers of our own for this game.</p>
 <h2>10. Children</h2>
@@ -46,6 +46,7 @@
 <h2>11. Your choices and rights</h2>
 <ul>
 <li><strong>Game data:</strong> clear the app's storage or your site data, or uninstall the app.</li>
+<li><strong>Ads (Android):</strong> ads only play when you tap to watch one. Use <em>Ad privacy choices</em> in the Store to change your consent, and your Android settings to reset or delete your advertising ID.</li>
 <li><strong>Statistics and crash reports:</strong> turn on Do Not Track or Global Privacy Control to stop them.</li>
 <li><strong>Requests:</strong> depending on where you live (for example under the GDPR, UK GDPR or US state laws such as the CCPA/CPRA), you may have rights to access or delete information about you. Because the data is anonymous we usually cannot link it to you, but you can email <a href="mailto:mscofield1588@gmail.com">mscofield1588@gmail.com</a> and we will reply within 30 days.</li>
 </ul>
