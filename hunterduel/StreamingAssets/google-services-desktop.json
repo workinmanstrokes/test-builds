@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "530538503193",
+    "project_id": "floamsnipa",
+    "storage_bucket": "floamsnipa.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:530538503193:android:2f634e1d89897f908b9e88",
+        "android_client_info": {
+          "package_name": "com.placeholderstudio.hunterduel"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyD48RXIlp4NNh4zP-3BeK-wQH32XQAc4C8"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
