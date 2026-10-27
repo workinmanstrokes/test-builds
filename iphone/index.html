@@ -3,7 +3,9 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#0b0b12">
-<title>Diddlerrr games for iPhone</title>
+<title>Diddly's Arcade</title>
+<meta name="apple-mobile-web-app-title" content="Diddly's Arcade">
+<link rel="manifest" href="manifest.webmanifest">
 <style>
 *{box-sizing:border-box}html{-webkit-text-size-adjust:100%}
 body{margin:0;background:#0b0b12;color:#f2f2f7;font:16px/1.4 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
@@ -16,10 +18,11 @@ ul.apps{list-style:none;margin:0;padding:0;display:grid;gap:10px}
 .app{display:flex;align-items:center;gap:12px;background:#141420;border:1px solid #23233a;border-radius:16px;padding:10px 12px}
 .app img{border-radius:14px;flex:none;background:#222}.txt{flex:1;min-width:0}
 .txt h2{font-size:16px;margin:0 0 2px}.txt p{margin:0;color:#a1a1aa;font-size:13px}
+.btns{display:flex;flex-direction:column;gap:6px;flex:none}.apk{flex:none;text-align:center;color:#0a84ff;text-decoration:none;font-size:12px;font-weight:600}
 .play{flex:none;background:#0a84ff;color:#fff;text-decoration:none;font-weight:600;padding:9px 16px;border-radius:999px}
 .note{color:#8e8e93;font-size:13px;margin-top:18px}
 </style></head><body><main>
-  <h1>Games for iPhone</h1>
+  <h1>Diddly's Arcade</h1>
   <p class="sub">Free. No App Store needed. Each one gets its own icon and opens full screen.</p>
   <section class="how"><h2>How to install</h2><ol>
     <li>Open this page in <b>Safari</b>.</li>
@@ -28,15 +31,20 @@ ul.apps{list-style:none;margin:0;padding:0;display:grid;gap:10px}
     <li>Open it from your Home Screen. After the first launch it works offline.</li>
   </ol></section>
   <ul class="apps">
-    <li class="app"><img src="../plus-one-aura/apple-touch-icon.png" alt="" width="64" height="64"><div class="txt"><h2>+1 Aura</h2><p>Tap to ascend. Every tap is +1.</p></div><a class="play" href="../plus-one-aura/">Play</a></li>
-    <li class="app"><img src="../period-8/apple-touch-icon.png" alt="" width="64" height="64"><div class="txt"><h2>Period 8</h2><p>After-school anomaly game. Spot what changed.</p></div><a class="play" href="../period-8/">Play</a></li>
-    <li class="app"><img src="../whos-the-brainrot/apple-touch-icon.png" alt="" width="64" height="64"><div class="txt"><h2>Who's the Brainrot?</h2><p>Pass-and-play imposter party game, 3-10 players.</p></div><a class="play" href="../whos-the-brainrot/">Play</a></li>
-    <li class="app"><img src="../spin-and-deal/apple-touch-icon.png" alt="" width="64" height="64"><div class="txt"><h2>Spin &amp; Deal</h2><p>Free social casino. Virtual coins only, 18+.</p></div><a class="play" href="../spin-and-deal/">Play</a></li>
-    <li class="app"><img src="../brainrot-aura-rush/apple-touch-icon.png" alt="" width="64" height="64"><div class="txt"><h2>Brainrot: Tactical Aura Rush</h2><p>Pick gates, grow your squad, beat the boss.</p></div><a class="play" href="../brainrot-aura-rush/">Play</a></li>
-    <li class="app"><img src="../aether-surge/apple-touch-icon.png" alt="" width="64" height="64"><div class="txt"><h2>Aether Surge</h2><p>Survivor RPG. Last five minutes in the Rift.</p></div><a class="play" href="../aether-surge/">Play</a></li>
-    <li class="app"><img src="../wing-protocol/icon-180.png" alt="" width="64" height="64"><div class="txt"><h2>Wing Protocol</h2><p>Mech sorties against endless machine hordes.</p></div><a class="play" href="../wing-protocol/">Play</a></li>
+    <li class="app"><img src="../plus-one-aura/apple-touch-icon.png" alt="" width="64" height="64"><div class="txt"><h2>+1 Aura</h2><p>Tap to ascend. Every tap is +1.</p></div><div class="btns"><a class="play" href="../plus-one-aura/">Play</a><a class="apk" href="../apk/PlusOneAura.apk">Android</a></div></li>
+    <li class="app"><img src="../period-8/apple-touch-icon.png" alt="" width="64" height="64"><div class="txt"><h2>Period 8</h2><p>After-school anomaly game. Spot what changed.</p></div><div class="btns"><a class="play" href="../period-8/">Play</a><a class="apk" href="../apk/Period8.apk">Android</a></div></li>
+    <li class="app"><img src="../whos-the-brainrot/apple-touch-icon.png" alt="" width="64" height="64"><div class="txt"><h2>Who's the Brainrot?</h2><p>Pass-and-play imposter party game, 3-10 players.</p></div><div class="btns"><a class="play" href="../whos-the-brainrot/">Play</a><a class="apk" href="../apk/WhosTheBrainrot.apk">Android</a></div></li>
+    <li class="app"><img src="../spin-and-deal/apple-touch-icon.png" alt="" width="64" height="64"><div class="txt"><h2>Spin &amp; Deal</h2><p>Free social casino. Virtual coins only, 18+.</p></div><div class="btns"><a class="play" href="../spin-and-deal/">Play</a><a class="apk" href="../apk/SpinAndDeal.apk">Android</a></div></li>
+    <li class="app"><img src="../brainrot-aura-rush/apple-touch-icon.png" alt="" width="64" height="64"><div class="txt"><h2>Brainrot: Tactical Aura Rush</h2><p>Pick gates, grow your squad, beat the boss.</p></div><div class="btns"><a class="play" href="../brainrot-aura-rush/">Play</a><a class="apk" href="../apk/BrainrotAuraRush.apk">Android</a></div></li>
+    <li class="app"><img src="../aether-surge/apple-touch-icon.png" alt="" width="64" height="64"><div class="txt"><h2>Aether Surge</h2><p>Survivor RPG. Last five minutes in the Rift.</p></div><div class="btns"><a class="play" href="../aether-surge/">Play</a><a class="apk" href="../apk/AetherSurge-latest.apk">Android</a></div></li>
+    <li class="app"><img src="../wing-protocol/icon-180.png" alt="" width="64" height="64"><div class="txt"><h2>Wing Protocol</h2><p>Mech sorties against endless machine hordes.</p></div><div class="btns"><a class="play" href="../wing-protocol/">Play</a><a class="apk" href="../apk/WingProtocol.apk">Android</a></div></li>
     <li class="app"><img src="../fishing-almanac/icons/apple-touch-icon.png" alt="" width="64" height="64"><div class="txt"><h2>Fishing Almanac</h2><p>Fishing reports, weather, tackle plans, catch log.</p></div><a class="play" href="../fishing-almanac/">Play</a></li>
-    <li class="app"><img src="../card-scanner/apple-touch-icon.png" alt="" width="64" height="64"><div class="txt"><h2>Card Scanner</h2><p>Scan a trading card, get price and centering pre-grade.</p></div><a class="play" href="../card-scanner/">Play</a></li>
+    <li class="app"><img src="../card-scanner/apple-touch-icon.png" alt="" width="64" height="64"><div class="txt"><h2>Card Scanner</h2><p>Scan a trading card, get price and centering pre-grade.</p></div><div class="btns"><a class="play" href="../card-scanner/">Play</a><a class="apk" href="../apk/CardScanner.apk">Android</a></div></li>
+    <li class="app"><img src="../sunken-spire/icons/icon-192.png" alt="" width="64" height="64"><div class="txt"><h2>Echoes of the Sunken Spire</h2><p>Dive the spire, survive the depths.</p></div><div class="btns"><a class="play" href="../sunken-spire/">Play</a><a class="apk" href="../apk/SunkenSpire-rift.apk">Android</a></div></li>
+    <li class="app"><img src="../final-cast/icons/icon-192.png" alt="" width="64" height="64"><div class="txt"><h2>Final Cast</h2><p>Cast, hook and land the big one.</p></div><div class="btns"><a class="play" href="../final-cast/">Play</a><a class="apk" href="../apk/FinalCast-M2.apk">Android</a></div></li>
+    <li class="app"><img src="../dirttrack/icons/icon-192.png" alt="" width="64" height="64"><div class="txt"><h2>DirtTrack</h2><p>Dirt track racing app.</p></div><div class="btns"><a class="play" href="../dirttrack/">Play</a></div></li>
+    <li class="app"><img src="../scan-forge/apple-touch-icon.png" alt="" width="64" height="64"><div class="txt"><h2>Scan Forge</h2><p>3D scan objects into printable STLs. Needs the PC server.</p></div><div class="btns"><a class="play" href="../scan-forge/">Play</a><a class="apk" href="../apk/ScanForge-m1.apk">Android</a></div></li>
+    <li class="app"><img src="../print-doctor/apple-touch-icon.png" alt="" width="64" height="64"><div class="txt"><h2>Print Doctor</h2><p>Diagnose and fix bad 3D prints.</p></div><div class="btns"><a class="play" href="../print-doctor/">Play</a></div></li>
   </ul>
   <p class="note">Ads and in-app purchases are only in the Android apps. Tap anywhere once to turn the sound on.</p>
 </main></body></html>
