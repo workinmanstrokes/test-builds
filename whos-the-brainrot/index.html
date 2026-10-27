@@ -17,11 +17,9 @@
   <link rel="icon" href="icon.png">
   <link rel="manifest" href="manifest.webmanifest">
   <link rel="stylesheet" href="styles.css">
-  <style>#boot{position:fixed;inset:0;z-index:99;background:#14082b;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;font-family:system-ui,sans-serif}#boot b{color:#ffd60a;font-size:15px;letter-spacing:3px}#boot strong{color:#fff;font-size:40px;font-weight:900;margin-top:-12px}#boot .bar{width:200px;height:8px;border-radius:8px;background:#ffffff1a;overflow:hidden}#boot .bar i{display:block;height:100%;width:40%;border-radius:8px;background:#ff2e88;animation:bootbar 1s ease-in-out infinite}@keyframes bootbar{from{transform:translateX(-100%)}to{transform:translateX(250%)}}</style>
+  <script src="telemetry.js" defer></script>
 </head>
 <body>
-  <!-- Loading screen only (no splash): logo on the loading bar, removed the moment the title is interactive. -->
-  <div id="boot" aria-label="Loading"><b>WHO'S THE</b><strong>BRAINROT?</strong><div class="bar"><i></i></div></div>
   <div id="bg"></div>
   <main id="app" aria-live="polite"></main>
   <div id="stage" hidden></div>
