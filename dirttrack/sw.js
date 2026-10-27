@@ -1,5 +1,5 @@
 // Minimal offline shell: cache-first for app assets, network for everything else.
-const C = 'dirttrack-v2';
+const C = 'dirttrack-9f3345a559';
 self.addEventListener('install', (e) => { self.skipWaiting(); e.waitUntil(caches.open(C).then((c) => c.addAll(['./', './index.html', './icon.svg']))); });
 self.addEventListener('activate', (e) => e.waitUntil(caches.keys().then((ks) => Promise.all(ks.filter((k) => k !== C).map((k) => caches.delete(k))))));
 self.addEventListener('fetch', (e) => {
