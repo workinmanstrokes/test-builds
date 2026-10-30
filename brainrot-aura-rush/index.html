@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-          <!-- ios-pwa -->
+            <!-- ios-pwa -->
   <link rel="manifest" href="manifest.webmanifest">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="mobile-web-app-capable" content="yes">
@@ -121,6 +121,7 @@
       <p class="essence" id="essenceP"></p>
       <button class="btn gold" onclick="startGame()">TAP TO START</button>
       <button class="btn violet" id="metaBtn" onclick="openMetaShop()">⬡ UPGRADES</button>
+      <div class="abx-menu"><button class="btn abx-pink" id="boxBtn" onclick="AuraBox.open()">🎁 AURA BOX</button><button class="btn abx-dim" id="indexBtn" onclick="AuraBox.openIndex()">📖 INDEX</button></div>
       <div id="chestBox"></div>
       <div class="legal"><a id="privacyLink" href="#" target="_blank" rel="noopener">Privacy policy</a><button id="privOptBtn" style="display:none" onclick="BRAds.showPrivacyOptions()">Privacy options</button></div>
     </div>
@@ -132,6 +133,7 @@
       <p id="endDesc">Boss Defeated!</p>
       <p class="best" id="endBest"></p>
       <div id="shop"></div>
+      <div id="boxOffer"></div>
       <div id="adOffers"></div>
       <button class="btn" id="nextBtn" onclick="nextLevel()">CONTINUE</button>
     </div>
@@ -170,6 +172,7 @@
   <script src="js/portal.js"></script>
   <script src="js/ads.js"></script>
   <script src="js/sprites.js"></script>
+  <script src="js/aurabox.js"></script>
   <script>
     const canvas = document.getElementById('gameCanvas');
     const ctx = canvas.getContext('2d', { alpha: false });
@@ -394,6 +397,7 @@
     const keys = { l: false, r: false };
     const keyDir = k => (k === 'ArrowLeft' || k === 'a' || k === 'A') ? 'l' : (k === 'ArrowRight' || k === 'd' || k === 'D') ? 'r' : null;
     window.addEventListener('keydown', e => {
+      if (AuraBox.isOpen()) return; // aura box / index handle their own keys
       if (e.key === 'Escape' || e.key === 'p') { state === 'PAUSED' ? resumeGame() : pauseGame(); return; }
       const d = keyDir(e.key); if (d) { keys[d] = true; e.preventDefault(); return; }
       if ((e.key === 'Enter' || e.key === ' ') && !e.repeat && !(e.target && e.target.closest && e.target.closest('button'))) {
@@ -410,6 +414,7 @@
     if (Native.App && isNative) {
       try {
         Native.App.addListener('backButton', () => {
+          if (AuraBox.back()) return;
           if (state === 'PLAYING' || state === 'BOSS') pauseGame();
           else if (state === 'PAUSED') resumeGame();
           else if (state === 'VICTORY' || state === 'GAMEOVER') quitToTitle();
@@ -422,7 +427,7 @@
     if (Native.StatusBar && isNative) { try { Native.StatusBar.hide(); } catch (e) { /* ignore */ } }
 
     function quitToTitle() {
-      if (state === 'PLAYING' || state === 'BOSS' || state === 'PAUSED' || state === 'VICTORY' || state === 'GATE') { recordBest(); endRunEssence(); }
+      if (state === 'PLAYING' || state === 'BOSS' || state === 'PAUSED' || state === 'VICTORY' || state === 'GATE') { recordBest(); endRunEssence(); AuraBox.endRun(runPlayed()); }
       state = 'START'; pausedFrom = null; dragging = false; boss = null;
       for (const key in entities) entities[key].length = 0;
       ['pauseModal', 'endModal', 'gateModal'].forEach(id => $(id).style.display = 'none'); Portal.gameplayStop(); $('adOffers').innerHTML = '';
@@ -453,7 +458,7 @@
     }
     function newRun() {
       level = 1; aura = 0; carrySquad = 0; runKills = 0; runAuraEarned = 0; runAwarded = false; troopStage = 0; evolveFlash = 0;
-      runRevived = false; runDoubled = false;
+      runRevived = false; runDoubled = false; AuraBox.startRun();
       upgrades = { recruits: 0, rate: 0, dmg: 0, shield: 0 };
       initLevel();
     }
@@ -504,7 +509,7 @@
       shieldCharges = upgrades.shield; lastStandUsed = false; zoneBonusUsed = false; squadOfferShown = false;
       timeScale = 1.0; slowMoTimer = 0; damageFlash = 0; zoneAuraStart = aura; dustBlind = 0; dustSlow = 0;
       for (const key in entities) entities[key].length = 0;
-      boss = null; $('bossUI').style.display = 'none'; $('endModal').style.display = 'none';
+      boss = null; $('bossUI').style.display = 'none'; $('endModal').style.display = 'none'; $('boxOffer').innerHTML = '';
       $('levelBadge').textContent = `ZONE ${level}`;
       $('tierBadge').textContent = 'FORMATION: GRID';
       $('hint').style.display = 'block';
@@ -542,6 +547,7 @@
       return v;
     }
     const runEssence = () => Math.floor(runKills / 4 + level * 10 + runAuraEarned / 120);
+    const runPlayed = () => runKills >= 3 || level > 1 || runAuraEarned > 0; // a real attempt, not start -> quit
     function endRunEssence() { if (runAwarded) return 0; runAwarded = true; return awardEssence(runEssence()); }
     function updateAuraUI() { $('auraBadge').textContent = `✨ ${Math.round(aura)} AURA`; }
 
@@ -592,7 +598,7 @@
           $('slowmoOverlay').style.opacity = slowMoTimer > 0 ? '1' : '0';
           update(rawDt * timeScale, rawDt);
         }
-        render(rawDt);
+        if (!AuraBox.covering()) render(rawDt);
       } catch (err) {
         const msg = String(err && err.stack || err);
         if (msg !== lastErr) { console.error('[game loop]', err); lastErr = msg; }
@@ -965,6 +971,7 @@
         const count = Math.max(1, Math.ceil(squad.visualCount));
         const { slots, hw } = formationLayout(count, squad.formation);
         drawShadow(ctx, 0, 0, Math.max(40, hw + 10));
+        AuraBox.drawEquipped(ctx, hw, performance.now() / 1000); // cosmetic aura from the Aura Index
         if (shieldCharges > 0) {
           ctx.strokeStyle = 'rgba(250,204,21,0.7)'; ctx.lineWidth = 3;
           ctx.beginPath(); ctx.ellipse(0, -10, hw + 22, (hw + 22) * 0.4, 0, 0, Math.PI * 2); ctx.stroke();
@@ -1041,13 +1048,14 @@
     function gameOver() {
       deathState = state === 'BOSS' ? 'BOSS' : 'PLAYING';
       state = 'GAMEOVER'; recordBest(); const gained = endRunEssence(); lastGained = gained; Portal.gameplayStop();
+      AuraBox.endRun(runPlayed()); // free Aura Box for every played run (once per run, revives don't add more)
       $('endTitle').textContent = 'CRASHED OUT!'; $('endTitle').style.color = '#ef4444';
       setGameOverText();
       renderAdOffers();
       $('endBest').textContent = bestText();
       $('shop').style.display = 'none'; $('bossUI').style.display = 'none';
       slowMoTimer = 0; $('slowmoOverlay').style.opacity = '0';
-      $('nextBtn').textContent = 'NEW RUN'; $('nextBtn').className = 'btn gold';
+      $('nextBtn').textContent = 'NEW RUN'; $('nextBtn').className = 'btn gold'; AuraBox.renderEndOffer();
       $('endModal').style.display = 'flex';
     }
     function setGameOverText() {
@@ -1110,7 +1118,7 @@
       for (const e of entities.enemies) if (e.y > trackProgress - 100 && e.y < trackProgress + 700) e.active = false;
       if (boss && boss.active) { boss.state = 'IDLE'; boss.timer = 2.5; boss.lanes = []; $('bossUI').style.display = 'flex'; }
       addFloatText(squad.x, trackProgress + 100, 'REVIVED!', '#4ade80');
-      $('endModal').style.display = 'none'; $('adOffers').innerHTML = '';
+      $('endModal').style.display = 'none'; $('adOffers').innerHTML = ''; $('boxOffer').innerHTML = '';
       state = deathState; lastTime = performance.now(); if (actx) actx.resume(); Portal.gameplayStart();
     }
     function doubleEssence() {
@@ -1162,6 +1170,13 @@
     $('privacyLink').href = (window.BR_CONFIG && BR_CONFIG.PRIVACY_URL) || 'privacy-policy.html';
     if (Portal.active) document.querySelector('.legal').style.display = 'none'; // portals: no external links
     renderChest();
+    AuraBox.init({
+      buzz, initAudio, audio: () => ({ actx, master, muted: save.muted }),
+      award: n => { meta.essence += n; saveMeta(); renderEssence(); if (state === 'GAMEOVER') setGameOverText(); },
+      ads: { can: () => BRAds.canOffer(save.ads, 'aurabox'), show: async () => { const ok = await BRAds.show(save.ads, 'aurabox'); persist(); renderAdOffers(); renderChest(); return ok; } },
+      isRunOver: () => state === 'GAMEOVER',
+      onClose: () => { renderEssence(); },
+    });
     BRAds.init();
     if (document.fonts && document.fonts.load) document.fonts.load(font(16)).catch(() => {});
     requestAnimationFrame(loop);
