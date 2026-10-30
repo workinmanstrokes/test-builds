@@ -32,6 +32,7 @@ function home() {
   <div class="logo"><div class="t1">Who's the</div><div class="t2">BRAINROT?</div></div>
   <div class="mascot">${brainrotSVG(180)}</div>
   <p class="center dim">Pass-and-play imposter party game<br>3-10 players · one phone · no Wi-Fi needed</p>
+  <div class="cast" aria-hidden="true">${PACKS.map(p => p.chars[0]).slice(0, 5).map((c, i) => `<span style="--i:${i};--pc:${packById(c.pack).color}">${charSVG(c, { size: 60, bg: false })}</span>`).join('')}</div>
   <div class="grow"></div>
   <div class="col">
     ${cont ? `<button class="btn big yel" data-act="next">▶ Round ${save.rounds + 1} with ${save.players.length} players</button>` : ''}
@@ -47,7 +48,7 @@ function setup() {
   if (!G.modeAllowed(S.mode, Math.max(n, 3)) && n >= 3) S.mode = 'classic';
   render(`<div class="top"><button class="iconbtn" data-act="home" aria-label="Back">‹</button><h2>Game setup</h2><button class="iconbtn" data-act="settings" aria-label="Settings">⚙️</button></div>
   <div class="label">Players (${n}/${G.MAX_PLAYERS})</div>
-  <div id="players">${draft.map((p, i) => `<div class="pl"><input data-i="${i}" maxlength="14" placeholder="Player ${i + 1}" value="${esc(p)}" autocomplete="off" enterkeyhint="next">${draft.length > 3 ? `<button class="iconbtn" data-act="delp" data-i="${i}" aria-label="Remove">✕</button>` : ''}</div>`).join('')}</div>
+  <div id="players">${draft.map((p, i) => `<div class="pl"><span class="pn" aria-hidden="true">${i + 1}</span><input data-i="${i}" maxlength="14" placeholder="Player ${i + 1}" value="${esc(p)}" autocomplete="off" enterkeyhint="next">${draft.length > 3 ? `<button class="iconbtn" data-act="delp" data-i="${i}" aria-label="Remove">✕</button>` : ''}</div>`).join('')}</div>
   ${draft.length < G.MAX_PLAYERS ? '<button class="btn ghost sm" data-act="addp" id="addp">+ Add player</button>' : ''}
   <div class="label">Mode</div>
   <div class="chips">${Object.entries(G.MODES).map(([k, m]) => `<button class="chip ${S.mode === k ? 'on' : ''}" data-act="mode" data-v="${k}" ${n >= 3 && !G.modeAllowed(k, n) ? 'disabled' : ''}>${m.emoji} ${m.name}</button>`).join('')}</div>
@@ -72,7 +73,7 @@ function packTile(p) {
   const un = isUnlocked(save, p.id), on = un && S.packs.includes(p.id);
   const left = !p.free && !save.noAds && un ? Math.ceil((unlockedUntil(save, p.id) - Date.now()) / 3600e3) : 0;
   return `<button class="pack ${on ? 'on' : ''} ${un ? '' : 'locked'}" data-act="pack" data-id="${p.id}">
-    ${un ? '' : '<span class="lock">🔒</span>'}<span class="e">${p.emoji}</span><b>${p.name}</b>
+    ${un ? '' : '<span class="lock">🔒</span>'}<span class="e" style="--pc:${p.color}" aria-hidden="true">${charSVG(p.chars[0], { size: 46, bg: false })}</span><b>${p.name}</b>
     <small>${p.chars.length} characters · ${p.free ? 'Free' : save.noAds ? 'Owned' : un ? `${left}h left` : 'Watch ad: 24h'}</small>
     <span class="faces">${p.chars.slice(0, 4).map(c => charSVG(c, { size: 34, bg: false })).join('')}</span></button>`;
 }
@@ -244,7 +245,7 @@ function packsModal() {
   const buy = billingAvailable() && !save.noAds;
   modal(`<h2>Packs</h2><p class="dim small">Starter is free forever. Watch a short ad to unlock any other pack for ${ADS.unlockHours} hours.</p>
   <div class="col">${PACKS.map(p => { const un = isUnlocked(save, p.id); const left = Math.ceil((unlockedUntil(save, p.id) - Date.now()) / 3600e3);
-    return `<div class="panel row"><span style="font-size:30px">${p.emoji}</span><div class="grow"><b>${p.name}</b><div class="small dim">${p.chars.length} characters · ${p.free ? 'Free' : save.noAds ? 'Owned' : un ? `Unlocked · ${left}h left` : 'Locked'}</div></div>
+    return `<div class="panel row"><span class="e" style="--pc:${p.color}" aria-hidden="true">${charSVG(p.chars[0], { size: 40, bg: false })}</span><div class="grow"><b>${p.name}</b><div class="small dim">${p.chars.length} characters · ${p.free ? 'Free' : save.noAds ? 'Owned' : un ? `Unlocked · ${left}h left` : 'Locked'}</div></div>
     ${un ? '✅' : `<button class="btn sm yel" data-act="unlock" data-id="${p.id}" id="unlock-${p.id}">▶ 24h</button>`}</div>`; }).join('')}</div>
   ${buy ? `<div style="height:10px"></div><button class="btn big primary" data-act="buy">All packs forever · no ads · ${removeAdsPrice()}</button>` : ''}
   <div style="height:10px"></div><button class="btn big ghost" data-act="close">Close</button>`);
@@ -260,7 +261,7 @@ async function unlock(id) {
 }
 function settings() {
   const ai = adsInfo();
-  modal(`<h2>Settings</h2>
+  modal(`<div class="settings"><h2>Settings</h2>
   <div class="toggle">Sound <button class="chip ${S.sound ? 'on' : ''}" data-act="set" data-k="sound">${S.sound ? 'On' : 'Off'}</button></div>
   <div class="toggle">Vibration <button class="chip ${S.vibe ? 'on' : ''}" data-act="set" data-k="vibe">${S.vibe ? 'On' : 'Off'}</button></div>
   <div class="toggle"><span>🎬 Clip mode<br><span class="small dim">3-2-1 countdown, captions and a watermark on the reveal, made for screen recording Shorts/TikTok.</span></span><button class="chip ${S.clip ? 'on' : ''}" data-act="set" data-k="clip" id="clipToggle">${S.clip ? 'On' : 'Off'}</button></div>
@@ -269,7 +270,7 @@ function settings() {
   <p class="small dim">No account, no analytics, nothing leaves your phone except what the ad provider needs to show optional rewarded ads. Ages ${AGE_RATING}.</p>
   ${isPortal ? '' : `<p class="small"><a href="${PRIVACY_URL}" target="_blank" rel="noopener">Privacy policy</a></p>`}
   <p class="small dim">Who's the Brainrot? v0.1.0 · Diddlerrr</p>
-  <button class="btn big ghost" data-act="close">Close</button>`);
+  <button class="btn big ghost" data-act="close">Close</button></div>`);
 }
 function refresh() { if (app.querySelector('#btnStart')) setup(); else if (app.querySelector('#btnPlay')) home(); }
 
