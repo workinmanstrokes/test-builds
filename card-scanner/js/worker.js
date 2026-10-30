@@ -5,6 +5,11 @@ self.onmessage = e => {
   try {
     const im = { w: img.w, h: img.h, d: new Uint8ClampedArray(img.buf) };
     if (op === 'detect') { const d = GradeCore.detectCard(im); self.postMessage({ id, ok: true, res: d }); return; }
+    if (op === 'warp') { // hi-res straightened card for text recognition
+      const q = quad, L = (a, b) => Math.hypot(a[0] - b[0], a[1] - b[1]), land = (L(q[0], q[1]) + L(q[3], q[2])) > (L(q[0], q[3]) + L(q[1], q[2]));
+      const W = land ? 1680 : 1200, H = land ? 1200 : 1680, c = GradeCore.warp(im, quad, W, H);
+      self.postMessage({ id, ok: true, card: { w: c.w, h: c.h, buf: c.d.buffer } }, [c.d.buffer]); return;
+    }
     if (op === 'analyze') {
       const r = GradeCore.analyzeSide(im, quad ? { quad } : {});
       const card = r.card; delete r.card;

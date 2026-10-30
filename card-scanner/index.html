@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-      <!-- ios-pwa -->
+        <!-- ios-pwa -->
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -34,8 +34,8 @@
       <div class="hc-inner">
         <span class="chip">On-device analysis</span>
         <h1>Pre-grade a card<br>in under a minute</h1>
-        <p>Measures centering, corners, edges and surface flaws like print lines and scratches from your photos.</p>
-        <div class="checks"><span>Centering</span><span>Corners</span><span>Edges</span><span>Surface</span></div>
+        <p>Measures centering, corners, edges and surface flaws, then identifies the card and shows what it sells for.</p>
+        <div class="checks"><span>Centering</span><span>Corners</span><span>Edges</span><span>Surface</span><span class="gold">Card ID &amp; prices</span></div>
       </div>
     </div>
     <button class="btn primary big" id="scanBtn"><svg viewBox="0 0 24 24"><path d="M4 8V6a2 2 0 0 1 2-2h2M16 4h2a2 2 0 0 1 2 2v2M20 16v2a2 2 0 0 1-2 2h-2M8 20H6a2 2 0 0 1-2-2v-2"/><circle cx="12" cy="12" r="3.2"/></svg>Scan a card</button>
@@ -112,6 +112,7 @@
       <div class="gauge" id="gauge"><svg viewBox="0 0 120 120"><defs><linearGradient id="gg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#22d3ee"/><stop offset=".55" stop-color="#a78bfa"/><stop offset="1" stop-color="#f5c76b"/></linearGradient></defs><circle cx="60" cy="60" r="52" class="g-bg"/><circle cx="60" cy="60" r="52" class="g-fg" id="gaugeArc"/></svg><div class="g-val"><small>Est. grade</small><b id="gradeRange">–</b><span id="gradeConf"></span></div></div>
       <div class="disclaimer"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9.5"/><path d="M12 8v5M12 16v.01"/></svg><span><b>Estimate, not an official grade.</b> Based on photos; lighting and camera limits apply. Not affiliated with any grading company.</span></div>
     </div>
+    <button class="mv" id="mvPanel" type="button" aria-label="Card and market value"></button>
     <div class="side-tabs" id="sideTabs"><button class="on" data-side="front">Front</button><button data-side="back">Back</button></div>
     <div class="viewer">
       <canvas id="cardCanvas"></canvas><canvas id="overlay"></canvas>
@@ -136,6 +137,31 @@
   </div>
 </section>
 
+<!-- SCAN & PRICE -->
+<section class="screen" id="price">
+  <header class="top">
+    <button class="icon-btn" data-back aria-label="Back"><svg viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7"/></svg></button>
+    <div class="title"><b>Card &amp; market value</b><small id="pxSub">Scan &amp; Price</small></div>
+    <span style="width:44px"></span>
+  </header>
+  <div class="scroll" id="pxScroll">
+    <div class="px-hero" id="pxHero"></div>
+    <div class="px-sec" id="pxPrices"></div>
+    <div class="px-sec" id="pxSales"></div>
+    <div class="px-sec" id="pxListed"></div>
+    <div class="px-sec" id="pxSports" hidden></div>
+    <div class="px-sec" id="pxFix">
+      <div class="px-h"><h3>Not the right card?</h3></div>
+      <div class="alts" id="pxAlts"></div>
+      <div class="seg" id="pxGame"><button data-g="pokemon">Pokémon</button><button data-g="magic">Magic</button><button data-g="sports">Sports</button></div>
+      <form class="srch" id="pxForm"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="6.5"/><path d="m16 16 4 4"/></svg><input id="pxQ" type="search" placeholder="Search by card name" autocomplete="off" enterkeyhint="search"><button class="btn primary sm" type="submit">Search</button></form>
+      <div class="alts" id="pxResults"></div>
+    </div>
+    <p class="px-legal">Prices come from TCGdex (TCGplayer, Cardmarket) and Scryfall, shown with the date each source reports. Recent sales are completed auctions. “Listed now” shows asking prices of active eBay listings, which are not sales. Card Pre­Grade isn't affiliated with any of these services.</p>
+    <div style="height:24px"></div>
+  </div>
+</section>
+
 <!-- ABOUT / PRIVACY sheet -->
 <div class="sheet" id="sheet"><div class="sheet-card">
   <div class="grab"></div>
@@ -143,14 +169,19 @@
   <p>Card PreGrade estimates a trading card's condition from photos: centering, corners, edges and surface flaws (print lines, scratches, whitening). It runs entirely on your phone.</p>
   <p class="muted">It gives an estimate, not an official grade, and isn't affiliated with or endorsed by any grading company.</p>
   <h3>Privacy</h3>
-  <ul class="plist"><li>Card photos are analyzed on your device and are never uploaded.</li><li>Recent scans (a small thumbnail and scores) are stored only on this phone. You can clear them below.</li><li>Anonymous crash reports and usage counts help fix bugs. They contain no photos and no personal info.</li></ul>
+  <ul class="plist"><li>Card photos are analyzed on your device and are never uploaded.</li><li>To identify and price a card, only the text read from it (name, number, set) is sent to free card databases (TCGdex, Scryfall, Wikipedia) and, for recent sales, to our sales lookup.</li><li>Recent scans (a small thumbnail and scores) are stored only on this phone. You can clear them below.</li><li>Anonymous crash reports and usage counts help fix bugs. They contain no photos and no personal info.</li></ul>
   <a class="link" href="https://workinmanstrokes.github.io/artifacts/card-pregrade-privacy/" target="_blank" rel="noopener">Full privacy policy</a>
   <div class="sheet-actions"><button class="btn ghost" id="clearHist">Clear recent scans</button><button class="btn primary" id="closeSheet">Done</button></div>
-  <p class="muted tiny">Diddlerrr · v1.0.0 · mscofield1588@gmail.com</p>
+  <p class="muted tiny">Diddlerrr · v1.1.0 · mscofield1588@gmail.com</p>
 </div></div>
 <div class="toast" id="toast"></div>
 </div>
+<script src="js/config.js"></script>
 <script src="js/grade-core.js"></script>
+<script src="js/idparse.js"></script>
+<script src="js/net.js"></script>
+<script src="js/ocr.js"></script>
+<script src="js/identify.js"></script>
 <script src="js/app.js"></script>
 </body>
 </html>
