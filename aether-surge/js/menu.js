@@ -92,7 +92,7 @@ $("sheetClose").addEventListener("click",function(){tap();closeSheet();});
 $("ctlBtn").addEventListener("click",function(){tap();closeSheet();AS.controls.open();});
 function restoreSettings(){var b=$("settingsBox");if(b.parentNode!==document.body){b.style.display="none";document.body.appendChild(b);}}
 $("setBtn").addEventListener("click",function(){tap();openSheet("","settings");var b=$("settingsBox");b.style.display="flex";$("sheetBody").appendChild(b);renderMute();});
-function renderMute(){$("muteBtn2").textContent=S.isMuted()?"🔇 Sound: OFF":"🔊 Sound: ON";}
+function renderMute(){$("muteBtn2").innerHTML=AS.setRow("Sound",S.isMuted()?"OFF":"ON",!S.isMuted());}
 $("muteBtn2").addEventListener("click",function(){var m=S.toggleMute();$("mute").textContent=m?"🔇":"🔊";renderMute();});
 
 function untilTxt(ms){ms=Math.max(0,ms);var h=Math.floor(ms/3600000),m=Math.floor(ms%3600000/60000),s=Math.floor(ms%60000/1000);return h?h+"h "+m+"m":m+"m "+(s<10?"0":"")+s+"s";}

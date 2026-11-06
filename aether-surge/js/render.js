@@ -32,11 +32,13 @@ GFX.sample=function(rafMs,playing){
 
 function resize(){
   var dpr=Math.min(window.devicePixelRatio||1,hi()?2:1.25);
-  V.dpr=dpr;V.W=window.innerWidth||360;V.H=window.innerHeight||640;
-  canvas.width=Math.floor(V.W*dpr);canvas.height=Math.floor(V.H*dpr);
-  canvas.style.width=V.W+"px";canvas.style.height=V.H+"px";
-  ctx.setTransform(dpr,0,0,dpr,0,0);
-  if(spriteDpr!==dpr){spriteDpr=dpr;cache={};enemySprites={};bossSprites={};floorTiles={};decals={};artTiles={};whiteC={};tintC={};}
+  // phones: zoom the world ~18% so heroes and enemies read clearly at arm's length (view shrinks to match)
+  var cw0=window.innerWidth||360,ch0=window.innerHeight||640,Z=V.zoom=Math.min(cw0,ch0)<540?1.18:1;
+  V.dpr=dpr*Z;V.W=cw0/Z;V.H=ch0/Z; // V.dpr = device px per world unit (caches and particle transforms use it)
+  canvas.width=Math.floor(cw0*dpr);canvas.height=Math.floor(ch0*dpr);
+  canvas.style.width=cw0+"px";canvas.style.height=ch0+"px";
+  ctx.setTransform(dpr*Z,0,0,dpr*Z,0,0);
+  if(spriteDpr!==V.dpr){spriteDpr=V.dpr;cache={};enemySprites={};bossSprites={};floorTiles={};decals={};artTiles={};whiteC={};tintC={};}
   buildVignette();buildGlowLayer();
 }
 function mk(w,h,fn){
@@ -163,7 +165,7 @@ function stageFor(G,ph){
   return PH_STAGE[ph]||1;
 }
 /* ground decals: deterministic per 300px cell, phase-specific art (rune circles, craters, crystals, vents, glyphs) */
-var decals={},DC=300;
+var decals={},DC=230;
 function hash2(x,y,i){var n=(Math.imul(x,374761393)+Math.imul(y,668265263)+Math.imul(i,1274126177))|0;n=Math.imul(n^(n>>>13),1274126177);n^=n>>>16;return (n>>>0)/4294967296;}
 function decalSprite(id,kind){
   var k=id+kind,s=decals[k];if(s)return s;var p=PH[id],TAU=Math.PI*2;
@@ -189,7 +191,7 @@ function drawDecals(id,ox,oy,alpha){
   var W=V.W,H=V.H,x0=Math.floor((-ox-60)/DC),x1=Math.floor((-ox+W+60)/DC),y0=Math.floor((-oy-60)/DC),y1=Math.floor((-oy+H+60)/DC);
   ctx.globalAlpha=alpha;
   for(var cy=y0;cy<=y1;cy++)for(var cx=x0;cx<=x1;cx++){
-    var h=hash2(cx,cy,7);if(h>0.62)continue;
+    var h=hash2(cx,cy,7);if(h>0.7)continue;
     var kind=h<0.2?0:(h<0.42?1:2),s=decalSprite(id,kind),dx=cx*DC+30+hash2(cx,cy,8)*(DC-60)+ox,dy=cy*DC+30+hash2(cx,cy,9)*(DC-60)+oy;
     ctx.drawImage(s,dx-60,dy-60,120,120);
   }
@@ -461,7 +463,7 @@ function playerFrame(P,mv,gT){
 function drawPlayerAnim(P,x,footY,mv,invF,isCharge,gT){
   var im=IMG.player_anim,m=AM.player;if(!im||!m||P.portrait)return false;
   var PA=ART.playerAnim,n=PA.frames,fw=im.naturalWidth/n,fh=im.naturalHeight,f=playerFrame(P,mv,gT);
-  ctx.save();ctx.translate(x,footY);ctx.scale(P.fx<0?-1:1,1);
+  ctx.save();ctx.translate(x,footY);var PS=1.15;ctx.scale((P.fx<0?-1:1)*PS,PS); // Michael sprite drawn 15% larger (visual only; hitbox unchanged)
   ctx.drawImage(im,f*fw,0,fw,fh,m[0],m[1]-m[4],m[2],m[3]);
   var fl=invF?0.6:(isCharge?0.25+0.25*Math.sin(gT*30):0);
   if(fl>0){var w=whiteOf("player_anim");if(w){ctx.globalAlpha=fl;ctx.drawImage(w,f*fw,0,fw,fh,m[0],m[1]-m[4],m[2],m[3]);}}
@@ -667,7 +669,7 @@ function draw(G){
   else{if(fa<1&&prevPh)tiles(floorFor(prevPh),1);
   tiles(floorFor(curPh),fa<1&&prevPh?fa:1);}
   ctx.restore();
-  var OFF=GFX.off,dA=gtC?0.55:1;
+  var OFF=GFX.off,dA=gtC?0.75:1;
   if(G.state==="start"&&gtC)drawStageBackdrop(curSt,ox,G.P.y+oy+14*menuScale()+3);
   else if(HQ&&!OFF.decals){if(fa<1&&prevPh)drawDecals(prevPh,ox,oy,(1-fa)*dA);drawDecals(curPh,ox,oy,(fa<1&&prevPh?fa:1)*dA);}
 
