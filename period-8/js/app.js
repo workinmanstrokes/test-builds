@@ -3,7 +3,8 @@ import { View, FACES } from './view.js';
 import { byId } from './anomalies.js';
 import * as G from './game.js';
 import * as sfx from './audio.js';
-import { initAds, showRewarded, rewardGate, adsInfo, showPrivacyOptions, consentAllowsAnalytics } from './ads.js';
+import { initAds, showRewarded, rewardGate, adsInfo, showPrivacyOptions } from './ads.js';
+import { collectionAllowed } from './consent.js';
 import { iapInfo, buyRemoveAds } from './iap.js';
 import { track, setAnalyticsAllowed } from './analytics.js';
 import { buzzPhone, thud, setHaptics } from './haptics.js';
@@ -253,7 +254,7 @@ function settings() {
     <label class="tog"><span>Sound effects</span><input type="range" id="sSfx" min="0" max="1" step="0.05" value="${s.sfx}"></label>
     <label class="tog"><span>Reduce flashing</span><input type="checkbox" id="sFlash" ${s.reduceFlash ? 'checked' : ''}></label>
     <label class="tog"><span>Vibration</span><input type="checkbox" id="sHap" ${s.haptics ? 'checked' : ''}></label>
-    <label class="tog"><span>Share anonymous gameplay stats</span><input type="checkbox" id="sStats" ${s.analytics !== false ? 'checked' : ''}></label>
+    <label class="tog"><span>Share anonymous gameplay stats<small class="dim">Off until you turn this on.</small></span><input type="checkbox" id="sStats" ${s.statsOptIn === true ? 'checked' : ''}></label>
     ${ia.enabled ? `<button class="btn" id="sIap">Remove ads · ${ia.price}</button>` : ''}
     ${ad.privacyRequired ? '<button class="btn" id="sPriv">Privacy options</button>' : ''}
     <a class="btn" href="${PRIVACY_URL}" target="_blank" rel="noopener">Privacy policy</a>
@@ -269,9 +270,9 @@ function settings() {
   $('#sHap').onchange = e => { s.haptics = e.target.checked; setHaptics(s.haptics); persist(); };
   if ($('#sIap')) track('remove_ads_shown');
   if ($('#sIap')) $('#sIap').onclick = async () => { const r = await buyRemoveAds(save); if (r.ok) track('iap_purchase'); toast(r.ok ? 'Ads removed. Thank you!' : r.why); persist(); };
-  $('#sStats').onchange = e => { s.analytics = e.target.checked; persist(); applyAnalyticsChoice(); };
+  $('#sStats').onchange = e => { s.statsOptIn = e.target.checked === true; s.analytics = s.statsOptIn; persist(); applyAnalyticsChoice(); };
   if ($('#sPriv')) $('#sPriv').onclick = async () => { await showPrivacyOptions(); applyAnalyticsChoice(); };
-  $('#sReset').onclick = () => { if (confirm('Erase all progress, endings and the anomaly journal?')) { localStorage.removeItem(G.SAVE_KEY); location.reload(); } };
+  $('#sReset').onclick = () => { if (confirm('Erase saved progress, endings and the anomaly journal on this device? Stats that have not been sent are discarded. Stats already sent are not deleted by this button.')) { clearLocalAnalyticsIds(); localStorage.removeItem(G.SAVE_KEY); location.reload(); } };
   $('#mClose').onclick = () => { if (mode === 'hud' && run && !busy) pauseMenu(); else closeModal(); };
 }
 function applyAccess() {
@@ -335,11 +336,22 @@ window.__p8 = { get run() { return run; }, save, view, choose, G, byId, persist,
 // first launch + day-N / D1 return (Firebase also logs first_open / session_start automatically on Android)
 const DAY = 86400e3, firstOpen = !save.installedAt; if (firstOpen) save.installedAt = Date.now();
 const day = Math.floor((new Date().setHours(0, 0, 0, 0) - new Date(save.installedAt).setHours(0, 0, 0, 0)) / DAY);
+// Decide before any event is logged. Native UMP is still UNKNOWN here, so Android stays off until initAds settles.
+applyAnalyticsChoice();
 initAds().finally(applyAnalyticsChoice);
 if (firstOpen) track('first_launch');
 if (day > 0 && day !== save.lastDayLogged) { track('return_day', { day }); if (day === 1) track('d1_return'); save.lastDayLogged = day; }
 track('session_begin', { day, endings_found: Object.keys(save.endings).length, best: save.best }); persist();
-function applyAnalyticsChoice() { return setAnalyticsAllowed(save.settings.analytics !== false && consentAllowsAnalytics()); }
+function applyAnalyticsChoice() {
+  const ad = adsInfo();
+  const on = collectionAllowed(save.settings, { native: ad.native, consentStatus: ad.consentStatus, canRequest: ad.canRequest });
+  // Not opted in (including a legacy default-on save): drop unsent stats and remove the on-device install id.
+  return setAnalyticsAllowed(on, { forget: save.settings.statsOptIn !== true });
+}
+function clearLocalAnalyticsIds() {
+  try { window.DA?.forgetDevice?.(); } catch {}
+  for (const k of ['da_pid', 'da_first', 'da_idx']) { try { localStorage.removeItem(k); } catch {} }
+}
 // First launch (and every portal first visit): skip the title and go straight into play (Poki/CrazyGames easy access).
 if (!save.introSeen && !save.run) startRun(null, { coldOpen: true }); else title();
 requestAnimationFrame(t => { frame(t); requestAnimationFrame(() => {

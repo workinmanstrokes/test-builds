@@ -73,7 +73,20 @@ applySettings();
 const save = () => { try { localStorage.setItem(G.SAVE_KEY, G.serialize(s, Date.now())); } catch {} };
 
 // ---------- analytics: first open + D1/Dn retention ----------
-initAnalytics(s.settings.analytics);
+initAnalytics(s.settings.analytics === true);
+SOC.setSocialOptIn(s.settings.social === true);
+SOC.setGhostUploadOptIn(s.settings.ghostUpload === true && s.settings.ghosts !== false);
+function syncPrivacy() {
+  SOC.setSocialOptIn(s.settings.social === true);
+  SOC.setGhostUploadOptIn(s.settings.ghostUpload === true && s.settings.ghosts !== false);
+  setAnalyticsOptIn(s.settings.analytics === true);
+}
+function chooseSetting(key, on) {
+  s.settings[`${key}Chosen`] = true;
+  s.settings[key] = on === true;
+  syncPrivacy();
+  save();
+}
 if (firstOpen) track('first_launch', { skin: skin.id });
 const day = G.dayIndex(s, now);
 if (day > 0 && day !== s.lastDayLogged) { track('return_day', { day }); if (day === 1) track('d1_return'); s.lastDayLogged = day; }
@@ -338,10 +351,13 @@ function openSettings() {
     <div class="set">Vibration ${tg('tVibe', s.settings.vibe)}</div>
     <div class="set">Reduce motion &amp; flashes ${tg('tMotion', s.settings.reduceMotion)}</div>
     <div class="set">Large text ${tg('tBig', s.settings.bigText)}</div>
-    ${analyticsMode() !== 'off' ? `<div class="set"><span>Share anonymous analytics<br><small style="opacity:.7;font-weight:600">Helps improve the game${analyticsStatus.consent === 'denied' ? ' · off: not consented' : ''}</small></span> ${tg('tAnalytics', s.settings.analytics)}</div>` : ''}
+    <div class="set"><span>Online ranks and friends<br><small style="opacity:.7;font-weight:600">Off until you turn this on. Creates an anonymous id and publishes your name, emoji, friend code and scores, including daily scores.</small></span> ${tg('tSocial', s.settings.social === true)}</div>
+    <div class="set"><span>Share ghost replays<br><small style="opacity:.7;font-weight:600">Off until you turn this on. Also requires Online ranks. A replay is stored for a player you added who has also added you.</small></span> ${tg('tGhostUp', s.settings.ghostUpload === true)}</div>
+    ${analyticsMode() !== 'off' ? `<div class="set"><span>Share anonymous analytics<br><small style="opacity:.7;font-weight:600">Off until you turn this on.${analyticsStatus.consent === 'denied' ? ' Ad consent is off, so stats stay off.' : ' On Android, ad consent must allow it too.'} Turning it off stops new stats.</small></span> ${tg('tAnalytics', s.settings.analytics === true)}</div>` : ''}
     ${adsInfo().privacyRequired ? '<div class="set">Privacy options <button class="btn" id="mPriv">Manage</button></div>' : ''}
     ${billingAvailable() ? (s.noAds ? '<div class="set">Ads removed ✓ <span style="font-size:12px;opacity:.7">bonuses skip the video</span></div>' : `<div class="set">Remove ads <button class="btn primary" id="mBuy">${removeAdsPrice()}</button></div><div class="set">Already bought? <button class="btn" id="mRestore">Restore</button></div>`) : ''}
     ${isPortal ? '' : `<div class="set">Privacy policy <a href="${PRIVACY_URL}" target="_blank" rel="noopener">Open</a></div>`}
+    ${isPortal ? '' : `<div class="set"><span>Delete online data<br><small style="opacity:.7;font-weight:600">Removes social rows it can find from 1 Oct 2026 through today, plus any score row the server lists for your id. Keeps the anonymous sign-in. Does not delete analytics.</small></span> <button class="btn" id="mDel">Delete</button></div><p class="soc-note" id="mDelWhy" style="white-space:pre-wrap;text-align:left"></p>`}
     <div class="set" style="font-size:12px;opacity:.7">Language: English · Total taps ${G.fmt(s.taps)} · Best streak ${s.best.combo} · Halos ${s.halos} · v${VERSION} · analytics ${analyticsMode()}</div>
     <div class="row" style="margin-top:12px"><button class="btn" id="mClose">Close</button></div>`);
   const flip = (id, key, after) => { $(id).onclick = e => { s.settings[key] = !s.settings[key]; e.target.classList.toggle('on', s.settings[key]); e.target.setAttribute('aria-pressed', s.settings[key]); applySettings(); after?.(); save(); }; };
@@ -349,7 +365,16 @@ function openSettings() {
   $('rMusic').oninput = e => { s.settings.music = e.target.value / 100; applySettings(); save(); };
   $('rSfx').oninput = e => { s.settings.sfx = e.target.value / 100; applySettings(); save(); };
   $('rSfx').onchange = () => { unlockAudio(); sfx('buy'); };
-  $('tAnalytics') && ($('tAnalytics').onclick = e => { s.settings.analytics = !s.settings.analytics; setAnalyticsOptIn(s.settings.analytics); e.target.classList.toggle('on', s.settings.analytics); track('analytics_opt', { on: s.settings.analytics }); save(); });
+  $('tAnalytics') && ($('tAnalytics').onclick = e => { chooseSetting('analytics', s.settings.analytics !== true); e.target.classList.toggle('on', s.settings.analytics === true); e.target.setAttribute('aria-pressed', s.settings.analytics === true); });
+  $('tSocial') && ($('tSocial').onclick = e => { chooseSetting('social', s.settings.social !== true); e.target.classList.toggle('on', s.settings.social === true); e.target.setAttribute('aria-pressed', s.settings.social === true); });
+  $('tGhostUp') && ($('tGhostUp').onclick = e => { chooseSetting('ghostUpload', s.settings.ghostUpload !== true); e.target.classList.toggle('on', s.settings.ghostUpload === true); e.target.setAttribute('aria-pressed', s.settings.ghostUpload === true); });
+  $('mDel') && ($('mDel').onclick = async () => {
+    if ($('mDel').dataset.arm !== '1') { $('mDel').dataset.arm = '1'; $('mDel').textContent = 'Confirm delete'; $('mDelWhy').textContent = 'This removes social rows it can find and keeps the anonymous sign-in. Analytics is separate. If you are offline or the server refuses, those rows stay.'; return; }
+    $('mDel').disabled = true;
+    const r = await SOC.deleteServerData(isPortal);
+    $('mDelWhy').textContent = `${r.message || ''}${r.manualRequest ? `\n\n${r.manualRequest}` : ''}`;
+    $('mDel').disabled = false; $('mDel').dataset.arm = ''; $('mDel').textContent = 'Delete';
+  });
   $('mPriv') && ($('mPriv').onclick = async () => { await showPrivacyOptions(); toast('Privacy choices updated'); });
   if ($('mBuy')) track('remove_ads_shown');
   $('mBuy') && ($('mBuy').onclick = async () => { $('mBuy').disabled = true; if (await buyRemoveAds(s)) { save(); banner('ADS REMOVED!'); sfx('unlock'); closeModal(); refreshAdButtons(); } else { toast('Purchase not completed'); $('mBuy').disabled = false; } });
@@ -528,12 +553,13 @@ async function openRanks(mode = rk.mode, scope = rk.scope) {
   const fm = mode === 'daily' ? 'escape' : mode;
   if (!$('lb') || rk.mode !== mode || rk.scope !== scope) return;
   $('lb').innerHTML = r.rows.length ? r.rows.map((x, i) => `<li class="${x.me ? 'me' : ''}"><span class="rk">${x.rank || i + 1}</span><span>${esc(x.avatar || '😇')}</span><span>${esc(x.name)}</span><span class="sc">${SC.fmtScore(fm, x.score)}</span></li>`).join('') : '<li><span></span><span></span><span>No scores yet. Be the first!</span><span></span></li>';
-  $('lbNote').textContent = mode === 'daily' ? (r.online ? `Daily Challenge ${day} (UTC): same track for everyone. New track at midnight UTC.` : `Offline: your best today. Daily Challenge ${day}, same track for everyone.`) : r.online ? (scope === 'week' ? `Resets every Monday (UTC) · ${SC.weekId()}` : scope === 'friends' ? 'You and the friends you added by code' : 'Top 50 players') : 'Offline mode: showing your best. Online ranks are coming soon. Share your score to challenge friends!';
+  const offNote = 'Online ranks are off. Offline: your best stays on this device until you turn on Online ranks in Settings.';
+  $('lbNote').textContent = s.settings.social !== true ? offNote : mode === 'daily' ? (r.online ? `Daily Challenge ${day} (UTC): same track for everyone. New track at midnight UTC.` : `Could not reach today's board. Your best today stays on this device.`) : r.online ? (scope === 'week' ? `Resets every Monday (UTC) · ${SC.weekId()}` : scope === 'friends' ? 'You and the friends you added by code' : 'Top 50 players') : 'Could not reach the board. Showing your best on this device.';
 }
 function openProfile() {
   const p = SOC.profile(); let av = p.avatar;
   modal(`<h2>Your profile</h2><input id="pName" class="soc-in" maxlength="16" value="${esc(p.name)}" aria-label="Player name"><div class="avs">${SC.AVATARS.map(a => `<button data-a="${a}" class="${a === av ? 'on' : ''}">${a}</button>`).join('')}</div>
-    <p class="soc-note" id="pWhy">Shown on leaderboards. No real names please.</p><div class="row"><button class="btn primary" id="pSave">Save</button><button class="btn" id="pBack">Back</button></div>`);
+    <p class="soc-note" id="pWhy">Published only if Online ranks is on. Names are checked on this device. There is no way to report or block another player.</p><div class="row"><button class="btn primary" id="pSave">Save</button><button class="btn" id="pBack">Back</button></div>`);
   $('modalCard').querySelectorAll('[data-a]').forEach(b => b.onclick = () => { av = b.dataset.a; $('modalCard').querySelectorAll('[data-a]').forEach(x => x.classList.toggle('on', x === b)); });
   $('pSave').onclick = async () => { const r = await SOC.setProfile($('pName').value, av); if (!r.ok) { $('pWhy').textContent = r.why; return; } toast('Profile saved'); track('profile_set'); syncScores(true); openRanks(); };
   $('pBack').onclick = () => openRanks();
@@ -565,15 +591,15 @@ if (challenge && !isPortal) {
   el.onclick = () => { el.remove(); if (challenge.mode === 'escape') startEscape('challenge'); else startPlay('challenge'); };
   document.body.appendChild(el); setTimeout(() => el.remove(), 12000);
   track('challenge_open', { mode: challenge.mode });
-  if (challenge.code) SOC.connect(isPortal).then(ok => ok && SOC.addFriend(challenge.code)).catch(() => {});
+  if (challenge.code && s.settings.social === true) SOC.connect(isPortal).then(ok => ok && SOC.addFriend(challenge.code)).catch(() => {});
 }
 
 // ---------- ghost races: pick your own best or a friend's best run ----------
 async function openGhosts() {
   const own = ownGhost();
-  modal(`<h2>👻 Ghost race</h2><p>Race a see-through replay of a best Speed Escape run.</p><ul class="lb" id="gl"><li><span></span><span></span><span>Loading friends…</span><span></span></li></ul>
+  modal(`<h2>👻 Ghost race</h2><p>Race a replay saved on this device, or a friend's replay after you both turn on sharing and add each other. Uploading is off until Settings says so.</p><ul class="lb" id="gl"><li><span></span><span></span><span>Loading friends…</span><span></span></li></ul>
     <div class="row"><button class="btn" id="gOff">${s.settings.ghosts === false ? 'Ghosts: OFF' : 'Ghosts: ON'}</button><button class="btn" id="gClose">Close</button></div>`);
-  $('gOff').onclick = () => { s.settings.ghosts = s.settings.ghosts === false; save(); $('gOff').textContent = s.settings.ghosts === false ? 'Ghosts: OFF' : 'Ghosts: ON'; };
+  $('gOff').onclick = () => { s.settings.ghosts = s.settings.ghosts === false; syncPrivacy(); save(); $('gOff').textContent = s.settings.ghosts === false ? 'Ghosts: OFF' : 'Ghosts: ON'; };
   $('gClose').onclick = closeModal;
   const fr = (await SOC.fetchFriendGhosts(isPortal)).map(x => ({ g: D.decodeGhost(x.g), name: x.name, avatar: x.avatar })).filter(x => x.g);
   const list = [...(own ? [own] : []), ...fr]; if (!$('gl')) return;

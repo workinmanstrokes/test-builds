@@ -1,5 +1,6 @@
-// Remove-ads in-app purchase via Google Play Billing (@capgo/native-purchases). Fully inert unless
-// BILLING.removeAdsEnabled is true AND we're in the Android app. Ownership is re-checked from Play on every start.
+// Remove-ads purchase code. The native Play Billing library is not packaged while
+// BILLING.removeAdsEnabled is false, so this build does not merge the BILLING permission.
+// initBilling returns immediately in that case. Adding the library back is required before enabling IAP.
 import { BILLING } from './config.js';
 import { track } from './analytics.js';
 const cap = window.Capacitor;

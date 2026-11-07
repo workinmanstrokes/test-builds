@@ -68,7 +68,7 @@ html, body { margin: 0; height: 100%; background: var(--bg); color: var(--ink); 
 .card .miss { color: var(--red); font: 700 18px var(--hand); }
 .rules { margin: 0; padding-left: 18px; line-height: 1.6; }
 .row { display: flex; gap: 10px; justify-content: flex-end; flex-wrap: wrap; } .row.col { flex-direction: column; } .row.col .btn { width: 100%; }
-.tog { display: flex; justify-content: space-between; align-items: center; padding: 6px 0; font-weight: 600; } .tog input { width: 22px; height: 22px; } .tog select { font: inherit; padding: 4px 8px; border-radius: 8px; }
+.tog { display: flex; justify-content: space-between; align-items: center; padding: 6px 0; font-weight: 600; } .tog input { width: 22px; height: 22px; } .tog select { font: inherit; padding: 4px 8px; border-radius: 8px; } .tog small { display: block; font-weight: 500; }
 .ends { display: grid; gap: 8px; } .end { border: 1px dashed rgba(243, 236, 217, 0.3); border-radius: 12px; padding: 10px; display: flex; flex-direction: column; gap: 4px; } .end.on { border-style: solid; border-color: var(--gold); } .end small { opacity: 0.75; }
 .journal { margin: 0; padding-left: 18px; font-size: 13px; max-height: 30vh; overflow: auto; line-height: 1.5; }
 .toast { position: fixed; left: 50%; bottom: 110px; transform: translate(-50%, 20px); background: rgba(14, 11, 18, 0.92); border: 1px solid rgba(243, 236, 217, 0.25); padding: 10px 16px; border-radius: 12px; font-weight: 600; max-width: 88vw; text-align: center; opacity: 0; transition: 0.25s; pointer-events: none; z-index: 30; }
