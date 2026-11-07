@@ -100,7 +100,11 @@ export async function submitScores(s, portal = false, force = false, now = Date.
     for (const scope of ['all', 'week']) {
       const id = C.boardId(mode, scope, now);
       if ((me.sent[id] || 0) >= v) continue;
-      try { await F.setDoc(F.doc(db, 'boards', id, 'entries', uid), { score: v, name: me.name, avatar: me.avatar, uid, at: F.serverTimestamp() }); me.sent[id] = v; (me.posted ||= {})[id] = 1; n++; }
+      try {
+        await F.setDoc(F.doc(db, 'boards', id, 'entries', uid), { score: v, name: me.name, avatar: me.avatar, uid, at: F.serverTimestamp() });
+        await F.setDoc(F.doc(db, 'scoreIndex', uid, 'rows', id), { kind: 'board', boardOrDay: id });
+        me.sent[id] = v; (me.posted ||= {})[id] = 1; n++;
+      }
       catch (e) { console.warn('score submit', id, e?.code); }   // retried on the next throttled sync
     }
   }
@@ -172,7 +176,11 @@ export async function submitDaily(day, dist, portal = false) {
   me.dailySent ||= {}; if ((me.dailySent[day] || 0) >= v) return false;
   if (!(await connect(portal))) return false;
   const { F, db, uid } = api;
-  try { await F.setDoc(F.doc(db, 'daily', day, 'entries', uid), { score: v, name: me.name, avatar: me.avatar, uid, at: F.serverTimestamp() }); me.dailySent = { ...(me.dailySent || {}), [day]: v }; (me.dailyPosted ||= {})[day] = v; persist(); return true; }
+  try {
+    await F.setDoc(F.doc(db, 'daily', day, 'entries', uid), { score: v, name: me.name, avatar: me.avatar, uid, at: F.serverTimestamp() });
+    await F.setDoc(F.doc(db, 'scoreIndex', uid, 'rows', day), { kind: 'daily', boardOrDay: day });
+    me.dailySent = { ...(me.dailySent || {}), [day]: v }; (me.dailyPosted ||= {})[day] = v; persist(); return true;
+  }
   catch (e) { console.warn('daily submit', e?.code); return false; }
 }
 /** Daily rows (top 50, or you + friends). Offline: just your local best. */
@@ -240,8 +248,15 @@ export async function deleteServerData(portal = false) {
       getProfile: async () => { const snap = await F.getDoc(F.doc(db, 'profiles', user.uid)); return snap.exists() ? snap.data() : null; },
       deleteDoc: parts => F.deleteDoc(F.doc(db, ...parts)),
       queryOwnEntries: async () => {
-        const snap = await F.getDocs(F.query(F.collectionGroup(db, 'entries'), F.where('uid', '==', user.uid)));
-        return { ok: true, paths: snap.docs.map(d => d.ref.path) };
+        const snap = await F.getDocs(F.collection(db, 'scoreIndex', user.uid, 'rows'));
+        const paths = [];
+        snap.forEach(d => {
+          const x = d.data() || {};
+          if (x.kind === 'board' && x.boardOrDay === d.id) paths.push(`boards/${d.id}/entries/${user.uid}`);
+          else if (x.kind === 'daily' && x.boardOrDay === d.id) paths.push(`daily/${d.id}/entries/${user.uid}`);
+          paths.push(d.ref.path);
+        });
+        return { ok: true, paths };
       },
       deleteUser: () => A.deleteUser(user),
     });

@@ -90,22 +90,37 @@ export function directSocialPaths(uid, codes = [], now = Date.now()) {
   const seen = new Set();
   for (const code of codes) if (validCode(code) && !seen.has(code)) { seen.add(code); out.push(['codes', code]); }
   const end = now + 864e5;
-  for (const mode of MODE_IDS) out.push(['boards', `${mode}_all`, 'entries', uid]);
-  for (const w of weekIdsBetween(DELETE_EPOCH_MS, end)) for (const mode of MODE_IDS) out.push(['boards', `${mode}_${w}`, 'entries', uid]);
-  for (const day of utcDayIds(DELETE_EPOCH_MS, end)) out.push(['daily', day, 'entries', uid]);
+  for (const mode of MODE_IDS) {
+    out.push(['boards', `${mode}_all`, 'entries', uid]);
+    out.push(['scoreIndex', uid, 'rows', `${mode}_all`]);
+  }
+  for (const w of weekIdsBetween(DELETE_EPOCH_MS, end)) for (const mode of MODE_IDS) {
+    out.push(['boards', `${mode}_${w}`, 'entries', uid]);
+    out.push(['scoreIndex', uid, 'rows', `${mode}_${w}`]);
+  }
+  for (const day of utcDayIds(DELETE_EPOCH_MS, end)) {
+    out.push(['daily', day, 'entries', uid]);
+    out.push(['scoreIndex', uid, 'rows', day]);
+  }
   return out;
 }
-/** Accept only this user's own score entry from a collection-group result. */
+const INDEX_RE = /^scoreIndex\/([^/]+)\/rows\/((?:aura|tower|escape)_(?:all|\d{4}-W\d{2})|\d{4}-\d{2}-\d{2})$/;
+/** Accept this user's score entry, or their own score-index row. Anything else is ignored. */
 export function ownEntryParts(path, uid) {
-  const m = OWN_ENTRY.exec(String(path || ''));
-  if (!m) return null;
-  const id = m[1] || m[2];
-  if (id !== uid) return null;
-  return String(path).split('/');
+  const text = String(path || '');
+  const m = OWN_ENTRY.exec(text);
+  if (m) {
+    const id = m[1] || m[2];
+    if (id !== uid) return null;
+    return text.split('/');
+  }
+  const idx = INDEX_RE.exec(text);
+  if (!idx || idx[1] !== uid) return null;
+  return text.split('/');
 }
 /**
- * False. Untagged legacy rows (document id is the uid, no uid field) are invisible to a collection-group
- * field query, and scanning every id the rules regex allows exceeds the Spark daily write quota.
+ * False. Rows outside the checked dates that were never written to scoreIndex are not listed,
+ * and scanning every id the rules regex allows exceeds the Spark daily write quota.
  */
 export function clientCanProveUntaggedRowsGone() { return false; }
 export function authDeletionAllowed({ discoveryOk, requeryEmpty, failures, legacyUntaggedProvable } = {}) {
@@ -133,8 +148,8 @@ export function deletionResultMessage(r = {}) {
   if (r.mismatch) return 'The sign-in on this device does not match the saved player id. Nothing was deleted. The sign-in was kept.';
   const bits = ['The anonymous sign-in was kept so a missed score row is not left without an owner.'];
   bits.push('Checked the profile, friend code, ghost, all-time boards, and every week and day from 1 Oct 2026 through tomorrow. A saved list of old scores on this device is not used as proof.');
-  if (!r.discoveryOk) bits.push('The server query for every score row stamped with your id did not succeed. That query needs the updated rules and index, which this app does not publish. Rows outside the checked dates can remain.');
-  else if (r.requeryEmpty && !(r.failed || []).length) bits.push('Every returned row that stores your id was removed. Rows written without that id are not visible to the query and can remain.');
+  if (!r.discoveryOk) bits.push('The list of score ids stored under your sign-in did not succeed. That list works only after the updated rules are published. Rows outside the checked dates that were never indexed can remain.');
+  else if (r.requeryEmpty && !(r.failed || []).length) bits.push('Every indexed score id was removed. Rows outside the checked dates that were never indexed can remain.');
   else bits.push('Some deletes failed, so those items are still on the server. Try again. The sign-in is still here.');
   if (r.failed?.length) bits.push('Still reported: ' + r.failed.slice(0, 6).map(f => f.path).join(', ') + '.');
   bits.push(`Email ${DELETION_MAIL} for a manual request. The app cannot confirm that request, and it does not delete analytics.`);

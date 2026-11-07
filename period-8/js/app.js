@@ -231,7 +231,7 @@ function unlockToasts() {
 /* ------------------------------------------------------------ menus */
 function pauseMenu() {
   if (!run) return; P8.gameplay(false); endColdOpen(true);
-  modal(`<h2>Paused</h2><p>Streak ${run.streak}/8 · ${run.misses} misses${run.pass ? ' · 🎫 hall pass' : ''}</p><div class="row col"><button class="btn primary" id="mResume">Resume</button><button class="btn" id="mRestart">Restart run</button><button class="btn" id="mSet">Settings</button><button class="btn" id="mTitle">Home</button></div>`, { cls: 'pause' });
+  modal(`<div class="p-eyebrow">Period 8 · Room 8</div><h2>Paused</h2><div class="p-streak" aria-label="Streak ${run.streak} of 8">${Array.from({ length: 8 }, (_, i) => `<i class="${i < run.streak ? 'on' : ''}"></i>`).join('')}<span>${run.streak}/8</span></div><p class="p-sub">${run.misses} ${run.misses === 1 ? 'miss' : 'misses'}${run.pass ? ' · 🎫 hall pass' : ''}</p><div class="row col"><button class="btn primary" id="mResume">▶ Resume</button><button class="btn" id="mRestart">↻ Restart run</button><button class="btn" id="mSet">⚙ Settings</button><button class="btn" id="mTitle">⌂ Home</button></div>`, { cls: 'pause' });
   $('#mResume').onclick = resume; $('#mSet').onclick = settings; $('#mTitle').onclick = () => { snapshotRun(); title(); };
   $('#mRestart').onclick = () => { closeModal(); save.run = null; persist(); startRun(); };
 }
@@ -259,7 +259,7 @@ function settings() {
     ${ad.privacyRequired ? '<button class="btn" id="sPriv">Privacy options</button>' : ''}
     <a class="btn" href="${PRIVACY_URL}" target="_blank" rel="noopener">Privacy policy</a>
     <button class="btn danger" id="sReset">Reset progress</button>
-    <p class="dim">Period 8 v0.1.0 · Diddlerrr · Rewarded ads only, never forced.</p>
+    <p class="dim">Period 8 v0.2.0 · Diddlerrr · Rewarded ads only, never forced.</p>
     <div class="row"><button class="btn primary" id="mClose">Done</button></div>`);
   $('#sScare').value = s.scares;
   $('#sSound').onchange = e => { s.sound = e.target.checked; sfx.setMuted(!s.sound); persist(); };

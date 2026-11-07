@@ -21,10 +21,12 @@
   <link rel="stylesheet" href="styles.css">
   <!-- Boot: no splash. The logo lives on the loading bar only and is gone as soon as the game can take input. -->
   <style>#boot{position:fixed;inset:0;z-index:99;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;background:#0b0716;color:#ffe2b8;font:900 34px system-ui,sans-serif;transition:opacity .2s}#boot i{display:block;width:180px;height:8px;border-radius:4px;background:#ffffff22;overflow:hidden}#boot i b{display:block;height:100%;width:15%;background:linear-gradient(90deg,#ffb347,#ff7a1a);transition:width .25s}#boot.done{opacity:0;pointer-events:none}</style>
+  <script src="telemetry.js" defer></script>
 </head>
 <body>
   <div id="boot" aria-label="Loading"><div>+1 Aura</div><i><b id="bootbar"></b></i></div>
   <canvas id="stage" aria-label="Tap Aurie to gain aura"></canvas>
+  <div id="ambience" aria-hidden="true"><i class="ray r1"></i><i class="ray r2"></i><span style="--x:12%;--d:0s;--t:7s;--s:4px"></span><span style="--x:22%;--d:2.1s;--t:9s;--s:3px"></span><span style="--x:31%;--d:4.2s;--t:8s;--s:5px"></span><span style="--x:40%;--d:1.3s;--t:10s;--s:3px"></span><span style="--x:48%;--d:3.5s;--t:7.5s;--s:4px"></span><span style="--x:57%;--d:0.7s;--t:9.5s;--s:3px"></span><span style="--x:64%;--d:5s;--t:8s;--s:5px"></span><span style="--x:72%;--d:2.8s;--t:10s;--s:3px"></span><span style="--x:80%;--d:1.9s;--t:7s;--s:4px"></span><span style="--x:88%;--d:4.6s;--t:9s;--s:3px"></span><span style="--x:18%;--d:6s;--t:11s;--s:3px"></span><span style="--x:52%;--d:6.5s;--t:10.5s;--s:4px"></span><span style="--x:76%;--d:7.2s;--t:9s;--s:3px"></span><span style="--x:35%;--d:7.8s;--t:8.5s;--s:4px"></span></div>
   <div id="hud">
     <header class="top">
       <div class="lvl"><span id="lvl">LV 1</span><i><b id="lvlbar"></b></i></div>
