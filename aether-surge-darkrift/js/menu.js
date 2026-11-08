@@ -6,7 +6,7 @@ function $(id){return document.getElementById(id);}
 function fmt(n){return Math.floor(n).toLocaleString();}
 function save(){MT.save();}
 var st={tab:"Play",mode:"surge",slot:"weapon",item:null,fight:"warden",mods:[]};
-try{var sm=localStorage.getItem("as_mode");if(sm==="surge"||sm==="tower"||sm==="boss")st.mode=sm;var sb=JSON.parse(localStorage.getItem("as_bosscfg")||"null");
+try{var sm=localStorage.getItem("as_mode");if(sm==="surge"||sm==="tower"||sm==="boss"||sm==="dungeon")st.mode=sm;var sb=JSON.parse(localStorage.getItem("as_bosscfg")||"null");
   if(sb&&MT.bossFight(sb.fight)){st.fight=sb.fight;st.mods=(sb.mods||[]).filter(function(m){return MT.BOSS_MODS.some(function(x){return x.id===m;});});}}catch(e){}
 function remember(){try{localStorage.setItem("as_mode",st.mode);localStorage.setItem("as_bosscfg",JSON.stringify({fight:st.fight,mods:st.mods}));}catch(e){}}
 function rar(r){return MT.RARITIES[r];}
@@ -36,8 +36,15 @@ function render(){
 var MODE_DESC={
   surge:"Classic: survive 5:00 in the Rift, then destroy the Rift Sentinel.",
   tower:"Roguelike climb: short floors, pick a path between them, a boss every 5th floor. How high can you go?",
-  boss:"Elite Boss Fights: build up, then take on bosses with modifiers for gems."
+  boss:"Elite Boss Fights: build up, then take on bosses with modifiers for gems.",
+  dungeon:"Crypt: descend three acts of sealed chambers. Clear a room to open its doors; an act boss guards every depth."
 };
+function renderRift(){var R=AS.rift;if(!R)return;var p=R.prof;
+  $("diffRow").innerHTML=R.DIFF.map(function(d,i){var lk=i>p.diffMax;return '<button class="dfc'+(p.diff===i?" on":"")+'" data-d="'+i+'" style="--dc:'+d.c+'"'+(lk?" disabled":"")+'>'+(lk?"🔒 ":"")+d.n+'</button>';}).join("");
+  var f=R.free(p),b=$("spBadge");b.textContent=f?String(f):"";b.classList.toggle("on",f>0);
+  $("cryptInfo").textContent=p.clears?p.clears+" cleared":"3 acts";}
+$("diffRow").addEventListener("click",function(e){var b=e.target.closest&&e.target.closest(".dfc");if(!b||b.disabled)return;tap();AS.rift.setDiff(+b.getAttribute("data-d"));renderRift();renderPlay();});
+$("riftBtn").addEventListener("click",function(){tap();if(AS.dia)AS.dia.open(AS.rift&&AS.rift.free(AS.rift.prof)>0?"skills":"gear");});
 function renderPlay(){
   var s=MT.get(),c=MT.charDef(s.ch);
   Array.prototype.forEach.call(document.querySelectorAll("#modeRow .mode"),function(b){b.classList.toggle("sel",b.getAttribute("data-m")===st.mode);});
@@ -48,7 +55,9 @@ function renderPlay(){
   var d=MODE_DESC[st.mode];if(st.mode==="boss")d="Elite Boss Fight: "+f.n+(st.mods.length?" + "+st.mods.map(function(m){return m.charAt(0).toUpperCase()+m.slice(1);}).join(", "):"")+". Tap Bosses to change.";
   $("modeDesc").textContent=d;
   $("heroTag").textContent=c.n+" · "+c.t+" · Gear power "+MT.power(s);
-  $("go").textContent=st.mode==="tower"?"▶ CLIMB":st.mode==="boss"?"▶ FIGHT":"▶ PLAY";
+  if(AS.rift){var df=AS.rift.diff();if(df.hp>1)d+=" "+df.n+": foes x"+df.hp+" HP, better loot.";}
+  $("modeDesc").textContent=d;renderRift();
+  $("go").textContent=st.mode==="tower"?"▶ CLIMB":st.mode==="boss"?"▶ FIGHT":st.mode==="dungeon"?"▶ DESCEND":"▶ PLAY";
 }
 $("modeRow").addEventListener("click",function(e){
   var b=e.target.closest&&e.target.closest(".mode");if(!b)return;tap();var m=b.getAttribute("data-m");
@@ -59,6 +68,7 @@ $("modeRow").addEventListener("click",function(e){
 function selected(){
   if(st.mode==="tower")return {mode:"tower"};
   if(st.mode==="boss")return {mode:"boss",fight:st.fight,mods:st.mods.slice()};
+  if(st.mode==="dungeon")return {mode:"dungeon"};
   return {mode:"surge"};
 }
 
@@ -220,7 +230,7 @@ function back(){
   if(st.tab!=="Play"){setTab("Play");return true;}
   return false;
 }
-AS.menu={show:show,selected:selected,back:back,setTab:setTab,render:render,openMissions:openMissions,showOdds:showOdds,state:st};
+AS.menu={refresh:function(){render();},show:show,selected:selected,back:back,setTab:setTab,render:render,openMissions:openMissions,showOdds:showOdds,state:st};
 var w=MT.get().welcome;
 render();
 if(w&&!MT.get().welcomeShown){MT.get().welcomeShown=true;MT.get().welcome=null;save();

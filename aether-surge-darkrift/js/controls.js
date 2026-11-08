@@ -1,11 +1,13 @@
-/* Aether Surge — on-screen control layout (joystick, STRIKE, DASH): position, size, opacity.
+/* Aether Surge — on-screen control layout (joystick, STRIKE, DASH, skill hotbar): position, size, opacity.
    Pure layout logic works in Node (unit tests via require); DOM editor + apply only run in the browser.
    Save: localStorage "as_controls_v1". Positions are fractions of the screen so one layout fits portrait and landscape. */
 (function(root){
 "use strict";
 var AS=root.AS||(root.AS={});
-var C={KEY:"as_controls_v1",IDS:["joy","atk","dash"],BASE:{joy:120,atk:64,dash:76},MIN_S:0.6,MAX_S:1.6,MIN_O:0.2,MAX_O:1};
-C.DEFAULT={joy:{x:0.2,y:0.87,s:1,o:1},atk:{x:0.67,y:0.89,s:1,o:1},dash:{x:0.86,y:0.91,s:1,o:1}};
+var C={KEY:"as_controls_v1",IDS:["joy","atk","dash","hot"],BASE:{joy:120,atk:64,dash:76,hot:50},HOT_N:4,HOT_GAP:9,MIN_S:0.6,MAX_S:1.6,MIN_O:0.2,MAX_O:1};
+C.DEFAULT={joy:{x:0.2,y:0.87,s:1,o:1},atk:{x:0.67,y:0.89,s:1,o:1},dash:{x:0.86,y:0.91,s:1,o:1},hot:{x:0.93,y:0.6,s:1,o:1}};
+// box of a control: round controls are size x size; the hotbar is a column (portrait) of 4 skill buttons
+C.dims=function(id,s){var b=C.BASE[id]*s;if(id!=="hot")return {w:b,h:b};return {w:b,h:b*C.HOT_N+C.HOT_GAP*s*(C.HOT_N-1)};};
 function cl(v,a,b,d){v=+v;return isFinite(v)?Math.max(a,Math.min(b,v)):d;}
 C.normalize=function(L){
   var out={};L=L&&typeof L==="object"?L:{};
@@ -19,24 +21,24 @@ C.load=function(store){try{var s=(store||root.localStorage).getItem(C.KEY);retur
 C.save=function(L,store){L=C.normalize(L);try{(store||root.localStorage).setItem(C.KEY,JSON.stringify(L));}catch(e){}return L;};
 /* pixel center for a control, clamped so the whole control stays inside the safe area */
 C.place=function(c,id,w,h,safe){
-  safe=safe||{t:0,r:0,b:0,l:0};var r=C.BASE[id]*c.s/2,m=6;
-  var minX=safe.l+r+m,maxX=w-safe.r-r-m,minY=safe.t+r+60,maxY=h-safe.b-r-m;
+  safe=safe||{t:0,r:0,b:0,l:0};var dm=C.dims(id,c.s),rx=dm.w/2,ry=dm.h/2,m=6;
+  var minX=safe.l+rx+m,maxX=w-safe.r-rx-m,minY=safe.t+ry+(id==="hot"?52:60),maxY=h-safe.b-ry-m;
   var x=c.x*w,y=c.y*h;
-  return {x:Math.round(maxX<minX?w/2:Math.max(minX,Math.min(maxX,x))),y:Math.round(maxY<minY?h/2:Math.max(minY,Math.min(maxY,y))),size:Math.round(C.BASE[id]*c.s)};
+  return {x:Math.round(maxX<minX?w/2:Math.max(minX,Math.min(maxX,x))),y:Math.round(maxY<minY?h/2:Math.max(minY,Math.min(maxY,y))),size:Math.round(C.BASE[id]*c.s),w:Math.round(dm.w),h:Math.round(dm.h)};
 };
 AS.controls=C;
 if(typeof module!=="undefined"&&module.exports)module.exports=C;
 if(typeof document==="undefined")return;
 
 /* ---------- browser: apply + editor ---------- */
-var EL={joy:"joy",atk:"atkBtn",dash:"dashBtn"},cur=C.load();
+var EL={joy:"joy",atk:"atkBtn",dash:"dashBtn",hot:"hotbar"},cur=C.load();
 function safe(){var p=document.getElementById("safeProbe");if(!p){p=document.createElement("div");p.id="safeProbe";
   p.style.cssText="position:fixed;visibility:hidden;pointer-events:none;inset:0;padding:env(safe-area-inset-top,0px) env(safe-area-inset-right,0px) env(safe-area-inset-bottom,0px) env(safe-area-inset-left,0px)";document.body.appendChild(p);}
   var s=getComputedStyle(p);return {t:parseFloat(s.paddingTop)||0,r:parseFloat(s.paddingRight)||0,b:parseFloat(s.paddingBottom)||0,l:parseFloat(s.paddingLeft)||0};}
 function style(el,id,c){var w=window.innerWidth,h=window.innerHeight,p=C.place(c,id,w,h,safe());
   el.style.left=p.x+"px";el.style.top=p.y+"px";el.style.right="auto";el.style.bottom="auto";
-  el.style.width=p.size+"px";el.style.height=p.size+"px";el.style.margin=(-p.size/2)+"px 0 0 "+(-p.size/2)+"px";
-  el.style.setProperty("--co",c.o);return p;}
+  el.style.width=p.w+"px";el.style.height=p.h+"px";el.style.margin=(-p.h/2)+"px 0 0 "+(-p.w/2)+"px";
+  el.style.setProperty("--co",c.o);if(id==="hot"){el.style.setProperty("--hs",p.size+"px");el.style.setProperty("--hg",Math.round(C.HOT_GAP*c.s)+"px");}return p;}
 C.apply=function(L){if(L)cur=C.normalize(L);C.IDS.forEach(function(id){var el=document.getElementById(EL[id]);if(el)style(el,id,cur[id]);});
   if(AS.input&&AS.input.setHome){var p=C.place(cur.joy,"joy",window.innerWidth,window.innerHeight,safe());AS.input.setHome(p.x,p.y,cur.joy.s);}};
 C.current=function(){return C.normalize(cur);};
@@ -46,14 +48,14 @@ window.addEventListener("orientationchange",function(){setTimeout(function(){C.a
 var ed=null,work=null,sel="joy";
 function build(){
   ed=document.createElement("div");ed.id="ctlEd";ed.className="ov";
-  ed.innerHTML='<div id="ctlStage"><div class="cg" data-c="joy"><i>MOVE</i></div><div class="cg" data-c="atk"><i>STRIKE</i></div><div class="cg" data-c="dash"><i>DASH</i></div></div>'+
+  ed.innerHTML='<div id="ctlStage"><div class="cg" data-c="joy"><i>MOVE</i></div><div class="cg" data-c="atk"><i>STRIKE</i></div><div class="cg" data-c="dash"><i>DASH</i></div><div class="cg hot" data-c="hot"><i>SKILLS</i><b></b><b></b><b></b><b></b></div></div>'+
    '<div id="ctlPanel"><h2>CONTROLS LAYOUT</h2><p class="note">Drag a control to move it. Selected: <b id="ctlSel"></b></p>'+
    '<label>Size <input type="range" id="ctlSize" min="'+C.MIN_S*100+'" max="'+C.MAX_S*100+'" step="5"><span id="ctlSizeV"></span></label>'+
    '<label>Opacity <input type="range" id="ctlOp" min="'+C.MIN_O*100+'" max="100" step="5"><span id="ctlOpV"></span></label>'+
    '<div class="row"><button class="btn alt" id="ctlLeft">✋ Left-handed</button><button class="btn alt" id="ctlReset">↺ Reset to default</button></div>'+
    '<div class="row"><button class="btn alt" id="ctlCancel">Cancel</button><button class="btn" id="ctlSave">✔ Save</button></div></div>';
   document.body.appendChild(ed);
-  var NM={joy:"Joystick",atk:"Strike",dash:"Dash"};
+  var NM={joy:"Joystick",atk:"Strike",dash:"Dash",hot:"Skill hotbar"};
   ed.querySelectorAll(".cg").forEach(function(g){var id=g.getAttribute("data-c"),drag=null;
     function down(e){e.preventDefault();e.stopPropagation();sel=id;var t=e.touches?e.touches[0]:e;drag={x:t.clientX,y:t.clientY};drawEd();}
     function mv(e){if(!drag)return;e.preventDefault();var t=e.touches?e.touches[0]:e;

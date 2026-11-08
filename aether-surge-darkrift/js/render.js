@@ -395,7 +395,7 @@ function bossSprite(key,r){
   })(i);
   s.size=S;s.boss=true;bossSprites[k]=s;return s;
 }
-AS.render={enemySprite:enemySprite,bossSprite:bossSprite};
+AS.render={enemySprite:enemySprite,bossSprite:bossSprite,BOSS_ART:BOSS_ART};
 
 /* ---------- player (single entity: procedural is fine) ---------- */
 function drawPlayer(G,px,py){
@@ -405,7 +405,7 @@ function drawPlayer(G,px,py){
   var bob=Math.sin(P.frame*1.1)*1;
   var legL=Math.sin(P.runT)*5,legR=Math.sin(P.runT+Math.PI)*5;
   var armL=Math.sin(P.runT+Math.PI)*4,armR=Math.sin(P.runT)*4;
-  var lean=joy.x*2.5;
+  var lean=(P.lean!=null?P.lean:joy.x)*2.5;
   var ch=P.ch||DEF_CH,pal=ch.pal,acc=ch.acc;
   var bodyC=invF?"#fff":(isForm?"#ffb020":pal.body),skinC=invF?"#fff":pal.skin,hairC=isForm?"#ffe866":pal.hair,pantsC=isForm?"#3a2a10":pal.pants;
   ctx.fillStyle="rgba(0,0,0,.3)";ctx.beginPath();ctx.ellipse(px,py+14,11,4.5,0,0,Math.PI*2);ctx.fill();
@@ -418,11 +418,11 @@ function drawPlayer(G,px,py){
     ctx.setLineDash([]);ctx.globalAlpha=1;}
   if(P.chgT>0.2){var cq=Math.min(1,(P.chgT-0.2)/AS.COMBAT.charge.max);ctx.strokeStyle=cq>=1?"#ffffff":"#ffe080";ctx.lineWidth=cq>=1?4:3;ctx.globalAlpha=0.9;
     ctx.beginPath();ctx.arc(px,py,20+cq*8,-Math.PI/2,-Math.PI/2+cq*Math.PI*2);ctx.stroke();ctx.globalAlpha=1;}
-  if(isCharge&&P.chargeT<0.25){ctx.globalAlpha=0.25*(P.chargeT/0.25);ctx.fillStyle="#fff";ctx.beginPath();ctx.arc(px,py,32,0,Math.PI*2);ctx.fill();ctx.globalAlpha=1;}
-  var hk=heroKey(ch,isForm),mv=!!(joy.x||joy.y||P.moving);
-  if(hk==="player"&&drawPlayerAnim(P,px+lean*0.4,py+14+bob,mv,invF,isCharge,gT)){}
-  else if(hk&&drawCharTo(ctx,hk,px+lean*0.4,py+14+bob,P.fx<0?-1:1,mv?Math.sin(P.runT)*0.06:0,invF?0.6:(isCharge?0.25+0.25*Math.sin(gT*30):0))){
-    if(isForm&&hk!=="player_ascended"){var gw=whiteOf(hk),m0=AM[hk];if(gw){ctx.save();ctx.translate(px+lean*0.4,py+14+bob);if(P.fx<0)ctx.scale(-1,1);ctx.globalCompositeOperation="lighter";ctx.globalAlpha=0.18+0.08*Math.sin(gT*8);
+  if(isCharge&&P.chargeT<0.25){ctx.globalAlpha=0.25*(P.chargeT/0.25);ctx.fillStyle="#fff0b0";ctx.beginPath();ctx.arc(px,py,32,0,Math.PI*2);ctx.fill();ctx.globalAlpha=1;}
+  var hk=heroKey(ch,isForm),mv=!!P.moving;
+  if((hk==="player"||(hk==="player_ascended"&&IMG.player_anim_ascended))&&drawPlayerAnim(P,px+lean*0.4,py+14+bob,mv,invF,isCharge,gT,hk==="player"?"player_anim":"player_anim_ascended")){}
+  else if(hk&&drawCharTo(ctx,hk,px+lean*0.4,py+14+bob,faceDir(P),mv?Math.sin(P.runT)*0.06:0,invF?0.6:(isCharge?0.25+0.25*Math.sin(gT*30):0))){
+    if(isForm&&hk!=="player_ascended"){var gw=whiteOf(hk),m0=AM[hk];if(gw){ctx.save();ctx.translate(px+lean*0.4,py+14+bob);if(faceDir(P)<0)ctx.scale(-1,1);ctx.globalCompositeOperation="lighter";ctx.globalAlpha=0.18+0.08*Math.sin(gT*8);
       ctx.drawImage(tintOf(hk,"#ffe040")||gw,m0[0],m0[1]-m0[4],m0[2],m0[3]);ctx.restore();}}
   }else{
   ctx.fillStyle=pantsC;ctx.fillRect(px-7.5+legL*0.3+lean,py+2+bob,5,10);ctx.fillRect(px+2.5+legR*0.3+lean,py+2+bob,5,10);
@@ -460,15 +460,28 @@ function playerFrame(P,mv,gT){
   if(P.chgT>0.2)return PA.slam;
   var s=mv?PA.run:PA.idle;return s[Math.floor((mv?P.runT*0.5:gT*2.2))%s.length|0]||0;
 }
-function drawPlayerAnim(P,x,footY,mv,invF,isCharge,gT){
-  var im=IMG.player_anim,m=AM.player;if(!im||!m||P.portrait)return false;
+function drawPlayerAnim(P,x,footY,mv,invF,isCharge,gT,key){
+  var k=key||"player_anim",im=IMG[k],m=AM.player;if(!im||!m||P.portrait)return false;
   var PA=ART.playerAnim,n=PA.frames,fw=im.naturalWidth/n,fh=im.naturalHeight,f=playerFrame(P,mv,gT);
-  ctx.save();ctx.translate(x,footY);ctx.scale(P.fx<0?-1:1,1);
-  ctx.drawImage(im,f*fw,0,fw,fh,m[0],m[1]-m[4],m[2],m[3]);
-  var fl=invF?0.6:(isCharge?0.25+0.25*Math.sin(gT*30):0);
-  if(fl>0){var w=whiteOf("player_anim");if(w){ctx.globalAlpha=fl;ctx.drawImage(w,f*fw,0,fw,fh,m[0],m[1]-m[4],m[2],m[3]);}}
+  var dh=m[2]*fh/fw,dy=m[1]-m[4]-(dh-m[3]),asc=k==="player_anim_ascended",pw=asc||isCharge;
+  ctx.save();ctx.translate(x,footY);ctx.scale(faceDir(P)*1.15,1.15); // Michael sprite drawn 15% larger (visual only; hitbox unchanged)
+  var cq=isCharge?Math.max(0,Math.min(1,1-P.chargeT/1.0)):1; // transform progress (charge lasts 1s)
+  if(pw){ // empowered back-glow: a soft gold copy of the hero's own frame, slightly larger, behind the sprite
+    var gl=tintOf(k,"#ffc830");if(gl){var pu=0.5+0.5*Math.sin(gT*7),gs=1.1+0.04*pu;ctx.save();ctx.globalCompositeOperation="lighter";ctx.globalAlpha=asc?0.38+0.18*pu:(0.08+0.14*cq)*(0.7+0.3*pu);
+      ctx.translate(0,dy+dh*0.55);ctx.scale(gs,gs);ctx.drawImage(gl,f*fw,0,fw,fh,m[0],-dh*0.55,m[2],dh);ctx.restore();}}
+  ctx.drawImage(im,f*fw,0,fw,fh,m[0],dy,m[2],dh);
+  if(isCharge&&!asc){ // transforming: the hero's own frame turns gold (multiplied tint keeps every detail), never a white silhouette
+    var tg=tintOf(k,"#ffb820");if(tg){ctx.globalAlpha=0.25+0.6*cq+0.08*Math.sin(gT*24);ctx.drawImage(tg,f*fw,0,fw,fh,m[0],dy,m[2],dh);}}
+  else if(asc){var sh=tintOf(k,"#ffe070");if(sh){ctx.globalCompositeOperation="lighter";ctx.globalAlpha=0.08+0.06*Math.sin(gT*6);ctx.drawImage(sh,f*fw,0,fw,fh,m[0],dy,m[2],dh);ctx.globalCompositeOperation="source-over";}}
+  ctx.globalAlpha=1;
+  // hit blink: white only when hurt in normal form; transform/ascended invulnerability blinks gold
+  if(invF&&!pw){var w=whiteOf(k);if(w){ctx.globalAlpha=0.6;ctx.drawImage(w,f*fw,0,fw,fh,m[0],dy,m[2],dh);}}
+  else if(invF&&asc){var g2=tintOf(k,"#ffd040");if(g2){ctx.globalCompositeOperation="lighter";ctx.globalAlpha=0.18;ctx.drawImage(g2,f*fw,0,fw,fh,m[0],dy,m[2],dh);}}
+
   ctx.restore();return true;
 }
+// sprite facing with hysteresis (set in game.js); falls back to the facing vector
+function faceDir(P){return (P.face||(P.fx<0?-1:1))<0?-1:1;}
 
 // sprite art per hero (Riftwalker switches to the ascended sprite in Aether Ascension form)
 function heroKey(ch,isForm){var id=ch&&ch.id||"rift",k=ART.heroArt&&ART.heroArt[id];if(!k)return null;if(id==="rift"&&isForm&&IMG.player_ascended)k="player_ascended";return IMG[k]?k:null;}
@@ -657,6 +670,8 @@ function draw(G){
   if(ph!==curPh){prevPh=curPh;curPh=ph;fadeT=0;}
   if(fadeT<FADE)fadeT+=dt;var fa=Math.min(1,fadeT/FADE);
   // floor: blit the pre-rendered phase tile in device pixels; crossfade from the previous phase
+  var dgn=AS.rift&&G.mode==="dungeon"&&G.state!=="start",gtC=null; // Crypt: gothic tileset drawn by rift.js
+  if(dgn)AS.rift.drawFloor(ctx,ox,oy,G);else{
   ctx.save();
   ctx.setTransform(1,0,0,1,0,0);
   var d=V.dpr,cw=canvas.width,ch=canvas.height;
@@ -664,14 +679,14 @@ function draw(G){
     for(var ty=fy-T;ty<ch;ty+=T)for(var tx=fx-T;tx<cw;tx+=T)ctx.drawImage(t,tx,ty);ctx.globalAlpha=1;}
   // stage ground art (crossfades when the stage changes); procedural phase floor if the art is missing
   var stg=stageFor(G,ph);if(stg!==curSt){prevSt=curSt;curSt=stg;stT=curSt&&prevSt?0:FADE;}
-  if(stT<FADE)stT+=dt;var sa=Math.min(1,stT/FADE),gtC=groundTile(curSt),gtP=prevSt&&sa<1?groundTile(prevSt):null;
+  if(stT<FADE)stT+=dt;var sa=Math.min(1,stT/FADE);gtC=groundTile(curSt);var gtC0,gtP=prevSt&&sa<1?groundTile(prevSt):null;
   if(gtC){if(gtP)tiles(gtP,1);tiles(gtC,gtP?sa:1);}
   else{if(fa<1&&prevPh)tiles(floorFor(prevPh),1);
   tiles(floorFor(curPh),fa<1&&prevPh?fa:1);}
-  ctx.restore();
+  ctx.restore();}
   var OFF=GFX.off,dA=gtC?0.75:1;
   if(G.state==="start"&&gtC)drawStageBackdrop(curSt,ox,G.P.y+oy+14*menuScale()+3);
-  else if(HQ&&!OFF.decals){if(fa<1&&prevPh)drawDecals(prevPh,ox,oy,(1-fa)*dA);drawDecals(curPh,ox,oy,(fa<1&&prevPh?fa:1)*dA);}
+  else if(!dgn&&HQ&&!OFF.decals){if(fa<1&&prevPh)drawDecals(prevPh,ox,oy,(1-fa)*dA);drawDecals(curPh,ox,oy,(fa<1&&prevPh?fa:1)*dA);}
 
   var L=-70,R=W+70,Tp=-70,B=H+70,i,sx,sy,spr;
   if(AS.world)AS.world.drawUnder(ox,oy);
@@ -727,7 +742,7 @@ function draw(G){
     if(e.boss){drawBossFx(G,e,sx,sy,false);continue;}
     if(e.shield>0||e.shields){var bs=bubbleSprite(e.r+8);ctx.globalAlpha=e.shields&&e.shield<=0?0.35:0.9;ctx.drawImage(bs,sx-bs.lw/2,sy-bs.lh/2,bs.lw,bs.lh);ctx.globalAlpha=1;}
     if(e.st===5&&e.lunge){ctx.fillStyle="#ff5050";ctx.fillRect(sx-1.5,topY-18,3,8);ctx.fillRect(sx-1.5,topY-8,3,3);}
-    if(e.mod&&!e.dPack){ctx.font="bold 10px system-ui";ctx.textAlign="center";ctx.fillStyle=e.mod.c;ctx.fillText(e.mod.n.toUpperCase(),sx,topY-8);}
+    if(e.mod&&!e.dPack){ctx.font="bold 10px system-ui";ctx.textAlign="center";ctx.fillStyle=e.mod.c;var mt=e.mod.n.toUpperCase();ctx.fillText(mt,AS.dia&&AS.dia.safeX?AS.dia.safeX(sx,ctx.measureText(mt).width+4,AS.view.W):sx,topY-8);}
     if((e.el||e.tough)&&e.hp<e.max){
       var pct=e.hp/e.max,bw=e.el?30:18,yy=topY-2;
       ctx.fillStyle="rgba(0,0,0,.5)";ctx.fillRect(sx-bw/2,yy,bw,3);
@@ -779,11 +794,12 @@ function draw(G){
     ctx.globalAlpha=1;ctx.globalCompositeOperation="source-over";}
   if(fa<1&&prevPh){ctx.globalAlpha=1-fa;ctx.drawImage(vignetteFor(prevPh),0,0,W,H);ctx.globalAlpha=fa;}
   ctx.drawImage(vignetteFor(curPh),0,0,W,H);ctx.globalAlpha=1;
-  if(AS.dia&&G.state!=="start")AS.dia.drawLight(ctx,ox,oy,G.gT,HQ);
+  if(AS.dia&&G.state!=="start")AS.dia.drawLight(ctx,ox,oy,G.gT,HQ);if(AS.rift&&G.state!=="start")AS.rift.drawLight(ctx,ox,oy,G.gT);
   if(G.loot.length)drawLootArrows(G,ox,oy);
   if(G.P.form===1){ctx.globalAlpha=0.05;ctx.fillStyle="#ffe040";ctx.fillRect(0,0,W,H);ctx.globalAlpha=1;}
   if(G.P.chargeT>0){ctx.globalAlpha=0.08*G.P.chargeT;ctx.fillStyle="#fff";ctx.fillRect(0,0,W,H);ctx.globalAlpha=1;}
   if(G.hurtFx>0){ctx.globalAlpha=G.hurtFx*0.5;ctx.fillStyle="#ff2030";ctx.fillRect(0,0,W,6);ctx.fillRect(0,H-6,W,6);ctx.fillRect(0,0,6,H);ctx.fillRect(W-6,0,6,H);ctx.globalAlpha=1;}
+  if(G.state==="playing"&&AS.polish.lowHp(G.P.hp,G.P.maxHp)){ctx.globalAlpha=0.14+0.12*Math.sin(G.gT*5);ctx.fillStyle="#ff2030";ctx.fillRect(0,0,W,10);ctx.fillRect(0,H-10,W,10);ctx.fillRect(0,0,10,H);ctx.fillRect(W-10,0,10,H);ctx.globalAlpha=1;} // polish pass 4: low-HP danger pulse
 }
 AS.render.draw=draw;
 // measurement aid (debug only): force the canvas to finish rasterizing this frame

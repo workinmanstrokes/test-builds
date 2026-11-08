@@ -20,7 +20,8 @@ function chunk(cx,cy){
   return c;
 }
 function refresh(){
-  var P=C.P,cx=Math.floor(P.x/CH),cy=Math.floor(P.y/CH);if(cx===pcx&&cy===pcy)return;pcx=cx;pcy=cy;
+  var P=C.P,cx=Math.floor(P.x/CH),cy=Math.floor(P.y/CH);if(C.G.mode==="dungeon"){W.obs=[];W.des=[];pcx=pcy=1e9;return;} // Crypt: walls come from rift.js
+  if(cx===pcx&&cy===pcy)return;pcx=cx;pcy=cy;
   W.obs=[];W.des=[];
   for(var y=cy-2;y<=cy+2;y++)for(var x=cx-2;x<=cx+2;x++){var c=chunk(x,y);
     for(var i=0;i<c.obs.length;i++)W.obs.push(c.obs[i]);
@@ -211,7 +212,7 @@ function drawOver(ox,oy){
     ctx.save();ctx.translate(cx+Math.cos(ang)*mm,cy+Math.sin(ang)*mm);ctx.rotate(ang);ctx.fillStyle="#ffe566";ctx.beginPath();ctx.moveTo(13,0);ctx.lineTo(-7,-9);ctx.lineTo(-2,0);ctx.lineTo(-7,9);ctx.closePath();ctx.fill();ctx.restore();}}
 }
 W.reset=function(){core();chunks={};pcx=pcy=1e9;seed=(Math.random()*1e6)|0;W.obs=[];W.des=[];W.zones=[];W.pk=[];W.mission=null;W.mi=0;W.arena=0;W.tint=null;W.cores={};zt=0;novaT=3.5;chronoT=-1;lastK=null;lastHud="x";refresh();};
-W.update=function(dt){core();refresh();arena(dt);zones(dt);updatePickups(dt);missionTick(dt);coreTick(dt);var P=C.P;if(P.hasteT>0)P.hasteT-=dt;};
+W.update=function(dt){core();refresh();if(C.G.mode!=="dungeon"){arena(dt);zones(dt);missionTick(dt);}updatePickups(dt);coreTick(dt);var P=C.P;if(P.hasteT>0)P.hasteT-=dt;};
 W.pushOut=pushOut;W.blockEP=blockEP;W.hitDes=hitDes;W.aoeDes=aoeDes;W.rollCore=rollCore;W.onKill=onKill;W.onHurt=onHurt;W.onDash=onDash;W.hud=hud;W.drop=drop;
 W.drawUnder=drawUnder;W.drawOver=drawOver;W.startMission=startMission;W.spawnZone=spawnZone;W.applyCore=applyCore;
 })(window.AS);

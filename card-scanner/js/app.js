@@ -134,7 +134,7 @@
     $('gradeRange').textContent = `${g.range[0]}–${g.range[1]}`; $('gradeConf').textContent = `${g.label} confidence`;
     const arc = $('gaugeArc'), L = 2 * Math.PI * 52; arc.style.strokeDasharray = L; arc.style.strokeDashoffset = L; requestAnimationFrame(() => requestAnimationFrame(() => arc.style.strokeDashoffset = L * (1 - g.est / 10)));
     const bt = qs('[data-side="back"]', $('sideTabs')); bt.disabled = !res.back; S.viewSide = 'front'; qsa('#sideTabs button').forEach(b => b.classList.toggle('on', b.dataset.side === 'front'));
-    renderSubs(); renderSide(); renderMV(); $('resScroll').scrollTop = 0;
+    renderSubs(); renderSide(); renderMV(); renderDecision(); $('resScroll').scrollTop = 0;
   }
   qsa('#sideTabs button').forEach(b => b.onclick = () => { if (b.disabled) return; S.viewSide = b.dataset.side; qsa('#sideTabs button').forEach(x => x.classList.toggle('on', x === b)); renderSide(); });
   qsa('#toggles button').forEach(b => b.onclick = () => { const l = b.dataset.l; S.layers[l] = !S.layers[l]; b.classList.toggle('on', !!S.layers[l]); drawOverlay(); });
@@ -194,7 +194,7 @@
   function histPrice(i) { const c = i.ident && i.ident.card, h = c && IdParse.headline(c.prices); return h ? `<small class="hp">${IdParse.money(h.value, h.currency)} · ${esc(h.source)}</small>` : ''; }
   function setIdent(r, tok) {
     if (tok === S.tok) S.ident = r;
-    if (current && (current.tok === tok || tok === 'cur')) { current.ident = r; updateHistIdent(current); renderMV(); if (cur === 'price') renderPrice(); }
+    if (current && (current.tok === tok || tok === 'cur')) { current.ident = r; updateHistIdent(current); renderMV(); if (cur === 'price') renderPrice(); if (cur === 'result') renderDecision(); }
   }
   function updateHistIdent(c) { const h = loadHist(), it = h.find(x => x.id === c.t); if (!it) return; it.ident = slimIdent(c.ident); try { localStorage.setItem(HKEY, JSON.stringify(h)); } catch {} }
   function startIdentify(game = 'auto') {
@@ -217,7 +217,7 @@
       const h = IdParse.headline(c.prices), thumb = c.thumb || c.img;
       el.className = 'mv ok';
       el.innerHTML = `<div class="mv-thumb">${thumb ? `<img src="${esc(thumb)}" alt="">` : `<span>${esc((c.name || '?')[0])}</span>`}</div>
-        <div class="mv-body"><small class="mv-k">${esc(GAME[c.game] || '')}${id.conf === 'low' ? ' · check match' : ''}</small><b>${esc(c.name)}</b><span>${esc([c.set || [c.year, c.brand].filter(Boolean).join(' '), c.number && '#' + c.number].filter(Boolean).join(' · '))}</span></div>
+        <div class="mv-body"><small class="mv-k">${esc(GAME[c.game] || '')}${id.score != null ? ' · ' + id.score + '/100' : ''}${id.conf === 'low' ? ' · check match' : ''}</small><b>${esc(c.name)}</b><span>${esc([c.set || [c.year, c.brand].filter(Boolean).join(' '), c.number && '#' + c.number, c.edition || (c.finish === 'foil' ? 'Foil' : ''), c.insert].filter(Boolean).join(' · '))}</span></div>
         <div class="mv-val"><div>${h ? `<b>${IdParse.money(h.value, h.currency)}</b><small>${esc(h.source)} · ${esc(fmtDay(h.date))}</small>` : `<small class="mv-sales">Recent sales</small>`}</div>${ARROW}</div>`;
       return;
     }
@@ -225,6 +225,67 @@
     el.innerHTML = `<div class="mv-thumb"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="6.5"/><path d="m16 16 4 4"/></svg></div><div class="mv-body"><small class="mv-k">Scan &amp; Price</small><b>${id.fromHistory ? 'Find this card' : id.status === 'error' ? 'Couldn\'t reach the card databases' : 'Couldn\'t read the card name'}</b><span>Search by name to see prices and recent sales</span></div><div class="mv-val">${ARROW}</div>`;
   }
   $('mvPanel').onclick = () => { if (!current) return; if (current.ident && current.ident.status === 'loading') { toast('Still identifying… one moment'); return; } show('price'); renderPrice(); };
+
+  // ---------- Submit or skip ----------
+  // One plain call per scan, from the grade estimate + the completed-auction
+  // prices. The decision is computed once the sales load (cached 24h by
+  // Identify.recentSales, so the price screen reuses the same fetch), saved
+  // into history with the scan, and never shown as certain when the inputs
+  // are thin — the module caps those at UNSURE. Fee override: there is no
+  // settings screen in the app, so the fee and return shipping are editable
+  // on the decision card itself and stored on-device.
+  const FEE_KEY = 'cpg.gradingFees.v1';
+  function loadFees() { try { const f = JSON.parse(localStorage.getItem(FEE_KEY) || 'null'); if (f && Number.isFinite(+f.fee) && Number.isFinite(+f.shipping)) return { fee: +f.fee, shipping: +f.shipping }; } catch {} return null; }
+  function saveFees(f) { try { localStorage.setItem(FEE_KEY, JSON.stringify(f)); } catch {} }
+  function updateHistDecision(c) { const h = loadHist(), it = h.find(x => x.id === c.t); if (!it) return; it.decision = c.decision || null; try { localStorage.setItem(HKEY, JSON.stringify(h)); } catch {} }
+  async function renderDecision() {
+    const el = $('decisionPanel'); if (!el || !current) return;
+    const id = current.ident || { status: 'none' }, g = current.grade, mine = current;
+    if (id.status !== 'ok' || !id.card || !g) { el.hidden = true; el.innerHTML = ''; return; }
+    el.hidden = false;
+    if (!current.sales && !current.salesState) {
+      current.salesState = 'loading';
+      el.innerHTML = '<h3>Submit or skip?</h3><div class="note">Checking recent sales for graded prices…</div>';
+      try { const r = await Identify.recentSales(id.card); if (current !== mine) return; current.salesState = 'done'; current.sales = r.ok && r.sales ? r.sales : []; updateHistDecision(current); renderDecision(); }
+      catch { if (current !== mine) return; current.salesState = 'done'; current.sales = []; renderDecision(); }
+      return;
+    }
+    if (!current.sales) { el.innerHTML = '<h3>Submit or skip?</h3><div class="note">Checking recent sales for graded prices…</div>'; return; }
+    const h = IdParse.headline(id.card.prices);
+    const rawValue = id.card.game === 'sports' ? null : (h ? h.value : null); // sports raw comes from the sales themselves
+    const fees = loadFees();
+    const d = SubmitSkip.decideSubmit({ grade: g, idScore: id.score != null ? id.score : 0, unsure: id.card.unsure || [], identStatus: 'ok', rawValue, sales: current.sales, fees });
+    current.decision = d; updateHistDecision(current);
+    if (!d) { el.hidden = true; el.innerHTML = ''; return; }
+    const gp = d.gradePrices, money = SubmitSkip.money;
+    const gradeLine = gr => { const p = gp.psa[gr]; return p ? `${money(p.median)} · ${p.count} sale${p.count === 1 ? '' : 's'}` : gp.overall ? `no PSA ${gr} sales — using all-sales median ${money(gp.overall.median)} (estimate)` : `no PSA ${gr} sales`; };
+    const verdictWord = { SUBMIT: 'Submit it', SKIP: 'Skip — sell it raw', UNSURE: 'Not sure yet' }[d.verdict];
+    const verdictCls = d.verdict === 'SUBMIT' ? 'ok' : 'warn';
+    el.innerHTML = `<h3>Submit or skip?</h3>
+      <div class="headline"><b>${esc(verdictWord)}</b><span class="badge ${verdictCls}">${d.verdict}</span><small>Est. grade ${g.range[0]}–${g.range[1]} · match ${id.score != null ? id.score + '/100' : 'n/a'}</small></div>
+      ${d.expectedValue != null ? `<div class="rows">
+        <div class="row"><div><b>Raw value</b><small>${d.rawValue != null ? money(d.rawValue) + (id.card.game === 'sports' ? ' · median of ungraded sales' : ' · ' + esc(h.source)) : 'Not found'}</small></div></div>
+        <div class="row"><div><b>Expected graded value</b><small>${money(d.expectedValue)} · weighted over grades ${g.range[0]}–${g.range[1]}${d.expectedParts && d.expectedParts.some(p => p.estimated) ? ' · some grades estimated from the all-sales median' : ''}</small></div></div>
+        <div class="row"><div><b>PSA 9</b><small>${esc(gradeLine(9))}</small></div></div>
+        <div class="row"><div><b>PSA 10</b><small>${esc(gradeLine(10))}</small></div></div>
+        ${d.tier ? `<div class="row"><div><b>Grading fee — PSA ${esc(d.tier.tier)}</b><small>${money(d.fee)} · ${esc(d.tier.turnaround)} · covers up to ${money(d.tier.maxValue)}</small></div></div>
+        <div class="row"><div><b>Return shipping</b><small>${money(d.shipping)} · estimate, edit below</small></div></div>
+        <div class="row"><div><b>Net gain if you grade it</b><small>${d.netGain >= 0 ? '+' : ''}${money(d.netGain)} vs selling raw</small></div></div>` : ''}
+      </div>` : ''}
+      ${d.reasons.map(r => `<div class="note" style="margin-top:6px">${esc(r)}</div>`).join('')}
+      ${d.changes.length ? `<div class="px-h" style="margin-top:12px"><h3>What would change the call</h3></div>${d.changes.map(c => `<div class="note" style="margin-top:6px">${esc(c)}</div>`).join('')}` : ''}
+      <div class="px-h" style="margin-top:12px"><h3>Your grading costs</h3><small>saved on this phone</small></div>
+      <div class="rows"><div class="row"><div><b>Grading fee $</b><small>Leave blank to use the PSA tier above</small></div><input id="decFee" type="number" min="0" step="0.01" inputmode="decimal" style="width:90px;text-align:right" value="${fees ? fees.fee : ''}" placeholder="${d.fee != null ? d.fee : ''}"></div>
+      <div class="row"><div><b>Return shipping $</b><small>PSA return postage starts at $19.99 for 1–4 cards</small></div><input id="decShip" type="number" min="0" step="0.01" inputmode="decimal" style="width:90px;text-align:right" value="${fees ? fees.shipping : ''}" placeholder="${d.shipping != null ? d.shipping : '20'}"></div></div>
+      <button class="btn ghost" id="decSave" style="margin-top:8px">Update costs</button>
+      <p class="muted tiny" style="margin-top:8px">Fees: PSA's published trading-card tiers, checked 8 Nov 2026 (psacard.com). PSA changes fees and pauses tiers — the Value tier was paused June–October 2026 — so check before you submit. This is an estimate, not a guarantee of the grade or the price.</p>`;
+    $('decSave').onclick = () => {
+      const f = parseFloat($('decFee').value), s = parseFloat($('decShip').value);
+      if (Number.isFinite(f) || Number.isFinite(s)) saveFees({ fee: Number.isFinite(f) ? f : (d.fee != null ? d.fee : SubmitSkip.PSA_FEES[0].fee), shipping: Number.isFinite(s) ? s : SubmitSkip.DEFAULT_SHIPPING });
+      else { try { localStorage.removeItem(FEE_KEY); } catch {} }
+      toast('Costs updated'); renderDecision();
+    };
+  }
 
   let pxGame = 'pokemon', salesFilter = 'all';
   function renderPrice() {
@@ -238,14 +299,55 @@
       const conf = id.conf === 'high' ? ['ok', c.game === 'sports' ? 'Player verified' : 'Name + number matched'] : id.conf === 'manual' ? ['ok', 'Picked by you'] : ['warn', 'Best match. Check it'];
       $('pxHero').innerHTML = `<div class="px-art"><img src="${esc(c.img || scan)}" alt="${esc(c.name)}">${c.img && scan ? `<img class="px-mine" src="${scan}" alt="Your scan">` : ''}</div>
         <div class="px-id"><span class="badge ${conf[0]}">${conf[1]}</span><h2>${esc(c.name || 'Unknown player')}</h2>
-        <p>${esc([c.set || [c.year, c.brand].filter(Boolean).join(' '), c.number && '#' + c.number + (c.total ? '/' + c.total : ''), c.rarity, c.team].filter(Boolean).join(' · '))}</p>
+        <p>${esc([c.set || [c.year, c.brand].filter(Boolean).join(' '), c.number && '#' + c.number + (c.total ? '/' + c.total : ''), c.rarity, c.edition || (c.finish === 'foil' ? 'Foil' : ''), c.insert, c.team].filter(Boolean).join(' · '))}</p>
         ${id.read ? `<small class="muted">Text read on device with ${esc(id.read.engine)}</small>` : ''}</div>`;
     } else $('pxHero').innerHTML = `<div class="px-art"><img src="${scan}" alt="Your scan"></div><div class="px-id"><span class="badge warn">Not identified</span><h2>Which card is this?</h2><p>The name couldn't be read clearly. Pick the game below and search by name.</p></div>`;
-    renderPrices(c); renderSports(c); renderSales(c); renderListed(c); renderAlts(id);
+    renderPrices(c); renderDetails(c, id); renderSports(c); renderSales(c); renderListed(c); renderAlts(id);
+  }
+  // Full card details + what the photo did NOT confirm (shown, never guessed).
+  function renderDetails(c, id) {
+    const el = $('pxDetails'); if (!c) { el.hidden = true; el.innerHTML = ''; return; } el.hidden = false;
+    const rows = [], add = (k, v) => { if (v !== '' && v != null && v !== false) rows.push([k, String(v)]); };
+    if (c.game === 'pokemon') {
+      add('Year', c.year); add('Set', c.set + (c.setId ? ' (' + c.setId + ')' : '')); add('Card #', c.number + (c.total ? ' / ' + c.total : '') + (c.totalAll && c.totalAll !== c.total ? ' · ' + c.totalAll + ' in set' : ''));
+      add('Rarity', c.rarity); add('Print variants', (c.variants || []).join(', ')); add('Illustrator', c.illustrator);
+      add('HP', c.hp === '' ? '' : c.hp + ' HP'); add('Stage', c.stage); add('Type', (c.types || []).join(', '));
+      add('Regulation mark', c.regulationMark); add('Pokédex #', (c.dexId || []).join(', '));
+      add('Legal in', Object.keys(c.legal || {}).filter(k => c.legal[k]).map(k => k[0].toUpperCase() + k.slice(1)).join(', '));
+    } else if (c.game === 'magic') {
+      add('Year', c.year); add('Set', c.set + (c.setCode ? ' (' + c.setCode.toUpperCase() + ')' : '')); add('Collector #', c.number);
+      add('Rarity', c.rarity); add('Artist', c.artist); add('Finishes', (c.finishes || []).join(', '));
+      add('Promo', c.promo ? (c.promoTypes || []).join(', ') || 'Yes' : ''); add('Full art', c.fullArt ? 'Yes' : ''); add('Border', c.borderColor);
+      add('Reprint', c.reprint ? 'Yes' : ''); add('Reserved list', c.reserved ? 'Yes' : '');
+      add('Legal in', (c.legal || []).join(', '));
+    } else if (c.game === 'sports') {
+      add('Year', c.year); add('Set / brand', c.brand); add('Team', c.team); add('Card #', c.number);
+      add('Parallel', c.parallel); add('Insert', c.insert); add('Serial #', c.serial);
+      add('Player verified', c.verified ? 'Wikipedia' : ''); if (c.fromSales) add('Completed from', 'Sales data filled in: ' + c.fromSales);
+    }
+    el.innerHTML = `<div class="px-h"><h3>Card details</h3><small>${id.score != null ? 'Match ' + id.score + '/100' : ''}${c.db ? ' · ' + esc(c.db) : ''}</small></div>` +
+      (rows.length ? `<div class="rows">${rows.map(([k, v]) => `<div class="row"><div><b>${esc(k)}</b><small>${esc(v)}</small></div></div>`).join('')}</div>` : '<div class="note">No extra details from the database for this card.</div>') +
+      ((c.unsure || []).length ? `<div class="px-h" style="margin-top:12px"><h3>Check before you list</h3><small>not confirmed</small></div>${c.unsure.map(u => `<div class="note" style="margin-top:6px">${esc(u)}</div>`).join('')}` : '');
+  }
+  // Sports price = the recent-sales summary (median/low/high of completed eBay auctions).
+  // Also fills fields the OCR missed from CardSight's matched card — labeled, never silent.
+  function renderSportsPrice(c, r) {
+    const box = $('pxSportsPrice'); if (!box) return;
+    const s = IdParse.salesSummary(r.sales || [], r.period);
+    if (!s) { box.innerHTML = '<div class="note">No completed sales found for this card yet — use the eBay sold listings link below.</div>'; return; }
+    box.innerHTML = `<div class="headline"><b>${IdParse.money(s.median, s.currency)}</b><span>Median of ${s.count} completed auction${s.count === 1 ? '' : 's'}${s.graded ? ' · ' + s.graded + ' graded' : ''}</span><small>Low ${IdParse.money(s.low, s.currency)} · High ${IdParse.money(s.high, s.currency)}${s.period ? ' · ' + esc(s.period.replace('d', ' days')) : ''}${s.asOf ? ' · latest ' + esc(fmtDay(s.asOf)) : ''} · CardSight AI</small></div>`;
+    const m = IdParse.salesMatch(r.sales || []);
+    if (m) {
+      const filled = [];
+      if (!c.year && m.year) { c.year = m.year; filled.push('year'); }
+      if (!c.brand && m.release) { c.brand = m.release; filled.push('set'); }
+      if (!c.number && m.number) { c.number = m.number; filled.push('number'); }
+      if (filled.length) { c.fromSales = filled.join(', '); updateHistIdent(current); renderDetails(c, current.ident); renderSports(c); }
+    }
   }
   function renderPrices(c) {
     const el = $('pxPrices');
-    if (!c || c.game === 'sports') { el.hidden = !c; el.innerHTML = c ? `<div class="px-h"><h3>Market price</h3></div><div class="note">There's no free price guide for sports cards, so no price is shown here. Recent sales below are the best guide.</div>` : ''; return; }
+    if (!c || c.game === 'sports') { el.hidden = !c; el.innerHTML = c ? `<div class="px-h"><h3>Market price</h3><small>Recent eBay sales</small></div><div id="pxSportsPrice"><div class="note">Loading recent sales…</div></div><div class="note" style="margin-top:8px">There's no free price guide for sports cards. The price above is the median of completed eBay auctions for this card, from CardSight AI — never a guess.</div>` : ''; return; }
     el.hidden = false; const h = IdParse.headline(c.prices);
     el.innerHTML = `<div class="px-h"><h3>Market price</h3><small>${esc(c.db)}</small></div>` + (h ? `<div class="headline"><b>${IdParse.money(h.value, h.currency)}</b><span>${esc(h.source)} ${esc(h.kind.toLowerCase())} · ${esc(h.label)}</span><small>${h.dateNote ? esc(h.dateNote) + ' ' : 'Updated '}${esc(fmtDay(h.date))}</small></div>` : '<div class="note">No market price listed for this print yet.</div>') +
       `<div class="rows">${c.prices.map(p => `<a class="row" ${p.url ? `href="${esc(p.url)}" target="_blank" rel="noopener"` : ''}><span class="src ${p.source === 'TCGplayer' ? 'tp' : 'cm'}">${p.source === 'TCGplayer' ? 'TCG' : 'CM'}</span><div><b>${esc(p.source)} · ${esc(p.label)}</b><small>${esc(p.kind)}${p.low != null ? ` · low ${IdParse.money(+p.low, p.currency)}` : ''} · ${esc(fmtDay(p.date))}${p.via ? ' · via ' + esc(p.via) : ''}</small></div><strong>${IdParse.money(p.value, p.currency)}</strong></a>`).join('')}</div>`;
@@ -253,8 +355,8 @@
   function renderSports(c) {
     const el = $('pxSports'); if (!c || c.game !== 'sports') { el.hidden = true; return; } el.hidden = false;
     const f = (k, label, ph, mode = 'text') => `<label><span>${label}</span><input data-k="${k}" value="${esc(c[k] || '')}" placeholder="${ph}" inputmode="${mode}" autocomplete="off"></label>`;
-    el.innerHTML = `<div class="px-h"><h3>Card details</h3><small>Edit anything that was misread</small></div><div class="fields">${f('name', 'Player', 'e.g. Drake Maye')}${f('year', 'Year', '2024', 'numeric')}${f('brand', 'Brand / set', 'Panini Mosaic')}${f('number', 'Card #', '303')}${f('parallel', 'Parallel', 'Silver Prizm RC')}${f('serial', 'Serial', '/99')}</div><button class="btn ghost" id="pxSave">Update recent sales</button>`;
-    $('pxSave').onclick = () => { qsa('[data-k]', el).forEach(i => c[i.dataset.k] = i.value.trim()); current.ident.conf = 'manual'; updateHistIdent(current); renderPrice(); renderMV(); toast('Details saved'); };
+    el.innerHTML = `<div class="px-h"><h3>Card details</h3><small>Edit anything that was misread</small></div><div class="fields">${f('name', 'Player', 'e.g. Drake Maye')}${f('year', 'Year', '2024', 'numeric')}${f('brand', 'Brand / set', 'Panini Mosaic')}${f('number', 'Card #', '303')}${f('parallel', 'Parallel', 'Silver Prizm RC')}${f('insert', 'Insert', 'Kaboom!')}${f('serial', 'Serial', '/99')}</div><button class="btn ghost" id="pxSave">Update recent sales</button>`;
+    $('pxSave').onclick = () => { qsa('[data-k]', el).forEach(i => c[i.dataset.k] = i.value.trim()); c.unsure = IdParse.unsureFor('sports', c, {}); current.ident.conf = 'manual'; updateHistIdent(current); renderPrice(); renderMV(); toast('Details saved'); };
   }
   const GRADED = /\b(PSA|BGS|SGC|CGC|AGS|TAG|ISA|BCCG|HGA)\s*-?\s*(10|\d(\.5)?)\b/i;
   function median(a) { const s = a.slice().sort((x, y) => x - y), m = s.length >> 1; return s.length % 2 ? s[m] : (s[m - 1] + s[m]) / 2; }
@@ -265,12 +367,15 @@
     if (!(window.CPG_CONFIG && CPG_CONFIG.SALES_API)) { el.innerHTML = fallback('Opens eBay’s completed sales for this card.'); return; }
     el.innerHTML = `<div class="px-h"><h3>Recent sales</h3><small>Loading…</small></div>${'<div class="sale sk"></div>'.repeat(3)}`;
     const r = await Identify.recentSales(c); if (current !== mine || cur !== 'price') return;
-    if (!r.ok || !r.sales) { const why = { monthly_cap: 'The free monthly sales lookups are used up. Opens eBay’s completed sales instead.', daily_cap: 'Daily lookup limit reached. Opens eBay’s completed sales instead.' }[r.reason] || 'Sales data isn’t available right now. Opens eBay’s completed sales instead.'; el.innerHTML = fallback(why); return; }
+    if (!r.ok || !r.sales) { const why = { monthly_cap: 'The free monthly sales lookups are used up. Opens eBay’s completed sales instead.', daily_cap: 'Daily lookup limit reached. Opens eBay’s completed sales instead.' }[r.reason] || 'Sales data isn’t available right now. Opens eBay’s completed sales instead.'; el.innerHTML = fallback(why); if (c.game === 'sports') { const box = $('pxSportsPrice'); if (box) box.innerHTML = '<div class="note">Sales data isn’t available right now — use the eBay sold listings link below.</div>'; } return; }
+    if (c.game === 'sports') renderSportsPrice(c, r);
+    const match = IdParse.salesMatch(r.sales || []);
     const all = r.sales.map(x => ({ ...x, g: x.grade || ((x.title.match(GRADED) || [])[0] || '').toUpperCase().replace(/\s*-\s*/, ' ') || '' }));
     const draw = () => {
       const list = all.filter(x => salesFilter === 'all' || (salesFilter === 'graded' ? x.g : !x.g)), vals = list.map(x => x.price);
       el.innerHTML = `<div class="px-h"><h3>Recent sales</h3><small>${list.length} completed auction${list.length === 1 ? '' : 's'} · ${esc(r.period || '90d').replace('d', ' days')}</small></div>
         ${vals.length ? `<div class="stats"><div><small>Median</small><b>${IdParse.money(median(vals), 'USD')}</b></div><div><small>Low</small><b>${IdParse.money(Math.min(...vals), 'USD')}</b></div><div><small>High</small><b>${IdParse.money(Math.max(...vals), 'USD')}</b></div></div>` : ''}
+        ${match ? `<div class="note" style="margin-bottom:10px">Sales matched to this card: <b>${esc(match.name)} #${esc(match.number)}</b> · ${esc(match.year)} ${esc(match.release)} (${match.count} of ${match.total} sales with a match)</div>` : ''}
         <div class="seg sm" id="salesSeg">${[['all', 'All'], ['raw', 'Raw'], ['graded', 'Graded']].map(([k, l]) => `<button data-f="${k}" class="${salesFilter === k ? 'on' : ''}">${l}</button>`).join('')}</div>
         <div class="sales">${list.slice(0, 20).map(x => `<a class="sale" href="${esc(x.url)}" target="_blank" rel="noopener">${x.image ? `<img src="${esc(x.image)}" alt="" loading="lazy">` : '<i></i>'}<div><b>${esc(x.title)}</b><small>${esc(fmtDay(x.date))} · ${esc(x.source === 'ebay' ? 'eBay' : x.source)}${x.g ? ` · <em>${esc(x.g)}</em>` : ''}</small></div><strong>${IdParse.money(x.price, x.currency || 'USD')}</strong></a>`).join('') || '<div class="note">No sales in this filter.</div>'}</div>
         <div class="sales-foot"><small>Titles are the sellers’ own. Check each listing matches your card. Sales data: CardSight AI${r.cached ? ' (cached)' : ''}.</small><a href="${esc(link)}" target="_blank" rel="noopener">More on eBay ${EXT}</a></div>`;
@@ -317,13 +422,13 @@
   function slim(r) { if (!r) return null; const { quad, ...rest } = r; return rest; }
   function jpeg(cc, w) { const c = document.createElement('canvas'); c.width = w; c.height = Math.round(cc.height * w / cc.width); c.getContext('2d').drawImage(cc, 0, 0, c.width, c.height); return c.toDataURL('image/jpeg', 0.82); }
   function saveHistory(cur) {
-    const h = loadHist(); const item = { id: cur.t, t: cur.t, range: cur.grade.range, grade: cur.grade, res: { front: slim(cur.res.front), back: slim(cur.res.back) }, img: { front: jpeg(cur.card.front, 450), back: cur.card.back ? jpeg(cur.card.back, 450) : null }, ident: slimIdent(cur.ident) };
+    const h = loadHist(); const item = { id: cur.t, t: cur.t, range: cur.grade.range, grade: cur.grade, res: { front: slim(cur.res.front), back: slim(cur.res.back) }, img: { front: jpeg(cur.card.front, 450), back: cur.card.back ? jpeg(cur.card.back, 450) : null }, ident: slimIdent(cur.ident), decision: cur.decision || null };
     h.unshift(item); while (h.length) { try { localStorage.setItem(HKEY, JSON.stringify(h.slice(0, 24))); break; } catch { h.pop(); } }
   }
   function renderHistory() {
     const h = loadHist(), el = $('history'); $('histCount').textContent = h.length ? `${h.length} saved on this phone` : '';
     if (!h.length) { el.innerHTML = '<div class="empty">Your condition reports will show up here.</div>'; return; }
-    el.innerHTML = h.map(i => { const c = i.res.front.centering; return `<button class="h-item" data-id="${i.id}"><img src="${i.img.front}" alt=""><div class="meta" style="text-align:left"><b>${i.ident && i.ident.card && i.ident.card.name ? esc(i.ident.card.name) : `${new Date(i.t).toLocaleDateString([], { month: 'short', day: 'numeric' })} · ${i.res.back ? 'Front + back' : 'Front only'}`}</b>${histPrice(i)}<small>${c.ok ? `Centering ${fmt(c.lr)} · ${fmt(c.tb)}` : 'Centering n/a'} · Surface ${i.grade.subs.surface}</small></div><span class="pill">${i.range[0]}–${i.range[1]}</span></button>`; }).join('');
+    el.innerHTML = h.map(i => { const c = i.res.front.centering; return `<button class="h-item" data-id="${i.id}"><img src="${i.img.front}" alt=""><div class="meta" style="text-align:left"><b>${i.ident && i.ident.card && i.ident.card.name ? esc(i.ident.card.name) : `${new Date(i.t).toLocaleDateString([], { month: 'short', day: 'numeric' })} · ${i.res.back ? 'Front + back' : 'Front only'}`}</b>${histPrice(i)}<small>${c.ok ? `Centering ${fmt(c.lr)} · ${fmt(c.tb)}` : 'Centering n/a'} · Surface ${i.grade.subs.surface}${i.decision ? ` · ${i.decision.verdict === 'SUBMIT' ? 'Submit' : i.decision.verdict === 'SKIP' ? 'Sell raw' : 'Unsure'}` : ''}</small></div><span class="pill">${i.range[0]}–${i.range[1]}</span></button>`; }).join('');
     qsa('.h-item', el).forEach(b => b.onclick = () => openHistory(+b.dataset.id));
   }
   async function openHistory(id) {

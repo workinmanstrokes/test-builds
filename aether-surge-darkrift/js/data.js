@@ -125,7 +125,7 @@ AS.UPGRADES=[
     d:function(r){return r===0?"Unlock a ring pulse every 1.8s":"+30% pulse damage, -10% interval";},
     f:function(P,r){if(r===1){P.wave.on=true;}else{P.wave.dmg*=1.3;P.wave.rate*=0.9;}}},
   {id:"reach",tg:["Blast"], n:"Extended Reach", i:"↗",max:5,pl:1.04,d:function(){return "+15% range & shot speed";},f:function(P){P.blast.rng*=1.15;P.blast.spd*=1.15;}},
-  {id:"magnet",tg:["Utility"],n:"Magnet Pull",    i:"🧲",max:5,pl:1.02,d:function(){return "+35% shard pickup radius";},f:function(P){P.pick*=1.35;}},
+  {id:"magnet",tg:["Utility"],n:"Magnet Pull",    i:"🧲",max:5,pl:1.02,d:function(){return "+35% pickup radius: XP shards and loot";},f:function(P){P.pick*=1.35;}},
   {id:"pierce",tg:["Blast"],n:"Piercing Rounds",i:"➹",max:5,pl:1.09,d:function(){return "Shots pierce +1 enemy";},f:function(P){P.blast.pierce+=1;}},
   {id:"vamp",tg:["Leech"],  n:"Vampiric Core",  i:"🩸",max:5,pl:1.08,d:function(){return "+2% lifesteal";},f:function(P){P.lifesteal+=0.02;}},
   {id:"crit",tg:["Crit"],  n:"Critical Focus", i:"✧",max:5,pl:1.09,d:function(){return "+10% crit chance (2x dmg)";},f:function(P){P.critChance=Math.min(0.75,P.critChance+0.10);}},

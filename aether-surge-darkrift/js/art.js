@@ -6,7 +6,7 @@ var BASE="assets/";
 var IMG={};                                  // key -> loaded HTMLImageElement (absent = not loaded / failed -> shape fallback)
 // [viewX, viewY, w, h, footY] in game units (images are 2x). Characters anchor bottom-centre at footY.
 var META={
-  player:[-16,-30,32,46,14],player_ascended:[-16,-30,32,46,14],
+  player:[-16,-30,32,46,14],player_ascended:[-16,-37.5,32,53.5,14],
   hero_vesper:[-16,-30,32,46,14],hero_brakk:[-16,-30,32,46,14],hero_lumen:[-16,-30,32,46,14],
   scout:[-11.36,-20.45,26.36,31.36,9.545],raider:[-12.5,-22.5,29,34.5,10.5],caster:[-12.5,-22.5,29,34.5,10.5],
   brute:[-18.18,-32.73,42.18,50.18,15.273],warlord:[-20.45,-36.82,47.45,56.45,17.182],swarmer:[-7.96,-14.32,18.45,21.95,6.682],
@@ -24,7 +24,7 @@ var BOSS_ART={warden:"grove_warden",tyrant:"crystal_tyrant",sentinel:"rift_senti
 var HERO_ART={rift:"player",vesper:"hero_vesper",brakk:"hero_brakk",lumen:"hero_lumen"};
 var SHOT_ART={"#7ae0ff":"shot_player","#ffe040":"shot_gold","#ffb040":"shot_shock","#ffcc30":"shot_shock","#ff60b0":"shot_caster"};
 // preloaded up front (small); stage skies/far rows are loaded on demand (a 1080x1920 sky decodes to ~8 MB)
-var SPRITES=["player","player_anim","player_ascended","hero_vesper","hero_brakk","hero_lumen","scout","raider","caster","brute","warlord","swarmer","bulwark","splitter","shielder",
+var SPRITES=["player","player_anim","player_ascended","player_anim_ascended","hero_vesper","hero_brakk","hero_lumen","scout","raider","caster","brute","warlord","swarmer","bulwark","splitter","shielder",
   "rift_sentinel","grove_warden","crystal_tyrant"];
 var FXS=["shot_player","shot_gold","shot_shock","shot_caster","orb_orbit","xp_small","xp_medium","xp_large","fx_hit_spark_4f","fx_death_poof_5f","fx_levelup_ring_4f","fx_crit_star"];
 var GROUNDS=["s1_ground","s2_ground","s3_ground","s4_ground","s5_ground","s6_ground"];
