@@ -1,0 +1,16 @@
+{
+  "name": "Loop Pop",
+  "short_name": "Loop Pop",
+  "description": "Send blasters round the loop and clear the pixel picture.",
+  "start_url": "./",
+  "scope": "./",
+  "display": "fullscreen",
+  "orientation": "portrait",
+  "background_color": "#0e3b43",
+  "theme_color": "#0e3b43",
+  "icons": [
+    {"src": "icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any"},
+    {"src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any"},
+    {"src": "icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable"}
+  ]
+}
