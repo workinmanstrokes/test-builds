@@ -21,7 +21,7 @@
 
   // Buffer errors that happen before Sentry has loaded.
   var early = [];
-  var onErr = function (e) { early.length < 10 && early.push(e.error || e.reason || e.message); };
+  var onErr = function (e) { if (early.length < 10) early.push(e.error || e.reason || e.message); };
   w.addEventListener('error', onErr);
   w.addEventListener('unhandledrejection', onErr);
 
@@ -50,7 +50,7 @@
         }
       });
       w.removeEventListener('error', onErr); w.removeEventListener('unhandledrejection', onErr);
-      early.forEach(function (e) { e && S.captureException(e); }); early = [];
+      early.forEach(function (e) { if (e) S.captureException(e); }); early = [];
     });
   }
 
@@ -79,7 +79,7 @@
         sanitize_properties: function (p) { ['$current_url', '$pathname'].forEach(function (k) { if (p[k]) p[k] = clean(p[k]); }); return p; },
         loaded: function (ph) { ph.register({ game: GAME }); }
       });
-      w.TM.event = function (name, props) { try { P.capture(name, props || {}); } catch (e) {} };
+      w.TM.event = function (name, props) { try { P.capture(name, props || {}); } catch { /* keep a failed beacon from breaking the frame */ } };
     });
   }
 

@@ -1,1 +1,0 @@
-import{n as e}from"./routes-C830Jre0.js";export{e as Capacitor};
