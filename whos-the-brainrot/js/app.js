@@ -267,7 +267,7 @@ function settings() {
   <div class="toggle"><span>🎬 Clip mode<br><span class="small dim">3-2-1 countdown, captions and a watermark on the reveal, made for screen recording Shorts/TikTok.</span></span><button class="chip ${S.clip ? 'on' : ''}" data-act="set" data-k="clip" id="clipToggle">${S.clip ? 'On' : 'Off'}</button></div>
   ${billingAvailable() ? '<div class="toggle">Purchases <button class="chip" data-act="restore">Restore</button></div>' : ''}
   ${ai.native && ai.privacyRequired ? '<div class="toggle">Ad privacy <button class="chip" data-act="privopts">Privacy options</button></div>' : ''}
-  <p class="small dim">No account, no analytics, nothing leaves your phone except what the ad provider needs to show optional rewarded ads. Ages ${AGE_RATING}.</p>
+  <p class="small dim">No account. Crash reports and play counts are anonymous: no names, no screen recordings. Optional rewarded ads may share device info with the ad provider. Ages ${AGE_RATING}.</p>
   ${isPortal ? '' : `<p class="small"><a href="${PRIVACY_URL}" target="_blank" rel="noopener">Privacy policy</a></p>`}
   <p class="small dim">Who's the Brainrot? v0.1.0 · Diddlerrr</p>
   <button class="btn big ghost" data-act="close">Close</button></div>`);
@@ -308,5 +308,6 @@ document.addEventListener('click', e => {
 
 /* ---------------------------------------------------------------- boot */
 window.__wtb = { save, get round() { return round; }, get result() { return result; }, G };
+track('app_open', { platform: window.Capacitor?.isNativePlatform?.() ? 'android' : 'web', app_version: '0.1.0' });
 home();
 initPortal(); initAds(); initBilling(save, () => { persist(); refresh(); });
