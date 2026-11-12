@@ -1,6 +1,11 @@
 /* Scan & Price: OCR the straightened card -> guess the game -> look it up in free databases -> prices with source + date.
+ * Full identity: the whole database record is kept (set, year, variant/parallel, edition, finish,
+ * artist/illustrator, legalities) and anything the photo did NOT confirm is listed in card.unsure
+ * instead of guessed. Every card also gets a 0..100 match score next to the high/medium/low label.
  * Pokémon: TCGdex (free, no key; TCGplayer + Cardmarket prices). Magic: Scryfall (free, no key; daily TCGplayer/Cardmarket).
- * Sports: OCR + Wikipedia athlete check + editable fields, no prices (there is no free sports price source).
+ * Sports: OCR + Wikipedia athlete check + editable fields. No free price guide exists, so the price
+ * is the recent-sales summary from CardSight completed auctions through the Worker (median/low/high,
+ * always labeled with source, period and sale count). Never invented.
  * Recent sales: the optional Worker (CardSight completed auctions) or an eBay sold-listings link. Nothing is estimated. */
 const Identify = (() => {
   const P = IdParse, TCGDEX = 'https://api.tcgdex.net/v2/en', SCRY = 'https://api.scryfall.com';
@@ -37,14 +42,12 @@ const Identify = (() => {
   }
   async function pokemonDetail(id) {
     const d = await Net.json(`${TCGDEX}/cards/${enc(id)}`, { ttl: 6 * 3600e3 });
-    return { game: 'pokemon', id: d.id, name: d.name, set: d.set && d.set.name, number: d.localId, total: d.set && d.set.cardCount && d.set.cardCount.official ? String(d.set.cardCount.official) : '', rarity: d.rarity || '',
-      img: d.image ? d.image + '/high.webp' : '', thumb: d.image ? d.image + '/low.webp' : '', prices: P.tcgdexPrices(d), db: 'TCGdex', dbUrl: `https://tcgdex.dev` };
+    let setInfo = null; try { const all = await sets(); setInfo = all.find(x => x.id === setOf(id)) || null; } catch {} // set list carries the release date -> year
+    return P.pokemonFullId(d, setInfo);
   }
 
   // ---------- Magic via Scryfall ----------
-  const mtgCard = (c, fetched) => ({ game: 'magic', id: c.id, name: c.name, set: c.set_name, setCode: c.set, number: c.collector_number, rarity: c.rarity ? c.rarity[0].toUpperCase() + c.rarity.slice(1) : '',
-    img: (c.image_uris || (c.card_faces && c.card_faces[0].image_uris) || {}).normal || '', thumb: (c.image_uris || (c.card_faces && c.card_faces[0].image_uris) || {}).small || '',
-    finish: c.finishes && !c.finishes.includes('nonfoil') ? 'foil' : '', prices: P.scryfallPrices(c, fetched), db: 'Scryfall', dbUrl: c.scryfall_uri || 'https://scryfall.com' });
+  const mtgCard = (c, fetched) => P.magicFullId(c, fetched);
   async function magicCandidates(p) {
     const out = new Map(), add = (c, s) => { if (c && c.id && (!out.has(c.id) || out.get(c.id).score < s)) out.set(c.id, { c, score: s }); };
     if (p.setCode && p.number) try { add(await Net.json(`${SCRY}/cards/${enc(p.setCode)}/${enc(p.number)}`), 2); } catch {}
@@ -67,7 +70,7 @@ const Identify = (() => {
   }
   async function sports(lines) {
     const s = P.parseSports(lines), ath = await wikiAthlete(s.names);
-    return { game: 'sports', id: 'sp-' + Date.now(), name: ath ? ath.name : s.names[0] || '', verified: !!ath, year: s.year, brand: s.brand, number: s.number, parallel: [s.rc ? 'RC' : ''].filter(Boolean).join(' '), serial: s.serial, team: s.team, prices: [], db: ath ? 'Wikipedia' : '' };
+    return { game: 'sports', id: 'sp-' + Date.now(), name: ath ? ath.name : s.names[0] || '', verified: !!ath, year: s.year, brand: s.brand, number: s.number, parallel: [s.parallel, s.rc ? 'RC' : ''].filter(Boolean).join(' '), insert: s.insert, serial: s.serial, team: s.team, prices: [], db: ath ? 'Wikipedia' : '' };
   }
 
   // ---------- main ----------
@@ -76,7 +79,8 @@ const Identify = (() => {
     const rd = await readCard(card, step), text = rd.lines.map(l => l.text).join('\n'), read = { engine: rd.engine, text: text.slice(0, 600) };
     let g = game === 'auto' ? P.guessGame(rd.lines) : game;
     if (!g) return { status: 'none', read };
-    if (g === 'sports') { step('Checking the player'); const c = await sports(rd.lines); return { status: c.name ? 'ok' : 'none', game: g, card: c, alts: [], read, conf: c.verified ? 'high' : 'low' }; }
+    if (g === 'sports') { step('Checking the player'); const c = await sports(rd.lines); c.unsure = P.unsureFor('sports', c, {});
+      return { status: c.name ? 'ok' : 'none', game: g, card: c, alts: [], read, conf: c.verified ? 'high' : 'low', score: P.scoreConf('sports', { name: c.name, verified: c.verified, year: c.year, brand: c.brand, number: c.number }) }; }
     step(g === 'pokemon' ? 'Searching TCGdex' : 'Searching Scryfall');
     const p = g === 'pokemon' ? P.parsePokemon(rd.lines) : P.parseMagic(rd.lines);
     if (!p.names.length && !p.number) return { status: 'none', game: g, read };
@@ -85,10 +89,11 @@ const Identify = (() => {
     step('Fetching market prices');
     const top = ranked[0], cardOut = g === 'pokemon' ? await pokemonDetail(top.c.id) : mtgCard(top.c, today());
     const alts = ranked.slice(1, 10).map(x => g === 'pokemon' ? { id: x.c.id, name: x.c.name, number: x.c.localId, set: setOf(x.c.id), thumb: x.c.image ? x.c.image + '/low.webp' : '' } : { id: x.c.id, name: x.c.name, number: x.c.collector_number, set: x.c.set_name, thumb: (x.c.image_uris || (x.c.card_faces && x.c.card_faces[0].image_uris) || {}).small || '' });
+    cardOut.unsure = P.unsureFor(g, cardOut, p, alts);
     const conf = g === 'pokemon' ? (top.nm > 0.8 && top.num ? 'high' : top.nm > 0.8 || top.num && top.tot ? 'medium' : 'low') : (top.num ? 'high' : 'medium');
-    return { status: 'ok', game: g, card: cardOut, alts, read, conf, parsed: p };
+    return { status: 'ok', game: g, card: cardOut, alts, read, conf, score: P.scoreConf(g, top), parsed: p };
   }
-  async function byId(game, id) { return game === 'pokemon' ? pokemonDetail(id) : mtgCard(await Net.json(`${SCRY}/cards/${enc(id)}`), today()); }
+  async function byId(game, id) { const card = game === 'pokemon' ? await pokemonDetail(id) : mtgCard(await Net.json(`${SCRY}/cards/${enc(id)}`), today()); card.unsure = P.unsureFor(game, card, {}, []); return card; }
   // Manual search by name (and optional number)
   async function search(game, q) {
     if (game === 'pokemon') { const l = await Net.json(`${TCGDEX}/cards?name=${enc(q)}`); return l.filter(c => !/^(A\d|P-A|B\d)/.test(c.id)).slice(0, 40).map(c => ({ id: c.id, name: c.name, number: c.localId, set: setOf(c.id), thumb: c.image ? c.image + '/low.webp' : '' })); }

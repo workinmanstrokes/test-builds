@@ -110,7 +110,10 @@
       out.sort((a, b) => b.v - a.v); const top = out.slice(0, 8), mx = out.length ? out[0].v : 0;
       // always keep the outermost reasonably strong lines too: a low-contrast cut edge can rank below busy artwork
       const outer = out.filter(r => r.v >= mx * 0.15 && !top.includes(r)).sort((a, b) => lo === 0 ? a.l0 - b.l0 : b.l0 - a.l0).slice(0, 2);
-      return top.concat(outer);
+      // ...and the strongest remaining lines: a real cut edge can also rank below a dense run of
+      // artwork lines (text rows) even when it is strong — top-8 by value alone buries it.
+      const rest = out.filter(r => r.v >= mx * 0.15 && !top.includes(r) && !outer.includes(r)).sort((a, b) => b.v - a.v).slice(0, 2);
+      return top.concat(outer, rest);
     }
     const V = hough(true), Hh = hough(false);
     
@@ -130,9 +133,10 @@
     for (let y = 0; y < H; y += 2) for (let x = 0; x < W; x += 2) if (x < bw || y < bw || x >= W - bw || y >= H - bw) bgIdx.push((y * W + x) * 4);
     const bgM = [0, 1, 2].map(c => median(bgIdx.map(i => sm.d[i + c]))), bgD = bgIdx.map(i => Math.hypot(sm.d[i] - bgM[0], sm.d[i + 1] - bgM[1], sm.d[i + 2] - bgM[2]));
     const bgT = Math.max(30, median(bgD) * 2.5);
-    function outsideBg(a, b, cx, cy) { const dx = b[0] - a[0], dy = b[1] - a[1], len = Math.hypot(dx, dy); let nx = -dy / len, ny = dx / len;
+    function sideBg(a, b, cx, cy, sgn) { // fraction of samples along the side whose colour matches the photo's background; sgn +1 = just outside, -1 = just inside
+      const dx = b[0] - a[0], dy = b[1] - a[1], len = Math.hypot(dx, dy); let nx = -dy / len, ny = dx / len;
       if ((cx - (a[0] + b[0]) / 2) * nx + (cy - (a[1] + b[1]) / 2) * ny > 0) { nx = -nx; ny = -ny; } let hit = 0, n = 0;
-      for (let k = 0.15; k <= 0.85; k += 0.05) { const x = Math.round(a[0] + dx * k + nx * 4), y = Math.round(a[1] + dy * k + ny * 4); if (x < 0 || y < 0 || x >= W || y >= H) continue; n++; const i = (y * W + x) * 4;
+      for (let k = 0.15; k <= 0.85; k += 0.05) { const x = Math.round(a[0] + dx * k + nx * 4 * sgn), y = Math.round(a[1] + dy * k + ny * 4 * sgn); if (x < 0 || y < 0 || x >= W || y >= H) continue; n++; const i = (y * W + x) * 4;
         if (Math.hypot(sm.d[i] - bgM[0], sm.d[i + 1] - bgM[1], sm.d[i + 2] - bgM[2]) < bgT) hit++; }
       return n ? hit / n : 0.5; }
     const combos = [];
@@ -143,14 +147,30 @@
       const hL = Math.hypot(q[3][0] - q[0][0], q[3][1] - q[0][1]), hR = Math.hypot(q[2][0] - q[1][0], q[2][1] - q[1][1]);
       const area = quadArea(q); if (area < W * H * 0.08) continue;
       const ar = (wTop + wBot) / (hL + hR), dev = Math.min(Math.abs(Math.log(ar / (2.5 / 3.5))), Math.abs(Math.log(ar / (3.5 / 2.5))) + 0.08); // portrait is far more common
-      const sides = [support(q[0], q[1]) * (t.frame ? 0 : 1), support(q[1], q[2]) * (r.frame ? 0 : 1), support(q[2], q[3]) * (b.frame ? 0 : 1), support(q[3], q[0]) * (l.frame ? 0 : 1)];
+      const qcx = (q[0][0] + q[2][0]) / 2, qcy = (q[0][1] + q[2][1]) / 2;
+      // Per side: how much of the band just OUTSIDE / just INSIDE the side matches the photo's background.
+      // Indexed by side (0 top, 1 right, 2 bottom, 3 left); frame sides stay neutral.
+      const obBy = [0.5, 0.5, 0.5, 0.5], ibBy = [0.5, 0.5, 0.5, 0.5];
+      [[t, 0, 1], [r, 1, 2], [b, 2, 3], [l, 3, 0]].forEach(([ln, i, j]) => { if (!ln.frame) { obBy[i] = sideBg(q[i], q[j], qcx, qcy, 1); ibBy[i] = sideBg(q[i], q[j], qcx, qcy, -1); } });
+      const nf = [t, r, b, l].map(x => !x.frame), obf = nf.some(Boolean) ? obBy.filter((_, i) => nf[i]).reduce((a, v) => a + v, 0) / nf.filter(Boolean).length : 0.5;
+      // A line only counts as a card edge to the extent that it has background outside it: a strong
+      // artwork line (text-box rule, inner frame) has card on both sides, so its support is discounted.
+      // Without this, a strong interior line outscores a pale true edge (white Prizm border on skin).
+      const sides = [support(q[0], q[1]) * (t.frame ? 0 : 1) * (0.3 + 0.7 * obBy[0]), support(q[1], q[2]) * (r.frame ? 0 : 1) * (0.3 + 0.7 * obBy[1]), support(q[2], q[3]) * (b.frame ? 0 : 1) * (0.3 + 0.7 * obBy[2]), support(q[3], q[0]) * (l.frame ? 0 : 1) * (0.3 + 0.7 * obBy[3])];
       const nFrame = [l, r, t, b].filter(x => x.frame).length;
       const sup = sides.reduce((a, b) => a + b, 0) / 4 + nFrame * 6;
-      const qcx = (q[0][0] + q[2][0]) / 2, qcy = (q[0][1] + q[2][1]) / 2, ob = [[t, 0, 1], [r, 1, 2], [b, 2, 3], [l, 3, 0]].filter(([ln]) => !ln.frame).map(([, i, j]) => outsideBg(q[i], q[j], qcx, qcy));
-      const obf = ob.length ? ob.reduce((a, v) => a + v, 0) / ob.length : 0.5;
-      const score = sup * Math.exp(-((dev / 0.12) ** 2)) * (0.75 + 0.25 * Math.sqrt(area / (W * H))) * (0.4 + obf);
-      const real = sides.filter((v, i) => ![t, r, b, l][i].frame), mx = Math.max(...real, 1);
-      if (real.some(v => v < mx * 0.35 || v < 12)) continue;
+      // A true card side has background OUTSIDE and card INSIDE. A sleeve (or any container) side has
+      // background on BOTH sides — that is what lets a sleeve outline, or a hybrid quad mixing card
+      // sides with a sleeve side, outscore the real card. Penalise sides whose inside band is background.
+      const inFrac = nf.some(Boolean) ? ibBy.filter((_, i) => nf[i]).filter(v => v < 0.5).length / nf.filter(Boolean).length : 0.5;
+      const score = sup * Math.exp(-((dev / 0.12) ** 2)) * (0.75 + 0.25 * Math.sqrt(area / (W * H))) * (0.4 + obf) * (0.25 + 0.75 * inFrac);
+      const realIdx = [0, 1, 2, 3].filter(i => nf[i]), real = realIdx.map(i => sides[i]), mx = Math.max(...real, 1);
+      // A side is a plausible card edge if it is strong, OR if it is weak but has the card
+      // signature: background outside, card inside. The relative-strength rule alone kills
+      // a pale border (white Prizm on skin) whenever a much stronger line — a sleeve rim —
+      // is in the photo; the bg signature is what rescues it.
+      const sideOk = (v, k) => v >= 12 && (v >= mx * 0.35 || (obBy[realIdx[k]] > 0.6 && ibBy[realIdx[k]] < 0.5));
+      if (real.some((v, i) => !sideOk(v, i))) continue;
       combos.push({ q, score, nFrame, sides, area });
     }
     // nested quads (outer cut edge vs printed inner border) score alike: prefer the outermost strong one
@@ -158,7 +178,44 @@
     const ang = (q, i) => { const a = q[i], b = q[(i + 1) % 4]; return Math.atan2(b[1] - a[1], b[0] - a[0]); };
     const inside = (q, p) => q.every((a, i) => { const b = q[(i + 1) % 4]; return (b[0] - a[0]) * (p[1] - a[1]) - (b[1] - a[1]) * (p[0] - a[0]) >= -1; });
     const nested = c => c === topC || (c.nFrame <= topC.nFrame && topC.q.every(p => inside(c.q, p)) && [0, 1, 2, 3].every(i => { let d = Math.abs(ang(c.q, i) - ang(topC.q, i)); d = Math.min(d, 2 * Math.PI - d); return d < 0.09; }) && c.area < topC.area * 1.6);
-    const best = topC && combos.filter(c => c.score >= top * (c === topC ? 0 : 0.2) && nested(c) && c.area <= topC.area * 1.35).sort((a, b) => b.area - a.area)[0];
+    // A card in a clear sleeve has TWO nested quads: the sleeve outline and the
+    // card's cut edge. Preferring the outermost one picks the sleeve — or a hybrid
+    // quad that mixes card sides with a sleeve side. If the band just inside the
+    // outer quad is background-coloured, the outer quad extends into background
+    // there, so it is a container, not the card: take the largest quad nested INSIDE it.
+    // Only the widest gap between the quads is tested, and only when it is sleeve-scale
+    // (~10–48px here, downscaled): a printed inner border is closer and its band is
+    // border-coloured, while a deep artwork line is further in and its band crosses
+    // printed artwork. Five samples across the gap need at least four to read as
+    // background, so one glare-hit sample cannot flip the answer and artwork that
+    // happens to be skin-toned at one point cannot fake it either.
+    const bandBg = (outer, inner) => {
+      let bestS = -1, bestSep = 0;
+      for (let s = 0; s < 4; s++) { const om = [(outer[s][0] + outer[(s + 1) % 4][0]) / 2, (outer[s][1] + outer[(s + 1) % 4][1]) / 2];
+        const im = [(inner[s][0] + inner[(s + 1) % 4][0]) / 2, (inner[s][1] + inner[(s + 1) % 4][1]) / 2];
+        const sep = Math.hypot(im[0] - om[0], im[1] - om[1]);
+        if (sep > bestSep) { bestSep = sep; bestS = s; } }
+      if (bestS < 0 || bestSep < 10 || bestSep > 48) return 0;
+      const s = bestS, om = [(outer[s][0] + outer[(s + 1) % 4][0]) / 2, (outer[s][1] + outer[(s + 1) % 4][1]) / 2];
+      const im = [(inner[s][0] + inner[(s + 1) % 4][0]) / 2, (inner[s][1] + inner[(s + 1) % 4][1]) / 2];
+      let hit = 0, n = 0;
+      for (const f of [0.2, 0.35, 0.5, 0.65, 0.8]) { const x = Math.round(om[0] + (im[0] - om[0]) * f), y = Math.round(om[1] + (im[1] - om[1]) * f);
+        if (x < 0 || y < 0 || x >= W || y >= H) continue; n++; const i = (y * W + x) * 4;
+        if (Math.hypot(sm.d[i] - bgM[0], sm.d[i + 1] - bgM[1], sm.d[i + 2] - bgM[2]) < bgT) hit++; }
+      return n ? hit / n : 0; };
+    // innerNested: c sits strictly inside topC, near-parallel, plausibly card-sized.
+    // (nested() above only admits quads that CONTAIN topC — the opposite direction.)
+    const innerNested = c => c !== topC && c.nFrame <= topC.nFrame && c.q.every(p => inside(topC.q, p))
+      && [0, 1, 2, 3].every(i => { let d = Math.abs(ang(c.q, i) - ang(topC.q, i)); d = Math.min(d, 2 * Math.PI - d); return d < 0.09; })
+      && c.area < topC.area && c.area >= topC.area * 0.5;
+    const sleeveInner = topC ? combos.filter(c => c.score >= top * 0.35 && innerNested(c))
+      .sort((a, b) => b.area - a.area).find(c => bandBg(topC.q, c.q) >= 0.66) : null;
+    // Largest combo containing topC — but NOT when the band between it and topC is
+    // background: then the larger quad is a sleeve (or a hybrid mixing a sleeve side),
+    // extending into background, and topC is the card. The largest containing quad whose
+    // band is NOT background wins; if every containing quad is a container, keep topC.
+    const outerCands = topC ? combos.filter(c => c.score >= top * (c === topC ? 0 : 0.2) && nested(c) && c.area <= topC.area * 1.35).sort((a, b) => b.area - a.area) : [];
+    const best = sleeveInner || (topC && (outerCands.find(c => c === topC || bandBg(c.q, topC.q) < 0.66) || topC));
     if (!best) return { quad: [[0, 0], [img.w, 0], [img.w, img.h], [0, img.h]], found: false, method: 'frame', confidence: 0 };
     let quad = best.q.map(([x, y]) => [x / s, y / s]);
     quad = refineQuad(img, quad);
@@ -397,6 +454,47 @@
     return out;
   }
 
+  // ---------- border parallel (pixel read, Prizm-style) ----------
+  // Reads the card's BORDER colours off the warped card — the parallel the
+  // photo shows even when no parallel word is printed on the card. Only
+  // returns a parallel when the colour signature is distinctive; anything
+  // else is '' (unknown), never a guess. Uses the measured border widths
+  // (cent.sides) so artwork is never sampled as border. Deliberately
+  // narrow: gold borders are NOT returned — gold trim appears on plenty of
+  // non-parallel cards, so border gold alone proves nothing.
+  function detectBorderParallel(card, cent) {
+    const none = { parallel: '', confidence: 0, detail: null };
+    if (!cent || !cent.ok) return none;
+    const { w, h, d } = card, S = cent.sides;
+    let n = 0, red = 0, blue = 0, white = 0, silver = 0, speckle = 0;
+    const px = (x, y) => { const i = (y * w + x) * 4, r = d[i], g = d[i + 1], b = d[i + 2];
+      const mx = Math.max(r, g, b), mn = Math.min(r, g, b), sat = mx - mn; n++;
+      if (r > 150 && r - g > 45 && r - b > 45) red++;
+      if (b > 130 && b - r > 40 && b - g > 25) blue++;
+      if (mn > 205 && sat < 30) white++;
+      if (mn > 170 && sat < 35) silver++;
+      if (sat >= 40 && sat <= 160) speckle++; };
+    const step = 3;
+    for (let y = Math.round(h * 0.15); y < h * 0.85; y += step) {
+      for (let x = 2; x < S.L.px * 0.85; x += step) px(x, y);
+      for (let x = Math.max(2, Math.round(w - S.R.px * 0.85)); x < w - 2; x += step) px(x, y); }
+    for (let x = Math.round(w * 0.15); x < w * 0.85; x += step) {
+      for (let y = 2; y < S.T.px * 0.85; y += step) px(x, y);
+      for (let y = Math.max(2, Math.round(h - S.B.px * 0.85)); y < h - 2; y += step) px(x, y); }
+    if (n < 200) return none;
+    const f = { red: red / n, blue: blue / n, white: white / n, silver: silver / n, speckle: speckle / n };
+    const detail = { n, red: +f.red.toFixed(3), blue: +f.blue.toFixed(3), white: +f.white.toFixed(3), silver: +f.silver.toFixed(3), speckle: +f.speckle.toFixed(3) };
+    // Red White Blue Prizm: diagonal red / white / blue stripes around the border — all three present.
+    if (f.red > 0.07 && f.blue > 0.07 && f.white > 0.07)
+      return { parallel: 'Red White Blue Prizm', confidence: +clamp(Math.min(f.red, f.blue, f.white) / 0.15, 0, 1).toFixed(2), detail };
+    // Silver Prizm: most of the border is bright and low-saturation, with rainbow
+    // speckle from the holo finish. A flat white border is bright too, but has
+    // no speckle — the speckle gate is what keeps white base cards out.
+    if (f.silver > 0.5 && f.speckle > 0.03)
+      return { parallel: 'Silver Prizm', confidence: +clamp(f.silver * 0.7 + Math.min(1, f.speckle * 5) * 0.3, 0, 1).toFixed(2), detail };
+    return { ...none, detail };
+  }
+
   // ---------- full analysis of one side ----------
   function analyzeSide(img, opts = {}) {
     const det = opts.quad ? { quad: opts.quad, found: true, method: 'manual', confidence: 1 } : detectCard(img);
@@ -412,7 +510,7 @@
     const vis = {}; for (const [name, f] of Object.entries({ top: t => [M + t * cw, M - 12], bottom: t => [M + t * cw, M + ch + 12], left: t => [M - 12, M + t * ch], right: t => [M + cw + 12, M + t * ch] }))
       vis[name] = [0.05, 0.3, 0.5, 0.7, 0.95].every(t => inImg(...f(t)));
     const card = make(cw, ch); for (let y = 0; y < ch; y++) card.d.set(cm.d.subarray(((y + M) * cm.w + M) * 4, ((y + M) * cm.w + M + cw) * 4), y * cw * 4);
-    const q = quality(card), cent = measureCentering(card), pl = printLines(card, q, cent), sc = scratches(card, q, pl), ew = edgeWear(cm, M, vis), cw2 = cornerWear(cm, M, vis);
+    const q = quality(card), cent = measureCentering(card), bp = detectBorderParallel(card, cent), pl = printLines(card, q, cent), sc = scratches(card, q, pl), ew = edgeWear(cm, M, vis), cw2 = cornerWear(cm, M, vis);
     const notes = [];
     if (q.sharp < 9) notes.push('Photo looks soft. Hold steady and tap to focus for sharper results.');
     if (q.glare > 0.01) notes.push('Glare detected. Glare areas are skipped, so tilt the card or move away from direct light.');
@@ -420,7 +518,7 @@
     if (Object.values(vis).some(v => !v)) notes.push('Part of the card touches the photo border, so those edges and corners were skipped. Leave a little space around the card.');
     if (sc.busyFrac > 0.35) notes.push('Busy holo/refractor pattern: scratch check is less sensitive on this card.');
     return { quad, detect: { found: det.found, method: det.method, confidence: det.confidence }, card, landscape,
-      quality: { sharp: q.sharp, glare: q.glare }, centering: cent, printLines: pl, scratches: sc.list, busyFrac: sc.busyFrac, edges: ew, corners: cw2, notes };
+      quality: { sharp: q.sharp, glare: q.glare }, centering: cent, borderParallel: bp, printLines: pl, scratches: sc.list, busyFrac: sc.busyFrac, edges: ew, corners: cw2, notes };
   }
 
   // ---------- scoring ----------
@@ -457,6 +555,6 @@
     return { subs, why, est: +est.toFixed(2), range, confidence: +conf.toFixed(2), label: conf > 0.75 ? 'High' : conf > 0.5 ? 'Medium' : 'Low' };
   }
 
-  const api = { CW, CH, make, resize, fit, gray, warp, homography, applyH, detectCard, refineQuad, measureCentering, quality, printLines, scratches, edgeWear, cornerWear, analyzeSide, grade, fmtRatio, centeringScore, edgeScore, median };
+  const api = { CW, CH, make, resize, fit, gray, warp, homography, applyH, detectCard, refineQuad, detectBorderParallel, measureCentering, quality, printLines, scratches, edgeWear, cornerWear, analyzeSide, grade, fmtRatio, centeringScore, edgeScore, median };
   root.GradeCore = api; if (typeof module !== 'undefined' && module.exports) module.exports = api;
 })(typeof self !== 'undefined' ? self : globalThis);

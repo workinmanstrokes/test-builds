@@ -193,6 +193,14 @@
   function slimIdent(id) { if (!id || id.status === 'loading') return null; const { read, parsed, ...rest } = id; return rest; }
   function histPrice(i) { const c = i.ident && i.ident.card, h = c && IdParse.headline(c.prices); return h ? `<small class="hp">${IdParse.money(h.value, h.currency)} · ${esc(h.source)}</small>` : ''; }
   function setIdent(r, tok) {
+    // Pixel parallel hint: the border pixels already read the parallel off the warped
+    // card (Red White Blue / Silver Prizm). When OCR found no parallel, apply it —
+    // marked as pixels so the editable Parallel field shows where it came from and
+    // the user can correct it. Never overrides a parallel OCR did read.
+    if (r && r.status === 'ok' && r.card && r.card.game === 'sports' && !r.card.parallel) {
+      const bp = (current && current.res && current.res.front && current.res.front.borderParallel) || (S.res.front && S.res.front.borderParallel);
+      if (bp && bp.parallel) { r.card.parallel = bp.parallel; r.card.parallelSource = 'pixels'; }
+    }
     if (tok === S.tok) S.ident = r;
     if (current && (current.tok === tok || tok === 'cur')) { current.ident = r; updateHistIdent(current); renderMV(); if (cur === 'price') renderPrice(); if (cur === 'result') renderDecision(); }
   }
@@ -278,12 +286,49 @@
       <div class="rows"><div class="row"><div><b>Grading fee $</b><small>Leave blank to use the PSA tier above</small></div><input id="decFee" type="number" min="0" step="0.01" inputmode="decimal" style="width:90px;text-align:right" value="${fees ? fees.fee : ''}" placeholder="${d.fee != null ? d.fee : ''}"></div>
       <div class="row"><div><b>Return shipping $</b><small>PSA return postage starts at $19.99 for 1–4 cards</small></div><input id="decShip" type="number" min="0" step="0.01" inputmode="decimal" style="width:90px;text-align:right" value="${fees ? fees.shipping : ''}" placeholder="${d.shipping != null ? d.shipping : '20'}"></div></div>
       <button class="btn ghost" id="decSave" style="margin-top:8px">Update costs</button>
-      <p class="muted tiny" style="margin-top:8px">Fees: PSA's published trading-card tiers, checked 8 Nov 2026 (psacard.com). PSA changes fees and pauses tiers — the Value tier was paused June–October 2026 — so check before you submit. This is an estimate, not a guarantee of the grade or the price.</p>`;
+      <p class="muted tiny" style="margin-top:8px">Fees: PSA's published trading-card tiers, checked 8 Nov 2026 (psacard.com). PSA changes fees and pauses tiers — the Value tier was paused June–October 2026 — so check before you submit. This is an estimate, not a guarantee of the grade or the price.</p>
+      <div id="resalePanel"></div>`;
     $('decSave').onclick = () => {
       const f = parseFloat($('decFee').value), s = parseFloat($('decShip').value);
       if (Number.isFinite(f) || Number.isFinite(s)) saveFees({ fee: Number.isFinite(f) ? f : (d.fee != null ? d.fee : SubmitSkip.PSA_FEES[0].fee), shipping: Number.isFinite(s) ? s : SubmitSkip.DEFAULT_SHIPPING });
       else { try { localStorage.removeItem(FEE_KEY); } catch {} }
       toast('Costs updated'); renderDecision();
+    };
+    renderResale(d);
+  }
+
+  // ---------- List on Resale Hub ----------
+  // One tap from the result screen: sends the identified card, the comp price and
+  // a small thumbnail to the shop's seller endpoint. Sign-in is the shop's own
+  // Firebase email/password account (the same one the shop uses); the session is
+  // kept by Firebase Auth, so the password is only asked the first time.
+  function renderResale(d) {
+    const el = $('resalePanel'); if (!el || !current || typeof Resale === 'undefined') return;
+    const id = current.ident || {}, c = id.card;
+    if (!c || id.status !== 'ok') { el.innerHTML = ''; return; }
+    if (current.listed) {
+      el.innerHTML = `<div class="px-h" style="margin-top:12px"><h3>Resale Hub</h3><small>listed</small></div><div class="note" style="margin-top:6px">Listed on Resale Hub — <a href="${esc(current.listed.url)}" target="_blank" rel="noopener">view it in the shop</a>.</div>`;
+      return;
+    }
+    const built = Resale.buildListing(c, d.rawValue, null);
+    el.innerHTML = `<div class="px-h" style="margin-top:12px"><h3>Resale Hub</h3><small>sell it from the shop</small></div>` +
+      (built.error ? `<div class="note" style="margin-top:6px">${esc(built.error)}</div>`
+      : `<div class="rows"><div class="row"><div><b>${esc(built.listing.title)}</b><small>${SubmitSkip.money(built.listing.price)} · ${esc(built.listing.condition)} · stock 1 · shows in the shop once listed</small></div></div></div>
+      <div class="fields" style="margin-top:8px"><label><span>Shop email</span><input id="resaleEmail" type="email" placeholder="you@example.com" autocomplete="email"></label><label><span>Shop password</span><input id="resalePass" type="password" placeholder="Resale Hub password" autocomplete="current-password"></label></div>
+      <button class="btn primary" id="resaleList" style="margin-top:8px">List on Resale Hub — ${SubmitSkip.money(built.listing.price)}</button>
+      <div id="resaleMsg" style="margin-top:8px"></div>`);
+    const btn = $('resaleList'); if (!btn) return;
+    btn.onclick = async () => {
+      const email = $('resaleEmail').value.trim(), pass = $('resalePass').value;
+      const msg = $('resaleMsg');
+      if (!email || !pass) { msg.innerHTML = '<div class="note">Enter the email and password for your Resale Hub shop account.</div>'; return; }
+      btn.disabled = true; btn.textContent = 'Listing…'; msg.innerHTML = '';
+      try {
+        const listed = await Resale.listOnResaleHub(c, d.rawValue, current.card.front, email, pass);
+        const url = 'https://resale-hub-6a648.web.app/item.html?id=' + encodeURIComponent(listed.id || '');
+        current.listed = { id: listed.id || '', url }; updateHistDecision(current); renderResale(d);
+        toast('Listed on Resale Hub');
+      } catch (e) { btn.disabled = false; btn.textContent = 'List on Resale Hub — ' + SubmitSkip.money(built.listing.price); msg.innerHTML = `<div class="note">${esc(e.message || 'Listing failed.')}</div>`; }
     };
   }
 
@@ -331,19 +376,23 @@
   }
   // Sports price = the recent-sales summary (median/low/high of completed eBay auctions).
   // Also fills fields the OCR missed from CardSight's matched card — labeled, never silent.
+  // When the card has a parallel, the summary prefers sales of that exact parallel; if
+  // none exist it falls back to base-version sales and says so plainly.
   function renderSportsPrice(c, r) {
     const box = $('pxSportsPrice'); if (!box) return;
-    const s = IdParse.salesSummary(r.sales || [], r.period);
-    if (!s) { box.innerHTML = '<div class="note">No completed sales found for this card yet — use the eBay sold listings link below.</div>'; return; }
-    box.innerHTML = `<div class="headline"><b>${IdParse.money(s.median, s.currency)}</b><span>Median of ${s.count} completed auction${s.count === 1 ? '' : 's'}${s.graded ? ' · ' + s.graded + ' graded' : ''}</span><small>Low ${IdParse.money(s.low, s.currency)} · High ${IdParse.money(s.high, s.currency)}${s.period ? ' · ' + esc(s.period.replace('d', ' days')) : ''}${s.asOf ? ' · latest ' + esc(fmtDay(s.asOf)) : ''} · CardSight AI</small></div>`;
     const m = IdParse.salesMatch(r.sales || []);
     if (m) {
       const filled = [];
       if (!c.year && m.year) { c.year = m.year; filled.push('year'); }
       if (!c.brand && m.release) { c.brand = m.release; filled.push('set'); }
       if (!c.number && m.number) { c.number = m.number; filled.push('number'); }
+      if (!c.parallel && m.parallel) { c.parallel = m.parallel; filled.push('parallel'); }
       if (filled.length) { c.fromSales = filled.join(', '); updateHistIdent(current); renderDetails(c, current.ident); renderSports(c); }
     }
+    const s = IdParse.salesSummary(r.sales || [], r.period, c.parallel);
+    if (!s) { box.innerHTML = '<div class="note">No completed sales found for this card yet — use the eBay sold listings link below.</div>'; return; }
+    const scope = s.base && c.parallel ? ` · Base version sales — no ${esc(c.parallel)} sales found` : s.parallel ? ` · ${esc(s.parallel)} sales` : '';
+    box.innerHTML = `<div class="headline"><b>${IdParse.money(s.median, s.currency)}</b><span>Median of ${s.count} completed auction${s.count === 1 ? '' : 's'}${s.graded ? ' · ' + s.graded + ' graded' : ''}${scope}</span><small>Low ${IdParse.money(s.low, s.currency)} · High ${IdParse.money(s.high, s.currency)}${s.period ? ' · ' + esc(s.period.replace('d', ' days')) : ''}${s.asOf ? ' · latest ' + esc(fmtDay(s.asOf)) : ''} · CardSight AI</small></div>`;
   }
   function renderPrices(c) {
     const el = $('pxPrices');
