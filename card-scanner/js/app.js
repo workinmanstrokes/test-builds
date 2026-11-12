@@ -114,7 +114,8 @@
       const wait = Math.max(0, 1500 - (performance.now() - t0)); await new Promise(r => setTimeout(r, wait));
       clearInterval(tick); steps.forEach(s => s.className = 'done');
       track('side_analyzed', { side: S.side, ms: Math.round(performance.now() - t0) });
-      if (S.side === 'front') { startIdentify(); stack.length = 0; show('askBack', false); history.pushState({}, ''); } else showResults();
+      if (S.side === 'front') { startIdentify(); stack.length = 0; show('askBack', false); history.pushState({}, ''); }
+      else { startIdentify(); showResults(); }
     } catch (err) { clearInterval(tick); console.error(err); toast('Analysis failed. Try another photo.'); home(); }
   }
   $('scanBackBtn').onclick = () => { S.side = 'back'; show('camera'); };
@@ -129,9 +130,19 @@
     saveHistory(current); track('scan_complete', { range: g.range.join('-'), back: !!S.res.back });
     stack.length = 0; show('result', false); history.pushState({}, ''); renderResult();
   }
+  function renderHolder() {
+    const el = $('holderBanner'); if (!el || !current) return;
+    const holder = (current.res.front && current.res.front.holder) || (current.res.back && current.res.back.holder);
+    if (!holder) { el.hidden = true; el.innerHTML = ''; return; }
+    const caseLike = holder.kind !== 'sleeve';
+    el.hidden = false;
+    el.innerHTML = `<b>${caseLike ? 'This card is in a case' : 'A sleeve is covering the card'}</b><p>${caseLike ? 'The plastic edge and glare were not graded as wear. Centering uses the card inside the case, but edges and corners need the card itself.' : 'Edges and corners read through a sleeve are not reliable.'} Slide it out, lay it on a dark matte surface, and take the photo again.</p><button class="btn primary" id="retakeCase" type="button">Rescan without the case</button>`;
+    $('retakeCase').onclick = () => { S.side = 'front'; show('camera'); };
+  }
   function renderResult() {
     const { grade: g, res } = current; $('resDate').textContent = new Date(current.t).toLocaleString([], { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' });
     $('gradeRange').textContent = `${g.range[0]}–${g.range[1]}`; $('gradeConf').textContent = `${g.label} confidence`;
+    renderHolder();
     const arc = $('gaugeArc'), L = 2 * Math.PI * 52; arc.style.strokeDasharray = L; arc.style.strokeDashoffset = L; requestAnimationFrame(() => requestAnimationFrame(() => arc.style.strokeDashoffset = L * (1 - g.est / 10)));
     const bt = qs('[data-side="back"]', $('sideTabs')); bt.disabled = !res.back; S.viewSide = 'front'; qsa('#sideTabs button').forEach(b => b.classList.toggle('on', b.dataset.side === 'front'));
     renderSubs(); renderSide(); renderMV(); renderDecision(); $('resScroll').scrollTop = 0;
@@ -146,9 +157,9 @@
     const ef = sides.map(s => s.edges.frac).filter(v => v !== null && v !== undefined), worstEdge = ef.length ? Math.max(...ef) : null;
     const cs = sides.flatMap(s => s.corners.filter(c => c.measurable)), worstC = cs.length ? cs.reduce((a, c) => c.wear > a.wear ? c : a) : null;
     $('subs').innerHTML =
-      subCard('Centering', g.subs.centering, cent(f) + cent(b), 'No even border to measure (full-art or patterned border).') +
-      subCard('Corners', g.subs.corners, `<p>${worstC && worstC.wear > 0.15 ? `Most wear: ${worstC.name.replace('-', ' ')}` : 'All four look sharp'}</p>`, 'Corners blend into the background. Use a contrasting surface.') +
-      subCard('Edges', g.subs.edges, `<p>${worstEdge === null ? '' : worstEdge < 0.006 ? 'No whitening or chipping found' : `Wear along ${(worstEdge * 100).toFixed(1)}% of the worst edge`}</p>`, 'Edges blend into the background. Use a contrasting surface.') +
+      subCard('Centering', g.subs.centering, cent(f) + cent(b), g.why.centering || 'No even inner frame to measure (full-art or borderless).') +
+      subCard('Corners', g.subs.corners, `<p>${esc(g.why.corners || (worstC && worstC.wear > 0.15 ? `Most wear: ${worstC.name.replace('-', ' ')}` : 'All four look sharp'))}</p>`, g.why.corners || 'Corners could not be read from this photo.') +
+      subCard('Edges', g.subs.edges, `<p>${esc(g.why.edges || (worstEdge === null ? '' : worstEdge < 0.006 ? 'No whitening or chipping found' : `Wear along ${(worstEdge * 100).toFixed(1)}% of the worst edge`))}</p>`, g.why.edges || 'Edges blend into the background. Use a contrasting surface.') +
       subCard('Surface', g.subs.surface, `<p>${nl} print line${nl === 1 ? '' : 's'} · ${ns} scratch${ns === 1 ? '' : 'es'}</p>`, '');
   }
   function renderSide() {
@@ -197,9 +208,13 @@
     // card (Red White Blue / Silver Prizm). When OCR found no parallel, apply it —
     // marked as pixels so the editable Parallel field shows where it came from and
     // the user can correct it. Never overrides a parallel OCR did read.
-    if (r && r.status === 'ok' && r.card && r.card.game === 'sports' && !r.card.parallel) {
+    if (r && (r.status === 'ok' || r.status === 'partial') && r.card && r.card.game === 'sports' && !r.card.parallel) {
       const bp = (current && current.res && current.res.front && current.res.front.borderParallel) || (S.res.front && S.res.front.borderParallel);
-      if (bp && bp.parallel) { r.card.parallel = bp.parallel; r.card.parallelSource = 'pixels'; }
+      if (bp && bp.parallel) {
+        r.card.parallel = bp.parallel; r.card.parallelSource = 'pixels';
+        r.card.unsure = IdParse.unsureFor('sports', r.card, {});
+        r.score = IdParse.scoreConf('sports', r.card);
+      }
     }
     if (tok === S.tok) S.ident = r;
     if (current && (current.tok === tok || tok === 'cur')) { current.ident = r; updateHistIdent(current); renderMV(); if (cur === 'price') renderPrice(); if (cur === 'result') renderDecision(); }
@@ -210,9 +225,13 @@
     S.ident = { status: 'loading', step: 'Reading the card text' };
     (async () => {
       try {
-        const out = await call('warp', P.img, P.quad), id = new ImageData(new Uint8ClampedArray(out.card.buf), out.card.w, out.card.h), c = document.createElement('canvas'); c.width = id.width; c.height = id.height; c.getContext('2d').putImageData(id, 0, 0);
+        const warp = async photo => {
+          const out = await call('warp', photo.img, photo.quad), id = new ImageData(new Uint8ClampedArray(out.card.buf), out.card.w, out.card.h), c = document.createElement('canvas');
+          c.width = id.width; c.height = id.height; c.getContext('2d').putImageData(id, 0, 0); return c;
+        };
+        const front = await warp(P), back = S.photo.back ? await warp(S.photo.back) : null;
         const step = m => { const o = tok === S.tok ? S.ident : null; if (o && o.status === 'loading') { o.step = m; if (current && current.tok === tok) { current.ident = o; renderMV(); } } };
-        const r = await Identify.identify(c, { game, step });
+        const r = await Identify.identify(front, { game, step, back });
         track('identify', { status: r.status, game: r.game || 'none', engine: r.read && r.read.engine });
         setIdent(r, tok);
       } catch (e) { console.error(e); setIdent({ status: 'error', error: String(e.message || e) }, tok); }
@@ -221,12 +240,14 @@
   function renderMV() {
     const el = $('mvPanel'); if (!el || !current) return; const id = current.ident || { status: 'none' }, c = id.card;
     if (id.status === 'loading') { el.className = 'mv loading'; el.innerHTML = `<div class="mv-thumb sk"></div><div class="mv-body"><small class="mv-k">Scan &amp; Price</small><b>Identifying card…</b><span class="mv-step">${esc(id.step || '')}</span></div><div class="mv-spin"></div>`; return; }
-    if (id.status === 'ok' && c) {
+    if ((id.status === 'ok' || id.status === 'partial') && c) {
       const h = IdParse.headline(c.prices), thumb = c.thumb || c.img;
+      const named = c.name || [c.team, c.brand].filter(Boolean).join(' · ') || 'Card partly read';
+      const check = id.status === 'partial' || id.conf === 'low' || (id.score != null && id.score < 85);
       el.className = 'mv ok';
-      el.innerHTML = `<div class="mv-thumb">${thumb ? `<img src="${esc(thumb)}" alt="">` : `<span>${esc((c.name || '?')[0])}</span>`}</div>
-        <div class="mv-body"><small class="mv-k">${esc(GAME[c.game] || '')}${id.score != null ? ' · ' + id.score + '/100' : ''}${id.conf === 'low' ? ' · check match' : ''}</small><b>${esc(c.name)}</b><span>${esc([c.set || [c.year, c.brand].filter(Boolean).join(' '), c.number && '#' + c.number, c.edition || (c.finish === 'foil' ? 'Foil' : ''), c.insert].filter(Boolean).join(' · '))}</span></div>
-        <div class="mv-val"><div>${h ? `<b>${IdParse.money(h.value, h.currency)}</b><small>${esc(h.source)} · ${esc(fmtDay(h.date))}</small>` : `<small class="mv-sales">Recent sales</small>`}</div>${ARROW}</div>`;
+      el.innerHTML = `<div class="mv-thumb">${thumb ? `<img src="${esc(thumb)}" alt="">` : `<span>${esc((named || '?')[0])}</span>`}</div>
+        <div class="mv-body"><small class="mv-k">${esc(GAME[c.game] || '')}${id.score != null ? ' · ' + id.score + '/100' : ''}${check ? ' · confirm match' : ''}</small><b>${esc(named)}</b><span>${esc([c.set || [c.year, c.brand].filter(Boolean).join(' '), c.number && '#' + c.number, c.parallel, c.team, c.edition || (c.finish === 'foil' ? 'Foil' : ''), c.insert].filter(Boolean).join(' · '))}</span></div>
+        <div class="mv-val"><div>${h ? `<b>${IdParse.money(h.value, h.currency)}</b><small>${esc(h.source)} · ${esc(fmtDay(h.date))}</small>` : `<small class="mv-sales">${id.status === 'partial' ? 'Confirm name' : 'Recent sales'}</small>`}</div>${ARROW}</div>`;
       return;
     }
     el.className = 'mv none';
@@ -254,7 +275,9 @@
     if (!current.sales && !current.salesState) {
       current.salesState = 'loading';
       el.innerHTML = '<h3>Submit or skip?</h3><div class="note">Checking recent sales for graded prices…</div>';
-      try { const r = await Identify.recentSales(id.card); if (current !== mine) return; current.salesState = 'done'; current.sales = r.ok && r.sales ? r.sales : []; updateHistDecision(current); renderDecision(); }
+      try { const r = await Identify.recentSales(id.card); if (current !== mine) return; current.salesState = 'done';
+        const report = r.ok && r.sales ? IdParse.compReport(r.sales, id.card) : null;
+        current.sales = report && report.sales ? report.sales : []; updateHistDecision(current); renderDecision(); }
       catch { if (current !== mine) return; current.salesState = 'done'; current.sales = []; renderDecision(); }
       return;
     }
@@ -334,7 +357,7 @@
 
   let pxGame = 'pokemon', salesFilter = 'all';
   function renderPrice() {
-    const id = current.ident || { status: 'none' }, c = id.status === 'ok' ? id.card : null;
+    const id = current.ident || { status: 'none' }, c = (id.status === 'ok' || id.status === 'partial') ? id.card : null;
     pxGame = (c && c.game) || id.game || pxGame;
     qsa('#pxGame button').forEach(b => b.classList.toggle('on', b.dataset.g === pxGame));
     $('pxSub').textContent = c ? `${GAME[c.game]} · ${c.db ? 'matched via ' + c.db : 'from the card text'}` : 'Scan & Price';
@@ -389,14 +412,22 @@
       if (!c.parallel && m.parallel) { c.parallel = m.parallel; filled.push('parallel'); }
       if (filled.length) { c.fromSales = filled.join(', '); updateHistIdent(current); renderDetails(c, current.ident); renderSports(c); }
     }
-    const s = IdParse.salesSummary(r.sales || [], r.period, c.parallel);
-    if (!s) { box.innerHTML = '<div class="note">No completed sales found for this card yet — use the eBay sold listings link below.</div>'; return; }
-    const scope = s.base && c.parallel ? ` · Base version sales — no ${esc(c.parallel)} sales found` : s.parallel ? ` · ${esc(s.parallel)} sales` : '';
-    box.innerHTML = `<div class="headline"><b>${IdParse.money(s.median, s.currency)}</b><span>Median of ${s.count} completed auction${s.count === 1 ? '' : 's'}${s.graded ? ' · ' + s.graded + ' graded' : ''}${scope}</span><small>Low ${IdParse.money(s.low, s.currency)} · High ${IdParse.money(s.high, s.currency)}${s.period ? ' · ' + esc(s.period.replace('d', ' days')) : ''}${s.asOf ? ' · latest ' + esc(fmtDay(s.asOf)) : ''} · CardSight AI</small></div>`;
+    const report = IdParse.compReport(r.sales || [], c);
+    if (!report || (!report.raw && !report.graded)) { box.innerHTML = '<div class="note">No completed sales matched this card' + (c.parallel ? ' and parallel' : '') + '. No price was estimated.</div>' + sourceLinks(c); return; }
+    const block = (label, s) => !s ? '' : `<div class="headline"><b>${IdParse.money(s.median, s.currency)}</b><span>${label} · ${s.count} sold</span><small>${s.from && s.to ? esc(fmtDay(s.from)) + ' – ' + esc(fmtDay(s.to)) + ' · ' : ''}range ${IdParse.money(s.low, s.currency)} – ${IdParse.money(s.high, s.currency)} · CardSight</small></div>`;
+    const dropped = [report.lots ? report.lots + (report.lots === 1 ? ' lot' : ' lots') : '', report.mismatch ? report.mismatch + ' mismatched' : '', report.outliers ? report.outliers + (report.outliers === 1 ? ' outlier' : ' outliers') : ''].filter(Boolean);
+    box.innerHTML = block(report.base && c.parallel ? 'Raw sales · parallel not stated' : 'Raw sold', report.raw) + block('Graded sold', report.graded)
+      + (dropped.length ? `<div class="note">Left out of the median: ${esc(dropped.join(' · '))}.</div>` : '')
+      + '<div class="note">These are completed sales, not asking prices. Open a source below to check the listings yourself.</div>' + sourceLinks(c);
+  }
+  function sourceLinks(c) {
+    const links = IdParse.priceLinks(c);
+    if (!links.length) return '';
+    return `<div class="src-links">${links.map(l => `<a class="btn ghost sm" href="${esc(l.url)}" target="_blank" rel="noopener">${esc(l.source)}</a>`).join('')}</div>`;
   }
   function renderPrices(c) {
     const el = $('pxPrices');
-    if (!c || c.game === 'sports') { el.hidden = !c; el.innerHTML = c ? `<div class="px-h"><h3>Market price</h3><small>Recent eBay sales</small></div><div id="pxSportsPrice"><div class="note">Loading recent sales…</div></div><div class="note" style="margin-top:8px">There's no free price guide for sports cards. The price above is the median of completed eBay auctions for this card, from CardSight AI — never a guess.</div>` : ''; return; }
+    if (!c || c.game === 'sports') { el.hidden = !c; el.innerHTML = c ? `<div class="px-h"><h3>Sold comps</h3><small>Raw and graded, kept separate</small></div><div id="pxSportsPrice"><div class="note">Loading recent sales…</div></div><div class="note" style="margin-top:8px">Raw and graded sales are priced separately. Lots, other parallels and outliers are left out. If no source is configured, the links below are searches — no price is filled in.</div>` : ''; return; }
     el.hidden = false; const h = IdParse.headline(c.prices);
     el.innerHTML = `<div class="px-h"><h3>Market price</h3><small>${esc(c.db)}</small></div>` + (h ? `<div class="headline"><b>${IdParse.money(h.value, h.currency)}</b><span>${esc(h.source)} ${esc(h.kind.toLowerCase())} · ${esc(h.label)}</span><small>${h.dateNote ? esc(h.dateNote) + ' ' : 'Updated '}${esc(fmtDay(h.date))}</small></div>` : '<div class="note">No market price listed for this print yet.</div>') +
       `<div class="rows">${c.prices.map(p => `<a class="row" ${p.url ? `href="${esc(p.url)}" target="_blank" rel="noopener"` : ''}><span class="src ${p.source === 'TCGplayer' ? 'tp' : 'cm'}">${p.source === 'TCGplayer' ? 'TCG' : 'CM'}</span><div><b>${esc(p.source)} · ${esc(p.label)}</b><small>${esc(p.kind)}${p.low != null ? ` · low ${IdParse.money(+p.low, p.currency)}` : ''} · ${esc(fmtDay(p.date))}${p.via ? ' · via ' + esc(p.via) : ''}</small></div><strong>${IdParse.money(p.value, p.currency)}</strong></a>`).join('')}</div>`;
@@ -404,22 +435,36 @@
   function renderSports(c) {
     const el = $('pxSports'); if (!c || c.game !== 'sports') { el.hidden = true; return; } el.hidden = false;
     const f = (k, label, ph, mode = 'text') => `<label><span>${label}</span><input data-k="${k}" value="${esc(c[k] || '')}" placeholder="${ph}" inputmode="${mode}" autocomplete="off"></label>`;
-    el.innerHTML = `<div class="px-h"><h3>Card details</h3><small>Edit anything that was misread</small></div><div class="fields">${f('name', 'Player', 'e.g. Drake Maye')}${f('year', 'Year', '2024', 'numeric')}${f('brand', 'Brand / set', 'Panini Mosaic')}${f('number', 'Card #', '303')}${f('parallel', 'Parallel', 'Silver Prizm RC')}${f('insert', 'Insert', 'Kaboom!')}${f('serial', 'Serial', '/99')}</div><button class="btn ghost" id="pxSave">Update recent sales</button>`;
-    $('pxSave').onclick = () => { qsa('[data-k]', el).forEach(i => c[i.dataset.k] = i.value.trim()); c.unsure = IdParse.unsureFor('sports', c, {}); current.ident.conf = 'manual'; updateHistIdent(current); renderPrice(); renderMV(); toast('Details saved'); };
+    const idn = (current && current.ident) || {};
+    const needsConfirm = !c.confirmed && (idn.status === 'partial' || idn.conf !== 'high' || (idn.score != null && idn.score < 88));
+    const identLine = [c.year, c.brand, c.team, c.number && '#' + c.number, c.parallel].filter(Boolean).join(' · ');
+    el.innerHTML = (needsConfirm ? `<div class="confirm"><b>${c.name ? 'Confirm this match' : 'Player name was not read'}</b><p>${esc(c.name || 'Enter the player below')} · ${esc(identLine || 'Set and team were not read')}</p><p>Match ${idn.score != null ? idn.score + '/100' : 'n/a'}${c.parallelSource === 'pixels' ? ' · parallel read from the border colours' : ''}. Check the name, number and parallel before you trust the price.</p><button type="button" class="btn primary" id="pxConfirm">This is the card</button></div>` : '')
+      + `<div class="px-h"><h3>Card details</h3><small>Edit anything that was misread</small></div><div class="fields">${f('name', 'Player', 'e.g. Nico Collins')}${f('year', 'Year', '2022', 'numeric')}${f('brand', 'Brand / set', 'Panini Prizm')}${f('number', 'Card #', '117')}${f('parallel', 'Parallel', 'Red White Blue Prizm')}${f('insert', 'Insert', 'Kaboom!')}${f('serial', 'Serial', '/99')}</div><button class="btn ghost" id="pxSave">Update recent sales</button>`;
+    const applyFields = () => { qsa('[data-k]', el).forEach(i => c[i.dataset.k] = i.value.trim()); c.unsure = IdParse.unsureFor('sports', c, {}); if (current.ident) current.ident.score = IdParse.scoreConf('sports', c); };
+    $('pxSave').onclick = () => { applyFields(); current.ident.conf = 'manual'; current.ident.status = c.name ? 'ok' : 'partial'; updateHistIdent(current); renderPrice(); renderMV(); toast('Details saved'); };
+    const confirmBtn = $('pxConfirm');
+    if (confirmBtn) confirmBtn.onclick = () => {
+      applyFields();
+      if (!c.name) { toast('Enter the player name first'); const n = el.querySelector('[data-k="name"]'); if (n) n.focus(); return; }
+      c.confirmed = true; current.ident.conf = 'manual'; current.ident.status = 'ok'; current.ident.score = Math.max(current.ident.score || 0, 90);
+      updateHistIdent(current); renderPrice(); renderMV(); toast('Match confirmed');
+    };
   }
   const GRADED = /\b(PSA|BGS|SGC|CGC|AGS|TAG|ISA|BCCG|HGA)\s*-?\s*(10|\d(\.5)?)\b/i;
   function median(a) { const s = a.slice().sort((x, y) => x - y), m = s.length >> 1; return s.length % 2 ? s[m] : (s[m - 1] + s[m]) / 2; }
   async function renderSales(c) {
     const el = $('pxSales'); if (!c) { el.hidden = true; return; } el.hidden = false;
     const link = Identify.ebaySoldUrl(c), q = Identify.salesQuery(c), mine = current;
-    const fallback = why => `<div class="px-h"><h3>Recent sales</h3></div><div class="sales-cta"><div><b>See what it actually sold for</b><small>${why}</small></div><a class="btn primary" href="${esc(link)}" target="_blank" rel="noopener">eBay sold listings ${EXT}</a></div><small class="q">Search: “${esc(q)}”</small>`;
-    if (!(window.CPG_CONFIG && CPG_CONFIG.SALES_API)) { el.innerHTML = fallback('Opens eBay’s completed sales for this card.'); return; }
+    const fallback = why => `<div class="px-h"><h3>Recent sales</h3></div><div class="note">${why} No price is shown unless a configured source returns real sold comps.</div>${sourceLinks(c)}<small class="q">Search: “${esc(q)}”</small>`;
+    if (!(window.CPG_CONFIG && CPG_CONFIG.SALES_API)) { el.innerHTML = fallback('No sales source is configured in this build.'); return; }
     el.innerHTML = `<div class="px-h"><h3>Recent sales</h3><small>Loading…</small></div>${'<div class="sale sk"></div>'.repeat(3)}`;
     const r = await Identify.recentSales(c); if (current !== mine || cur !== 'price') return;
-    if (!r.ok || !r.sales) { const why = { monthly_cap: 'The free monthly sales lookups are used up. Opens eBay’s completed sales instead.', daily_cap: 'Daily lookup limit reached. Opens eBay’s completed sales instead.' }[r.reason] || 'Sales data isn’t available right now. Opens eBay’s completed sales instead.'; el.innerHTML = fallback(why); if (c.game === 'sports') { const box = $('pxSportsPrice'); if (box) box.innerHTML = '<div class="note">Sales data isn’t available right now — use the eBay sold listings link below.</div>'; } return; }
+    if (!r.ok || !r.sales) { const why = { monthly_cap: 'The free monthly sales lookups are used up.', daily_cap: 'The daily lookup limit is reached.', not_configured: 'No sales source is configured in this build.' }[r.reason] || 'Sales data isn’t available right now.'; el.innerHTML = fallback(why); if (c.game === 'sports') { const box = $('pxSportsPrice'); if (box) box.innerHTML = '<div class="note">Sales data isn’t available right now. No price was estimated.</div>' + sourceLinks(c); } return; }
     if (c.game === 'sports') renderSportsPrice(c, r);
-    const match = IdParse.salesMatch(r.sales || []);
-    const all = r.sales.map(x => ({ ...x, g: x.grade || ((x.title.match(GRADED) || [])[0] || '').toUpperCase().replace(/\s*-\s*/, ' ') || '' }));
+    const report = IdParse.compReport(r.sales, c);
+    const kept = new Set((report && report.sales) || r.sales);
+    const match = IdParse.salesMatch((report && report.sales) || r.sales || []);
+    const all = r.sales.filter(x => !report || kept.has(x)).map(x => ({ ...x, g: x.grade || ((((x.title || '').match(GRADED)) || [])[0] || '').toUpperCase().replace(/\s*-\s*/, ' ') || '' }));
     const draw = () => {
       const list = all.filter(x => salesFilter === 'all' || (salesFilter === 'graded' ? x.g : !x.g)), vals = list.map(x => x.price);
       el.innerHTML = `<div class="px-h"><h3>Recent sales</h3><small>${list.length} completed auction${list.length === 1 ? '' : 's'} · ${esc(r.period || '90d').replace('d', ' days')}</small></div>

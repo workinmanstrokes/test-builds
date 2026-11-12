@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-          <!-- ios-pwa -->
+            <!-- ios-pwa -->
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -52,7 +52,7 @@
   <canvas id="live" class="live"></canvas>
   <div class="cam-top">
     <button class="icon-btn glass" data-back aria-label="Back"><svg viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7"/></svg></button>
-    <div class="cam-step"><b id="camSide">Front</b><span id="camHint">Out of the sleeve, on a plain contrasting surface</span></div>
+    <div class="cam-step"><b id="camSide">Front</b><span id="camHint">Out of the sleeve and toploader</span></div>
     <span style="width:44px"></span>
   </div>
   <div class="guide" id="guide"><i></i><i></i><i></i><i></i></div>
@@ -63,7 +63,7 @@
     <button class="icon-btn glass" id="skipBack" aria-label="Skip back" hidden><svg viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></svg></button>
     <span style="width:44px" id="camSpacer"></span>
   </div>
-  <div class="cam-tips">Plain, contrasting background · even light · no sleeve glare</div>
+  <div class="cam-tips">Slide it out of the case · dark matte background · even light, no glare</div>
 </section>
 
 <!-- ADJUST -->
@@ -113,6 +113,7 @@
       <div class="disclaimer"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9.5"/><path d="M12 8v5M12 16v.01"/></svg><span><b>Estimate, not an official grade.</b> Based on photos; lighting and camera limits apply. Not affiliated with any grading company.</span></div>
     </div>
     <button class="mv" id="mvPanel" type="button" aria-label="Card and market value"></button>
+    <div class="retake" id="holderBanner" hidden></div>
     <div class="panel" id="decisionPanel" hidden></div>
     <div class="side-tabs" id="sideTabs"><button class="on" data-side="front">Front</button><button data-side="back">Back</button></div>
     <div class="viewer">
@@ -128,7 +129,7 @@
     <div class="panel" id="cornersPanel"><h3>Corners</h3><div class="corner-grid" id="cornerGrid"></div></div>
     <div class="panel" id="notesPanel"><h3>Photo notes</h3><ul id="notes"></ul></div>
     <div class="panel how"><h3>How this is measured</h3>
-      <p><b>Centering</b> border widths are measured on 41 lines per side on the straightened card and shown as left/right and top/bottom ratios.</p>
+      <p><b>Centering</b> measures the inner frame on 41 lines per side, including striped and barber-pole borders, and shows left/right and top/bottom ratios.</p>
       <p><b>Print lines</b> are straight, faint lines that run across the card, including through the border.</p>
       <p><b>Scratches</b> are thin, bright streaks that catch the light. Busy holo patterns are checked less strictly.</p>
       <p><b>Edges and corners</b> are checked for whitening, chipping and rounding along the actual cut edge.</p>
@@ -159,7 +160,7 @@
       <form class="srch" id="pxForm"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="6.5"/><path d="m16 16 4 4"/></svg><input id="pxQ" type="search" placeholder="Search by card name" autocomplete="off" enterkeyhint="search"><button class="btn primary sm" type="submit">Search</button></form>
       <div class="alts" id="pxResults"></div>
     </div>
-    <p class="px-legal">Prices come from TCGdex (TCGplayer, Cardmarket) and Scryfall, shown with the date each source reports. Recent sales are completed auctions. “Listed now” shows asking prices of active eBay listings, which are not sales. Card Pre­Grade isn't affiliated with any of these services.</p>
+    <p class="px-legal">Pokémon and Magic prices come from TCGdex (TCGplayer, Cardmarket) and Scryfall, with the date each source reports. Sold comps are completed auctions from the configured free source, with lots, other parallels and outliers removed. eBay, 130point and PriceCharting links are searches, not prices. “Listed now” shows asking prices, which are not sales. Card Pre­Grade isn't affiliated with any of these services.</p>
     <div style="height:24px"></div>
   </div>
 </section>
@@ -174,7 +175,7 @@
   <ul class="plist"><li>Card photos are analyzed on your device and are never uploaded.</li><li>To identify and price a card, only the text read from it (name, number, set) is sent to free card databases (TCGdex, Scryfall, Wikipedia) and, for recent sales, to our sales lookup.</li><li>Recent scans (a small thumbnail and scores) are stored only on this phone. You can clear them below.</li><li>Anonymous crash reports and usage counts help fix bugs. They contain no photos and no personal info.</li></ul>
   <a class="link" href="https://workinmanstrokes.github.io/artifacts/card-pregrade-privacy/" target="_blank" rel="noopener">Full privacy policy</a>
   <div class="sheet-actions"><button class="btn ghost" id="clearHist">Clear recent scans</button><button class="btn primary" id="closeSheet">Done</button></div>
-  <p class="muted tiny">Diddlerrr · v1.1.0 · mscofield1588@gmail.com</p>
+  <p class="muted tiny">Diddlerrr · v1.5.0 · mscofield1588@gmail.com</p>
 </div></div>
 <div class="toast" id="toast"></div>
 </div>

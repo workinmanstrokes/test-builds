@@ -14,11 +14,37 @@ const Identify = (() => {
 
   // ---------- OCR: whole card + an upscaled bottom strip for small collector numbers ----------
   function strip(card, y0, y1, scale) { const c = document.createElement('canvas'), h = (y1 - y0) * card.height; c.width = card.width * scale; c.height = h * scale; c.getContext('2d').drawImage(card, 0, y0 * card.height, card.width, h, 0, 0, c.width, c.height); return c; }
+  // Glare on a toploader blows out the nameplate. Knock those pixels back and
+  // lift contrast before the second read. The first read is the untouched card.
+  function enhance(canvas) {
+    const c = document.createElement('canvas'); c.width = canvas.width; c.height = canvas.height;
+    const g = c.getContext('2d'); g.filter = 'contrast(1.45) grayscale(1)'; g.drawImage(canvas, 0, 0);
+    try {
+      const img = g.getImageData(0, 0, c.width, c.height), d = img.data;
+      for (let i = 0; i < d.length; i += 4) {
+        const mx = Math.max(d[i], d[i + 1], d[i + 2]), mn = Math.min(d[i], d[i + 1], d[i + 2]);
+        if (mn > 228 && mx - mn < 22) d[i] = d[i + 1] = d[i + 2] = 170;
+      }
+      g.putImageData(img, 0, 0);
+    } catch { /* canvas may be tainted in a test page; the plain read still stands */ }
+    return c;
+  }
   async function readCard(card, step) {
     step('Reading the card text');
-    const full = await OCR.read(card), top = await OCR.read(strip(card, 0, 0.14, 2)), bot = await OCR.read(strip(card, 0.84, 1, 2));
-    const lines = full.lines.concat(top.lines.map(l => ({ ...l, y: l.y * 0.14, h: l.h * 0.14, strip: true })), bot.lines.map(l => ({ ...l, y: 0.84 + l.y * 0.16, h: l.h * 0.16, strip: true })));
-    return { engine: full.engine, lines };
+    const full = await OCR.read(card);
+    // Top band (Pokémon / Magic name, sports header), nameplate (Prizm / Chrome
+    // player name sits low), and the collector-number strip.
+    const regions = [[0, 0.2, 2], [0.48, 0.92, 2], [0.78, 1, 2.4]];
+    const extra = [];
+    for (const [y0, y1, scale] of regions) {
+      const s = await OCR.read(strip(card, y0, y1, scale));
+      extra.push(...s.lines.map(l => ({ ...l, y: y0 + l.y * (y1 - y0), h: l.h * (y1 - y0), strip: true })));
+    }
+    try {
+      const s = await OCR.read(enhance(strip(card, 0.48, 0.92, 2)));
+      extra.push(...s.lines.map(l => ({ ...l, y: 0.48 + l.y * 0.44, h: l.h * 0.44, strip: true })));
+    } catch { /* enhancement is a second chance, not a requirement */ }
+    return { engine: full.engine, lines: full.lines.concat(extra) };
   }
 
   // ---------- Pokémon via TCGdex ----------
@@ -75,12 +101,20 @@ const Identify = (() => {
 
   // ---------- main ----------
   // Returns { status:'ok'|'pick'|'none', game, card, alts:[{id,name,set,number,thumb}], read:{engine, text} }
-  async function identify(card, { game = 'auto', step = () => {} } = {}) {
-    const rd = await readCard(card, step), text = rd.lines.map(l => l.text).join('\n'), read = { engine: rd.engine, text: text.slice(0, 600) };
-    let g = game === 'auto' ? P.guessGame(rd.lines) : game;
+  async function identify(card, { game = 'auto', step = () => {}, back = null } = {}) {
+    const rd = await readCard(card, step);
+    let lines = rd.lines;
+    if (back) {
+      try { step('Reading the back of the card'); const b = await readCard(back, () => {}); lines = lines.concat(b.lines.map(l => ({ ...l, back: true }))); }
+      catch { /* the front read still stands */ }
+    }
+    const text = lines.map(l => l.text).join('\n'), read = { engine: rd.engine, text: text.slice(0, 900) };
+    let g = game === 'auto' ? P.guessGame(lines) : game;
     if (!g) return { status: 'none', read };
-    if (g === 'sports') { step('Checking the player'); const c = await sports(rd.lines); c.unsure = P.unsureFor('sports', c, {});
-      return { status: c.name ? 'ok' : 'none', game: g, card: c, alts: [], read, conf: c.verified ? 'high' : 'low', score: P.scoreConf('sports', { name: c.name, verified: c.verified, year: c.year, brand: c.brand, number: c.number }) }; }
+    if (g === 'sports') { step('Checking the player'); const c = await sports(lines); c.unsure = P.unsureFor('sports', c, {});
+      const partial = !c.name && !!(c.team || c.brand || c.number);
+      const score = P.scoreConf('sports', c);
+      return { status: c.name ? 'ok' : partial ? 'partial' : 'none', game: g, card: c, alts: [], read, conf: c.verified ? 'high' : 'low', score }; }
     step(g === 'pokemon' ? 'Searching TCGdex' : 'Searching Scryfall');
     const p = g === 'pokemon' ? P.parsePokemon(rd.lines) : P.parseMagic(rd.lines);
     if (!p.names.length && !p.number) return { status: 'none', game: g, read };

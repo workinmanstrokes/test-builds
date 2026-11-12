@@ -65,20 +65,99 @@
   const MAKERS = ['Panini', 'Topps', 'Upper Deck', 'Bowman', 'Leaf', 'Fleer', 'Donruss'];
   const STOP = new Set(['ROOKIE', 'CARD', 'RC', 'PANINI', 'TOPPS', 'NFL', 'NBA', 'MLB', 'NHL', 'NCAA', 'AMERICA', 'LICENSED', 'OFFICIALLY', 'PLAYERS', 'ASSOCIATION', 'COLLEGIATE', 'UNIVERSITY', 'HOLO', 'REFRACTOR', 'PARALLEL', 'INSERT', 'AUTOGRAPH', 'AUTO', 'PATCH', 'TEAM', 'DRAFT', 'PICK', 'ROUND', 'SERIES', 'EDITION', 'BASE', 'SET', 'RATED', 'PRIZM', 'MOSAIC', 'SELECT', 'OPTIC']);
   const TEAMS = /Tar Heels|Crimson Tide|Buckeyes|Longhorns|Tigers|Bulldogs|Wolverines|Ducks|Gators|Seminoles|Buffaloes|Blue Devils|Bears|Packers|Chiefs|Eagles|Cowboys|Commanders|Chargers|Spurs|Lakers|Celtics|Warriors|Fever|Sky|Angels|Dodgers|Yankees|Pirates|Mets|Cubs|Blackhawks|Oilers|Maple Leafs|Penguins|Bruins|Rangers|Giants|Jets|Raiders|Ravens|Steelers|Bills|Lions|Vikings|Texans|Broncos|Colts|Saints|Rams|49ers|Seahawks|Falcons|Panthers|Bengals|Browns|Dolphins|Patriots|Titans|Jaguars|Cardinals|Buccaneers/i;
+  // Full club name when we saw it, otherwise the nickname. City+name is preferred so
+  // "Houston Texans" is not shortened to the nickname and is not read as a player.
+  const TEAM_FULL = [
+    ['Houston Texans', /\bhouston\s+texans\b/i, /\btexans\b/i],
+    ['New England Patriots', /\bnew\s+england\s+patriots\b/i, /\bpatriots\b/i],
+    ['Kansas City Chiefs', /\bkansas\s+city\s+chiefs\b/i, /\bchiefs\b/i],
+    ['Dallas Cowboys', /\bdallas\s+cowboys\b/i, /\bcowboys\b/i],
+    ['Green Bay Packers', /\bgreen\s+bay\s+packers\b/i, /\bpackers\b/i],
+    ['Philadelphia Eagles', /\bphiladelphia\s+eagles\b/i, /\beagles\b/i],
+    ['San Francisco 49ers', /\bsan\s+francisco\s+49ers\b/i, /\b49ers\b/i],
+    ['Los Angeles Chargers', /\blos\s+angeles\s+chargers\b/i, /\bchargers\b/i],
+    ['Los Angeles Rams', /\blos\s+angeles\s+rams\b/i, /\brams\b/i],
+    ['Las Vegas Raiders', /\blas\s+vegas\s+raiders\b/i, /\braiders\b/i],
+    ['New York Giants', /\bnew\s+york\s+giants\b/i, /\bgiants\b/i],
+    ['New York Jets', /\bnew\s+york\s+jets\b/i, /\bjets\b/i],
+    ['Tampa Bay Buccaneers', /\btampa\s+bay\s+buccaneers\b/i, /\bbuccaneers\b/i],
+    ['New Orleans Saints', /\bnew\s+orleans\s+saints\b/i, /\bsaints\b/i],
+    ['Buffalo Bills', /\bbuffalo\s+bills\b/i, /\bbills\b/i],
+    ['Miami Dolphins', /\bmiami\s+dolphins\b/i, /\bdolphins\b/i],
+    ['Baltimore Ravens', /\bbaltimore\s+ravens\b/i, /\bravens\b/i],
+    ['Pittsburgh Steelers', /\bpittsburgh\s+steelers\b/i, /\bsteelers\b/i],
+    ['Cincinnati Bengals', /\bcincinnati\s+bengals\b/i, /\bbengals\b/i],
+    ['Cleveland Browns', /\bcleveland\s+browns\b/i, /\bbrowns\b/i],
+    ['Denver Broncos', /\bdenver\s+broncos\b/i, /\bbroncos\b/i],
+    ['Indianapolis Colts', /\bindianapolis\s+colts\b/i, /\bcolts\b/i],
+    ['Jacksonville Jaguars', /\bjacksonville\s+jaguars\b/i, /\bjaguars\b/i],
+    ['Tennessee Titans', /\btennessee\s+titans\b/i, /\btitans\b/i],
+    ['Minnesota Vikings', /\bminnesota\s+vikings\b/i, /\bvikings\b/i],
+    ['Detroit Lions', /\bdetroit\s+lions\b/i, /\blions\b/i],
+    ['Chicago Bears', /\bchicago\s+bears\b/i, /\bbears\b/i],
+    ['Arizona Cardinals', /\barizona\s+cardinals\b/i, /\bcardinals\b/i],
+    ['Atlanta Falcons', /\batlanta\s+falcons\b/i, /\bfalcons\b/i],
+    ['Carolina Panthers', /\bcarolina\s+panthers\b/i, /\bpanthers\b/i],
+    ['Seattle Seahawks', /\bseattle\s+seahawks\b/i, /\bseahawks\b/i],
+    ['Washington Commanders', /\bwashington\s+commanders\b/i, /\bcommanders\b/i],
+    ['Los Angeles Lakers', /\blos\s+angeles\s+lakers\b/i, /\blakers\b/i],
+    ['Boston Celtics', /\bboston\s+celtics\b/i, /\bceltics\b/i],
+    ['Golden State Warriors', /\bgolden\s+state\s+warriors\b/i, /\bwarriors\b/i],
+    ['San Antonio Spurs', /\bsan\s+antonio\s+spurs\b/i, /\bspurs\b/i],
+    ['New York Yankees', /\bnew\s+york\s+yankees\b/i, /\byankees\b/i],
+    ['Los Angeles Dodgers', /\blos\s+angeles\s+dodgers\b/i, /\bdodgers\b/i],
+  ];
+  function findTeam(flat) {
+    let nick = '';
+    for (const [name, full, short] of TEAM_FULL) {
+      if (full.test(flat)) return name;
+      if (!nick && short.test(flat)) nick = name;
+    }
+    if (nick) return nick;
+    const m = String(flat || '').match(TEAMS);
+    return m ? m[0] : '';
+  }
+  const PRODUCT_MAKER = { Prizm: 'Panini', Mosaic: 'Panini', Select: 'Panini', Optic: 'Panini', Donruss: 'Panini', Phoenix: 'Panini', 'National Treasures': 'Panini', Contenders: 'Panini', Chronicles: 'Panini', Absolute: 'Panini', Origins: 'Panini', Spectra: 'Panini', Obsidian: 'Panini', Flawless: 'Panini', Immaculate: 'Panini', Hoops: 'Panini', Revolution: 'Panini', Certified: 'Panini', Prestige: 'Panini', Score: 'Panini' };
   function parseSports(lines) {
     const t = text(lines).replace(/[|_~]/g, ' '), flat = t.replace(/\s+/g, ' ');
     const years = (flat.match(/\b(19[5-9]\d|20[0-3]\d)\b/g) || []).map(Number).filter(y => y <= new Date().getFullYear() + 1), year = years.length ? String(Math.max(...years)) : '';
     const brands = BR.filter(b => new RegExp('\\b' + b.replace('&', '&?').replace(' ', '\\s*') + '\\b', 'i').test(flat));
-    const maker = MAKERS.find(m => brands.some(b => b.startsWith(m))) || '', product = (brands.find(b => !MAKERS.includes(b)) || '').replace(new RegExp('^(' + MAKERS.join('|') + ')\\s+'), '');
-    const rc = /\bR\s?C\b|\bROOKIE\b/i.test(flat), team = (flat.match(TEAMS) || [])[0] || '';
+    let maker = MAKERS.find(m => brands.some(b => b.startsWith(m))) || '', product = (brands.find(b => !MAKERS.includes(b)) || '').replace(new RegExp('^(' + MAKERS.join('|') + ')\\s+'), '');
+    if (!maker && PRODUCT_MAKER[product]) maker = PRODUCT_MAKER[product];
+    const rc = /\bR\s?C\b|\bROOKIE\b/i.test(flat), team = findTeam(flat);
     const number = (flat.match(/(?:No\.?|#)\s*([A-Z]{0,4}-?\d{1,4})\b/i) || [])[1] || '', serial = (flat.match(/\b\d{1,3}\s*\/\s*\d{1,4}\b/) || [])[0] || '';
     const parallel = detectParallel(flat), insert = detectInsert(flat);
+    // Names are often stacked one word per line on Prizm / Optic / Chrome nameplates
+    // ("NICO" / "COLLINS"), and a glare hit can turn a letter into a digit.
+    const teamWords = new Set(String(team || '').toUpperCase().split(/\s+/).filter(w => w.length > 2));
+    const fixOCR = w => /[0-9]/.test(w) ? w.replace(/0/g, 'O').replace(/1/g, 'I').replace(/5/g, 'S').replace(/8/g, 'B') : w;
+    const isNameWord = w => {
+      const u = String(w || '').toUpperCase().replace(/\.+$/g, '');
+      if (u.length < 2 || STOP.has(u) || teamWords.has(u)) return false;
+      if (['NO', 'NUM', 'OF', 'THE', 'AND', 'VS', 'WR', 'QB', 'RB', 'TE', 'WIDE', 'RECEIVER', 'QUARTERBACK', 'RUNNING', 'TIGHT', 'LINEBACKER', 'CORNERBACK', 'SAFETY', 'DEFENSIVE', 'OFFENSIVE', 'KICKER', 'PUNTER', 'FULLBACK'].includes(u)) return false;
+      if (BR.some(b => b.toUpperCase() === u)) return false;
+      if (TEAMS.test(u)) return false;
+      return /^[A-Za-z][A-Za-z'.-]{1,14}$/.test(u);
+    };
+    const titleWord = w => w[0].toUpperCase() + w.slice(1).toLowerCase();
+    const linesTok = [];
+    for (const line0 of t.split('\n')) {
+      const raw = line0.match(/[A-Za-z0-9][A-Za-z0-9'.-]{1,14}/g) || [];
+      const good = raw.map(fixOCR).filter(isNameWord);
+      if (good.length) linesTok.push(good);
+    }
     const names = new Map();
-    for (const line0 of t.split('\n')) { const line = line0.toUpperCase();
-      for (const m of line.matchAll(/\b([A-Z][A-Za-z'.-]{1,14})(?:\s+([A-Z][A-Za-z'.-]{1,14}))(?:\s+([A-Z][A-Za-z'.-]{1,14}))?\b/g)) {
-        const ws = m.slice(1).filter(Boolean).filter(x => !STOP.has(x.toUpperCase()) && !BR.some(b => b.toUpperCase() === x.toUpperCase()));
-        if (ws.length < 2) continue; const n = ws.slice(0, 3).map(x => x[0] + x.slice(1).toLowerCase()).join(' ');
-        if (TEAMS.test(n) || n.length < 7) continue; names.set(n, (names.get(n) || 0) + 1 + (line0.trim().toUpperCase() === line0.trim() ? 0.5 : 0)); } }
+    const addName = (parts, boost) => {
+      if (parts.length < 2 || parts.length > 3) return;
+      const n = parts.map(titleWord).join(' ');
+      if (TEAMS.test(n) || n.length < 7) return;
+      if (team && n.toLowerCase() === team.toLowerCase()) return;
+      names.set(n, (names.get(n) || 0) + boost);
+    };
+    for (const line of linesTok) if (line.length >= 2) addName(line.slice(0, 3), 2);
+    for (let i = 0; i < linesTok.length - 1; i++) {
+      if (linesTok[i].length === 1 && linesTok[i + 1].length === 1) addName([linesTok[i][0], linesTok[i + 1][0]], 1.8);
+    }
     return { year, maker, product, brand: [maker, product].filter(Boolean).join(' '), rc, team, number, serial: serial.replace(/\s+/g, ''), parallel, insert,
       names: [...names.entries()].sort((a, b) => b[1] - a[1]).map(e => e[0]).slice(0, 5) };
   }
@@ -190,7 +269,14 @@
     if (!m) return 0;
     if (game === 'pokemon') return Math.round(100 * Math.max(0, Math.min(1, (m.nm || 0) * 0.55 + (m.num ? 0.3 : 0) + (m.tot ? 0.15 : 0))));
     if (game === 'magic') { const s = m.score || 0; return s >= 2 ? 95 : s >= 1.6 ? 85 : s >= 1.4 ? 75 : s >= 1 ? 65 : 55; }
-    if (game === 'sports') return !m.name ? 0 : m.verified ? (m.year && m.brand && m.number ? 92 : 82) : 55;
+    if (game === 'sports') {
+      if (!m.name) return (m.team || m.brand || m.number) ? 34 : 0;
+      let s = m.verified ? (m.year && m.brand && m.number ? 92 : 82) : 55;
+      if (m.team) s += 2;
+      if (m.parallel) s += 3;
+      if (!m.number) s -= 4;
+      return Math.max(0, Math.min(98, s));
+    }
     return 0;
   }
 
@@ -203,8 +289,8 @@
   // are stripped; the remaining words must match exactly (so Silver Prizm never
   // matches Red White Blue Prizm). Returns '' for no parallel (a base card).
   function normalizeParallel(p) {
-    return String(p || '').toLowerCase().replace(/&/g, ' and ').replace(/[^a-z0-9 ]/g, ' ')
-      .split(/\s+/).filter(w => w && w !== 'and' && w !== 'prizm' && w !== 'rc' && w !== 'rookie' && w !== 'card' && w !== 'parallel').join(' ');
+    const raw = String(p || '').toLowerCase().replace(/&/g, ' and ').replace(/[^a-z0-9 ]/g, ' ').replace(/\brwb\b/g, 'red white blue');
+    return raw.split(/\s+/).filter(w => w && w !== 'and' && w !== 'prizm' && w !== 'rc' && w !== 'rookie' && w !== 'card' && w !== 'parallel').join(' ');
   }
   function summarizeGroup(list, period) {
     const byCur = {}; list.forEach(x => { const c = x.currency || 'USD'; (byCur[c] = byCur[c] || []).push(x); });
@@ -254,11 +340,114 @@
     return { name: m.name, number: m.number, set: m.set || '', year: m.year || '', release: m.release || '', count: best[1], total: ms.length, parallel };
   }
 
+  // ---------- sold comps: exact parallel, raw vs graded, no lots or outliers ----------
+  // Longer phrases win, so "red" does not steal a "red white blue" title.
+  const KNOWN_PAR = ['red white blue', 'cracked ice', 'no huddle', 'silver', 'gold', 'green', 'purple', 'orange', 'pink', 'black', 'hyper', 'disco', 'camo', 'mojo', 'wave', 'tiger', 'zebra', 'scope', 'pulsar', 'nebula', 'blue', 'red', 'white'];
+  function parallelMentioned(text) {
+    const n = ' ' + normalizeParallel(text) + ' ';
+    let best = '';
+    for (const k of KNOWN_PAR) if ((' ' + n + ' ').includes(' ' + k + ' ') && k.length > best.length) best = k;
+    return best;
+  }
+  function parallelClass(sale, want) {
+    const np = normalizeParallel(want);
+    if (!np) return 'any';
+    if (sale && sale.parallel) return normalizeParallel(sale.parallel) === np ? 'match' : 'other';
+    const found = parallelMentioned(sale && sale.title);
+    if (!found) return 'unknown';
+    return found === np ? 'match' : 'other';
+  }
+  function isLot(sale) {
+    const t = ((sale && sale.title) || '');
+    return /\b(lots?|bundles?|repacks?|mystery|you pick|card lot|lot of|group break)\b/i.test(t) || /\b\d+\s*cards\b/i.test(t);
+  }
+  function numberConflict(sale, number) {
+    if (!number || !sale || !sale.title) return false;
+    const nums = [...String(sale.title).matchAll(/#\s*([A-Z]{0,4}\d{1,4})\b/gi)].map(m => m[1].replace(/^0+/, '').toLowerCase());
+    if (!nums.length) return false;
+    const want = String(number).replace(/^0+/, '').toLowerCase();
+    return !nums.some(n => n === want);
+  }
+  function nameConflict(sale, name) {
+    if (!name || !sale || !sale.title) return false;
+    const last = String(name).trim().split(/\s+/).pop();
+    if (!last || last.length < 4) return false;
+    return !sale.title.toLowerCase().includes(last.toLowerCase());
+  }
+  function dropOutliers(list) {
+    if (list.length < 4) return { keep: list, dropped: 0 };
+    const vals = list.map(x => +x.price), med = median(vals);
+    const dev = vals.map(v => Math.abs(v - med)).sort((a, b) => a - b);
+    const mid = dev.length >> 1;
+    const m = (dev.length % 2 ? dev[mid] : (dev[mid - 1] + dev[mid]) / 2) || med * 0.05 || 1;
+    const keep = list.filter(x => Math.abs(+x.price - med) / m <= 3.5);
+    if (keep.length < 3) return { keep: list, dropped: 0 };
+    return { keep, dropped: list.length - keep.length };
+  }
+  function packGroup(list) {
+    if (!list.length) return null;
+    const { keep, dropped } = dropOutliers(list);
+    const s = summarizeGroup(keep, '');
+    const dates = keep.map(x => x.date).filter(Boolean).sort();
+    return { ...s, from: dates[0] ? String(dates[0]).slice(0, 10) : '', to: dates.length ? String(dates[dates.length - 1]).slice(0, 10) : '', outliers: dropped, sales: keep };
+  }
+  // Real sold comps only. Lots, a different parallel, a different player or card
+  // number, and extreme outliers are counted and left out. Raw and graded are
+  // never averaged together. No sales → null. Nothing here is estimated.
+  function compReport(sales, card) {
+    const src = (sales || []).filter(x => x && Number.isFinite(+x.price) && +x.price > 0);
+    if (!src.length) return null;
+    const c = card || {};
+    let lots = 0, mismatch = 0;
+    const match = [], unknown = [];
+    for (const s of src) {
+      if (isLot(s)) { lots++; continue; }
+      if (nameConflict(s, c.name) || numberConflict(s, c.number)) { mismatch++; continue; }
+      const cls = parallelClass(s, c.parallel);
+      if (cls === 'other') { mismatch++; continue; }
+      (cls === 'unknown' && c.parallel ? unknown : match).push(s);
+    }
+    const use = match.length ? match : unknown;
+    const raw = packGroup(use.filter(s => !s.grade));
+    const graded = packGroup(use.filter(s => s.grade));
+    const kept = []
+      .concat(raw && raw.sales || [])
+      .concat(graded && graded.sales || []);
+    const dates = kept.map(s => s.date).filter(Boolean).sort();
+    const outliers = (raw ? raw.outliers : 0) + (graded ? graded.outliers : 0);
+    const strip = g => g ? (({ sales, ...rest }) => rest)(g) : null;
+    return {
+      raw: strip(raw), graded: strip(graded),
+      base: !match.length && unknown.length > 0,
+      lots, mismatch, outliers,
+      kept: kept.length,
+      from: dates[0] ? String(dates[0]).slice(0, 10) : '',
+      to: dates.length ? String(dates[dates.length - 1]).slice(0, 10) : '',
+      sales: kept,
+    };
+  }
+  // Search links only. These pages are where a person can check sold prices.
+  // The app never reads a price out of them.
+  function priceLinks(c) {
+    const q = salesQuery(c);
+    if (!q) return [];
+    const e = encodeURIComponent(q);
+    const links = [
+      { source: 'eBay sold', url: ebaySoldUrl(c), kind: 'search' },
+      { source: '130point', url: 'https://130point.com/sales/?q=' + e, kind: 'search' },
+    ];
+    if (c && (c.game === 'pokemon' || c.game === 'magic')) {
+      links.push({ source: 'PriceCharting', url: 'https://www.pricecharting.com/search-products?q=' + e, kind: 'search' });
+      links.push({ source: 'TCGplayer', url: 'https://www.tcgplayer.com/search/all/product?q=' + e, kind: 'search' });
+    } else links.push({ source: 'PriceCharting', url: 'https://www.sportscardspro.com/search?q=' + e, kind: 'search' });
+    return links;
+  }
+
   // Headline = first USD market price (the most common way US collectors price singles)
   const headline = prices => (prices || []).find(p => p.currency === 'USD' && p.kind === 'Market') || (prices || [])[0] || null;
   function money(v, cur) { const s = cur === 'EUR' ? '€' : cur === 'USD' ? '$' : ''; return s + (v >= 100 ? Math.round(v).toLocaleString('en-US') : v.toFixed(2)) + (s ? '' : ' ' + cur); }
 
   const api = { norm, sim, lev, guessGame, parsePokemon, parseMagic, parseSports, pickAthlete, salesQuery, ebaySoldUrl, tcgdexPrices, scryfallPrices, headline, money,
-    pokemonVariants, pokemonFullId, magicFullId, unsureFor, scoreConf, salesSummary, salesMatch, normalizeParallel, median, looksSports: lines => SPORTS.test(text(lines)) };
+    pokemonVariants, pokemonFullId, magicFullId, unsureFor, scoreConf, salesSummary, salesMatch, compReport, priceLinks, normalizeParallel, median, looksSports: lines => SPORTS.test(text(lines)) };
   if (typeof module !== 'undefined' && module.exports) module.exports = api; else root.IdParse = api;
 })(typeof self !== 'undefined' ? self : this);

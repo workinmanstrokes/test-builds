@@ -203,25 +203,63 @@
         if (x < 0 || y < 0 || x >= W || y >= H) continue; n++; const i = (y * W + x) * 4;
         if (Math.hypot(sm.d[i] - bgM[0], sm.d[i + 1] - bgM[1], sm.d[i + 2] - bgM[2]) < bgT) hit++; }
       return n ? hit / n : 0; };
+    // Clear plastic lip: the gap is bright and low-saturation, and the outer edge of
+    // that gap is brighter than its middle (the specular rim of a toploader). A flat
+    // printed white or silver border has no brighter rim, so it is not a holder.
+    function bandLight(outer, inner) {
+      let bestS = -1, bestSep = 0;
+      for (let s = 0; s < 4; s++) { const om = [(outer[s][0] + outer[(s + 1) % 4][0]) / 2, (outer[s][1] + outer[(s + 1) % 4][1]) / 2];
+        const im = [(inner[s][0] + inner[(s + 1) % 4][0]) / 2, (inner[s][1] + inner[(s + 1) % 4][1]) / 2];
+        const sep = Math.hypot(im[0] - om[0], im[1] - om[1]);
+        if (sep > bestSep) { bestSep = sep; bestS = s; } }
+      if (bestS < 0 || bestSep < 8 || bestSep > 56) return 0;
+      const s = bestS, om = [(outer[s][0] + outer[(s + 1) % 4][0]) / 2, (outer[s][1] + outer[(s + 1) % 4][1]) / 2];
+      const im = [(inner[s][0] + inner[(s + 1) % 4][0]) / 2, (inner[s][1] + inner[(s + 1) % 4][1]) / 2];
+      let lipL = 0, lipN = 0, bodyL = 0, bodyN = 0, lightN = 0;
+      for (const f of [0.08, 0.16, 0.45, 0.55, 0.72]) {
+        const x = Math.round(om[0] + (im[0] - om[0]) * f), y = Math.round(om[1] + (im[1] - om[1]) * f);
+        if (x < 0 || y < 0 || x >= W || y >= H) continue;
+        const i = (y * W + x) * 4, r = sm.d[i], g = sm.d[i + 1], b = sm.d[i + 2];
+        const luma = 0.299 * r + 0.587 * g + 0.114 * b, sat = Math.max(r, g, b) - Math.min(r, g, b);
+        if (f < 0.25) { lipL += luma; lipN++; }
+        else { bodyL += luma; bodyN++; if (luma > 185 && sat < 42) lightN++; }
+      }
+      if (lightN < 2 || !lipN || !bodyN) return 0;
+      if (lipL / lipN < bodyL / bodyN + 8) return 0;
+      return lightN / bodyN;
+    }
+    const gapHolder = (outer, inner) => bandBg(outer, inner) >= 0.66 || bandLight(outer, inner) >= 0.6;
     // innerNested: c sits strictly inside topC, near-parallel, plausibly card-sized.
     // (nested() above only admits quads that CONTAIN topC — the opposite direction.)
     const innerNested = c => c !== topC && c.nFrame <= topC.nFrame && c.q.every(p => inside(topC.q, p))
       && [0, 1, 2, 3].every(i => { let d = Math.abs(ang(c.q, i) - ang(topC.q, i)); d = Math.min(d, 2 * Math.PI - d); return d < 0.09; })
       && c.area < topC.area && c.area >= topC.area * 0.5;
-    const sleeveInner = topC ? combos.filter(c => c.score >= top * 0.35 && innerNested(c))
-      .sort((a, b) => b.area - a.area).find(c => bandBg(topC.q, c.q) >= 0.66) : null;
+    const inners = topC ? combos.filter(c => innerNested(c)).sort((a, b) => b.area - a.area) : [];
+    // A toploader discounts the real card edge (plastic, not background, sits outside
+    // it), so that quad scores a few percent of the plastic rim. A clear sleeve still
+    // has to clear 35% — its gap is background, and a weak inner line must not win.
+    const sleeveInner = inners.find(c => {
+      const light = bandLight(topC.q, c.q);
+      return gapHolder(topC.q, c.q) && c.score >= top * (light >= 0.6 ? 0.03 : 0.35);
+    });
     // Largest combo containing topC — but NOT when the band between it and topC is
-    // background: then the larger quad is a sleeve (or a hybrid mixing a sleeve side),
-    // extending into background, and topC is the card. The largest containing quad whose
-    // band is NOT background wins; if every containing quad is a container, keep topC.
+    // background or a bright plastic lip: then the larger quad is a sleeve or toploader
+    // (or a hybrid mixing a holder side). The largest containing quad whose band is NOT
+    // a holder wins; if every containing quad is a container, keep topC.
     const outerCands = topC ? combos.filter(c => c.score >= top * (c === topC ? 0 : 0.2) && nested(c) && c.area <= topC.area * 1.35).sort((a, b) => b.area - a.area) : [];
-    const best = sleeveInner || (topC && (outerCands.find(c => c === topC || bandBg(c.q, topC.q) < 0.66) || topC));
-    if (!best) return { quad: [[0, 0], [img.w, 0], [img.w, img.h], [0, img.h]], found: false, method: 'frame', confidence: 0 };
+    const best = sleeveInner || (topC && (outerCands.find(c => c === topC || !gapHolder(c.q, topC.q)) || topC));
+    if (!best) return { quad: [[0, 0], [img.w, 0], [img.w, img.h], [0, img.h]], found: false, method: 'frame', confidence: 0, holder: null };
+    let holder = null;
+    if (topC && best !== topC && gapHolder(topC.q, best.q)) holder = { kind: bandLight(topC.q, best.q) >= 0.6 ? 'toploader' : 'sleeve' };
+    else if (topC) {
+      const outside = outerCands.find(c => c !== best && c.area > best.area * 1.02 && gapHolder(c.q, best.q));
+      if (outside) holder = { kind: bandLight(outside.q, best.q) >= 0.6 ? 'toploader' : 'sleeve' };
+    }
     let quad = best.q.map(([x, y]) => [x / s, y / s]);
     quad = refineQuad(img, quad);
     const minSide = Math.min(...best.sides.filter(v => v > 0), 999);
     const confidence = clamp((best.nFrame ? 0.5 : 1) * Math.min(1, minSide / 60), 0, 1);
-    return { quad, found: best.nFrame < 4, method: best.nFrame ? 'partial-frame' : 'edges', confidence };
+    return { quad, found: best.nFrame < 4, method: best.nFrame ? 'partial-frame' : 'edges', confidence, holder };
   }
   // Sub-pixel refinement of each side on a larger image: max normal gradient near the side, robust line fit.
   function refineQuad(img, quad) {
@@ -250,32 +288,80 @@
 
   // ---------- centering ----------
   const cdist = (d, i, r) => Math.hypot(d[i] - r[0], d[i + 1] - r[1], d[i + 2] - r[2]);
+  const rgbAt = (d, i) => [d[i], d[i + 1], d[i + 2]];
+  const cdist3 = (a, b) => Math.hypot(a[0] - b[0], a[1] - b[1], a[2] - b[2]);
+  // Outer-band colours. One cluster = a plain border. Two to four = a striped /
+  // barber-pole parallel (red-white-blue Prizm). More than that is artwork.
+  function borderPalette(samples) {
+    const clusters = [];
+    for (const s of samples) {
+      let best = -1, bd = 46;
+      for (let i = 0; i < clusters.length; i++) { const dist = cdist3(s, clusters[i].c); if (dist < bd) { bd = dist; best = i; } }
+      if (best >= 0) { const cl = clusters[best], n = cl.n + 1; cl.c = [0, 1, 2].map(k => (cl.c[k] * cl.n + s[k]) / n); cl.n = n; }
+      else clusters.push({ c: s.slice(), n: 1 });
+    }
+    const total = samples.length || 1;
+    const sig = clusters.filter(c => c.n >= Math.max(4, total * 0.06)).sort((a, b) => b.n - a.n);
+    if (sig.length < 1 || sig.length > 4) return null;
+    if (sig.reduce((a, c) => a + c.n, 0) / total < 0.62) return null;
+    return sig;
+  }
+  const inPal = (rgb, pal) => { for (const cl of pal) if (cdist3(rgb, cl.c) <= 58) return true; return false; };
   function measureCentering(card) {
     const { w, h, d } = card, res = {};
     const sides = { L: [w, (k, y) => (y * w + k) * 4], R: [w, (k, y) => (y * w + (w - 1 - k)) * 4], T: [h, (k, x) => (k * w + x) * 4], B: [h, (k, x) => ((h - 1 - k) * w + x) * 4] };
+    const scanOf = {};
+    for (const key of 'LRTB') {
+      const [len, at] = sides[key], other = key === 'L' || key === 'R' ? h : w;
+      const scan = []; for (let j = 0; j < 41; j++) scan.push(Math.round(other * (0.22 + 0.56 * j / 40)));
+      scanOf[key] = { len, at, scan, s0: Math.max(3, Math.round(len * 0.008)), lim: Math.round(len * 0.18) };
+    }
+    const samples = [];
+    for (const key of 'LRTB') {
+      const { len, at, scan, s0 } = scanOf[key], s1 = Math.max(s0 + 2, Math.round(len * 0.02));
+      for (const o of scan) for (let k = s0; k <= s1; k += 2) samples.push(rgbAt(d, at(k, o)));
+    }
+    const pal = borderPalette(samples);
     const all = [];
     for (const key of 'LRTB') {
-      const [len, at] = sides[key], other = key === 'L' || key === 'R' ? h : w, s0 = Math.round(len * 0.012), s1 = Math.round(len * 0.022), lim = Math.round(len * 0.2);
-      const scan = []; for (let j = 0; j < 41; j++) scan.push(Math.round(other * (0.22 + 0.56 * j / 40)));
-      // border reference colour from the band just inside the cut edge
-      const ref = [0, 1, 2].map(c => { const v = []; for (const o of scan) for (let k = s0; k <= s1; k++) v.push(d[at(k, o) + c]); return median(v); });
-      const noise = median(scan.map(o => { const v = []; for (let k = s0; k <= s1; k++) v.push(cdist(d, at(k, o), ref)); return median(v); }));
-      const T = Math.max(38, 5 * noise), hits = [];
-      for (const o of scan) { let hit = null;
-        for (let k = s0; k < lim; k++) if (cdist(d, at(k, o), ref) > T && cdist(d, at(k + 1, o), ref) > T && cdist(d, at(k + 2, o), ref) > T) { hit = k; break; }
-        if (hit !== null) { // sub-pixel: where distance crosses T/2... use half-way between k-1 and k weighted
-          const a = cdist(d, at(hit - 1, o), ref), b = cdist(d, at(hit, o), ref); hits.push(hit - 1 + clamp((T * 0.6 - a) / Math.max(1, b - a), 0, 1)); } }
+      const { len, at, scan, s0, lim } = scanOf[key];
+      let hits = [];
+      if (pal) {
+        for (const o of scan) {
+          let hit = null;
+          for (let k = s0; k < lim; k++) {
+            if (!inPal(rgbAt(d, at(k, o)), pal) && !inPal(rgbAt(d, at(k + 1, o)), pal) && !inPal(rgbAt(d, at(k + 2, o)), pal)) { hit = k; break; }
+          }
+          if (hit !== null) hits.push(hit - (inPal(rgbAt(d, at(Math.max(0, hit - 1), o)), pal) ? 0.45 : 0));
+        }
+      }
+      // Plain-colour fallback. A single reference colour still measures solid borders
+      // when the outer band is too noisy for a palette, and it refuses stripes
+      // (their median matches nothing, so the hit sits on the cut edge and is rejected).
+      if (hits.length < 41 * 0.55) {
+        const s1 = Math.max(s0 + 2, Math.round(len * 0.022));
+        const ref = [0, 1, 2].map(c => { const v = []; for (const o of scan) for (let k = s0; k <= s1; k++) v.push(d[at(k, o) + c]); return median(v); });
+        const noise = median(scan.map(o => { const v = []; for (let k = s0; k <= s1; k++) v.push(cdist(d, at(k, o), ref)); return median(v); }));
+        const T = Math.max(38, 5 * noise), alt = [];
+        for (const o of scan) {
+          let hit = null;
+          for (let k = s0; k < lim; k++) if (cdist(d, at(k, o), ref) > T && cdist(d, at(k + 1, o), ref) > T && cdist(d, at(k + 2, o), ref) > T) { hit = k; break; }
+          if (hit !== null) { const a = cdist(d, at(hit - 1, o), ref), b = cdist(d, at(hit, o), ref); alt.push(hit - 1 + clamp((T * 0.6 - a) / Math.max(1, b - a), 0, 1)); }
+        }
+        if (alt.length > hits.length) hits = alt;
+      }
       const m = median(hits), spread = hits.length ? mad(hits, m) : 99;
-      res[key] = { px: m, n: hits.length, spread, ref, len };
+      res[key] = { px: m, n: hits.length, spread, len };
       all.push(res[key]);
     }
-    const ok = all.every(s => s.n >= 41 * 0.55 && s.spread <= s.len * 0.006 && s.px > s.len * 0.016);
-    const out = { ok, sides: res };
-    if (!ok) { out.reason = all.some(s => s.px <= s.len * 0.016 || s.n < 41 * 0.55) ? 'no-border' : 'irregular-border'; return out; }
+    const spreadLim = pal && pal.length >= 2 ? 0.012 : 0.006;
+    const ok = all.every(s => s.n >= 41 * 0.55 && s.spread <= s.len * spreadLim && s.px > s.len * 0.016 && s.px < s.len * 0.16);
+    const out = { ok, sides: res, patterned: !!(pal && pal.length >= 2) };
+    if (!ok) { out.reason = all.some(s => !(s.px > s.len * 0.016) || s.n < 41 * 0.55) ? 'no-border' : 'irregular-border'; return out; }
     const { L, R, T, B } = res, lr = 100 * L.px / (L.px + R.px), tb = 100 * T.px / (T.px + B.px);
     out.lr = [lr, 100 - lr]; out.tb = [tb, 100 - tb]; out.worst = Math.max(lr, 100 - lr, tb, 100 - tb);
     out.inner = { x0: L.px, x1: w - R.px, y0: T.px, y1: h - B.px };
-    out.confidence = clamp(1 - Math.max(...all.map(s => s.spread / (s.len * 0.006))) * 0.5, 0.3, 1);
+    out.confidence = clamp(1 - Math.max(...all.map(s => s.spread / (s.len * spreadLim))) * 0.5, 0.3, 1);
     return out;
   }
   const fmtRatio = a => `${Math.round(a[0])}/${Math.round(a[1])}`;
@@ -400,6 +486,8 @@
       const c0 = Math.round(len * 0.07), c1 = len - c0, bi = [], gi = [];
       for (let t = c0; t < c1; t += 3) { for (let k = 14; k <= 26; k += 3) bi.push(at(t, k)); for (let k = -M + 2; k <= -6; k += 2) gi.push(at(t, k)); }
       const bRef = medColor(d, bi), bgRef = medColor(d, gi), sep = Math.hypot(bRef[0] - bgRef[0], bRef[1] - bgRef[1], bRef[2] - bgRef[2]);
+      const bSpread = bi.length ? Math.max(...[0, 1, 2].map(ch => { const vs = bi.map(i => d[i + ch]); return Math.max(...vs) - Math.min(...vs); })) : 0;
+      const patternedEdge = bSpread > 90;
       const bL = 0.299 * bRef[0] + 0.587 * bRef[1] + 0.114 * bRef[2], lightBorder = bL > 175 && Math.max(...bRef) - Math.min(...bRef) < 45;
       const lab = labeler(bRef, bgRef), useEdge = sep > 40, measurable = vis[name] !== false && (useEdge || !lightBorder);
       let wIn = 0, nIn = 0; if (measurable) for (let t = c0; t < c1; t += 2) for (let k = 20; k <= 40; k += 4) { nIn++; if (lab(d, at(t, k)) === 2) wIn++; }
@@ -411,16 +499,57 @@
         for (let k = e0; k <= e0 + 6; k++) if (lab(d, at(t, k)) === 2) c++;
         for (let k = e0 + 10; k <= e0 + 18; k++) if (lab(d, at(t, k)) === 2) inner++;
         white[t] = !whiteArt && c >= 2 && inner <= 1 ? 1 : 0; } // whitening is a thin rim; printed white that continues inward is design
-      const flags = new Uint8Array(len); let n = 0;
-      if (measurable) { const base = median(Array.from(e.subarray(c0, c1)).filter(v => !isNaN(v)));
-        for (let t = c0; t < c1; t++) { const chip = useEdge && e[t] - base >= 3; if (white[t] || chip) { flags[t] = 1; n++; } } }
+      const flags = new Uint8Array(len), chipAt = new Uint8Array(len); let n = 0, lip = false;
+      if (measurable) {
+        const base = median(Array.from(e.subarray(c0, c1)).filter(v => !isNaN(v)));
+        const glarePix = i => { const mx = Math.max(d[i], d[i + 1], d[i + 2]), mn = Math.min(d[i], d[i + 1], d[i + 2]); return mn > 242 && mx - mn < 16; };
+        for (let t = c0; t < c1; t++) {
+          const ek = Math.max(0, Math.round(isNaN(e[t]) ? 0 : e[t]));
+          if (glarePix(at(t, ek))) { e[t] = NaN; continue; }
+          const chip = useEdge && !isNaN(e[t]) && e[t] - base >= 3;
+          if (chip) chipAt[t] = 1;
+          if (white[t] || chip) { flags[t] = 1; n++; }
+        }
+        // A long, nearly constant inward step is a case lip only when that step
+        // lands on bright, low-saturation plastic. A striped border moves the
+        // measured edge too, but the pixels there are the printed colours.
+        const plastic = (t0, t1) => {
+          let light = 0, n = 0, sat = 0;
+          for (let k = t0; k < t1; k += 3) {
+            const i = at(k, Math.max(0, Math.round(isNaN(e[k]) ? 0 : e[k])));
+            const r = d[i], g = d[i + 1], b = d[i + 2], mx = Math.max(r, g, b), mn = Math.min(r, g, b);
+            n++; sat += mx - mn; if (mn > 175 && mx - mn < 42) light++;
+          }
+          return n > 0 && light / n > 0.72 && sat / n < 36;
+        };
+        let t = c0;
+        while (t < c1) {
+          if (!chipAt[t]) { t++; continue; }
+          let u = t; while (u < c1 && chipAt[u]) u++;
+          const run = u - t;
+          if (run >= (c1 - c0) * 0.16) {
+            const depths = []; for (let k = t; k < u; k++) depths.push(e[k]);
+            const md = median(depths);
+            if (md >= 3 && mad(depths, md) < 1.25 && plastic(t, u)) {
+              lip = true;
+              for (let k = t; k < u; k++) if (!white[k]) { flags[k] = 0; chipAt[k] = 0; }
+            }
+          }
+          t = u;
+        }
+        n = 0; for (let k = c0; k < c1; k++) if (flags[k]) n++;
+      }
       const segs = []; let st = -1, gap = 0;
       for (let t = c0; t <= c1; t++) { if (t < c1 && flags[t]) { if (st < 0) st = t; gap = 0; } else if (st >= 0) { if (++gap > 4 || t === c1) { const en = t - gap + 1; if (en - st >= 3) segs.push([st, en]); st = -1; gap = 0; } } }
-      const frac = measurable ? n / (c1 - c0) : null, misaligned = frac !== null && frac > 0.5;
-      res[name] = { measurable: measurable && !misaligned, frac: misaligned ? null : frac, segs: misaligned ? [] : segs, sep: Math.round(sep), lightBorder, whiteArt, misaligned, cropped: vis[name] === false };
-      if (measurable && !misaligned) { worn += n; tot += c1 - c0; }
+      let frac = measurable && !lip ? n / (c1 - c0) : null, misaligned = frac !== null && frac > 0.5;
+      // A striped border moves the single-colour edge model. A high "chip" fraction
+      // there is the print, not wear. Leave a real low reading alone.
+      let patternedUnreliable = false;
+      if (patternedEdge && !lip && frac !== null && frac > 0.04) { frac = null; misaligned = false; patternedUnreliable = true; segs.length = 0; }
+      res[name] = { measurable: measurable && !misaligned && !lip && !patternedUnreliable, frac: misaligned || lip || patternedUnreliable ? null : frac, segs: misaligned || lip || patternedUnreliable ? [] : segs, sep: Math.round(sep), lightBorder, whiteArt, misaligned, lip, patternedUnreliable, cropped: vis[name] === false };
+      if (measurable && !misaligned && !lip && !patternedUnreliable) { worn += n; tot += c1 - c0; }
     }
-    return { sides: res, frac: tot ? worn / tot : null };
+    return { sides: res, frac: tot ? worn / tot : null, blocked: Object.values(res).some(s => s.lip) };
   }
   function cornerWear(cm, M, vis = {}) {
     const W = cm.w, w = W - 2 * M, h = cm.h - 2 * M, d = cm.d, S = Math.round(w * 0.09), out = [];
@@ -429,7 +558,10 @@
       const idx = (x, y) => { const [X, Y] = map(x, y); return ((Y + M) * W + X + M) * 4; };
       const bi = [], gi = []; for (let a = 0; a < 6; a++) for (let b = 0; b < 6; b++) { bi.push(idx(S + a * 2, 14 + b * 2), idx(14 + b * 2, S + a * 2)); gi.push(idx(-M + 2 + b, S + a * 3), idx(S + a * 3, -M + 2 + b)); }
       const bRef = medColor(d, bi), bgRef = medColor(d, gi), sep = Math.hypot(bRef[0] - bgRef[0], bRef[1] - bgRef[1], bRef[2] - bgRef[2]);
-      const bL = 0.299 * bRef[0] + 0.587 * bRef[1] + 0.114 * bRef[2], lightBorder = bL > 175 && Math.max(...bRef) - Math.min(...bRef) < 45, lab = labeler(bRef, bgRef);
+      const bL = 0.299 * bRef[0] + 0.587 * bRef[1] + 0.114 * bRef[2], chroma = Math.max(...bRef) - Math.min(...bRef);
+      const sampleSpread = bi.length ? Math.max(...[0, 1, 2].map(ch => { const vs = bi.map(i => d[i + ch]); return Math.max(...vs) - Math.min(...vs); })) : 0;
+      const patterned = sampleSpread > 80;
+      const lightBorder = bL > 175 && chroma < 45 && !patterned, lab = labeler(bRef, bgRef);
       let t = 0; if (sep > 40) { for (t = -6; t < S; t++) if (lab(d, idx(t, t)) && lab(d, idx(t + 1, t + 1))) break; t = Math.max(0, t); }
       let white = 0, n = 0, whiteIn = 0, nIn = 0; const r = Math.max(1, t / (Math.SQRT2 - 1));
       if (!lightBorder || sep > 40) for (let y = 0; y < S; y++) for (let x = 0; x < S; x++) { const inArc = x < r && y < r, dist = inArc ? r - Math.hypot(r - x, r - y) : Math.min(x, y);
@@ -440,14 +572,30 @@
       if (n && nIn) white = whiteArt ? 0 : Math.max(0, white - n * (whiteIn / nIn));
       const [cx, cy] = map(0, 0);
       const [v1, v2] = name.split('-'), seen = vis[v1] !== false && vis[v2] !== false;
-      const rOk = sep > 40 && r <= w * 0.075; // real corners are ~3 mm radius; a huge 'radius' means the labels are confused (sleeve, pattern)
-      out.push({ name, measurable: seen && (sep > 40 || !lightBorder) && (sep <= 40 || rOk), whiteArt, white: n ? white / n : null, radius: rOk ? r : null, x: cx, y: cy, size: S, sep: Math.round(sep), _lab: lab, _idx: idx });
+      // Real corners are ~3 mm. A huge radius means the cut is confused (case, glare).
+      // Patterned borders get a little more room: a white stripe at the corner
+      // shifts the diagonal without meaning the corner is missing.
+      const rCap = w * (patterned ? 0.11 : 0.075);
+      const rOk = sep > 40 && r <= rCap;
+      if (patterned || lightBorder) white = 0;
+      out.push({ name, seen, patterned, lightBorder, cropped: !seen, measurable: seen && (sep > 40 || !lightBorder) && (sep <= 40 || rOk), whiteArt, white: n ? white / n : null, radius: rOk ? r : null, x: cx, y: cy, size: S, sep: Math.round(sep), _lab: lab, _idx: idx });
     }
-    const radii = out.filter(c => c.radius !== null).map(c => c.radius), base = radii.length >= 3 ? median(radii) : null;
+    const radii = out.filter(c => c.radius !== null).map(c => c.radius), base = radii.length >= 1 ? median(radii) : null;
+    // One sharp corner shares its radius with the others. A striped corner that
+    // landed on a white band can miss its own radius while the cut is still there.
+    if (base != null) for (const c of out) {
+      if (!c.measurable && c.seen && c.sep > 40 && !c.cropped) {
+        c.measurable = true; c.radius = base; c.borrowed = true;
+        if (c.patterned || c.lightBorder) c.white = 0;
+      }
+    }
     for (const c of out) {
       let missing = 0;
       if (base !== null && c.radius !== null) { const R = base; const lim = Math.min(S, R + 8); for (let y = 3; y < lim; y++) for (let x = 3; x < lim; x++) { const inArc = x < R && y < R, inside = inArc ? Math.hypot(R - x, R - y) <= R - 3 : true; if (inside && c._lab(d, c._idx(x, y)) === 0) missing++; } }
       c.missing = missing; c.excessRound = missing / (w * 0.01) ** 2;
+      // Stripes make the corner model see "missing" ink that is just the pattern.
+      // A visible cut with no separate whitening signal is a sharp patterned corner.
+      if (c.patterned) { c.white = 0; c.excessRound = 0; if (c.seen && c.sep > 40) c.measurable = true; }
       c.wear = clamp((c.white || 0) * 2.2 + Math.max(0, c.excessRound - 0.5) * 0.4, 0, 1);
       delete c._lab; delete c._idx;
     }
@@ -464,8 +612,13 @@
   // non-parallel cards, so border gold alone proves nothing.
   function detectBorderParallel(card, cent) {
     const none = { parallel: '', confidence: 0, detail: null };
-    if (!cent || !cent.ok) return none;
-    const { w, h, d } = card, S = cent.sides;
+    const { w, h, d } = card;
+    // Centering can fail on a busy stripe and still leave a readable border band.
+    // Fall back to a fixed outer strip so the parallel is not dropped with the ratio.
+    const S = cent && cent.ok && cent.sides ? cent.sides : {
+      L: { px: Math.round(w * 0.03) }, R: { px: Math.round(w * 0.03) },
+      T: { px: Math.round(h * 0.03) }, B: { px: Math.round(h * 0.03) },
+    };
     let n = 0, red = 0, blue = 0, white = 0, silver = 0, speckle = 0;
     const px = (x, y) => { const i = (y * w + x) * 4, r = d[i], g = d[i + 1], b = d[i + 2];
       const mx = Math.max(r, g, b), mn = Math.min(r, g, b), sat = mx - mn; n++;
@@ -497,7 +650,10 @@
 
   // ---------- full analysis of one side ----------
   function analyzeSide(img, opts = {}) {
-    const det = opts.quad ? { quad: opts.quad, found: true, method: 'manual', confidence: 1 } : detectCard(img);
+    // A caller-supplied quad (the adjust screen) is what we measure, but the holder
+    // flag still comes from detection: the plastic rim is outside those corners.
+    const det = opts.quad ? { quad: opts.quad, found: true, method: 'manual', confidence: 1, holder: null } : detectCard(img);
+    if (opts.quad) { const auto = detectCard(img); if (auto.holder) det.holder = auto.holder; }
     let quad = det.quad;
     const wTop = Math.hypot(quad[1][0] - quad[0][0], quad[1][1] - quad[0][1]), hL = Math.hypot(quad[3][0] - quad[0][0], quad[3][1] - quad[0][1]);
     const landscape = wTop > hL * 1.15; const cw = landscape ? CH : CW, ch = landscape ? CW : CH;
@@ -511,13 +667,19 @@
       vis[name] = [0.05, 0.3, 0.5, 0.7, 0.95].every(t => inImg(...f(t)));
     const card = make(cw, ch); for (let y = 0; y < ch; y++) card.d.set(cm.d.subarray(((y + M) * cm.w + M) * 4, ((y + M) * cm.w + M + cw) * 4), y * cw * 4);
     const q = quality(card), cent = measureCentering(card), bp = detectBorderParallel(card, cent), pl = printLines(card, q, cent), sc = scratches(card, q, pl), ew = edgeWear(cm, M, vis), cw2 = cornerWear(cm, M, vis);
+    const lipSides = Object.entries(ew.sides).filter(([, s]) => s.lip).map(([n]) => n);
+    const holder = det.holder || (lipSides.length ? { kind: 'case', edges: lipSides } : null);
     const notes = [];
+    if (holder) notes.push(holder.kind === 'sleeve'
+      ? 'A sleeve is visible around the card. Edges and corners read through plastic are unreliable — slide the card out, lay it on a dark matte surface, and rescan.'
+      : 'This looks like a toploader or hard case. The plastic edge was not graded as wear. Slide the card out, lay it on a dark matte surface, and rescan.');
     if (q.sharp < 9) notes.push('Photo looks soft. Hold steady and tap to focus for sharper results.');
     if (q.glare > 0.01) notes.push('Glare detected. Glare areas are skipped, so tilt the card or move away from direct light.');
     if (!det.found) notes.push('Card edges were not found automatically. Drag the corners to fit the card.');
     if (Object.values(vis).some(v => !v)) notes.push('Part of the card touches the photo border, so those edges and corners were skipped. Leave a little space around the card.');
     if (sc.busyFrac > 0.35) notes.push('Busy holo/refractor pattern: scratch check is less sensitive on this card.');
-    return { quad, detect: { found: det.found, method: det.method, confidence: det.confidence }, card, landscape,
+    if (cent.ok && cent.patterned) notes.push('Patterned border: centering is measured to the inner frame, where the stripes stop.');
+    return { quad, detect: { found: det.found, method: det.method, confidence: det.confidence }, card, landscape, holder,
       quality: { sharp: q.sharp, glare: q.glare }, centering: cent, borderParallel: bp, printLines: pl, scratches: sc.list, busyFrac: sc.busyFrac, edges: ew, corners: cw2, notes };
   }
 
@@ -530,14 +692,45 @@
     return s;
   }
   function edgeScore(frac) { if (frac === null || frac === undefined) return null; const t = [[0.006, 10], [0.015, 9.5], [0.03, 9], [0.06, 8], [0.1, 7], [0.16, 6], [0.25, 5], [0.4, 4]]; return (t.find(([m]) => frac <= m) || [0, 3])[1]; }
+  // Corner summary stays consistent with the crops: "all four look sharp" is only
+  // true when every corner was actually measured and none shows wear.
+  function cornerCall(corners) {
+    const all = corners || [], measured = all.filter(c => c.measurable), total = all.length || 4;
+    const unread = total - measured.length;
+    if (measured.length < 3) {
+      const sharp = measured.filter(c => (c.wear || 0) <= 0.15).length;
+      const summary = measured.length
+        ? `${sharp} of ${measured.length} readable corners look sharp. ${unread} could not be read.`
+        : 'Corners could not be read from this photo.';
+      return { score: null, summary };
+    }
+    const worst = measured.reduce((a, c) => c.wear > a.wear ? c : a);
+    const score = half(clamp(10 - Math.max(...measured.map(c => c.wear)) * 7 - measured.reduce((a, c) => a + c.wear, 0) / measured.length * 3, 1, 10));
+    let summary;
+    if (worst.wear > 0.15) summary = `Most wear: ${String(worst.name || '').replace('-', ' ')}`;
+    else if (unread === 0 && total === 4) summary = 'All four look sharp';
+    else if (unread === 0) summary = 'All measured corners look sharp';
+    else summary = `${measured.length} corners look sharp. ${unread} could not be read.`;
+    return { score, summary };
+  }
   function grade(front, back) {
     const sides = [front, back].filter(Boolean), subs = {}, why = {};
     subs.centering = centeringScore(front && front.centering, back && back.centering);
-    why.centering = front && front.centering.ok ? `Front L/R ${fmtRatio(front.centering.lr)}, T/B ${fmtRatio(front.centering.tb)}` + (back && back.centering.ok ? ` · Back L/R ${fmtRatio(back.centering.lr)}, T/B ${fmtRatio(back.centering.tb)}` : '') : 'No even border found to measure (full-art or patterned border)';
-    const cs = sides.flatMap(s => s.corners.filter(c => c.measurable));
-    subs.corners = cs.length ? half(clamp(10 - Math.max(...cs.map(c => c.wear)) * 7 - cs.reduce((a, c) => a + c.wear, 0) / cs.length * 3, 1, 10)) : null;
-    const ef = sides.map(s => s.edges.frac).filter(v => v !== null && v !== undefined);
-    subs.edges = ef.length ? edgeScore(Math.max(...ef)) : null;
+    const patterned = sides.some(s => s.centering && s.centering.ok && s.centering.patterned);
+    why.centering = front && front.centering.ok
+      ? `Front L/R ${fmtRatio(front.centering.lr)}, T/B ${fmtRatio(front.centering.tb)}` + (back && back.centering.ok ? ` · Back L/R ${fmtRatio(back.centering.lr)}, T/B ${fmtRatio(back.centering.tb)}` : '') + (patterned ? ' · striped border, measured to the inner frame' : '')
+      : 'No even inner frame to measure (full-art or borderless)';
+    const call = cornerCall(sides.flatMap(s => s.corners || []));
+    subs.corners = call.score;
+    why.corners = call.summary;
+    const blocked = sides.some(s => (s.edges && s.edges.blocked) || s.holder);
+    const patternedEdge = sides.some(s => s.edges && s.edges.sides && Object.values(s.edges.sides).some(x => x.patternedUnreliable));
+    const ef = sides.map(s => s.edges && s.edges.frac).filter(v => v !== null && v !== undefined);
+    subs.edges = blocked ? null : (ef.length ? edgeScore(Math.max(...ef)) : null);
+    why.edges = blocked
+      ? 'A toploader, case, or sleeve is covering the cut edge, so edge wear was not scored. Slide the card out and rescan.'
+      : (patternedEdge && !ef.length ? 'Striped border: the pattern reads as edge wear, so chipping was not scored.'
+        : (!ef.length ? 'Edges blend into the background. Use a contrasting surface.' : (Math.max(...ef) < 0.006 ? 'No whitening or chipping found' : `Wear along ${(Math.max(...ef) * 100).toFixed(1)}% of the worst edge`)));
     let pen = 0; const surfaceBits = [];
     for (const s of sides) { for (const l of s.printLines) pen += l.strength > 8 ? 2 : 1.5; for (const sc of s.scratches) pen += sc.len > 150 ? 1.5 : sc.len > 80 ? 1 : 0.6; }
     const nl = sides.reduce((a, s) => a + s.printLines.length, 0), ns = sides.reduce((a, s) => a + s.scratches.length, 0);
