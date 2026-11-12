@@ -20,6 +20,13 @@ APK_MAP = {
 }
 
 
+def normalize_search(value):
+    text = html.unescape(value or "")
+    text = text.lower().replace("&", " and ").replace("+", " plus ").replace("’", "'")
+    text = re.sub(r"[^a-z0-9]+", " ", text)
+    return " ".join(text.split())
+
+
 def title(directory):
     path = os.path.join(ROOT, directory, "index.html")
     try:
@@ -71,7 +78,7 @@ def browser_card(directory, name, variants):
         f'<img class="thumb" src="{ESCAPE(thumb)}" alt="{ESCAPE(name)} screenshot" loading="lazy">'
         if thumb else ""
     )
-    search_terms = " ".join([name, *(label for _, label in variants)]).lower()
+    search_terms = normalize_search(" ".join([name, *(label for _, label in variants)]))
     chips = "".join(
         f'<a class="chip" href="{ESCAPE(path)}/">{ESCAPE(label)}</a>'
         for path, label in variants
@@ -144,7 +151,7 @@ def apk_card(group):
         for variant, filename, size, _ in items[1:]
     )
     chips = f'<span class="chips">{alternatives}</span>' if alternatives else ""
-    searchable = " ".join([name, *(item[0] for item in items)]).lower()
+    searchable = normalize_search(" ".join([name, *(item[0] for item in items)]))
     subtitle = (f'{main[0].replace("-", " ")} · ' if main[0] else "") + f'{main[2]:.0f} MB APK'
     return (
         f'<article class="card apk" data-k="{ESCAPE(searchable)}">'
@@ -202,7 +209,7 @@ footer{{margin-top:36px;color:#6f6f99;font-size:12.5px}}
 @media (prefers-reduced-motion:reduce){{.card,.game{{transition:none}}}}
 </style></head><body><main>
 <header><h1>Diddlerrr Test Builds</h1><p>Preview builds for testers. Play in your browser or install on Android.</p></header>
-<input class="search" type="search" placeholder="Find a game…" aria-label="Find a game" oninput="const q=this.value.toLowerCase();document.querySelectorAll('[data-k]').forEach(e=>e.classList.toggle('hide',q&&!e.dataset.k.includes(q)))">
+<input class="search" type="search" placeholder="Find a game…" aria-label="Find a game" oninput="const q=(this.value||'').toLowerCase().replace(/&/g,' and ').replace(/\+/g,' plus ').replace(/[’']/g,'').replace(/[^a-z0-9]+/g,' ').trim();document.querySelectorAll('[data-k]').forEach(e=>{const k=(e.dataset.k||'').toLowerCase().replace(/&/g,' and ').replace(/\+/g,' plus ').replace(/[’']/g,'').replace(/[^a-z0-9]+/g,' ').trim();e.classList.toggle('hide',q&& !k.includes(q));})">
 <nav class="bar"><a href="#web">Browser · {len(games)}</a><a href="#apk">Android · {len(apk_html)}</a><a href="#more">More</a></nav>
 <h2 id="web">Play in browser</h2><div class="ggrid">{browser_html}</div>
 <h2 id="apk">Android APKs</h2><div class="grid">{"".join(apk_html)}</div>
