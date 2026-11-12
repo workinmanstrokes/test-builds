@@ -1,0 +1,639 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Lantern Quest</title>
+<meta name="description" content="A roguelike text adventure narrated by a local Ollama model.">
+<style>
+  :root {
+    --bg: #14110f;
+    --panel: #1f1a17;
+    --panel-2: #2a231e;
+    --line: #3b312a;
+    --ink: #f1e6d6;
+    --muted: #a8998a;
+    --accent: #f2a541;
+    --accent-ink: #1b1206;
+    --good: #7fc97f;
+    --bad: #e2675a;
+    --radius: 12px;
+  }
+  * { box-sizing: border-box; }
+  html, body { height: 100%; }
+  body {
+    margin: 0;
+    background: radial-gradient(1200px 600px at 50% -10%, #2b2018 0%, var(--bg) 60%);
+    color: var(--ink);
+    font: 16px/1.55 Georgia, "Iowan Old Style", "Palatino Linotype", serif;
+  }
+  button, input, select { font: inherit; color: inherit; }
+  .wrap {
+    max-width: 760px;
+    margin: 0 auto;
+    padding: 16px;
+    min-height: 100%;
+    display: flex;
+    flex-direction: column;
+  }
+  header { text-align: center; padding: 12px 0 4px; }
+  h1 { margin: 0; font-size: 30px; letter-spacing: 1px; color: var(--accent); }
+  .tag { margin: 2px 0 0; color: var(--muted); font-size: 14px; }
+  .panel {
+    background: var(--panel);
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    padding: 16px;
+    margin-top: 14px;
+  }
+  label { display: block; font-size: 13px; color: var(--muted); margin: 12px 0 4px; }
+  label:first-child { margin-top: 0; }
+  input[type=text], select {
+    width: 100%;
+    background: var(--panel-2);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 10px 12px;
+  }
+  input:focus, select:focus, button:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+  .row { display: flex; gap: 8px; }
+  .row > * { flex: 1; min-width: 0; }
+  .row > button { flex: 0 0 auto; }
+  .btn {
+    background: var(--panel-2);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 10px 14px;
+    cursor: pointer;
+  }
+  .btn:hover:not(:disabled) { border-color: var(--accent); }
+  .btn:disabled { opacity: .5; cursor: not-allowed; }
+  .btn.primary { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); font-weight: bold; }
+  .chips { display: flex; flex-wrap: wrap; gap: 8px; }
+  .chip {
+    background: var(--panel-2);
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    padding: 7px 14px;
+    cursor: pointer;
+    font-size: 14px;
+  }
+  .chip[aria-pressed=true] { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
+  .status { font-size: 14px; margin-top: 10px; display: flex; gap: 8px; align-items: flex-start; }
+  .dot { width: 10px; height: 10px; border-radius: 50%; background: var(--muted); margin-top: 7px; flex: 0 0 auto; }
+  .dot.ok { background: var(--good); }
+  .dot.err { background: var(--bad); }
+  .help { font-size: 13px; color: var(--muted); margin-top: 8px; }
+  code { background: #0d0b0a; border: 1px solid var(--line); border-radius: 5px; padding: 1px 5px; font-size: 12.5px; word-break: break-all; }
+  .hud {
+    display: flex; flex-wrap: wrap; gap: 6px 16px; align-items: center;
+    font-size: 14px; padding: 10px 14px;
+    position: sticky; top: 0; z-index: 2;
+  }
+  .hud b { color: var(--accent); font-weight: normal; }
+  .hearts { letter-spacing: 2px; color: var(--bad); }
+  .hearts .off { color: var(--line); }
+  .items { flex-basis: 100%; color: var(--muted); }
+  #log { flex: 1; padding: 4px 2px; }
+  .entry { margin: 14px 0; white-space: pre-wrap; overflow-wrap: anywhere; }
+  .entry.you { color: var(--accent); font-style: italic; }
+  .entry.you::before { content: "› "; }
+  .entry.sys { color: var(--muted); font-size: 14px; }
+  .entry.err { color: var(--bad); font-size: 14px; }
+  .delta { display: block; margin-top: 6px; font-size: 13px; color: var(--muted); font-style: normal; }
+  .delta .up { color: var(--good); }
+  .delta .down { color: var(--bad); }
+  .cursor::after { content: "▍"; color: var(--accent); animation: blink 1s steps(2) infinite; }
+  @keyframes blink { 50% { opacity: 0; } }
+  #choices { display: grid; gap: 8px; }
+  #choices .btn { text-align: left; }
+  .end { text-align: center; }
+  .end h2 { margin: 0 0 6px; color: var(--accent); }
+  .hidden { display: none !important; }
+  footer { text-align: center; color: var(--muted); font-size: 12px; padding: 18px 0 6px; }
+  @media (prefers-reduced-motion: reduce) { .cursor::after { animation: none; } }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>Lantern Quest</h1>
+    <p class="tag">A roguelike text adventure, narrated by the model on your own machine.</p>
+  </header>
+
+  <!-- Setup -->
+  <section id="setup" class="panel">
+    <label for="url">Ollama address</label>
+    <div class="row">
+      <input id="url" type="text" spellcheck="false" autocomplete="off">
+      <button id="reconnect" class="btn" type="button">Connect</button>
+    </div>
+    <div class="status"><span id="dot" class="dot"></span><span id="statusText">Checking for Ollama…</span></div>
+    <div id="connHelp" class="help hidden"></div>
+
+    <label for="model">Model</label>
+    <select id="model" disabled><option>No models found</option></select>
+
+    <label>Setting</label>
+    <div id="genres" class="chips"></div>
+
+    <label for="hero">Hero name</label>
+    <input id="hero" type="text" maxlength="24" placeholder="Wren">
+
+    <div class="row" style="margin-top:16px">
+      <button id="start" class="btn primary" type="button" disabled>Begin the quest</button>
+      <button id="resume" class="btn hidden" type="button">Resume saved run</button>
+    </div>
+  </section>
+
+  <!-- Game -->
+  <section id="game" class="hidden" style="display:flex;flex-direction:column;flex:1">
+    <div class="panel hud" id="hud"></div>
+    <div id="log" aria-live="polite"></div>
+    <div id="controls" class="panel">
+      <div id="choices"></div>
+      <form id="actForm" class="row" style="margin-top:10px">
+        <input id="act" type="text" maxlength="200" placeholder="…or type anything you want to do" autocomplete="off">
+        <button id="send" class="btn primary" type="submit">Do it</button>
+      </form>
+      <div class="row" style="margin-top:10px">
+        <button id="retry" class="btn hidden" type="button">Retry last turn</button>
+        <button id="quit" class="btn" type="button">Abandon run</button>
+      </div>
+    </div>
+    <div id="endPanel" class="panel end hidden">
+      <h2 id="endTitle"></h2>
+      <p id="endText" class="tag"></p>
+      <button id="again" class="btn primary" type="button" style="margin-top:12px">Play again</button>
+    </div>
+  </section>
+
+  <footer>Runs entirely on your computer. No cloud, no accounts, no tokens.</footer>
+</div>
+
+<script>
+(() => {
+  'use strict';
+
+  const MAX_HP = 10;
+  const MAX_TURNS = 14;
+  const HISTORY_TURNS = 6; // exchanges kept in the model's context
+  const SAVE_KEY = 'lantern-quest:save';
+  const PREF_KEY = 'lantern-quest:prefs';
+
+  const GENRES = [
+    { id: 'dungeon', label: 'Sunken dungeon', pitch: 'a dark fantasy dungeon beneath a drowned abbey, full of traps, relics and things that whisper' },
+    { id: 'derelict', label: 'Derelict starship', pitch: 'a silent derelict starship drifting near a dying star, with failing systems and something still aboard' },
+    { id: 'noir', label: 'Rain-soaked noir', pitch: 'a rain-soaked 1940s city where a missing-person case leads into the criminal underworld' },
+    { id: 'cozy', label: 'Cozy mystery village', pitch: 'a cozy lakeside village during harvest festival where a gentle mystery is unfolding and danger is mild but real' },
+    { id: 'wasteland', label: 'Neon wasteland', pitch: 'a post-collapse desert of neon ruins, scavenger gangs and half-working machines' },
+  ];
+
+  const SCHEMA = {
+    type: 'object',
+    properties: {
+      narration: { type: 'string' },
+      choices: { type: 'array', items: { type: 'string' } },
+      hp_delta: { type: 'integer' },
+      gold_delta: { type: 'integer' },
+      items_gained: { type: 'array', items: { type: 'string' } },
+      items_lost: { type: 'array', items: { type: 'string' } },
+      outcome: { type: 'string', enum: ['ongoing', 'victory', 'defeat'] },
+    },
+    required: ['narration', 'choices', 'hp_delta', 'gold_delta', 'items_gained', 'items_lost', 'outcome'],
+  };
+
+  const $ = (id) => document.getElementById(id);
+  const el = {
+    setup: $('setup'), game: $('game'), url: $('url'), reconnect: $('reconnect'),
+    dot: $('dot'), statusText: $('statusText'), connHelp: $('connHelp'),
+    model: $('model'), genres: $('genres'), hero: $('hero'), start: $('start'), resume: $('resume'),
+    hud: $('hud'), log: $('log'), controls: $('controls'), choices: $('choices'),
+    actForm: $('actForm'), act: $('act'), send: $('send'), retry: $('retry'), quit: $('quit'),
+    endPanel: $('endPanel'), endTitle: $('endTitle'), endText: $('endText'), again: $('again'),
+  };
+
+  // ---------- storage (best effort) ----------
+  const store = {
+    get(key) { try { return JSON.parse(localStorage.getItem(key)); } catch { return null; } },
+    set(key, value) { try { localStorage.setItem(key, JSON.stringify(value)); } catch { /* ignore */ } },
+    del(key) { try { localStorage.removeItem(key); } catch { /* ignore */ } },
+  };
+
+  const prefs = Object.assign(
+    { url: 'http://localhost:11434', model: '', genre: 'dungeon', hero: '' },
+    store.get(PREF_KEY) || {},
+  );
+  const savePrefs = () => store.set(PREF_KEY, prefs);
+
+  let state = null;   // current run
+  let busy = false;
+  let lastAction = null;
+
+  // ---------- Ollama ----------
+  const baseUrl = () => prefs.url.trim().replace(/\/+$/, '');
+
+  async function listModels() {
+    const res = await fetch(`${baseUrl()}/api/tags`);
+    if (!res.ok) throw new Error(`Ollama answered ${res.status}`);
+    const data = await res.json();
+    return (data.models || []).map((m) => m.name).filter((n) => !/embed/i.test(n)).sort();
+  }
+
+  /** Pull the narration text out of a partly streamed JSON object. */
+  function partialNarration(buf) {
+    const m = buf.match(/"narration"\s*:\s*"/);
+    if (!m) return '';
+    let out = '';
+    for (let i = m.index + m[0].length; i < buf.length; i++) {
+      const c = buf[i];
+      if (c === '"') break;
+      if (c !== '\\') { out += c; continue; }
+      const n = buf[i + 1];
+      if (n === undefined) break;
+      if (n === 'u') {
+        const hex = buf.slice(i + 2, i + 6);
+        if (hex.length < 4) break;
+        out += String.fromCharCode(parseInt(hex, 16));
+        i += 5;
+      } else {
+        out += ({ n: '\n', t: ' ', r: '', b: '', f: '' })[n] ?? n;
+        i++;
+      }
+    }
+    return out;
+  }
+
+  async function chat(messages, onText) {
+    const res = await fetch(`${baseUrl()}/api/chat`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: state.model,
+        messages,
+        stream: true,
+        format: SCHEMA,
+        options: { temperature: 0.9, num_ctx: 4096, num_predict: 500 },
+      }),
+    });
+    if (!res.ok) {
+      let detail = '';
+      try { detail = (await res.json()).error || ''; } catch { /* ignore */ }
+      throw new Error(detail || `Ollama answered ${res.status}`);
+    }
+    const reader = res.body.getReader();
+    const decoder = new TextDecoder();
+    let pending = '';
+    let content = '';
+    const handle = (line) => {
+      if (!line.trim()) return;
+      const chunk = JSON.parse(line);
+      if (chunk.error) throw new Error(chunk.error);
+      if (chunk.message && chunk.message.content) {
+        content += chunk.message.content;
+        onText(partialNarration(content));
+      }
+    };
+    for (;;) {
+      const { value, done } = await reader.read();
+      if (done) break;
+      pending += decoder.decode(value, { stream: true });
+      const lines = pending.split('\n');
+      pending = lines.pop();
+      lines.forEach(handle);
+    }
+    handle(pending);
+    return content;
+  }
+
+  function parseTurn(raw) {
+    let obj;
+    try {
+      obj = JSON.parse(raw);
+    } catch {
+      const a = raw.indexOf('{');
+      const b = raw.lastIndexOf('}');
+      if (a < 0 || b <= a) throw new Error('The model did not return a valid turn.');
+      try { obj = JSON.parse(raw.slice(a, b + 1)); } catch { throw new Error('The model did not return a valid turn.'); }
+    }
+    const int = (v, lo, hi) => Math.max(lo, Math.min(hi, Math.round(Number(v)) || 0));
+    const list = (v, max) => (Array.isArray(v) ? v : [])
+      .map((s) => String(s).trim().slice(0, 60)).filter(Boolean).slice(0, max);
+    const narration = String(obj.narration || '').trim();
+    if (!narration) throw new Error('The model returned an empty turn.');
+    return {
+      narration,
+      choices: list(obj.choices, 4).map((c) => c.slice(0, 90)),
+      hp: int(obj.hp_delta, -4, 3),
+      gold: int(obj.gold_delta, -60, 60),
+      gained: list(obj.items_gained, 3),
+      lost: list(obj.items_lost, 3),
+      outcome: ['victory', 'defeat'].includes(obj.outcome) ? obj.outcome : 'ongoing',
+    };
+  }
+
+  // ---------- prompts ----------
+  function systemPrompt() {
+    const g = GENRES.find((x) => x.id === state.genre) || GENRES[0];
+    return [
+      `You are the game master of a short roguelike text adventure set in ${g.pitch}.`,
+      `The hero is called ${state.hero}. Address the hero as "you".`,
+      'Each player message gives the current STATE and the hero\'s ACTION. Resolve the action fairly: clever or well-equipped actions succeed, reckless ones cost health.',
+      'Reply with a single JSON object and nothing else:',
+      '- narration: 2 to 4 vivid sentences describing what happens. No lists, no game statistics.',
+      '- choices: exactly 3 short, distinct next actions (under 12 words each). Empty when the story is over.',
+      `- hp_delta: integer from -4 to 3, the change in health (max ${MAX_HP}).`,
+      '- gold_delta: integer change in gold. Never take more gold than the hero has.',
+      '- items_gained / items_lost: short item names. Only remove items the hero carries.',
+      '- outcome: "ongoing", or "victory" / "defeat" when the story ends.',
+      `The run lasts about ${MAX_TURNS} turns. Build toward a climax and stay consistent with earlier events and the inventory.`,
+    ].join('\n');
+  }
+
+  function turnMessage(action) {
+    const left = MAX_TURNS - state.turn;
+    let pacing = '';
+    if (left <= 0) pacing = ' This is the FINAL turn: conclude the story now with outcome "victory" or "defeat".';
+    else if (left <= 2) pacing = ' The finale is here: bring the story to its climax.';
+    return `STATE: turn ${state.turn + 1} of ${MAX_TURNS}; health ${state.hp}/${MAX_HP}; gold ${state.gold}; ` +
+      `items: ${state.items.length ? state.items.join(', ') : 'none'}.${pacing}\nACTION: ${action}`;
+  }
+
+  // ---------- rendering ----------
+  function addEntry(kind, text) {
+    const div = document.createElement('div');
+    div.className = `entry ${kind}`;
+    div.textContent = text;
+    el.log.appendChild(div);
+    return div;
+  }
+
+  function addDelta(div, d) {
+    const parts = [];
+    const span = (cls, text) => { const s = document.createElement('span'); s.className = cls; s.textContent = text; return s; };
+    if (d.hp) parts.push(span(d.hp > 0 ? 'up' : 'down', `${d.hp > 0 ? '+' : ''}${d.hp} health`));
+    if (d.gold) parts.push(span(d.gold > 0 ? 'up' : 'down', `${d.gold > 0 ? '+' : ''}${d.gold} gold`));
+    d.gained.forEach((i) => parts.push(span('up', `+ ${i}`)));
+    d.lost.forEach((i) => parts.push(span('down', `− ${i}`)));
+    if (!parts.length) return;
+    const wrap = document.createElement('span');
+    wrap.className = 'delta';
+    parts.forEach((p, i) => { if (i) wrap.append(' · '); wrap.append(p); });
+    div.appendChild(wrap);
+  }
+
+  function renderHud() {
+    el.hud.textContent = '';
+    const hearts = document.createElement('span');
+    hearts.className = 'hearts';
+    hearts.setAttribute('aria-label', `Health ${state.hp} of ${MAX_HP}`);
+    hearts.append('♥'.repeat(state.hp));
+    const off = document.createElement('span');
+    off.className = 'off';
+    off.textContent = '♥'.repeat(MAX_HP - state.hp);
+    hearts.append(off);
+    const gold = document.createElement('span');
+    gold.innerHTML = 'Gold <b></b>';
+    gold.querySelector('b').textContent = state.gold;
+    const turn = document.createElement('span');
+    turn.innerHTML = 'Turn <b></b>';
+    turn.querySelector('b').textContent = `${Math.min(state.turn, MAX_TURNS)}/${MAX_TURNS}`;
+    const items = document.createElement('span');
+    items.className = 'items';
+    items.textContent = `Pack: ${state.items.length ? state.items.join(', ') : 'empty'}`;
+    el.hud.append(hearts, gold, turn, items);
+  }
+
+  function renderChoices() {
+    el.choices.textContent = '';
+    state.choices.forEach((c) => {
+      const b = document.createElement('button');
+      b.type = 'button';
+      b.className = 'btn';
+      b.textContent = c;
+      b.disabled = busy;
+      b.addEventListener('click', () => takeTurn(c));
+      el.choices.appendChild(b);
+    });
+  }
+
+  function setBusy(v) {
+    busy = v;
+    el.send.disabled = v;
+    el.act.disabled = v;
+    el.choices.querySelectorAll('button').forEach((b) => { b.disabled = v; });
+  }
+
+  function scrollDown() {
+    window.scrollTo({ top: document.documentElement.scrollHeight, behavior: 'smooth' });
+  }
+
+  function renderAll() {
+    el.log.textContent = '';
+    state.log.forEach((e) => {
+      const div = addEntry(e.kind, e.text);
+      if (e.delta) addDelta(div, e.delta);
+    });
+    renderHud();
+    renderChoices();
+    const over = state.outcome !== 'ongoing';
+    el.controls.classList.toggle('hidden', over);
+    el.endPanel.classList.toggle('hidden', !over);
+    if (over) {
+      el.endTitle.textContent = state.outcome === 'victory' ? 'Victory' : 'Your lantern goes dark';
+      el.endText.textContent = `${state.hero} lasted ${state.turn} turns and finished with ${state.gold} gold` +
+        (state.items.length ? `, carrying ${state.items.join(', ')}.` : '.');
+    }
+  }
+
+  // ---------- game loop ----------
+  async function takeTurn(action) {
+    if (busy || !state || state.outcome !== 'ongoing') return;
+    action = action.trim();
+    if (!action) return;
+    lastAction = action;
+    el.retry.classList.add('hidden');
+    setBusy(true);
+
+    const isOpening = state.turn === 0 && !state.log.length;
+    if (!isOpening) {
+      state.log.push({ kind: 'you', text: action });
+      addEntry('you', action);
+    }
+    const div = addEntry('gm cursor', '');
+    scrollDown();
+
+    const userMsg = { role: 'user', content: turnMessage(action) };
+    const messages = [
+      { role: 'system', content: systemPrompt() },
+      ...state.history.slice(-HISTORY_TURNS * 2),
+      userMsg,
+    ];
+
+    try {
+      const raw = await chat(messages, (text) => { div.textContent = text; });
+      const t = parseTurn(raw);
+
+      state.turn += 1;
+      state.hp = Math.max(0, Math.min(MAX_HP, state.hp + t.hp));
+      const goldBefore = state.gold;
+      state.gold = Math.max(0, state.gold + t.gold);
+      t.gold = state.gold - goldBefore;
+      const lower = (s) => s.toLowerCase();
+      t.lost = t.lost.filter((i) => state.items.some((x) => lower(x) === lower(i)));
+      state.items = state.items.filter((x) => !t.lost.some((i) => lower(i) === lower(x)));
+      t.gained = t.gained.filter((i) => !state.items.some((x) => lower(x) === lower(i)));
+      state.items.push(...t.gained);
+      state.items = state.items.slice(-8);
+
+      if (state.hp <= 0) state.outcome = 'defeat';
+      else if (t.outcome !== 'ongoing') state.outcome = t.outcome;
+      else if (state.turn >= MAX_TURNS) state.outcome = 'victory';
+      state.choices = state.outcome === 'ongoing'
+        ? (t.choices.length ? t.choices : ['Press on', 'Look around carefully', 'Rest and recover'])
+        : [];
+
+      const delta = { hp: t.hp, gold: t.gold, gained: t.gained, lost: t.lost };
+      state.log.push({ kind: 'gm', text: t.narration, delta });
+      state.history.push(userMsg, { role: 'assistant', content: JSON.stringify({ narration: t.narration, outcome: t.outcome }) });
+      state.history = state.history.slice(-HISTORY_TURNS * 2);
+
+      div.classList.remove('cursor');
+      div.textContent = t.narration;
+      addDelta(div, delta);
+      if (state.outcome === 'ongoing') store.set(SAVE_KEY, state); else store.del(SAVE_KEY);
+      setBusy(false);
+      renderAll();
+      el.act.value = '';
+    } catch (err) {
+      div.remove();
+      if (!isOpening) { state.log.pop(); el.log.lastChild && el.log.lastChild.remove(); }
+      addEntry('err', `The game master faltered: ${friendly(err)}`);
+      el.retry.classList.remove('hidden');
+      setBusy(false);
+    }
+    scrollDown();
+  }
+
+  function friendly(err) {
+    const msg = String(err && err.message || err);
+    if (/failed to fetch|networkerror|load failed/i.test(msg)) return 'could not reach Ollama. Is it still running?';
+    return msg;
+  }
+
+  function newRun() {
+    const hero = el.hero.value.trim() || 'Wren';
+    prefs.hero = el.hero.value.trim();
+    prefs.model = el.model.value;
+    savePrefs();
+    state = {
+      model: el.model.value, genre: prefs.genre, hero,
+      hp: MAX_HP, gold: 5, items: ['lantern'], turn: 0,
+      choices: [], log: [], history: [], outcome: 'ongoing',
+    };
+    showGame();
+    takeTurn('Begin the adventure. Set the opening scene and the hero\'s goal.');
+  }
+
+  function showGame() {
+    el.setup.classList.add('hidden');
+    el.game.classList.remove('hidden');
+    renderAll();
+  }
+
+  function showSetup() {
+    state = null;
+    el.game.classList.add('hidden');
+    el.setup.classList.remove('hidden');
+    el.resume.classList.toggle('hidden', !store.get(SAVE_KEY));
+    connect();
+  }
+
+  // ---------- setup screen ----------
+  function renderGenres() {
+    el.genres.textContent = '';
+    GENRES.forEach((g) => {
+      const b = document.createElement('button');
+      b.type = 'button';
+      b.className = 'chip';
+      b.textContent = g.label;
+      b.setAttribute('aria-pressed', String(g.id === prefs.genre));
+      b.addEventListener('click', () => { prefs.genre = g.id; savePrefs(); renderGenres(); });
+      el.genres.appendChild(b);
+    });
+  }
+
+  function setStatus(kind, text, help) {
+    el.dot.className = `dot ${kind}`;
+    el.statusText.textContent = text;
+    el.connHelp.classList.toggle('hidden', !help);
+    el.connHelp.innerHTML = help || '';
+  }
+
+  let connectSeq = 0;
+  async function connect() {
+    const seq = ++connectSeq;
+    prefs.url = el.url.value.trim() || 'http://localhost:11434';
+    savePrefs();
+    setStatus('', 'Checking for Ollama…');
+    el.start.disabled = true;
+    el.model.disabled = true;
+    try {
+      const models = await listModels();
+      if (seq !== connectSeq) return;
+      if (!models.length) {
+        el.model.innerHTML = '<option>No models found</option>';
+        setStatus('err', 'Ollama is running but has no models yet.',
+          'Pull one in a terminal, for example <code>ollama pull llama3.2</code>, then press Connect.');
+        return;
+      }
+      el.model.textContent = '';
+      models.forEach((m) => {
+        const o = document.createElement('option');
+        o.value = o.textContent = m;
+        el.model.appendChild(o);
+      });
+      if (models.includes(prefs.model)) el.model.value = prefs.model;
+      el.model.disabled = false;
+      el.start.disabled = false;
+      setStatus('ok', `Connected. ${models.length} model${models.length === 1 ? '' : 's'} available.`);
+    } catch {
+      if (seq !== connectSeq) return;
+      const origin = location.origin === 'null' ? 'a file:// page' : location.origin;
+      setStatus('err', 'Could not reach Ollama.',
+        '1. Make sure Ollama is running (<code>ollama serve</code> or the desktop app).<br>' +
+        '2. Open this page from <code>http://localhost</code> (see the README), which Ollama allows by default.<br>' +
+        `3. If you are opening it from ${origin === 'a file:// page' ? origin : `<code>${origin}</code>`} and it is still blocked, ` +
+        'start Ollama with <code>OLLAMA_ORIGINS=*</code> set.');
+    }
+  }
+
+  // ---------- wiring ----------
+  el.url.value = prefs.url;
+  el.hero.value = prefs.hero;
+  renderGenres();
+  el.reconnect.addEventListener('click', connect);
+  el.url.addEventListener('keydown', (e) => { if (e.key === 'Enter') connect(); });
+  el.start.addEventListener('click', newRun);
+  el.resume.addEventListener('click', () => {
+    const saved = store.get(SAVE_KEY);
+    if (!saved) return;
+    state = saved;
+    showGame();
+    scrollDown();
+  });
+  el.actForm.addEventListener('submit', (e) => { e.preventDefault(); takeTurn(el.act.value); });
+  el.retry.addEventListener('click', () => { if (lastAction) takeTurn(lastAction); });
+  el.quit.addEventListener('click', () => {
+    if (busy) return;
+    if (!confirm('Abandon this run?')) return;
+    store.del(SAVE_KEY);
+    showSetup();
+  });
+  el.again.addEventListener('click', showSetup);
+  el.resume.classList.toggle('hidden', !store.get(SAVE_KEY));
+  connect();
+})();
+</script>
+</body>
+</html>
