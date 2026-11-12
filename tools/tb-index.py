@@ -17,12 +17,15 @@ APK_MAP = {
     "PlusOneAura": "plus-one-aura",
     "SpinAndDeal": "spin-and-deal",
     "WingProtocol": "wing-protocol",
+    "FinalCast": "final-cast",
+    "HunterDuel": "hunter-duel",
 }
 
 
 def normalize_search(value):
     text = html.unescape(value or "")
-    text = text.lower().replace("&", " and ").replace("+", " plus ").replace("’", "'")
+    text = text.lower().replace("&", " and ").replace("+", " plus ")
+    text = text.replace("’", "'").replace("–", "-").replace("—", "-")
     text = re.sub(r"[^a-z0-9]+", " ", text)
     return " ".join(text.split())
 
@@ -44,6 +47,8 @@ def display_title(directory):
 
 
 def icon(directory):
+    if not directory:
+        return None
     for candidate in (
         "icon-192.png", "icons/icon-192.png", "icon-512.png", "icon.svg",
         "favicon.svg", "apple-touch-icon.png",
@@ -129,7 +134,7 @@ if os.path.isdir(apk_directory):
             group_key = directory
         else:
             name = re.sub(r"(?<=[a-z0-9])(?=[A-Z])", " ", base)
-            group_key = name.casefold()
+            group_key = normalize_search(name)
         size_mb = os.path.getsize(os.path.join(apk_directory, filename)) / 1_000_000
         apk_groups.setdefault(group_key, {"name": name, "items": []})["items"].append(
             (variant if separator else "", filename, size_mb, directory)
@@ -139,8 +144,6 @@ if os.path.isdir(apk_directory):
 def apk_card(group):
     name = group["name"]
     items = group["items"]
-    # Prefer an explicitly latest build, then an unversioned build, then a
-    # versioned/variant build. This makes the primary tap the newest usual build.
     items.sort(key=lambda item: (item[0] != "latest", item[0] != "", item[0]))
     main = items[0]
     directory = main[3] or next((item[3] for item in items if item[3]), None)
@@ -209,7 +212,7 @@ footer{{margin-top:36px;color:#6f6f99;font-size:12.5px}}
 @media (prefers-reduced-motion:reduce){{.card,.game{{transition:none}}}}
 </style></head><body><main>
 <header><h1>Diddlerrr Test Builds</h1><p>Preview builds for testers. Play in your browser or install on Android.</p></header>
-<input class="search" type="search" placeholder="Find a game…" aria-label="Find a game" oninput="const q=(this.value||'').toLowerCase().replace(/&/g,' and ').replace(/\+/g,' plus ').replace(/[’']/g,'').replace(/[^a-z0-9]+/g,' ').trim();document.querySelectorAll('[data-k]').forEach(e=>{const k=(e.dataset.k||'').toLowerCase().replace(/&/g,' and ').replace(/\+/g,' plus ').replace(/[’']/g,'').replace(/[^a-z0-9]+/g,' ').trim();e.classList.toggle('hide',q&& !k.includes(q));})">
+<input class="search" type="search" placeholder="Find a game…" aria-label="Find a game" oninput="const q=(this.value||'').toLowerCase().replace(/&/g,' and ').replace(/\+/g,' plus ').replace(/[’]/g,'').replace(/[^a-z0-9]+/g,' ').trim();document.querySelectorAll('[data-k]').forEach(e=>{const k=(e.dataset.k||'').toLowerCase().replace(/&/g,' and ').replace(/\+/g,' plus ').replace(/[’]/g,'').replace(/[^a-z0-9]+/g,' ').trim();e.classList.toggle('hide',q&& !k.includes(q));})">
 <nav class="bar"><a href="#web">Browser · {len(games)}</a><a href="#apk">Android · {len(apk_html)}</a><a href="#more">More</a></nav>
 <h2 id="web">Play in browser</h2><div class="ggrid">{browser_html}</div>
 <h2 id="apk">Android APKs</h2><div class="grid">{"".join(apk_html)}</div>
