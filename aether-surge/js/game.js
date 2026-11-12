@@ -1026,12 +1026,12 @@ $("altarBack").addEventListener("click",function(){$("altar").style.display="non
 $("refundBtn").addEventListener("click",function(){AS.save.refundAll();renderAltar();});
 
 AS.settings={shake:(function(){try{return localStorage.getItem("as_shake")!=="0";}catch(e){return true;}})()};
-function renderShake(){var t="📳 Screen shake: "+(AS.settings.shake?"ON":"OFF");$("shakeBtn").textContent=t;$("shakeBtn2").textContent=t;}
+function renderShake(){var t=AS.setRow("Screen shake",AS.settings.shake?"ON":"OFF",AS.settings.shake);$("shakeBtn").innerHTML=t;$("shakeBtn2").innerHTML=t;}
 function toggleShake(){AS.settings.shake=!AS.settings.shake;try{localStorage.setItem("as_shake",AS.settings.shake?"1":"0");}catch(e){}renderShake();}
 $("shakeBtn").addEventListener("click",toggleShake);$("shakeBtn2").addEventListener("click",toggleShake);renderShake();
 // M5: graphics quality (HIGH = glow, outlines, parallax, bloom, grading; LOW = lean renderer at lower resolution)
 var GF=AS.gfx;
-function renderGfx(){var t="✨ Graphics: "+(GF.q==="high"?"HIGH":"LOW");$("gfxBtn").textContent=t;$("gfxBtn2").textContent=t;}
+function renderGfx(){var t=AS.setRow("Graphics",GF.q==="high"?"HIGH":"LOW",GF.q==="high");$("gfxBtn").innerHTML=t;$("gfxBtn2").innerHTML=t;}
 function toggleGfx(){GF.autoLowered=false;GF.set(GF.q==="high"?"low":"high","user");renderGfx();}
 $("gfxBtn").addEventListener("click",toggleGfx);$("gfxBtn2").addEventListener("click",toggleGfx);renderGfx();
 GF.listeners.push(function(q,why){renderGfx();if(why==="auto")banner("Graphics set to LOW to keep it smooth",false);});

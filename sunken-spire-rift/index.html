@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
+<meta name="theme-color" content="#0F172A" />
+<meta name="description" content="Echoes of the Sunken Spire — a portrait turn-based roguelite by Diddlerrr." />
+<title>Echoes of the Sunken Spire</title>
+<link rel="manifest" href="./manifest.webmanifest" />
+<link rel="icon" href="./icon.svg" />
+<link rel="apple-touch-icon" href="./icons/icon-192.png" />
+  <script type="module" crossorigin src="./assets/index-Ct-jyAE3.js"></script>
+  <link rel="stylesheet" crossorigin href="./assets/index-LBeDNtX8.css">
+</head>
+<body>
+<div id="app">
+  <div id="game">
+    <div id="view"><canvas id="cv"></canvas>
+      <div id="hud">
+        <div id="hpwrap"><div id="hp"><i></i><em></em></div><div id="status"></div></div>
+        <div id="floorbox"><b id="floor"></b><small id="biome"></small></div>
+        <span id="cinders"></span>
+        <button id="pause" aria-label="Menu">☰</button>
+      </div>
+      <div id="rift" class="hidden"><div class="rbar"><i></i><em></em></div><div class="rtime"><b id="rturns"></b><small>turns</small></div></div>
+      <div id="prompt"></div>
+    </div>
+    <div id="controls">
+      <div id="belt">
+        <button id="potion" class="slot" aria-label="Tonic"><span>🧪</span><b id="potN">0</b></button>
+        <button id="spellA" class="slot spell" aria-label="Spell A"><span></span><b></b></button>
+        <button id="spellB" class="slot spell" aria-label="Spell B"><span></span><b></b></button>
+        <button id="wait" class="slot" aria-label="Wait"><span>⏳</span></button>
+      </div>
+      <div id="pad">
+        <button data-dir="up" class="d up" aria-label="Up">▲</button>
+        <button data-dir="left" class="d left" aria-label="Left">◀</button>
+        <button data-dir="right" class="d right" aria-label="Right">▶</button>
+        <button data-dir="down" class="d down" aria-label="Down">▼</button>
+      </div>
+    </div>
+  </div>
+  <div id="screen" class="hidden"></div>
+  <div id="dialogue" class="hidden"><canvas id="portrait" width="128" height="128"></canvas><div><b id="dname"></b><p id="dtext"></p><small>tap ▸</small></div></div>
+  <div id="sheet" class="hidden"></div>
+  <div id="modal" class="hidden"></div>
+  <div id="toasts"></div>
+</div>
+</body>
+</html>

@@ -1,7 +1,7 @@
 <!DOCTYPE html>
-<html lang="en"><head>
-<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-  <!-- ios-pwa -->
+<html lang="en">
+<head>
+            <!-- ios-pwa -->
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -9,110 +9,184 @@
   <link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png">
   <script src="ios.js"></script>
   <!-- /ios-pwa -->
-<meta name="theme-color" content="#0b1020"><title>Card Scanner</title>
-<link rel="icon" href="icon.svg"><link rel="stylesheet" href="styles.css"><link rel="manifest" href="manifest.webmanifest">
-</head><body>
-<div id="offline" class="banner warn" role="alert" hidden>You're offline. Your saved cards still work. Scanning needs internet.</div>
-<div id="alertBar" class="banner" hidden></div>
-<main>
-<!-- SCAN -->
-<section id="tab-scan" aria-labelledby="scanTitle">
-  <div id="home">
-    <header class="top"><img src="icon.svg" alt="" width="36"><h1 id="scanTitle">Card Scanner</h1></header>
-    <button class="valueCard" id="homeValue" data-go="collection"><span>My collection</span><b id="homeTotal">$0.00</b><small id="homeCount">No cards yet</small></button>
-    <p class="chipsLabel" id="typeLabel">What are you scanning?</p>
-    <div class="chips" role="radiogroup" aria-label="Card type">
-      <button class="chip" data-game="auto" role="radio">✨ Any card</button><button class="chip" data-game="pokemon" role="radio">Pokémon</button><button class="chip" data-game="magic" role="radio">Magic</button>
-      <button class="chip" data-game="yugioh" role="radio">Yu-Gi-Oh!</button><button class="chip" data-game="lorcana" role="radio">Lorcana</button><button class="chip" data-game="sports" role="radio">Sports</button></div>
-    <button id="camBtn" class="hero">📷<span>Scan a card</span></button>
-    <button id="galBtn" class="secondary big">🖼️ Choose from gallery</button>
-    <p class="tip">💡 Tip: lay the card flat on a plain surface, in good light.</p>
 
-    <select id="game" hidden aria-hidden="true"><option value="auto">Any</option><option value="pokemon">Pokémon</option><option value="magic">Magic</option><option value="yugioh">Yu-Gi-Oh</option><option value="lorcana">Lorcana</option><option value="sports">Sports</option></select>
-    <button id="openSearch" class="link">Or type the card name instead</button>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#07090e">
+<title>Card PreGrade</title>
+<link rel="icon" href="img/icon-192.png">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="stylesheet" href="css/app.css">
+<script src="telemetry.js" defer></script>
+</head>
+<body>
+<div id="app">
+
+<!-- HOME -->
+<section class="screen active" id="home">
+  <header class="top">
+    <div class="brand"><img src="img/icon-192.png" alt=""><div><b>Card PreGrade</b><small>Condition check before you submit</small></div></div>
+    <button class="icon-btn" id="infoBtn" aria-label="About and privacy"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9.5"/><path d="M12 11v6M12 7.5v.01"/></svg></button>
+  </header>
+  <div class="hero">
+    <div class="hero-card">
+      <div class="hc-glow"></div>
+      <div class="hc-inner">
+        <span class="chip">On-device analysis</span>
+        <h1>Pre-grade a card<br>in under a minute</h1>
+        <p>Measures centering, corners, edges and surface flaws, then identifies the card and shows what it sells for.</p>
+        <div class="checks"><span>Centering</span><span>Corners</span><span>Edges</span><span>Surface</span><span class="gold">Card ID &amp; prices</span></div>
+      </div>
+    </div>
+    <button class="btn primary big" id="scanBtn"><svg viewBox="0 0 24 24"><path d="M4 8V6a2 2 0 0 1 2-2h2M16 4h2a2 2 0 0 1 2 2v2M20 16v2a2 2 0 0 1-2 2h-2M8 20H6a2 2 0 0 1-2-2v-2"/><circle cx="12" cy="12" r="3.2"/></svg>Scan a card</button>
+    <label class="btn ghost" id="importBtn"><svg viewBox="0 0 24 24"><rect x="3.5" y="4.5" width="17" height="15" rx="2.5"/><path d="m4 16 5-5 4 4 2.5-2.5L20 16"/><circle cx="15.5" cy="9" r="1.4"/></svg>Use a photo from your gallery<input type="file" accept="image/*" id="fileIn" hidden></label>
   </div>
-  <div id="stage" hidden>
-    <div class="bar"><button id="backHome" class="iconbtn" aria-label="Back">←</button><h2 id="stageTitle">Your card</h2></div>
-    <div id="cropWrap" class="cropwrap"><img id="shot" alt="Your card photo"><svg aria-hidden="true"><polygon id="cropPoly"/></svg>
-      <button class="handle" aria-label="Top-left corner"></button><button class="handle" aria-label="Top-right corner"></button><button class="handle" aria-label="Bottom-right corner"></button><button class="handle" aria-label="Bottom-left corner"></button>
-      <div id="busy" class="busy" hidden><div class="spinner" aria-hidden="true"></div><p id="busyText">Identifying…</p></div></div>
-    <p id="idStatus" class="status" role="status" aria-live="polite"></p>
-    <div id="adjustBar" class="btns" hidden><button id="idBtn" class="primary big" disabled>✓ Looks good – identify</button><button id="resetCrop" class="secondary">Use whole photo</button></div>
-    <div class="stageType"><span class="muted">Card type:</span> <div class="chips small" role="radiogroup" aria-label="Card type for this scan">
-      <button class="chip" data-game="auto" role="radio">✨ Any card</button><button class="chip" data-game="pokemon" role="radio">Pokémon</button><button class="chip" data-game="magic" role="radio">Magic</button>
-      <button class="chip" data-game="yugioh" role="radio">Yu-Gi-Oh!</button><button class="chip" data-game="lorcana" role="radio">Lorcana</button><button class="chip" data-game="sports" role="radio">Sports</button></div></div>
-    <div id="errBox" class="errbox" hidden role="alert"><p id="errText"></p><div class="btns"><button id="retryBtn" class="primary">Try again</button><button id="errSearch" class="secondary">Type the name</button></div></div>
-    <div id="readBox" class="errbox" hidden role="alert"><h3 id="readTitle">We couldn’t be sure about this card</h3>
-      <p class="muted">Here’s what we could read. Fix the name if needed, pick the card type above, then search.</p>
-      <label for="readQ">Name on the card</label><input id="readQ" autocomplete="off" placeholder="e.g. Omarion Hampton">
-      <label for="readExtra">Set / year (optional)</label><input id="readExtra" autocomplete="off" placeholder="e.g. 2025 Panini Phoenix RC">
-      <details><summary>All text we read</summary><pre id="readText" class="muted"></pre></details>
-      <div class="btns"><button id="readSearch" class="primary">🔎 Search</button><button id="readRetake" class="secondary">📷 Retake photo</button></div></div>
+  <div class="section-h"><h2>Recent scans</h2><span id="histCount"></span></div>
+  <div id="history" class="history"></div>
+  <p class="foot"><svg viewBox="0 0 24 24"><path d="M12 3 5 6v5c0 4.5 3 8.3 7 10 4-1.7 7-5.5 7-10V6l-7-3Z"/></svg>Photos never leave your phone. No account, no ads.</p>
+</section>
+
+<!-- CAMERA -->
+<section class="screen" id="camera">
+  <video id="video" autoplay playsinline muted></video>
+  <canvas id="live" class="live"></canvas>
+  <div class="cam-top">
+    <button class="icon-btn glass" data-back aria-label="Back"><svg viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7"/></svg></button>
+    <div class="cam-step"><b id="camSide">Front</b><span id="camHint">Out of the sleeve and toploader</span></div>
+    <span style="width:44px"></span>
   </div>
-  <div id="detail"></div>
-  <div id="altBox" hidden><h3>Is it one of these?</h3><div id="results" class="tiles"></div></div>
-  <details id="manualBox"><summary>Search by name</summary>
-    <div class="row"><input id="q" aria-label="Card name" placeholder="Card name, e.g. Charizard"><input id="qnum" aria-label="Card number" placeholder="Number" size="6"></div>
-    <div id="sportsFields" hidden><div class="row"><input id="sYear" aria-label="Year" placeholder="Year" size="5"><input id="sBrand" aria-label="Brand or set" placeholder="Brand, e.g. Topps Chrome"></div>
-      <div class="row"><input id="sPar" aria-label="Parallel" placeholder="Parallel, e.g. Refractor /99"><input id="sGrade" aria-label="Grade" placeholder="Grade" size="6"></div></div>
-    <button id="searchBtn" class="primary big">Search</button></details>
-  <input type="file" id="fileIn" accept="image/*" hidden aria-hidden="true">
+  <div class="guide" id="guide"><i></i><i></i><i></i><i></i></div>
+  <div class="cam-status" id="camStatus">Looking for card edges…</div>
+  <div class="cam-bottom">
+    <label class="icon-btn glass" aria-label="Pick from gallery"><svg viewBox="0 0 24 24"><rect x="3.5" y="4.5" width="17" height="15" rx="2.5"/><path d="m4 16 5-5 4 4 2.5-2.5L20 16"/></svg><input type="file" accept="image/*" id="fileIn2" hidden></label>
+    <button class="shutter" id="shutter" aria-label="Capture"><span></span></button>
+    <button class="icon-btn glass" id="skipBack" aria-label="Skip back" hidden><svg viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></svg></button>
+    <span style="width:44px" id="camSpacer"></span>
+  </div>
+  <div class="cam-tips">Slide it out of the case · dark matte background · even light, no glare</div>
 </section>
-<!-- COLLECTION -->
-<section id="tab-collection" hidden aria-labelledby="colTitle">
-  <h1 id="colTitle">My collection</h1>
-  <div class="total"><span>Total value</span><b id="total">$0.00</b><small id="totalNote"></small></div>
-  <div class="row"><input id="colQ" aria-label="Search collection" placeholder="🔍 Search your cards"></div>
-  <div class="row"><select id="colGame" aria-label="Show"><option value="">All games</option><option value="pokemon">Pokémon</option><option value="magic">Magic</option><option value="yugioh">Yu-Gi-Oh</option><option value="lorcana">Lorcana</option><option value="sports">Sports</option></select><select id="colSort" aria-label="Sort"><option value="added">Newest first</option><option value="value">Most valuable</option><option value="name">A–Z</option><option value="set">By set</option></select></div>
-  <div id="colList"></div>
+
+<!-- ADJUST -->
+<section class="screen" id="adjust">
+  <header class="top">
+    <button class="icon-btn" data-back aria-label="Back"><svg viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7"/></svg></button>
+    <div class="title"><b id="adjTitle">Front</b><small id="adjSub">Drag the corners onto the card's cut edge</small></div>
+    <span style="width:44px"></span>
+  </header>
+  <div class="adj-wrap" id="adjWrap"><canvas id="adjCanvas"></canvas><div id="handles"></div><div class="loupe" id="loupe"><canvas width="132" height="132"></canvas></div></div>
+  <div class="adj-actions">
+    <button class="btn ghost" id="retake">Retake</button>
+    <button class="btn primary" id="useCorners">Analyze</button>
+  </div>
 </section>
-<!-- PRE-GRADE WIZARD -->
-<section id="tab-grade" hidden aria-labelledby="gradeTitle">
-  <div class="bar"><button id="gradeBack" class="iconbtn" aria-label="Back">←</button><h1 id="gradeTitle">Pre-grade</h1></div>
-  <p id="gradeFor" class="muted"></p>
-  <div class="wizard"><div id="stepDots" class="dots" aria-hidden="true"></div><p class="step" id="stepText">Step 1 of 6 – Front of the card</p>
-    <div id="stepExample" class="example" aria-hidden="true"></div><p id="stepHint" class="muted"></p>
-    <div class="btns"><button id="captureBtn" class="primary big">📷 Take photo</button><label class="file secondary">🖼️ Gallery<input type="file" id="gfileIn" accept="image/*"></label></div>
-    <button id="skipStep" class="link">Skip this step</button></div>
-  <div class="preview-row" id="previews"></div>
-  <button id="analyzeBtn" class="primary big" hidden>See my results</button>
-  <div id="gradeOut"></div>
+
+<!-- ASK BACK -->
+<section class="screen" id="askBack">
+  <div class="ask">
+    <div class="ask-art"><div class="mini-card front"></div><div class="mini-card back"></div></div>
+    <h2>Add the back?</h2>
+    <p>Graders check both sides. Scanning the back gives a more reliable estimate: back centering, plus more edge and corner coverage.</p>
+    <button class="btn primary big" id="scanBackBtn">Scan the back</button>
+    <button class="btn ghost" id="skipBackBtn">Front only, show results</button>
+  </div>
 </section>
-<!-- WISHLIST -->
-<section id="tab-wish" hidden aria-labelledby="wishTitle"><h1 id="wishTitle">Wishlist</h1><p class="muted">We check prices each day you open the app and let you know when one drops to your target.</p><div id="wishList"></div></section>
-<!-- SETTINGS -->
-<section id="tab-settings" hidden aria-labelledby="setTitle"><h1 id="setTitle">Settings</h1>
-  <div class="group"><h3>Your data</h3><div class="btns col"><button id="csvBtn" class="secondary">Save my collection (spreadsheet)</button><button id="exportBtn" class="secondary">Save a full backup</button>
-    <label class="file secondary">Restore / import cards<input type="file" id="importIn" accept=".csv,.json,text/csv,application/json"></label></div></div>
-  <div class="group"><h3>Help</h3><div class="btns col"><button type="button" id="replayOnboard" class="secondary">Show the intro again</button><a class="file secondary" href="privacy.html" target="_blank">Privacy policy</a></div>
-    <p class="muted">Card Scanner by Diddlerrr · mscofield1588@gmail.com</p></div>
-  <details class="group" id="advanced"><summary>Advanced settings</summary>
-    <label>AI helper (Firebase config, optional)<textarea id="fbConfig" rows="3" placeholder='{"apiKey":"…","projectId":"…","appId":"…"}' spellcheck="false"></textarea></label>
-    <label class="row"><input type="checkbox" id="aiOn"> Use AI helper when available</label>
-    <label>Price server (optional)<input id="proxyUrl" placeholder="https://your-price-proxy.vercel.app" inputmode="url"></label>
-    <p class="muted">Holds the xAI/eBay keys. Keys are never stored in this app.</p>
-    <label class="chk"><input type="checkbox" id="ocrOn" checked> On-device matching when AI is unavailable</label>
-    <label class="chk"><input type="checkbox" id="techOn"> Show match scores and sources</label>
-    <button id="saveSettings" class="primary">Save</button><p id="aiState" class="muted"></p>
-    <div id="diagBox" hidden><h4>Diagnostics</h4><p class="muted">Timings and errors from this session. Send a screenshot of this if something isn’t working.</p>
-      <div class="btns"><button id="diagTest" class="secondary">Run self-test</button><button id="diagCopy" class="secondary">Copy</button></div><pre id="diag"></pre></div></details>
+
+<!-- WORKING -->
+<section class="screen" id="working">
+  <div class="work">
+    <div class="scanner"><div class="beam"></div><canvas id="workThumb"></canvas></div>
+    <h2>Analyzing</h2>
+    <ul class="steps" id="steps"><li>Straightening the card</li><li>Measuring borders</li><li>Scanning surface for print lines and scratches</li><li>Checking edges and corners</li></ul>
+  </div>
 </section>
-</main>
-<nav class="tabbar" role="tablist" aria-label="Sections">
-  <button role="tab" data-tab="scan" class="on"><span aria-hidden="true">📷</span>Scan</button>
-  <button role="tab" data-tab="collection"><span aria-hidden="true">🗂️</span>Collection<i id="colCount"></i></button>
-  <button role="tab" data-tab="wish"><span aria-hidden="true">♡</span>Wishlist</button>
-  <button role="tab" data-tab="settings"><span aria-hidden="true">⚙️</span>Settings</button>
-  <button data-tab="grade" hidden aria-hidden="true" tabindex="-1">Grade</button>
-</nav>
-<dialog id="onboard" aria-labelledby="obTitle"><form method="dialog">
-  <div class="ob" data-ob="0"><div class="obArt">📷</div><h2 id="obTitle">Snap any card</h2><p>Pokémon, Magic, Yu-Gi-Oh!, Lorcana or sports. Lay it flat and take a photo.</p></div>
-  <div class="ob" data-ob="1" hidden><div class="obArt">💲</div><h2>See what it's worth</h2><p>We find the exact card and show today's market price.</p></div>
-  <div class="ob" data-ob="2" hidden><div class="obArt">🗂️</div><h2>Build your collection</h2><p>Track value, pre-grade centering, and draft eBay listings. Everything stays on your phone.</p></div>
-  <div id="obDots" class="dots" aria-hidden="true"><i class="on"></i><i></i><i></i></div>
-  <div class="btns"><button type="button" id="obSkip" class="secondary">Skip</button><button type="button" id="obNext" class="primary">Next</button></div>
-  <button id="onboardGo" hidden>Done</button></form></dialog>
-<dialog id="listDlg"><form method="dialog"><h3>Sell this card</h3><div id="listBody"></div><div class="btns"><button id="copyList" class="primary">Copy everything</button><button class="secondary">Close</button></div></form></dialog>
-<canvas id="canvas" hidden></canvas>
-<script src="diag.js"></script><script src="vendor/capacitor.js"></script><script src="net.js"></script><script src="pricing.js"></script><script src="ocr.js"></script><script src="identify.js"></script><script src="sports.js"></script><script src="firebase-config.js"></script><script src="ai.js"></script><script src="idcore.js"></script><script src="centering.js"></script><script src="app.js"></script>
-</body></html>
+
+<!-- RESULT -->
+<section class="screen" id="result">
+  <header class="top">
+    <button class="icon-btn" data-home aria-label="Home"><svg viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7"/></svg></button>
+    <div class="title"><b>Condition report</b><small id="resDate"></small></div>
+    <span style="width:44px"></span>
+  </header>
+  <div class="scroll" id="resScroll">
+    <div class="grade-hero">
+      <div class="gauge" id="gauge"><svg viewBox="0 0 120 120"><defs><linearGradient id="gg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#22d3ee"/><stop offset=".55" stop-color="#a78bfa"/><stop offset="1" stop-color="#f5c76b"/></linearGradient></defs><circle cx="60" cy="60" r="52" class="g-bg"/><circle cx="60" cy="60" r="52" class="g-fg" id="gaugeArc"/></svg><div class="g-val"><small>Est. grade</small><b id="gradeRange">–</b><span id="gradeConf"></span></div></div>
+      <div class="disclaimer"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9.5"/><path d="M12 8v5M12 16v.01"/></svg><span><b>Estimate, not an official grade.</b> Based on photos; lighting and camera limits apply. Not affiliated with any grading company.</span></div>
+    </div>
+    <button class="mv" id="mvPanel" type="button" aria-label="Card and market value"></button>
+    <div class="retake" id="holderBanner" hidden></div>
+    <div class="panel" id="decisionPanel" hidden></div>
+    <div class="side-tabs" id="sideTabs"><button class="on" data-side="front">Front</button><button data-side="back">Back</button></div>
+    <div class="viewer">
+      <canvas id="cardCanvas"></canvas><canvas id="overlay"></canvas>
+    </div>
+    <div class="toggles" id="toggles">
+      <button class="on" data-l="centering"><i style="--c:#22d3ee"></i>Centering</button>
+      <button class="on" data-l="print"><i style="--c:#f472b6"></i>Print lines</button>
+      <button class="on" data-l="scratch"><i style="--c:#f87171"></i>Scratches</button>
+      <button class="on" data-l="edges"><i style="--c:#fb923c"></i>Edges &amp; corners</button>
+    </div>
+    <div class="subs" id="subs"></div>
+    <div class="panel" id="cornersPanel"><h3>Corners</h3><div class="corner-grid" id="cornerGrid"></div></div>
+    <div class="panel" id="notesPanel"><h3>Photo notes</h3><ul id="notes"></ul></div>
+    <div class="panel how"><h3>How this is measured</h3>
+      <p><b>Centering</b> measures the inner frame on 41 lines per side, including striped and barber-pole borders, and shows left/right and top/bottom ratios.</p>
+      <p><b>Print lines</b> are straight, faint lines that run across the card, including through the border.</p>
+      <p><b>Scratches</b> are thin, bright streaks that catch the light. Busy holo patterns are checked less strictly.</p>
+      <p><b>Edges and corners</b> are checked for whitening, chipping and rounding along the actual cut edge.</p>
+    </div>
+    <button class="btn primary big" data-home>Scan another card</button>
+    <div style="height:28px"></div>
+  </div>
+</section>
+
+<!-- SCAN & PRICE -->
+<section class="screen" id="price">
+  <header class="top">
+    <button class="icon-btn" data-back aria-label="Back"><svg viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7"/></svg></button>
+    <div class="title"><b>Card &amp; market value</b><small id="pxSub">Scan &amp; Price</small></div>
+    <span style="width:44px"></span>
+  </header>
+  <div class="scroll" id="pxScroll">
+    <div class="px-hero" id="pxHero"></div>
+    <div class="px-sec" id="pxDetails" hidden></div>
+    <div class="px-sec" id="pxPrices"></div>
+    <div class="px-sec" id="pxSales"></div>
+    <div class="px-sec" id="pxListed"></div>
+    <div class="px-sec" id="pxSports" hidden></div>
+    <div class="px-sec" id="pxFix">
+      <div class="px-h"><h3>Not the right card?</h3></div>
+      <div class="alts" id="pxAlts"></div>
+      <div class="seg" id="pxGame"><button data-g="pokemon">Pokémon</button><button data-g="magic">Magic</button><button data-g="sports">Sports</button></div>
+      <form class="srch" id="pxForm"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="6.5"/><path d="m16 16 4 4"/></svg><input id="pxQ" type="search" placeholder="Search by card name" autocomplete="off" enterkeyhint="search"><button class="btn primary sm" type="submit">Search</button></form>
+      <div class="alts" id="pxResults"></div>
+    </div>
+    <p class="px-legal">Pokémon and Magic prices come from TCGdex (TCGplayer, Cardmarket) and Scryfall, with the date each source reports. Sold comps are completed auctions from the configured free source, with lots, other parallels and outliers removed. eBay, 130point and PriceCharting links are searches, not prices. “Listed now” shows asking prices, which are not sales. Card Pre­Grade isn't affiliated with any of these services.</p>
+    <div style="height:24px"></div>
+  </div>
+</section>
+
+<!-- ABOUT / PRIVACY sheet -->
+<div class="sheet" id="sheet"><div class="sheet-card">
+  <div class="grab"></div>
+  <h2>About Card PreGrade</h2>
+  <p>Card PreGrade estimates a trading card's condition from photos: centering, corners, edges and surface flaws (print lines, scratches, whitening). It runs entirely on your phone.</p>
+  <p class="muted">It gives an estimate, not an official grade, and isn't affiliated with or endorsed by any grading company.</p>
+  <h3>Privacy</h3>
+  <ul class="plist"><li>Card photos are analyzed on your device and are never uploaded.</li><li>To identify and price a card, only the text read from it (name, number, set) is sent to free card databases (TCGdex, Scryfall, Wikipedia) and, for recent sales, to our sales lookup.</li><li>Recent scans (a small thumbnail and scores) are stored only on this phone. You can clear them below.</li><li>Anonymous crash reports and usage counts help fix bugs. They contain no photos and no personal info.</li></ul>
+  <a class="link" href="https://workinmanstrokes.github.io/artifacts/card-pregrade-privacy/" target="_blank" rel="noopener">Full privacy policy</a>
+  <div class="sheet-actions"><button class="btn ghost" id="clearHist">Clear recent scans</button><button class="btn primary" id="closeSheet">Done</button></div>
+  <p class="muted tiny">Diddlerrr · v1.5.0 · mscofield1588@gmail.com</p>
+</div></div>
+<div class="toast" id="toast"></div>
+</div>
+<script src="js/config.js"></script>
+<script src="js/grade-core.js"></script>
+<script src="js/idparse.js"></script>
+<script src="js/net.js"></script>
+<script src="js/ocr.js"></script>
+<script src="js/identify.js"></script>
+<script src="js/submit-skip.js"></script>
+<script src="js/resale.js"></script>
+<script src="js/app.js"></script>
+</body>
+</html>

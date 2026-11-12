@@ -9,6 +9,7 @@ import * as C from './social-core.js';
 
 const LS = 'plusoneaura.social.v1';
 let me = load(); let api = null, starting = null;
+let socialOptIn = false, ghostUploadOptIn = false;
 export const socialStatus = { mode: 'offline', why: '' };
 window.__aura_social = socialStatus;
 function load() { try { return JSON.parse(localStorage.getItem(LS)) || null; } catch { return null; } }
@@ -16,9 +17,15 @@ function persist() { try { localStorage.setItem(LS, JSON.stringify(me)); } catch
 if (!me) { me = { uid: null, name: C.defaultName(), avatar: C.AVATARS[0], code: C.friendCode(), friends: [], sent: {}, sentAt: 0 }; persist(); }
 export const profile = () => me;
 export const isOnline = () => socialStatus.mode === 'online';
+/** Explicit Settings opt-in. Default off. Does not sign in. */
+export function setSocialOptIn(on) { socialOptIn = on === true; }
+/** Ghost upload also requires the social opt-in. Display-only ghosts are a separate flag. */
+export function setGhostUploadOptIn(on) { ghostUploadOptIn = on === true; }
+export const wantsGhostUpload = () => socialOptIn === true && ghostUploadOptIn === true;
 
 export function onlineAllowed(portal) {
   if (portal) return 'portal build';
+  if (!socialOptIn) return 'online ranks are off';
   if (!SOCIAL.online) return 'online leaderboards not switched on yet';
   if (!FIREBASE_WEB) return 'no Firebase config';
   if (typeof navigator !== 'undefined' && navigator.onLine === false) return 'offline';
@@ -57,8 +64,8 @@ async function ensureProfile() {
 export async function setProfile(name, avatar) {
   const c = C.cleanName(name); if (!c.ok) return c;
   if (!C.AVATARS.includes(avatar)) avatar = C.AVATARS[0];
-  me.name = c.name; me.avatar = avatar; me.sent = {}; persist();       // re-send scores so boards show the new name
-  if (api) { try { const { F, db, uid } = api; await F.updateDoc(F.doc(db, 'profiles', uid), { name: me.name, avatar, at: F.serverTimestamp() }); } catch (e) { return { ok: false, why: 'Saved locally (try again in a minute)' }; } }
+  me.name = c.name; me.avatar = avatar; me.sent = {}; persist();       // re-send scores so boards show the new name; posted ids are kept for deletion
+  if (socialOptIn && api) { try { const { F, db, uid } = api; await F.updateDoc(F.doc(db, 'profiles', uid), { name: me.name, avatar, at: F.serverTimestamp() }); } catch (e) { return { ok: false, why: 'Saved locally (try again in a minute)' }; } }
   return { ok: true, name: me.name };
 }
 
@@ -67,7 +74,7 @@ export async function addFriend(raw) {
   const code = C.normCode(raw);
   if (!C.validCode(code)) return { ok: false, why: 'Codes are 6 letters/numbers' };
   if (code === me.code) return { ok: false, why: "That's your own code" };
-  if (!api) return { ok: false, why: 'Friends need the online leaderboard' };
+  if (!socialOptIn || !api) return { ok: false, why: socialOptIn ? 'Friends need the online leaderboard' : 'Turn on Online ranks in Settings first' };
   const { F, db, uid } = api;
   try {
     const snap = await F.getDoc(F.doc(db, 'codes', code)); if (!snap.exists()) return { ok: false, why: 'No player with that code' };
@@ -82,6 +89,7 @@ export async function addFriend(raw) {
 
 /** Submit improved bests. Client throttle 120 s (31 s when forced); the rules also enforce 30 s per board entry + bounds + increase-only. */
 export async function submitScores(s, portal = false, force = false, now = Date.now()) {
+  if (!socialOptIn) return 0;
   if (now - (me.sentAt || 0) < (force ? 31e3 : 120e3)) return 0;   // rules allow one write per entry per 30 s
   if (!(await connect(portal))) return 0;
   const { F, db, uid } = api; const sc = C.scoresFrom(s); let n = 0; me.sentAt = now;
@@ -92,7 +100,11 @@ export async function submitScores(s, portal = false, force = false, now = Date.
     for (const scope of ['all', 'week']) {
       const id = C.boardId(mode, scope, now);
       if ((me.sent[id] || 0) >= v) continue;
-      try { await F.setDoc(F.doc(db, 'boards', id, 'entries', uid), { score: v, name: me.name, avatar: me.avatar, at: F.serverTimestamp() }); me.sent[id] = v; n++; }
+      try {
+        await F.setDoc(F.doc(db, 'boards', id, 'entries', uid), { score: v, name: me.name, avatar: me.avatar, uid, at: F.serverTimestamp() });
+        await F.setDoc(F.doc(db, 'scoreIndex', uid, 'rows', id), { kind: 'board', boardOrDay: id });
+        me.sent[id] = v; (me.posted ||= {})[id] = 1; n++;
+      }
       catch (e) { console.warn('score submit', id, e?.code); }   // retried on the next throttled sync
     }
   }
@@ -159,11 +171,16 @@ export async function share({ text, url, canvas, title = '+1 Aura' }) {
 // ---------- Daily Challenge board (daily/{YYYY-MM-DD}/entries/{uid}) + ghosts (ghosts/{uid}) ----------
 /** Submit today's daily distance if it improved (rules: increase-only, 30 s per entry). */
 export async function submitDaily(day, dist, portal = false) {
+  if (!socialOptIn) return false;
   const v = Math.min(C.MODES.escape.max, Math.floor(dist)); if (!(v > 0)) return false;
   me.dailySent ||= {}; if ((me.dailySent[day] || 0) >= v) return false;
   if (!(await connect(portal))) return false;
   const { F, db, uid } = api;
-  try { await F.setDoc(F.doc(db, 'daily', day, 'entries', uid), { score: v, name: me.name, avatar: me.avatar, at: F.serverTimestamp() }); me.dailySent = { [day]: v }; persist(); return true; }
+  try {
+    await F.setDoc(F.doc(db, 'daily', day, 'entries', uid), { score: v, name: me.name, avatar: me.avatar, uid, at: F.serverTimestamp() });
+    await F.setDoc(F.doc(db, 'scoreIndex', uid, 'rows', day), { kind: 'daily', boardOrDay: day });
+    me.dailySent = { ...(me.dailySent || {}), [day]: v }; (me.dailyPosted ||= {})[day] = v; persist(); return true;
+  }
   catch (e) { console.warn('daily submit', e?.code); return false; }
 }
 /** Daily rows (top 50, or you + friends). Offline: just your local best. */
@@ -181,6 +198,7 @@ export async function fetchDaily(day, localBest, scope = 'all', portal = false) 
 }
 /** Upload your best-run ghost (string from daily.encodeGhost). */
 export async function uploadGhost(g, dist, portal = false) {
+  if (!wantsGhostUpload()) return false;
   if (!(await connect(portal))) return false;
   const { F, db, uid } = api;
   try { await F.setDoc(F.doc(db, 'ghosts', uid), { g, dist: Math.floor(dist), name: me.name, avatar: me.avatar, at: F.serverTimestamp() }); me.ghostSent = Math.floor(dist); persist(); return true; }
@@ -188,8 +206,61 @@ export async function uploadGhost(g, dist, portal = false) {
 }
 /** Friends' ghosts: [{ uid, name, avatar, dist, g }] best first. */
 export async function fetchFriendGhosts(portal = false) {
-  if (!me.friends.length || !(await connect(portal))) return [];
-  const { F, db } = api; const out = [];
-  await Promise.all(me.friends.slice(0, 30).map(async fid => { try { const s = await F.getDoc(F.doc(db, 'ghosts', fid)); if (s.exists()) out.push({ uid: fid, ...s.data() }); } catch {} }));
+  if (!socialOptIn || !me.friends.length || !(await connect(portal))) return [];
+  const { F, db, uid } = api; const out = [];
+  await Promise.all(me.friends.slice(0, 30).map(async fid => {
+    try {
+      const prof = await F.getDoc(F.doc(db, 'profiles', fid));
+      const theirs = prof.exists() ? (prof.data().friends || []) : [];
+      if (!theirs.includes(uid)) return;   // one-way add is not enough
+      const s = await F.getDoc(F.doc(db, 'ghosts', fid));
+      if (s.exists()) out.push({ uid: fid, ...s.data() });
+    } catch {}
+  }));
   return out.sort((a, b) => b.dist - a.dist);
+}
+
+/** Social cleanup only. Never calls signInAnonymously. Does not delete the auth user: untagged legacy rows cannot be proven gone. */
+export async function deleteServerData(portal = false) {
+  const base = { ok: false, authDeleted: false, authRetained: true, deleted: [], failed: [] };
+  let installId = null;
+  try { installId = localStorage.getItem('da_pid'); } catch { /* local only */ }
+  const manual = () => C.manualDeletionRequest({ uid: me.uid, code: me.code, installId });
+  if (portal) return { ...base, message: 'This build has no Firebase account to delete.', manualRequest: manual() };
+  if (typeof navigator !== 'undefined' && navigator.onLine === false) return { ...base, message: C.deletionResultMessage({ offline: true }), manualRequest: manual() };
+  if (!FIREBASE_WEB) return { ...base, message: 'This build has no Firebase config. Nothing was deleted. The sign-in was kept.', manualRequest: manual() };
+  try {
+    const v = '12.6.0', root = `https://www.gstatic.com/firebasejs/${v}`;
+    const [{ initializeApp, getApps }, A, F] = await Promise.all([import(`${root}/firebase-app.js`), import(`${root}/firebase-auth.js`), import(`${root}/firebase-firestore.js`)]);
+    const app = getApps()[0] || initializeApp(FIREBASE_WEB);
+    const auth = A.getAuth(app);
+    if (A.authStateReady) await A.authStateReady();
+    else await new Promise(res => { const un = A.onAuthStateChanged?.(auth, () => { un?.(); res(); }); setTimeout(res, 1200); });
+    const user = auth.currentUser;
+    if (!user) return { ...base, message: C.deletionResultMessage({ noSession: true }), manualRequest: C.manualDeletionRequest({ code: me.code, installId }) };
+    if (me.uid && user.uid !== me.uid) return { ...base, message: C.deletionResultMessage({ mismatch: true }), manualRequest: C.manualDeletionRequest({ uid: user.uid, code: me.code, installId }) };
+    const db = F.getFirestore(app);
+    return await C.performSocialDeletion({
+      uid: user.uid,
+      localCode: me.code,
+      installId,
+      now: Date.now(),
+      getProfile: async () => { const snap = await F.getDoc(F.doc(db, 'profiles', user.uid)); return snap.exists() ? snap.data() : null; },
+      deleteDoc: parts => F.deleteDoc(F.doc(db, ...parts)),
+      queryOwnEntries: async () => {
+        const snap = await F.getDocs(F.collection(db, 'scoreIndex', user.uid, 'rows'));
+        const paths = [];
+        snap.forEach(d => {
+          const x = d.data() || {};
+          if (x.kind === 'board' && x.boardOrDay === d.id) paths.push(`boards/${d.id}/entries/${user.uid}`);
+          else if (x.kind === 'daily' && x.boardOrDay === d.id) paths.push(`daily/${d.id}/entries/${user.uid}`);
+          paths.push(d.ref.path);
+        });
+        return { ok: true, paths };
+      },
+      deleteUser: () => A.deleteUser(user),
+    });
+  } catch (e) {
+    return { ...base, message: 'Could not reach the server. Nothing was deleted. The sign-in was kept.', manualRequest: manual() };
+  }
 }

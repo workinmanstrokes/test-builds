@@ -8,7 +8,7 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
 const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 
 /** names[], voted (index or -1 for tie), isHidden(i) -> bool, opts {clip, fast, label}. Resolves when the verdict is on screen. */
-export async function playReveal(stage, { names, voted, isHidden, clip = false, fast = false, hiddenLabel = 'the Brainrot', host = '', reduced = false }) {
+export async function playReveal(stage, { names, voted, isHidden, clip = false, fast = false, hiddenLabel = 'the Brainrot' }) {
   const T = fast ? 0.25 : 1;
   stage.hidden = false; stage.className = clip ? 'clip' : ''; stage.innerHTML = '';
   const top = el('div', 'cap top', clip ? "Who's the Brainrot? 🧠" : 'The votes are in…'); stage.append(top);
@@ -34,16 +34,15 @@ export async function playReveal(stage, { names, voted, isHidden, clip = false, 
   const hero = el('div', 'hero'); stage.append(hero);
   if (voted < 0) {
     hero.innerHTML = `<div class="nm">Nobody!</div><div class="verdict no">The vote was split…</div>`;
-    hero.classList.add('show'); sfx.buzzer(); buzz('heavy'); if (!reduced) stage.classList.add('flashG');
+    hero.classList.add('show'); sfx.buzzer(); buzz('heavy'); stage.classList.add('flashG');
   } else {
     hero.innerHTML = `<div class="nm">${esc(names[landed])}</div>`; hero.classList.add('show'); sfx.boom(); buzz('heavy');
     await sleep(900 * T); // the beat before the verdict
     const yes = isHidden(landed);
     const v = el('div', `verdict ${yes ? 'yes' : 'no'}`, yes ? `WAS ${esc(hiddenLabel).toUpperCase()}!` : `was NOT ${esc(hiddenLabel)}…`);
-    if (yes) { hero.insertAdjacentHTML('afterbegin', brainrotSVG(220)); hero.append(v); if (!reduced) { stage.classList.add('flashR', 'shake'); confetti(160, undefined, '🧠'); } sfx.brainrot(); setTimeout(() => sfx.horn(), 500 * T); buzz('success'); }
-    else { hero.append(v); if (!reduced) stage.classList.add('flashG'); sfx.sad(); buzz('error'); }
+    if (yes) { hero.insertAdjacentHTML('afterbegin', brainrotSVG(220)); hero.append(v); stage.classList.add('flashR'); stage.classList.add('shake'); sfx.brainrot(); setTimeout(() => sfx.horn(), 500 * T); confetti(160, undefined, '🧠'); buzz('success'); }
+    else { hero.append(v); stage.classList.add('flashG'); sfx.sad(); buzz('error'); }
   }
-  if (host) { await sleep(500 * T); hero.append(el('div', 'host', `🎙 ${esc(host)}`)); }
   await sleep((clip ? 1600 : 700) * T);
   return landed;
 }

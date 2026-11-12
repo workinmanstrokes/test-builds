@@ -2,6 +2,8 @@
 // after a miss). There are no interstitials. On Poki / CrazyGames the portal's rewarded break is used (portal.js);
 // on other web builds a 3-second "TEST AD" overlay stands in for the video.
 import { ADS } from './config.js';
+import { rewardedRequestsAllowed } from './ad-policy.js';
+import { consentFromInfo, umpAllowsAnalytics } from './consent.js';
 import { track } from './analytics.js';
 import { isPortal, portalRewarded } from './portal.js';
 import { pauseAudio } from './audio.js';
@@ -10,23 +12,43 @@ const native = !!cap?.isNativePlatform?.();
 const AdMob = native ? cap.Plugins?.AdMob : null;
 let ready = false, canRequest = !native, privacyRequired = false, loaded = false, showing = false, consentStatus = native ? 'UNKNOWN' : 'NO_UMP';
 export const adsInfo = () => ({ native, ready, canRequest, privacyRequired, consentStatus, testing: ADS.testing });
-/** Does the UMP result allow analytics? Native: only after UMP says consent is OBTAINED (with ads allowed) or NOT_REQUIRED.
- *  Unknown / required / UMP failure (e.g. offline) => false, so Firebase stays disabled. Web build has no UMP => true
- *  (the in-game "Share gameplay stats" toggle still applies). */
-export const consentAllowsAnalytics = () => !native || ((consentStatus === 'OBTAINED' && canRequest) || consentStatus === 'NOT_REQUIRED');
-function applyConsent(info) { consentStatus = info.status || 'UNKNOWN'; canRequest = info.canRequestAds !== false; privacyRequired = info.privacyOptionsRequirementStatus === 'REQUIRED'; }
+/** Does the UMP result allow analytics? Native: only NOT_REQUIRED, or OBTAINED with canRequestAds exactly true.
+ *  Unknown / required / UMP failure (e.g. offline) => false, so Firebase and the session upload stay off.
+ *  Web build has no UMP => true (the Settings opt-in still applies). */
+export const consentAllowsAnalytics = () => umpAllowsAnalytics({ native, consentStatus, canRequest });
+function applyConsent(info) {
+  const c = consentFromInfo(info);
+  consentStatus = c.consentStatus; canRequest = c.canRequest; privacyRequired = c.privacyRequired;
+}
 
 export async function initAds() {
   if (!ADS.enabled || !AdMob) return;
+  // Refuse a production-shaped config that is still on test mode or a test unit. Do not print ids.
+  if (!rewardedRequestsAllowed(ADS)) { console.warn('ad configuration refused'); ready = false; canRequest = false; return; }
   try {
-    await AdMob.initialize({ initializeForTesting: ADS.testing, maxAdContentRating: ADS.maxAdContentRating || 'Teen' });
+    // UMP before the ads SDK. requestConsentInfo uses the User Messaging Platform and does not initialize Mobile Ads.
     let info = await AdMob.requestConsentInfo();
     if (info.isConsentFormAvailable && info.status === 'REQUIRED') info = await AdMob.showConsentForm();
-    applyConsent(info); ready = true; preload();
-  } catch (e) { console.warn('ads init failed', e); }
+    applyConsent(info);
+    if (!canRequest) { ready = false; return; }
+    await AdMob.initialize({ initializeForTesting: ADS.testing === true, maxAdContentRating: ADS.maxAdContentRating || 'Teen' });
+    ready = true; preload();
+  } catch (e) { ready = false; canRequest = false; console.warn('ads init failed', e); }
 }
 /** Re-open Google's UMP privacy options form, then refresh the consent result. */
-export async function showPrivacyOptions() { if (!AdMob) return; try { await AdMob.showPrivacyOptionsForm(); } catch {} try { applyConsent(await AdMob.requestConsentInfo()); preload(); } catch {} }
+export async function showPrivacyOptions() {
+  if (!AdMob) return;
+  try { await AdMob.showPrivacyOptionsForm(); } catch {}
+  try {
+    applyConsent(await AdMob.requestConsentInfo());
+    if (!canRequest) { ready = false; loaded = false; return; }
+    if (!ready) {
+      await AdMob.initialize({ initializeForTesting: ADS.testing === true, maxAdContentRating: ADS.maxAdContentRating || 'Teen' });
+      ready = true;
+    }
+    loaded = false; preload();
+  } catch { ready = false; canRequest = false; }
+}
 async function preload() { if (!ready || !canRequest || loaded) return; try { await AdMob.prepareRewardVideoAd({ adId: ADS.rewardedId, isTesting: ADS.testing }); loaded = true; } catch { loaded = false; } }
 
 export function rewardGate(save, placement, now = Date.now()) {

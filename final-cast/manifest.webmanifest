@@ -1,0 +1,16 @@
+{
+  "name": "Final Cast",
+  "short_name": "Final Cast",
+  "description": "A pixel-art idle fishing game: quests, gear, lures and three waters to explore.",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#0a171c",
+  "theme_color": "#0a171c",
+  "icons": [
+    { "src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png" },
+    { "src": "icons/maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}

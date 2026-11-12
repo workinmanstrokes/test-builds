@@ -1,11 +1,16 @@
 {
-  "aether-surge": "18d78267470a132e85c1cd16c9966e9fe981e101",
-  "brainrot-aura-rush": "83464a1ad008fd00e1a3b04fc3a31df3d291da0e",
-  "card-scanner": "07e9801d24b200b951562416442371aef5fc1174",
-  "fishing-almanac": "601268c33a795bbf4e8877262d2d83100aec5599",
-  "period-8": "5ab1dc5e9c6a15137a71451043a88672b6754850",
-  "plus-one-aura": "135cdd1179c3adc6ad57141dc68fe7fdfcaea6e6",
-  "spin-and-deal": "202959fdc1d11ece826d2e0d3416086897755b8e",
-  "whos-the-brainrot": "251bb5968ec4fc3146629dc19fc9999fb6d4570a",
-  "wing-protocol": "562271345046593efbd43d2f694321ba166f0b6a"
+  "aether-surge": "9fc126b92c589c4fcada0fd635d440aa3643f064",
+  "brainrot-aura-rush": "e57f24dea1901dab2c4e33b2940d3437f3565cd5",
+  "card-scanner": "6f85b3505c9db5362886f286184372b3d52c1795",
+  "fishing-almanac": "15da45d616f9899471f728c49f757c6adc7f808a",
+  "period-8": "2a19adb419ab8ed730d84001e56b5fe3a32739bc",
+  "plus-one-aura": "0dc5242b7f5a2a3421aab2fe54259b5f5ac321fa",
+  "spin-and-deal": "c91be5a9945753a6d1961b8bfad476241d5d957c",
+  "whos-the-brainrot": "7c4e94a0f1b222e329c02a2bc04be49a7a81fb5f",
+  "wing-protocol": "6bcea4b8",
+  "final-cast": "c82477d78fcfe1cc0a0a1532c35f01b44d2bf759",
+  "print-doctor": "d0e8bc20bf5f4472d112fb2487867326ea69da7c",
+  "scan-forge": "a5e45eb2eed2a89011f4138ee7abe2b68509da7b",
+  "sunken-spire": "1fa30e4a28c1b839789a081cbb05fb625206da1d",
+  "dirttrack": "68b4413b16b5a72d9c9194a5ef6be863db850fb5"
 }

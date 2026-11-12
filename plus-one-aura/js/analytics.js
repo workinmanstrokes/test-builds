@@ -1,9 +1,10 @@
 // Firebase Analytics (free Spark plan), consent-gated.
 //  - Collection starts DISABLED (Android manifest: firebase_analytics_collection_enabled=false; web SDK not loaded).
-//  - It is enabled only when (a) consent allows it and (b) the player hasn't switched analytics off in Settings.
+//  - It is enabled only when Settings was explicitly opted in AND applicable consent allows it.
 //    Android: consent = Google UMP result (status OBTAINED or NOT_REQUIRED and canRequestAds), reported by ads.js.
-//    Web (no UMP): consent is not required, the Settings toggle alone decides. Portal builds have no Firebase config.
-//  - Events tracked before consent is known are held in memory only, then sent if allowed or discarded if not.
+//    Web (no UMP form): the Settings opt-in is the applicable consent. The session logger uses the same gate.
+//  - Events before a UMP decision are held in memory only after an explicit opt-in, then sent or discarded.
+//    Opting out or a denied consent drops that buffer and stops the session logger without sending it.
 //  - Strict no-op when no Firebase app is configured. Every event is mirrored to window.__aura_events for tests.
 import { ANALYTICS } from './config.js';
 import { FIREBASE_WEB } from './firebase-config.js';
@@ -11,8 +12,8 @@ const cap = window.Capacitor;
 const isNative = !!cap?.isNativePlatform?.();
 const nativeFA = ANALYTICS.native && isNative ? cap.Plugins?.FirebaseAnalytics : null;
 let webLog = null, webApi = null, webStarting = false;
-let consent = isNative ? null : true;   // null = unknown yet (waiting for UMP)
-let userOptIn = true;
+let consent = isNative ? null : true;   // null = UMP applies and has not answered; web has no UMP form
+let userOptIn = false;
 const pending = [];
 export const analyticsStatus = { web: 'off', consent: consent == null ? 'pending' : 'granted', enabled: false };
 window.__aura_analytics = analyticsStatus;
@@ -20,17 +21,18 @@ const log = (window.__aura_events = window.__aura_events || []);
 export const analyticsMode = () => (nativeFA ? 'firebase-native' : FIREBASE_WEB ? 'firebase-web' : 'off');
 const enabled = () => consent === true && userOptIn;
 
-/** Called once with the saved Settings value. */
-export function initAnalytics(optIn = true) { userOptIn = optIn !== false; apply(); }
+/** Called once with the saved Settings value. Only an explicit true opts in. */
+export function initAnalytics(optIn = false) { userOptIn = optIn === true; apply(); }
 /** ads.js reports the UMP consent outcome (true/false). */
-export function setAnalyticsConsent(granted) { consent = !!granted; analyticsStatus.consent = consent ? 'granted' : 'denied'; apply(); }
+export function setAnalyticsConsent(granted) { consent = granted === true; analyticsStatus.consent = consent ? 'granted' : 'denied'; apply(); }
 /** Settings toggle. */
-export function setAnalyticsOptIn(on) { userOptIn = !!on; apply(); }
+export function setAnalyticsOptIn(on) { userOptIn = on === true; apply(); }
 export const analyticsEnabled = enabled;
 
 async function apply() {
   const on = enabled(); analyticsStatus.enabled = on;
-  if (consent != null && !on) pending.length = 0;            // decided and not allowed: drop the buffer
+  if (!on && !(consent == null && userOptIn)) pending.length = 0;
+  try { window.DA?.allow?.(on); } catch {}
   try {
     if (nativeFA) {
       await nativeFA.setEnabled({ enabled: on });
@@ -66,7 +68,7 @@ function send(name, params) {
 // Respects the player's analytics opt-out. Only counts and short placement names are sent, never names or IDs.
 const RW = { escape_revive: 'revive', keep: 'keep' };
 function toDA(name, p) {
-  const DA = window.DA; if (!DA || !(userOptIn)) return;
+  const DA = window.DA; if (!DA || !enabled()) return;
   const pl = RW[p.placement] || String(p.placement || '').slice(0, 12);
   switch (name) {
     case 'ad_reward_offer': DA.rewardedShown(pl); break;

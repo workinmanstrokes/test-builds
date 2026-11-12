@@ -17,7 +17,7 @@ export async function initPortal() {
       window.addEventListener('wheel', ev => ev.preventDefault(), { passive: false });
     } else if (portalId === 'crazygames') {
       if (!(await wait(() => window.CrazyGames?.SDK))) return;
-      await window.CrazyGames.SDK.init(); window.CrazyGames.SDK.game.loadingStop?.(); ready = true;
+      await window.CrazyGames.SDK.init(); window.CrazyGames.SDK.game.loadingStart?.(); window.CrazyGames.SDK.game.loadingStop?.(); ready = true;
     } else if (portalId === 'gamedistribution') {
       ready = await wait(() => window.gdsdk);
     }

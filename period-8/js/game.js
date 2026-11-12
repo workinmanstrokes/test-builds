@@ -16,10 +16,21 @@ export const SAVE_KEY = 'period8.save.v1';
 
 export function defaultSave() {
   return { v: 1, seen: {}, endings: {}, best: 0, runs: 0, loopsTotal: 0, clipBest: 0, noAds: false,
-    settings: { sound: true, scares: 'full', haptics: true, analytics: true, music: 0.8, sfx: 1, reduceFlash: false }, cosmetics: { light: 'warm' }, unlocks: [], warnedOver: false, ads: { day: '', count: 0, lastReward: 0, earned: 0 } };
+    settings: { sound: true, scares: 'full', haptics: true, analytics: false, statsOptIn: false, music: 0.8, sfx: 1, reduceFlash: false }, cosmetics: { light: 'warm' }, unlocks: [], warnedOver: false, ads: { day: '', count: 0, lastReward: 0, earned: 0 } };
 }
 export function loadSave(storage) {
-  try { const d = JSON.parse(storage.getItem(SAVE_KEY)); if (d && d.v === 1) { const def = defaultSave(); return { ...def, ...d, settings: { ...def.settings, ...d.settings }, ads: { ...def.ads, ...d.ads }, cosmetics: { ...def.cosmetics, ...d.cosmetics } }; } } catch {}
+  try {
+    const d = JSON.parse(storage.getItem(SAVE_KEY));
+    if (d && d.v === 1) {
+      const def = defaultSave();
+      const save = { ...def, ...d, settings: { ...def.settings, ...d.settings }, ads: { ...def.ads, ...d.ads }, cosmetics: { ...def.cosmetics, ...d.cosmetics } };
+      // Older builds persisted analytics:true as the default, without a separate opt-in.
+      // Only statsOptIn === true, set by the Settings switch, allows collection.
+      if (save.settings.statsOptIn !== true) { save.settings.statsOptIn = false; save.settings.analytics = false; }
+      else save.settings.analytics = true;
+      return save;
+    }
+  } catch {}
   return defaultSave();
 }
 export function writeSave(storage, s) { try { storage.setItem(SAVE_KEY, JSON.stringify(s)); } catch {} }

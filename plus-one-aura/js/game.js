@@ -39,7 +39,7 @@ export function newState(now = Date.now()) {
     halos: 0, ascends: 0,
     boostUntil: 0, installedAt: now, lastSeen: now, lastDayLogged: 0, dailyDay: -1,
     ads: { day: '', count: 0, lastReward: 0, earned: 0, last: {} },
-    settings: { sound: true, vibe: true, analytics: true, sfx: 0.8, reduceMotion: false, bigText: false },
+    settings: { sound: true, vibe: true, analytics: false, social: false, ghostUpload: false, sfx: 0.8, reduceMotion: false, bigText: false },
     flags: { shop: false }, skin: null, noAds: false, best: { combo: 0, floor: 0 },
     escape: { best: 0, bestSpeed: 0, runs: 0, wisps: 0 },   // +1 Speed Escape records (kept through Ascend)
     cos: { look: null, hat: null, face: null, trail: null, name: '', golden: 0 },   // Aurie looks/accessories (kept through Ascend)
@@ -222,6 +222,10 @@ export function deserialize(str, now = Date.now()) {
     s.cos.name = typeof s.cos.name === 'string' ? s.cos.name.slice(0, 14) : ''; s.cos.golden = Math.max(0, s.cos.golden | 0);
     for (const k of ['look', 'hat', 'face', 'trail']) if (typeof s.cos[k] !== 'string') s.cos[k] = null;
     s.ever = Math.max(s.ever, s.lifetime);
+    // Legacy saves stored analytics:true because that used to be the default. A missing *Chosen flag is not consent.
+    for (const key of ['analytics', 'social', 'ghostUpload']) {
+      if (s.settings[`${key}Chosen`] !== true) s.settings[key] = false;
+    }
     s.floor = Math.min(Math.max(0, s.floor | 0), FLOORS - 1);
     s.stage = themeOf(s.floor);
     s.curStage = Math.min(Math.max(0, s.curStage | 0), s.stage);

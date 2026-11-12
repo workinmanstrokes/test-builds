@@ -62,3 +62,142 @@ export function fmtScore(mode, v) {
   return (i ? v.toFixed(v < 10 ? 2 : v < 100 ? 1 : 0) : Math.floor(v)) + u[i];
 }
 export const challengeText = (c, url) => `I hit ${fmtScore(c.mode, c.score)} in +1 Aura ${MODES[c.mode].label}. Beat my score! ${url}`;
+
+/** First UTC day covered by the direct score sweep. Not the full rules regex (2020–2099). */
+export const DELETE_EPOCH_MS = Date.UTC(2026, 9, 1);
+export const DELETION_MAIL = 'mscofield1588@gmail.com';
+const OWN_ENTRY = /^(?:boards\/(?:aura|tower|escape)_(?:all|\d{4}-W\d{2})\/entries\/([^/]+)|daily\/\d{4}-\d{2}-\d{2}\/entries\/([^/]+))$/;
+
+export function utcDayIds(startMs, endMs) {
+  const s = new Date(startMs), e = new Date(endMs);
+  let t = Date.UTC(s.getUTCFullYear(), s.getUTCMonth(), s.getUTCDate());
+  const end = Date.UTC(e.getUTCFullYear(), e.getUTCMonth(), e.getUTCDate());
+  const out = [];
+  for (; t <= end; t += 864e5) out.push(new Date(t).toISOString().slice(0, 10));
+  return out;
+}
+export function weekIdsBetween(startMs, endMs) {
+  return [...new Set(utcDayIds(startMs, endMs).map(d => weekId(Date.parse(`${d}T00:00:00Z`))))];
+}
+/**
+ * Paths addressed without trusting local score history.
+ * Profile, ghost, known codes, every all-time board, and every week and day from DELETE_EPOCH through `now` + 1 day.
+ * Local `posted` / `sent` maps are ignored. This is not every id the rules regex allows.
+ */
+export function directSocialPaths(uid, codes = [], now = Date.now()) {
+  if (!uid || typeof uid !== 'string') return [];
+  const out = [['profiles', uid], ['ghosts', uid]];
+  const seen = new Set();
+  for (const code of codes) if (validCode(code) && !seen.has(code)) { seen.add(code); out.push(['codes', code]); }
+  const end = now + 864e5;
+  for (const mode of MODE_IDS) {
+    out.push(['boards', `${mode}_all`, 'entries', uid]);
+    out.push(['scoreIndex', uid, 'rows', `${mode}_all`]);
+  }
+  for (const w of weekIdsBetween(DELETE_EPOCH_MS, end)) for (const mode of MODE_IDS) {
+    out.push(['boards', `${mode}_${w}`, 'entries', uid]);
+    out.push(['scoreIndex', uid, 'rows', `${mode}_${w}`]);
+  }
+  for (const day of utcDayIds(DELETE_EPOCH_MS, end)) {
+    out.push(['daily', day, 'entries', uid]);
+    out.push(['scoreIndex', uid, 'rows', day]);
+  }
+  return out;
+}
+const INDEX_RE = /^scoreIndex\/([^/]+)\/rows\/((?:aura|tower|escape)_(?:all|\d{4}-W\d{2})|\d{4}-\d{2}-\d{2})$/;
+/** Accept this user's score entry, or their own score-index row. Anything else is ignored. */
+export function ownEntryParts(path, uid) {
+  const text = String(path || '');
+  const m = OWN_ENTRY.exec(text);
+  if (m) {
+    const id = m[1] || m[2];
+    if (id !== uid) return null;
+    return text.split('/');
+  }
+  const idx = INDEX_RE.exec(text);
+  if (!idx || idx[1] !== uid) return null;
+  return text.split('/');
+}
+/**
+ * False. Rows outside the checked dates that were never written to scoreIndex are not listed,
+ * and scanning every id the rules regex allows exceeds the Spark daily write quota.
+ */
+export function clientCanProveUntaggedRowsGone() { return false; }
+export function authDeletionAllowed({ discoveryOk, requeryEmpty, failures, legacyUntaggedProvable } = {}) {
+  return discoveryOk === true
+    && requeryEmpty === true
+    && !(failures || []).length
+    && legacyUntaggedProvable === true
+    && clientCanProveUntaggedRowsGone() === true;
+}
+export function manualDeletionRequest({ uid, code, installId } = {}) {
+  return [
+    'Please delete my +1 Aura server data.',
+    `Friend code: ${code || '(not on this device)'}`,
+    `Anonymous id: ${uid || '(no sign-in on this device)'}`,
+    'Social rows: profiles/{id}, codes/{code}, ghosts/{id}, boards/{mode}_{all|week}/entries/{id}, daily/{date}/entries/{id}.',
+    installId
+      ? `Analytics install id, separate from the anonymous id; the app cannot delete these session rows: ${installId}`
+      : 'No analytics install id is stored on this device.',
+    'The app does not delete Firebase Analytics, AdMob data, or session rows in the analytics project.',
+  ].join('\n');
+}
+export function deletionResultMessage(r = {}) {
+  if (r.offline) return 'You are offline. Nothing on the server was deleted. The sign-in was kept.';
+  if (r.noSession) return 'This device has no anonymous sign-in. Nothing was deleted, and no new id was created.';
+  if (r.mismatch) return 'The sign-in on this device does not match the saved player id. Nothing was deleted. The sign-in was kept.';
+  const bits = ['The anonymous sign-in was kept so a missed score row is not left without an owner.'];
+  bits.push('Checked the profile, friend code, ghost, all-time boards, and every week and day from 1 Oct 2026 through tomorrow. A saved list of old scores on this device is not used as proof.');
+  if (!r.discoveryOk) bits.push('The list of score ids stored under your sign-in did not succeed. That list works only after the updated rules are published. Rows outside the checked dates that were never indexed can remain.');
+  else if (r.requeryEmpty && !(r.failed || []).length) bits.push('Every indexed score id was removed. Rows outside the checked dates that were never indexed can remain.');
+  else bits.push('Some deletes failed, so those items are still on the server. Try again. The sign-in is still here.');
+  if (r.failed?.length) bits.push('Still reported: ' + r.failed.slice(0, 6).map(f => f.path).join(', ') + '.');
+  bits.push(`Email ${DELETION_MAIL} for a manual request. The app cannot confirm that request, and it does not delete analytics.`);
+  return bits.join(' ');
+}
+/** Best-effort social cleanup. Does not delete auth unless authDeletionAllowed, which the client cannot satisfy. */
+export async function performSocialDeletion(io) {
+  const uid = io.uid;
+  const manualRequest = manualDeletionRequest(io);
+  if (!uid) return { authDeleted: false, authRetained: true, deleted: [], failed: [], discoveryOk: false, requeryEmpty: false, manualRequest, message: deletionResultMessage({ noSession: true }) };
+  let serverCode = null;
+  try { const profile = await io.getProfile(); if (profile?.code) serverCode = profile.code; } catch { /* still try the local code */ }
+  const codes = [];
+  if (validCode(serverCode)) codes.push(serverCode);
+  if (validCode(io.localCode) && io.localCode !== serverCode) codes.push(io.localCode);
+  const queue = directSocialPaths(uid, codes, io.now || Date.now());
+  let discoveryOk = false;
+  try {
+    const q = await io.queryOwnEntries();
+    if (q?.ok) {
+      discoveryOk = true;
+      for (const path of q.paths || []) { const parts = ownEntryParts(path, uid); if (parts) queue.push(parts); }
+    }
+  } catch { discoveryOk = false; }
+  const deleted = [], failed = [], seen = new Set();
+  for (const parts of queue) {
+    const key = parts.join('/');
+    if (seen.has(key)) continue;
+    seen.add(key);
+    try { await io.deleteDoc(parts); deleted.push(key); }
+    catch (e) {
+      const code = e?.code || e?.message || 'error';
+      if (code === 'not-found') { deleted.push(key); continue; }
+      failed.push({ path: key, code });
+    }
+  }
+  let requeryEmpty = false;
+  if (discoveryOk && !failed.length) {
+    try {
+      const again = await io.queryOwnEntries();
+      discoveryOk = !!again?.ok;
+      requeryEmpty = !!(again?.ok && !(again.paths || []).length);
+    } catch { discoveryOk = false; requeryEmpty = false; }
+  }
+  const allowAuth = authDeletionAllowed({ discoveryOk, requeryEmpty, failures: failed, legacyUntaggedProvable: clientCanProveUntaggedRowsGone() });
+  let authDeleted = false;
+  if (allowAuth) { await io.deleteUser(); authDeleted = true; }
+  const result = { authDeleted, authRetained: !authDeleted, deleted, failed, discoveryOk, requeryEmpty, manualRequest: manualDeletionRequest({ uid, code: serverCode || io.localCode, installId: io.installId }) };
+  result.message = deletionResultMessage(result);
+  return result;
+}
