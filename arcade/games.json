@@ -1,6 +1,6 @@
 {
-  "generated": "2026-11-15T06:15-05:00",
-  "count": 21,
+  "generated": "2026-11-15T06:22-05:00",
+  "count": 22,
   "games": [
     {
       "id": "nhl94-remake",
@@ -62,6 +62,22 @@
       "play": "../bronze-and-blood/",
       "apk": "https://github.com/workinmanstrokes/test-builds/releases/download/apks/BronzeAndBlood.apk?v=20261115",
       "repo": "https://github.com/Scofather/bronze-and-blood",
+      "added": "2026-11-15",
+      "updated": "2026-11-15",
+      "isNew": true
+    },
+    {
+      "id": "head-ang-ers-n-eather",
+      "title": "Head Ang Ers N Eather",
+      "kind": "game",
+      "genre": "New",
+      "desc": "SumthinGood",
+      "icon": "../arcade/brand-512.png",
+      "art": "../arcade/art/head-ang-ers-n-eather.jpg",
+      "artPos": null,
+      "play": "../head-ang-ers-n-eather/",
+      "apk": null,
+      "repo": "https://github.com/workinmanstrokes/Head-ang-ers-n-eather-",
       "added": "2026-11-15",
       "updated": "2026-11-15",
       "isNew": true
