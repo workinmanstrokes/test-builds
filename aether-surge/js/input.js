@@ -12,11 +12,13 @@ function place(x,y){
   joy.ox=x;joy.oy=y;jEl.style.left=x+"px";jEl.style.top=y+"px";
 }
 function rest(){jEl.style.left=home?home.x+"px":"";jEl.style.top=home?home.y+"px":"";jEl.classList.remove("on");jK.style.transform="translate(0,0)";}
+// full 360° analog stick: radial deadzone + magnitude (AS.move.analog); if the thumb drifts well past the rim
+// the base follows it, so reversing direction never needs the thumb to travel back across a stale centre
 function move(cx,cy){
-  var dx=cx-joy.ox,dy=cy-joy.oy,d=Math.hypot(dx,dy);
+  var dx=cx-joy.ox,dy=cy-joy.oy,d=Math.hypot(dx,dy),fol=JR*1.4;
+  if(d>fol){var p=(d-fol)/d;joy.ox+=dx*p;joy.oy+=dy*p;jEl.style.left=joy.ox+"px";jEl.style.top=joy.oy+"px";dx=cx-joy.ox;dy=cy-joy.oy;d=fol;}
   if(d>JR){dx=dx/d*JR;dy=dy/d*JR;d=JR;}
-  var n=d/JR;
-  if(n<DEAD){joy.x=0;joy.y=0;}else{var k=(n-DEAD)/(1-DEAD)/n;joy.x=dx/JR*k;joy.y=dy/JR*k;}
+  var a=AS.move.analog(dx/JR,dy/JR,DEAD);joy.x=a.x;joy.y=a.y;joy.m=a.m;
   jK.style.transform="translate("+dx+"px,"+dy+"px)";
 }
 function start(id,x,y){joy.id=id;joy.a=true;place(x,y);jEl.classList.add("on");move(x,y);}
@@ -24,6 +26,7 @@ function end(){joy.a=false;joy.x=0;joy.y=0;joy.id=null;rest();}
 zone.addEventListener("touchstart",function(e){
   e.preventDefault();if(joy.a&&joy.id!=="kbd")return;
   var t=e.changedTouches[0],now=performance.now();
+  if(AS.dia&&AS.dia.tapAt&&AS.dia.tapAt(t.clientX,t.clientY))return; // tapped a dropped item: pick it up
   // double-tap = dash
   if(now-lastTap.t<300&&Math.hypot(t.clientX-lastTap.x,t.clientY-lastTap.y)<70){act.dash=1;lastTap.t=0;}
   tS.t=now;tS.x=t.clientX;tS.y=t.clientY;
@@ -42,7 +45,7 @@ function tEnd(e){if(!joy.a||joy.id==="kbd")return;var L=e.changedTouches;for(var
   end();break;}}}
 window.addEventListener("touchend",tEnd,{passive:false});
 window.addEventListener("touchcancel",tEnd,{passive:false});
-zone.addEventListener("mousedown",function(e){if(joy.a)return;start("m",e.clientX,e.clientY);});
+zone.addEventListener("mousedown",function(e){if(joy.a)return;if(AS.dia&&AS.dia.tapAt&&AS.dia.tapAt(e.clientX,e.clientY))return;start("m",e.clientX,e.clientY);});
 window.addEventListener("mousemove",function(e){if(joy.a&&joy.id==="m")move(e.clientX,e.clientY);});
 window.addEventListener("mouseup",function(){if(joy.a&&joy.id==="m")end();});
 

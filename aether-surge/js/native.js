@@ -38,6 +38,8 @@ function init(h){
     Plugins.App.addListener("backButton",function(){if(hooks.onBack)hooks.onBack();});
     Plugins.App.addListener("appStateChange",function(st){if(!st.isActive&&hooks.onBackground)hooks.onBackground();});
   }}catch(e){}
+  // keep menu buttons clear of the banner at its real (adaptive) height, not a guessed 60px
+  try{if(Plugins.AdMob&&Plugins.AdMob.addListener)Plugins.AdMob.addListener("bannerAdSizeChanged",function(sz){var h=sz&&+sz.height;if(h>0&&h<200)document.documentElement.style.setProperty("--adh",Math.ceil(h)+"px");});}catch(e){}
 }
 function enableAds(){
   adsOK=true;loadReward();if(bannerWanted)showBanner();

@@ -1,0 +1,2 @@
+const __vite__mapDeps=(i,m=__vite__mapDeps,d=(m.f||(m.f=["./web-B1aPhtSn.js","./index-DkcMNMIp.js","./index-B0l4eQqc.css"])))=>i.map(i=>d[i]);
+import{C as e,y as t}from"./index-DkcMNMIp.js";var n=e(`Network`,{web:()=>t(()=>import(`./web-B1aPhtSn.js`).then(e=>new e.NetworkWeb),__vite__mapDeps([0,1,2]),import.meta.url)});export{n as Network};
