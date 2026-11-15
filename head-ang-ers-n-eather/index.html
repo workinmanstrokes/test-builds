@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#1c1a17">
+<title>Soundboard — Tap a pad, get the laugh</title>
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<header class="topbar">
+  <h1>🔊 Soundboard</h1>
+  <p class="tagline">Tap a pad, get the laugh in under ten seconds.</p>
+  <div class="top-actions">
+    <button id="stopAllBtn" class="stop-all" type="button">⏹ Stop all</button>
+    <label class="volume">🔈 <input id="volume" type="range" min="0" max="100" value="80" aria-label="Volume"></label>
+  </div>
+  <p id="routingLabel" class="routing-label">🔈 Speaker-only playback — sound comes out of this device's speakers. See the Routing guide below to send it to OBS or Discord.</p>
+</header>
+
+<main>
+  <section aria-label="Soundboard grid">
+    <div id="padGrid" class="pad-grid" role="grid" aria-label="Sound pads"></div>
+    <p id="boardStatus" class="status" role="status"></p>
+  </section>
+
+  <section class="panel" aria-label="Search sound effects">
+    <h2>🔍 Search sound effects</h2>
+    <p class="hint">Live search of the Internet Archive. Preview, then one tap saves it to the board.</p>
+    <form id="searchForm" class="search-row">
+      <input id="searchInput" type="search" placeholder="Try: airhorn, laugh, drum roll…" aria-label="Search sound effects" required>
+      <button type="submit">Search</button>
+    </form>
+    <div id="searchResults" class="results"></div>
+  </section>
+
+  <section class="panel" aria-label="Mic recorder">
+    <h2>🎙️ Recorder</h2>
+    <p class="hint">Record your own sound, save it to a pad, and it replays after reload.</p>
+    <div class="rec-row">
+      <button id="recBtn" type="button">● Record</button>
+      <button id="recStopBtn" type="button" disabled>■ Stop &amp; save to a pad</button>
+      <span id="recTimer" class="rec-timer" aria-live="polite"></span>
+    </div>
+    <p id="recStatus" class="status" role="status"></p>
+  </section>
+
+  <section class="panel" aria-label="Pad editor">
+    <h2>✏️ Pad editor</h2>
+    <p class="hint">Tap a pad below to select it, then rename it, download its sound, or delete it.</p>
+    <div class="editor-row">
+      <select id="padSelect" aria-label="Choose a pad to edit"></select>
+      <input id="padNameInput" type="text" placeholder="New pad name" aria-label="New pad name">
+      <button id="renameBtn" type="button">Rename</button>
+      <button id="downloadBtn" type="button">Download sound</button>
+      <button id="deleteBtn" type="button" class="danger">Delete pad</button>
+    </div>
+    <p id="editStatus" class="status" role="status"></p>
+  </section>
+
+  <section class="panel" aria-label="Macro builder">
+    <h2>⛓️ Macro builder</h2>
+    <p class="hint">Chain pads into one tap. Tap pads in order to build the chain, then name it and save.</p>
+    <div class="macro-row">
+      <input id="macroName" type="text" placeholder="Macro name, e.g. Drum roll + rimshot" aria-label="Macro name">
+      <button id="macroSaveBtn" type="button">Save macro</button>
+      <button id="macroClearBtn" type="button">Clear chain</button>
+    </div>
+    <p>Chain: <span id="macroChain" class="chain">—</span></p>
+    <div id="macroList" class="macro-list"></div>
+  </section>
+
+  <section class="panel" aria-label="Routing guide">
+    <h2>📡 Routing guide — OBS / Discord</h2>
+    <p><strong>Status: speaker-only playback is the default.</strong> Sounds play
+    through this device's speakers. To route them into a stream or a call,
+    use one of these setups — neither is verified yet on a live stream.</p>
+    <h3>OBS browser source (recommended first)</h3>
+    <ol>
+      <li>Host this board on a URL OBS can reach (or serve it locally and use that address).</li>
+      <li>In OBS: Sources → + → Browser → create new, paste the board URL, set width 800 × height 600.</li>
+      <li>Tick “Control audio via OBS” so the browser source audio goes to the stream mix, not just your speakers.</li>
+      <li>Tap a pad and confirm the OBS audio meter moves. If it does not, un-tick and re-tick the audio control, then restart the source.</li>
+    </ol>
+    <h3>Discord / virtual cable (desktop)</h3>
+    <ol>
+      <li>Install a virtual audio cable (e.g. VB-Cable) and set it as this browser's output device.</li>
+      <li>In Discord, set the virtual cable as your microphone input (or use it as a mic in OBS).</li>
+      <li>Tap a pad — listeners hear it as your mic. Keep the volume low to avoid clipping.</li>
+    </ol>
+  </section>
+
+  <section class="panel" aria-label="Install and settings">
+    <h2>📲 Install &amp; settings</h2>
+    <p>Add to home screen from your browser menu — Android Chrome: ⋮ → Add to Home screen; iOS Safari: Share → Add to Home Screen.</p>
+    <button id="installBtn" type="button" hidden>Install app</button>
+    <button id="resetBtn" type="button" class="danger">Reset board to starter pack</button>
+    <p id="installStatus" class="status" role="status"></p>
+  </section>
+</main>
+
+<footer><p>Soundboard — single-page PWA. Starter pack sounds are synthesised on-device; search sounds come from the Internet Archive.</p></footer>
+
+<script src="app.js"></script>
+</body>
+</html>
