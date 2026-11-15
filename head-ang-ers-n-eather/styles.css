@@ -163,4 +163,9 @@ input[type="search"], input[type="text"], select {
 .macro-list { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 10px; }
 .macro-list button { background: #3d8bfd; color: #fff; }
 
+/* Macro list items: play button + small delete button. */
+.macro-item { display: flex; gap: 6px; align-items: center; }
+.macro-del { background: #e5484d; color: #fff; padding: 10px 12px; }
+#macroArmBtn.armed { background: #2fbf71; color: #062b18; }
+
 footer { text-align: center; color: var(--muted); font-size: .85rem; padding: 0 16px 24px; }

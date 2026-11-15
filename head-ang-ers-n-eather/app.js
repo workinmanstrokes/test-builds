@@ -16,6 +16,7 @@ const STARTER_URL = 'data/starter-pack.json';
 let audioCtx = null;
 let masterGain = null;
 const activeSources = new Set(); // every live source, so Stop All can kill them
+const activeAudio = new Set(); // live <audio> elements (saved clips, recordings, previews) — Stop All must kill these too
 
 function ensureAudio() {
   if (!audioCtx) {
@@ -34,6 +35,10 @@ function stopAll() {
     try { src.stop(); } catch (_) { /* already stopped */ }
   }
   activeSources.clear();
+  for (const audio of [...activeAudio]) {
+    try { audio.pause(); } catch (_) { /* already stopped */ }
+  }
+  activeAudio.clear();
   document.querySelectorAll('.pad.playing').forEach(el => el.classList.remove('playing'));
   setStatus('Stopped everything.');
 }
@@ -117,6 +122,7 @@ let macros = []; // {id, name, steps: [padId, ...]}
 let selectedPadId = null;
 let macroChain = [];
 let deferredInstallPrompt = null;
+let lastPointerDownAt = 0; // for the tap-to-sound latency readout
 
 function setStatus(msg) { boardStatus.textContent = msg; }
 
@@ -154,6 +160,12 @@ async function loadStarterPack() {
 /* ---------- playback ---------- */
 function playPad(pad, padEl) {
   ensureAudio();
+  if (lastPointerDownAt) {
+    const ms = Math.round(performance.now() - lastPointerDownAt);
+    const lat = document.getElementById('latencyStatus');
+    if (lat) lat.textContent = `Last tap \u2192 sound: ~${ms} ms (pointerdown to playback start).`;
+    lastPointerDownAt = 0;
+  }
   if (pad.kind === 'synth' && SYNTH[pad.synth]) {
     SYNTH[pad.synth]();
     if (padEl) { padEl.classList.add('playing'); setTimeout(() => padEl.classList.remove('playing'), (pad.duration || 0.5) * 1000); }
@@ -162,11 +174,10 @@ function playPad(pad, padEl) {
   if (pad.url) { // saved search clip or recording
     const audio = new Audio(pad.url);
     audio.volume = volumeEl.value / 100;
-    audio.play().catch(() => setStatus('Could not play that sound — the link may have expired.'));
-    if (padEl) {
-      padEl.classList.add('playing');
-      audio.onended = () => padEl.classList.remove('playing');
-    }
+    activeAudio.add(audio);
+    audio.onended = () => { activeAudio.delete(audio); if (padEl) padEl.classList.remove('playing'); };
+    audio.play().catch(() => { activeAudio.delete(audio); setStatus('Could not play that sound — the link may have expired.'); });
+    if (padEl) padEl.classList.add('playing');
     return;
   }
   setStatus('That pad has no sound attached.');
@@ -184,6 +195,7 @@ function renderPads() {
     // pointerdown (not click) keeps tap-to-sound delay as low as possible.
     btn.addEventListener('pointerdown', e => {
       e.preventDefault();
+      lastPointerDownAt = performance.now();
       btn.classList.add('pressed');
       playPad(pad, btn);
     });
@@ -230,21 +242,22 @@ async function searchArchive(term) {
   if (!res.ok) throw new Error('Search failed (' + res.status + ')');
   const data = await res.json();
   const docs = (data.response && data.response.docs) || [];
-  const results = [];
-  for (const doc of docs.slice(0, 6)) {
+  // Fetch the per-item metadata in parallel, not one by one: the sequential
+  // version made the search step the slowest part of search-to-save.
+  const settled = await Promise.all(docs.slice(0, 6).map(async doc => {
     try {
       const meta = await (await fetch(`https://archive.org/metadata/${doc.identifier}`)).json();
       const file = (meta.files || []).find(f => /\.(mp3|ogg)$/i.test(f.name) && (f.length || 0) < 30);
-      if (!file) continue;
-      results.push({
+      if (!file) return null;
+      return {
         title: doc.title || doc.identifier,
         identifier: doc.identifier,
         url: `https://archive.org/download/${doc.identifier}/${encodeURIComponent(file.name)}`,
         duration: file.length ? Math.round(file.length) : null,
-      });
-    } catch (_) { /* skip items whose metadata fails */ }
-  }
-  return results;
+      };
+    } catch (_) { return null; /* skip items whose metadata fails */ }
+  }));
+  return settled.filter(Boolean);
 }
 
 function renderSearchResults(results, term) {
@@ -261,7 +274,13 @@ function renderSearchResults(results, term) {
     const preview = document.createElement('button');
     preview.type = 'button';
     preview.textContent = '▶ Preview';
-    preview.addEventListener('click', () => { stopAll(); new Audio(r.url).play().catch(() => setStatus('Preview failed to load.')); });
+    preview.addEventListener('click', () => {
+      stopAll();
+      const audio = new Audio(r.url);
+      activeAudio.add(audio);
+      audio.onended = () => activeAudio.delete(audio);
+      audio.play().catch(() => { activeAudio.delete(audio); setStatus('Preview failed to load.'); });
+    });
     const save = document.createElement('button');
     save.type = 'button';
     save.textContent = '＋ Save to board';
@@ -280,12 +299,23 @@ const PALETTE = ['#e5484d', '#f5a623', '#2fbf71', '#3d8bfd', '#7c5cff', '#ff6fb5
 const pickColour = () => PALETTE[pads.length % PALETTE.length];
 
 /* ---------- mic recorder ---------- */
-let mediaRecorder = null, recChunks = [], recStart = 0, recTimerId = null;
+let mediaRecorder = null, recChunks = [], recStart = 0, recTimerId = null, recCapTimerId = null;
+const MAX_REC_SECONDS = 60; // cap keeps recordings under the ~4 MB storage cap instead of discarding them after the fact
+function pickMimeType() {
+  if (typeof MediaRecorder === 'undefined' || !MediaRecorder.isTypeSupported) return '';
+  for (const t of ['audio/webm;codecs=opus', 'audio/webm', 'audio/mp4', 'audio/ogg']) {
+    if (MediaRecorder.isTypeSupported(t)) return t;
+  }
+  return '';
+}
+function recorderSupported() {
+  return !!(navigator.mediaDevices && navigator.mediaDevices.getUserMedia && typeof MediaRecorder !== 'undefined');
+}
 async function startRecording() {
   try {
     const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
     recChunks = [];
-    mediaRecorder = new MediaRecorder(stream);
+    mediaRecorder = new MediaRecorder(stream, pickMimeType() ? { mimeType: pickMimeType() } : undefined);
     mediaRecorder.ondataavailable = e => { if (e.data.size) recChunks.push(e.data); };
     mediaRecorder.onstop = () => {
       stream.getTracks().forEach(t => t.stop());
@@ -305,6 +335,13 @@ async function startRecording() {
     };
     mediaRecorder.start();
     recStart = Date.now();
+    // Auto-stop at the cap so a long recording is saved, not thrown away.
+    recCapTimerId = setTimeout(() => {
+      if (mediaRecorder && mediaRecorder.state !== 'inactive') {
+        $('recStatus').textContent = `Stopped at the ${MAX_REC_SECONDS}s cap — recordings are kept short so they fit on-device storage.`;
+        stopRecording();
+      }
+    }, MAX_REC_SECONDS * 1000);
     $('recBtn').disabled = true;
     $('recStopBtn').disabled = false;
     $('recStatus').textContent = 'Recording… tap “Stop & save to a pad” when done.';
@@ -319,12 +356,19 @@ async function startRecording() {
 function stopRecording() {
   if (mediaRecorder && mediaRecorder.state !== 'inactive') mediaRecorder.stop();
   clearInterval(recTimerId);
+  clearTimeout(recCapTimerId);
   $('recTimer').textContent = '';
   $('recBtn').disabled = false;
   $('recStopBtn').disabled = true;
 }
 
-/* ---------- macros ---------- */
+/* ---------- macros ----------
+ * Scope (was undescribed): a macro is a named list of at most 8 pad steps,
+ * played in order (each step waits for the previous sound, at least 250 ms
+ * apart). Chain-building is an explicit armed mode so normal taps never
+ * hijack the board; each saved macro has its own delete button. */
+const MAX_MACRO_STEPS = 8;
+let macroArmed = false;
 function renderMacros() {
   $('macroChain').textContent = macroChain.length
     ? macroChain.map(id => (pads.find(p => p.id === id) || {}).label || '?').join(' → ')
@@ -332,12 +376,27 @@ function renderMacros() {
   const list = $('macroList');
   list.innerHTML = '';
   macros.forEach(m => {
+    const wrap = document.createElement('div');
+    wrap.className = 'macro-item';
     const btn = document.createElement('button');
     btn.type = 'button';
     btn.textContent = '▶ ' + m.name;
     btn.addEventListener('click', () => playMacro(m));
-    list.appendChild(btn);
+    const del = document.createElement('button');
+    del.type = 'button';
+    del.className = 'macro-del';
+    del.textContent = '✕';
+    del.setAttribute('aria-label', 'Delete macro ' + m.name);
+    del.addEventListener('click', () => {
+      macros = macros.filter(x => x.id !== m.id);
+      saveState(); renderMacros();
+      setStatus(`Deleted macro “${m.name}”.`);
+    });
+    wrap.append(btn, del);
+    list.appendChild(wrap);
   });
+  $('macroArmBtn').classList.toggle('armed', macroArmed);
+  $('macroArmBtn').textContent = macroArmed ? '✓ Building chain — tap pads' : '＋ Add pads to chain';
 }
 function playMacro(macro) {
   ensureAudio();
@@ -396,22 +455,30 @@ $('deleteBtn').addEventListener('click', () => {
   $('editStatus').textContent = `Deleted pad “${pad.label}”.`;
 });
 
-// Tapping a pad while building a macro adds it to the chain (long-press selects for editing).
+// Tapping a pad while chain-building is armed adds it to the chain (max 8 steps).
 padGrid.addEventListener('click', e => {
   const btn = e.target.closest('.pad');
-  if (!btn) return;
-  if (document.activeElement === $('macroName') || macroChain.length || $('macroName').value) {
-    macroChain.push(btn.dataset.padId);
-    renderMacros();
+  if (!btn || !macroArmed) return;
+  if (macroChain.length >= MAX_MACRO_STEPS) {
+    setStatus(`Macros hold at most ${MAX_MACRO_STEPS} steps — save or clear this chain first.`);
+    return;
   }
+  macroChain.push(btn.dataset.padId);
+  renderMacros();
+});
+$('macroArmBtn').addEventListener('click', () => {
+  macroArmed = !macroArmed;
+  renderMacros();
 });
 $('macroSaveBtn').addEventListener('click', () => {
   const name = $('macroName').value.trim();
   if (!name || !macroChain.length) return;
   macros.push({ id: uid(), name, steps: [...macroChain] });
   macroChain = [];
+  macroArmed = false;
   $('macroName').value = '';
   saveState(); renderMacros();
+  setStatus(`Saved macro “${name}”.`);
 });
 $('macroClearBtn').addEventListener('click', () => { macroChain = []; renderMacros(); });
 
@@ -443,6 +510,31 @@ if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
     navigator.serviceWorker.register('sw.js').catch(() => { /* offline cache is a bonus, not a blocker */ });
   });
+}
+
+/* ---------- keyboard hotkeys (weakness: no keyboard/hotkey control) ----------
+ * Keys 1-9, 0, Q, W, E, R, T, Y play pads 1-16 in grid order; Esc stops all.
+ * Ignored while typing in an input, select, or textarea. */
+const HOTKEYS = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '0', 'q', 'w', 'e', 'r', 't', 'y'];
+document.addEventListener('keydown', e => {
+  const tag = (e.target && e.target.tagName) || '';
+  if (/^(INPUT|SELECT|TEXTAREA)$/.test(tag)) return;
+  if (e.key === 'Escape') { stopAll(); return; }
+  const idx = HOTKEYS.indexOf(String(e.key).toLowerCase());
+  if (idx >= 0 && pads[idx]) {
+    const padEl = document.querySelector(`[data-pad-id="${pads[idx].id}"]`);
+    if (padEl) padEl.classList.add('pressed');
+    playPad(pads[idx], padEl);
+    if (padEl) setTimeout(() => padEl.classList.remove('pressed'), 150);
+  }
+});
+
+/* Recorder support check: on browsers without getUserMedia/MediaRecorder
+ * (old browsers, insecure contexts) the recorder is disabled with a plain
+ * explanation instead of failing when tapped. */
+if (!recorderSupported()) {
+  $('recBtn').disabled = true;
+  $('recStatus').textContent = 'Mic recording is not supported in this browser — use search to fill the board instead.';
 }
 
 /* ---------- boot ---------- */

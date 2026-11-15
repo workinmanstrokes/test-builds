@@ -23,6 +23,8 @@
   <section aria-label="Soundboard grid">
     <div id="padGrid" class="pad-grid" role="grid" aria-label="Sound pads"></div>
     <p id="boardStatus" class="status" role="status"></p>
+    <p id="latencyStatus" class="status" role="status"></p>
+    <p class="hint">Keyboard: keys 1–0 and Q–Y play pads 1–16, Esc stops all.</p>
   </section>
 
   <section class="panel" aria-label="Search sound effects">
@@ -37,7 +39,7 @@
 
   <section class="panel" aria-label="Mic recorder">
     <h2>🎙️ Recorder</h2>
-    <p class="hint">Record your own sound, save it to a pad, and it replays after reload.</p>
+    <p class="hint">Record your own sound, save it to a pad, and it replays after reload. Recordings stop automatically at 60 seconds so they fit on-device storage. Needs mic permission — if this browser has no mic support, Record is disabled with an explanation.</p>
     <div class="rec-row">
       <button id="recBtn" type="button">● Record</button>
       <button id="recStopBtn" type="button" disabled>■ Stop &amp; save to a pad</button>
@@ -61,9 +63,10 @@
 
   <section class="panel" aria-label="Macro builder">
     <h2>⛓️ Macro builder</h2>
-    <p class="hint">Chain pads into one tap. Tap pads in order to build the chain, then name it and save.</p>
+    <p class="hint">Chain up to 8 pads into one tap: arm chain-building, tap pads in order, name it, save. Saved macros play their steps in order (each step waits for the previous sound, at least 250 ms apart); delete a macro with its ✕ button.</p>
     <div class="macro-row">
       <input id="macroName" type="text" placeholder="Macro name, e.g. Drum roll + rimshot" aria-label="Macro name">
+      <button id="macroArmBtn" type="button">＋ Add pads to chain</button>
       <button id="macroSaveBtn" type="button">Save macro</button>
       <button id="macroClearBtn" type="button">Clear chain</button>
     </div>
@@ -75,7 +78,9 @@
     <h2>📡 Routing guide — OBS / Discord</h2>
     <p><strong>Status: speaker-only playback is the default.</strong> Sounds play
     through this device's speakers. To route them into a stream or a call,
-    use one of these setups — neither is verified yet on a live stream.</p>
+    use one of these setups — neither is verified yet on a live stream.
+    Verification checklist (OBS meter moves, Discord hears the pad) is in
+    TESTING.md — run it before telling anyone routing works.</p>
     <h3>OBS browser source (recommended first)</h3>
     <ol>
       <li>Host this board on a URL OBS can reach (or serve it locally and use that address).</li>
