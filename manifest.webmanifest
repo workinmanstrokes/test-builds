@@ -1,0 +1,1 @@
+{"name":"Diddlers Arcade","short_name":"Arcade","description":"Play free phone-friendly games.","start_url":"./","scope":"./","display":"standalone","orientation":"portrait","background_color":"#101a22","theme_color":"#101a22","icons":[{"src":"./icon.svg","sizes":"any","type":"image/svg+xml","purpose":"any maskable"}]}
