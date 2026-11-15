@@ -1,58 +1,69 @@
 <!doctype html>
-<html lang="en"><head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
-<meta name="theme-color" content="#0b0b12">
-<title>Diddly's Arcade</title>
-<meta name="apple-mobile-web-app-title" content="Arcade">
-<link rel="manifest" href="manifest.webmanifest">
-<style>
-*{box-sizing:border-box}html{-webkit-text-size-adjust:100%}
-body{margin:0;background:#0b0b12;color:#eee;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;min-height:100vh;padding:max(16px,env(safe-area-inset-top)) max(16px,env(safe-area-inset-right)) max(24px,env(safe-area-inset-bottom)) max(16px,env(safe-area-inset-left));display:flex;flex-direction:column;align-items:center}
-h1{margin:8px 0 4px;font-size:24px;font-weight:800;letter-spacing:-.5px;color:#fff;text-align:center}
-.sub{margin:0 0 20px;font-size:12px;color:#889;text-align:center;text-transform:uppercase;letter-spacing:1px}
-ul.apps{list-style:none;margin:0;padding:0;width:100%;max-width:440px;display:flex;flex-direction:column;gap:12px}
-ul.apps li{background:#161622;border:1px solid #262638;border-radius:14px;padding:12px;box-shadow:0 4px 12px rgba(0,0,0,.3)}
-app{display:flex;align-items:center;gap:12px}
-app img{width:56px;height:56px;border-radius:12px;background:#222;object-fit:cover;flex-shrink:0}
-app .txt{flex:1;min-width:0}
-app h2{margin:0 0 2px;font-size:16px;font-weight:700;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-app p{margin:0;font-size:12px;color:#99a;line-height:1.3;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
-app .btns{display:flex;flex-direction:column;gap:6px;flex-shrink:0}
-app a.play{display:inline-flex;align-items:center;justify-content:center;padding:7px 14px;background:#3b82f6;color:#fff;text-decoration:none;font-weight:600;font-size:13px;border-radius:8px}
-app a.apk{display:inline-flex;align-items:center;justify-content:center;padding:5px 10px;background:#22c55e;color:#fff;text-decoration:none;font-weight:600;font-size:11px;border-radius:6px}
-</style>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <meta name="theme-color" content="#0b0b12">
+  <title>Diddly's Arcade</title>
+  <meta name="apple-mobile-web-app-title" content="Arcade">
+  <link rel="manifest" href="manifest.webmanifest">
+  <style>
+    * { box-sizing: border-box; }
+    html { -webkit-text-size-adjust: 100%; }
+    body {
+      margin: 0;
+      background: #0b0b12;
+      color: #eee;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      min-height: 100vh;
+      padding: max(16px, env(safe-area-inset-top)) 16px max(16px, env(safe-area-inset-bottom));
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+    h1 { margin: 8px 0 4px; font-size: 24px; font-weight: 800; letter-spacing: -.5px; color: #fff; text-align: center; }
+    .sub { margin: 0 0 20px; font-size: 12px; color: #889; text-align: center; text-transform: uppercase; letter-spacing: 1px; }
+    ul.apps { list-style: none; margin: 0; padding: 0; width: 100%; max-width: 440px; display: flex; flex-direction: column; gap: 12px; }
+    ul.apps li { background: #161622; border: 1px solid #262638; border-radius: 14px; padding: 12px; box-shadow: 0 4px 12px rgba(0,0,0,.3); }
+    .app { display: flex; align-items: center; gap: 12px; }
+    .app img { width: 56px; height: 56px; border-radius: 12px; background: #222; object-fit: cover; flex-shrink: 0; }
+    .txt { flex: 1; min-width: 0; }
+    .txt h2 { margin: 0 0 2px; font-size: 16px; font-weight: 700; color: #fff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .txt p { margin: 0; font-size: 12px; color: #99a; line-height: 1.3; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+    .btns { display: flex; flex-direction: column; gap: 6px; flex-shrink: 0; }
+    .btns a { display: inline-flex; align-items: center; justify-content: center; padding: 7px 14px; background: #3b82f6; color: #fff; text-decoration: none; font-weight: 600; font-size: 13px; border-radius: 8px; }
+  </style>
 </head>
 <body>
-<h1>Diddly's Arcade</h1>
-<div class="sub">Test Builds</div>
-<ul class="apps">
-  <li><app><img src="../loop-pop/icon.png" alt=""><div class="txt"><h2>Loop Pop</h2><p>Chain reactions &amp; timing</p></div><div class="btns"><a class="play" href="../loop-pop/">Play</a><a class="apk" href="../apk/loop-pop.apk">Android</a></div></app></li>
-  <li><app><img src="../plus-one-aura/icon.png" alt=""><div class="txt"><h2>+1 Aura</h2><p>Stack aura points</p></div><div class="btns"><a class="play" href="../plus-one-aura/">Play</a></div></app></li>
-  <li><app><img src="../period-8/icon.png" alt=""><div class="txt"><h2>Period 8</h2><p>High school survival horror</p></div><div class="btns"><a class="play" href="../period-8/">Play</a></div></app></li>
-  <li><app><img src="../whos-the-brainrot/icon.png" alt=""><div class="txt"><h2>Who's the Brainrot?</h2><p>Guessing game</p></div><div class="btns"><a class="play" href="../whos-the-brainrot/">Play</a></div></app></li>
-  <li><app><img src="../spin-and-deal/icon.png" alt=""><div class="txt"><h2>Spin &amp; Deal</h2><p>Casino arcade</p></div><div class="btns"><a class="play" href="../spin-and-deal/">Play</a></div></app></li>
-  <li><app><img src="../brainrot-aura-rush/icon.png" alt=""><div class="txt"><h2>Brainrot: Tactical Aura Rush</h2><p>Canvas runner</p></div><div class="btns"><a class="play" href="../brainrot-aura-rush/">Play</a></div></app></li>
-  <li><app><img src="../aether-surge/icon.png" alt=""><div class="txt"><h2>Aether Surge</h2><p>Arcade action</p></div><div class="btns"><a class="play" href="../aether-surge/">Play</a></div></app></li>
-  <li><app><img src="../aether-surge-darkrift/icon.png" alt=""><div class="txt"><h2>Aether Surge: Dark Rift</h2><p>Rift defense</p></div><div class="btns"><a class="play" href="../aether-surge-darkrift/">Play</a></div></app></li>
-  <li><app><img src="../wing-protocol/icon.png" alt=""><div class="txt"><h2>Wing Protocol</h2><p>Aerial shooter</p></div><div class="btns"><a class="play" href="../wing-protocol/">Play</a></div></app></li>
-  <li><app><img src="../fishing-almanac/icon.png" alt=""><div class="txt"><h2>Fishing Almanac</h2><p>Fishing guide</p></div><div class="btns"><a class="play" href="../fishing-almanac/">Play</a></div></app></li>
-  <li><app><img src="../card-scanner/icon.png" alt=""><div class="txt"><h2>Card Scanner</h2><p>Trading card utility</p></div><div class="btns"><a class="play" href="../card-scanner/">Play</a></div></app></li>
-  <li><app><img src="../sunken-spire/icon.png" alt=""><div class="txt"><h2>Echoes of the Sunken Spire</h2><p>Dungeon crawler</p></div><div class="btns"><a class="play" href="../sunken-spire/">Play</a></div></app></li>
-  <li><app><img src="../final-cast/icon.png" alt=""><div class="txt"><h2>Final Cast</h2><p>Fishing game</p></div><div class="btns"><a class="play" href="../final-cast/">Play</a></div></app></li>
-  <li><app><img src="../dirttrack/icon.png" alt=""><div class="txt"><h2>DirtTrack</h2><p>Offroad racing</p></div><div class="btns"><a class="play" href="../dirttrack/">Play</a></div></app></li>
-  <li><app><img src="../scan-forge/icon.png" alt=""><div class="txt"><h2>Scan Forge</h2><p>Card scanning</p></div><div class="btns"><a class="play" href="../scan-forge/">Play</a></div></app></li>
-  <li><app><img src="../print-doctor/icon.png" alt=""><div class="txt"><h2>Print Doctor</h2><p>3D printing assistant</p></div><div class="btns"><a class="play" href="../print-doctor/">Play</a></div></app></li>
-  <li><app><img src="../hunterduel/icon.png" alt=""><div class="txt"><h2>Hunter Duel</h2><p>Action duels</p></div><div class="btns"><a class="play" href="../hunterduel/">Play</a></div></app></li>
-  <li><app><img src="../nhl94-remake/icon.png" alt=""><div class="txt"><h2>Ice Legends '94</h2><p>Arcade hockey</p></div><div class="btns"><a class="play" href="../nhl94-remake/">Play</a></div></app></li>
-  <li><app><img src="../zombie-hockey/icon.png" alt=""><div class="txt"><h2>Zombie Hockey</h2><p>Undead sports</p></div><div class="btns"><a class="play" href="../zombie-hockey/">Play</a></div></app></li>
-  <li><app><img src="../comanche-rpg/icon.png" alt=""><div class="txt"><h2>Comanche RPG</h2><p>Helicopter RPG</p></div><div class="btns"><a class="play" href="../comanche-rpg/">Play</a></div></app></li>
-  <li><app><img src="../resale-hub/icon.png" alt=""><div class="txt"><h2>Resale Hub</h2><p>Deal search &amp; listing tool</p></div><div class="btns"><a class="play" href="../resale-hub/">Play</a></div></app></li>
-  <li><app><img src="../test-builds/icon.png" alt=""><div class="txt"><h2>Test Builds</h2><p>Debug APK &amp; web test builds</p></div><div class="btns"><a class="play" href="../test-builds/">Play</a></div></app></li>
-  <li><app><img src="../artifacts/icon.png" alt=""><div class="txt"><h2>Artifacts</h2><p>Published Claude artifacts HTML</p></div><div class="btns"><a class="play" href="../artifacts/">Play</a></div></app></li>
-  <li><app><img src="../paydirt-soil-assay/icon.png" alt=""><div class="txt"><h2>Paydirt: Soil &amp; Gold Assay</h2><p>Browser prospecting game</p></div><div class="btns"><a class="play" href="../paydirt-soil-assay/">Play</a></div></app></li>
-  <li><app><img src="../hockey-arcade/icon.png" alt=""><div class="txt"><h2>Hockey Arcade</h2><p>3rd-person arcade hockey</p></div><div class="btns"><a class="play" href="../hockey-arcade/">Play</a></div></app></li>
-  <li><app><img src="../Head-ang-ers-n-eather-/icon.png" alt=""><div class="txt"><h2>Head-ang-ers-n-eather-</h2><p>SumthinGood</p></div><div class="btns"><a class="play" href="../Head-ang-ers-n-eather-/">Play</a></div></app></li>
-</ul>
+  <h1>Diddly's Arcade</h1>
+  <div class="sub">Test Builds</div>
+  <ul class="apps">
+    <li><div class="app"><img src="../loop-pop/icon.png" alt=""><div class="txt"><h2>Loop Pop</h2><p>Chain reactions &amp; timing</p></div><div class="btns"><a href="../loop-pop/">Play</a></div></div></li>
+    <li><div class="app"><img src="../plus-one-aura/icon.png" alt=""><div class="txt"><h2>+1 Aura</h2><p>Stack aura points</p></div><div class="btns"><a href="../plus-one-aura/">Play</a></div></div></li>
+    <li><div class="app"><img src="../period-8/icon.png" alt=""><div class="txt"><h2>Period 8</h2><p>High school survival horror</p></div><div class="btns"><a href="../period-8/">Play</a></div></div></li>
+    <li><div class="app"><img src="../whos-the-brainrot/icon.png" alt=""><div class="txt"><h2>Who's the Brainrot?</h2><p>Guessing game</p></div><div class="btns"><a href="../whos-the-brainrot/">Play</a></div></div></li>
+    <li><div class="app"><img src="../spin-and-deal/icon.png" alt=""><div class="txt"><h2>Spin &amp; Deal</h2><p>Casino arcade</p></div><div class="btns"><a href="../spin-and-deal/">Play</a></div></div></li>
+    <li><div class="app"><img src="../brainrot-aura-rush/icon.png" alt=""><div class="txt"><h2>Brainrot: Tactical Aura Rush</h2><p>Canvas runner</p></div><div class="btns"><a href="../brainrot-aura-rush/">Play</a></div></div></li>
+    <li><div class="app"><img src="../aether-surge/icon.png" alt=""><div class="txt"><h2>Aether Surge</h2><p>Arcade action</p></div><div class="btns"><a href="../aether-surge/">Play</a></div></div></li>
+    <li><div class="app"><img src="../aether-surge-darkrift/icon.png" alt=""><div class="txt"><h2>Aether Surge: Dark Rift</h2><p>Rift defense</p></div><div class="btns"><a href="../aether-surge-darkrift/">Play</a></div></div></li>
+    <li><div class="app"><img src="../wing-protocol/icon.png" alt=""><div class="txt"><h2>Wing Protocol</h2><p>Aerial shooter</p></div><div class="btns"><a href="../wing-protocol/">Play</a></div></div></li>
+    <li><div class="app"><img src="../fishing-almanac/icon.png" alt=""><div class="txt"><h2>Fishing Almanac</h2><p>Fishing guide</p></div><div class="btns"><a href="../fishing-almanac/">Play</a></div></div></li>
+    <li><div class="app"><img src="../card-scanner/icon.png" alt=""><div class="txt"><h2>Card Scanner</h2><p>Trading card utility</p></div><div class="btns"><a href="../card-scanner/">Play</a></div></div></li>
+    <li><div class="app"><img src="../sunken-spire/icon.png" alt=""><div class="txt"><h2>Echoes of the Sunken Spire</h2><p>Dungeon crawler</p></div><div class="btns"><a href="../sunken-spire/">Play</a></div></div></li>
+    <li><div class="app"><img src="../final-cast/icon.png" alt=""><div class="txt"><h2>Final Cast</h2><p>Fishing game</p></div><div class="btns"><a href="../final-cast/">Play</a></div></div></li>
+    <li><div class="app"><img src="../dirttrack/icon.png" alt=""><div class="txt"><h2>DirtTrack</h2><p>Offroad racing</p></div><div class="btns"><a href="../dirttrack/">Play</a></div></div></li>
+    <li><div class="app"><img src="../scan-forge/icon.png" alt=""><div class="txt"><h2>Scan Forge</h2><p>Card scanning</p></div><div class="btns"><a href="../scan-forge/">Play</a></div></div></li>
+    <li><div class="app"><img src="../print-doctor/icon.png" alt=""><div class="txt"><h2>Print Doctor</h2><p>3D printing assistant</p></div><div class="btns"><a href="../print-doctor/">Play</a></div></div></li>
+    <li><div class="app"><img src="../hunterduel/icon.png" alt=""><div class="txt"><h2>Hunter Duel</h2><p>Action duels</p></div><div class="btns"><a href="../hunterduel/">Play</a></div></div></li>
+    <li><div class="app"><img src="../nhl94-remake/icon.png" alt=""><div class="txt"><h2>Ice Legends '94</h2><p>Arcade hockey</p></div><div class="btns"><a href="../nhl94-remake/">Play</a></div></div></li>
+    <li><div class="app"><img src="../zombie-hockey/icon.png" alt=""><div class="txt"><h2>Zombie Hockey</h2><p>Undead sports</p></div><div class="btns"><a href="../zombie-hockey/">Play</a></div></div></li>
+    <li><div class="app"><img src="../comanche-rpg/icon.png" alt=""><div class="txt"><h2>Comanche RPG</h2><p>Helicopter RPG</p></div><div class="btns"><a href="../comanche-rpg/">Play</a></div></div></li>
+    <li><div class="app"><img src="../resale-hub/icon.png" alt=""><div class="txt"><h2>Resale Hub</h2><p>Deal search &amp; listing tool</p></div><div class="btns"><a href="../resale-hub/">Play</a></div></div></li>
+    <li><div class="app"><img src="../test-builds/icon.png" alt=""><div class="txt"><h2>Test Builds</h2><p>Debug APK &amp; web test builds</p></div><div class="btns"><a href="../test-builds/">Play</a></div></div></li>
+    <li><div class="app"><img src="../artifacts/icon.png" alt=""><div class="txt"><h2>Artifacts</h2><p>Published Claude artifacts HTML</p></div><div class="btns"><a href="../artifacts/">Play</a></div></div></li>
+    <li><div class="app"><img src="../paydirt-soil-assay/icon.png" alt=""><div class="txt"><h2>Paydirt: Soil &amp; Gold Assay</h2><p>Browser prospecting game</p></div><div class="btns"><a href="../paydirt-soil-assay/">Play</a></div></div></li>
+    <li><div class="app"><img src="../hockey-arcade/icon.png" alt=""><div class="txt"><h2>Hockey Arcade</h2><p>3rd-person arcade hockey</p></div><div class="btns"><a href="../hockey-arcade/">Play</a></div></div></li>
+    <li><div class="app"><img src="../Head-ang-ers-n-eather-/icon.png" alt=""><div class="txt"><h2>Head-ang-ers-n-eather-</h2><p>SumthinGood</p></div><div class="btns"><a href="../Head-ang-ers-n-eather-/">Play</a></div></div></li>
+  </ul>
 </body>
 </html>
