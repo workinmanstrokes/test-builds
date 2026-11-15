@@ -1,0 +1,720 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Michigan Lunker Rush — Milestone 1–3 Vertical Slice</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body { background: #0b1c2c; height: 100%; overflow: hidden; }
+  body { display: flex; align-items: center; justify-content: center; font-family: "Trebuchet MS", Verdana, sans-serif; }
+  #wrap { position: relative; width: min(100vw, 56.25vh); aspect-ratio: 9 / 16; max-height: 100vh; }
+  canvas { width: 100%; height: 100%; display: block; touch-action: none; border-radius: 6px;
+           box-shadow: 0 0 40px rgba(0,0,0,.6); background: #123; }
+  #hint { position: absolute; left: 0; right: 0; bottom: -26px; text-align: center;
+          color: #8fb8d8; font-size: 12px; }
+</style>
+</head>
+<body>
+<div id="wrap">
+  <canvas id="game" width="720" height="1280"></canvas>
+  <div id="hint">Michigan Lunker Rush — tap &amp; drag to cast &middot; progress saves locally</div>
+</div>
+<script>
+"use strict";
+/* ============================================================================
+   MICHIGAN LUNKER RUSH — Milestone 1-3 vertical slice
+   Portrait 720x1280 HTML5 canvas game. All logic is in this file.
+   Systems: 3 lakes, weather, Scout Drone, tap-and-drag casting,
+   vertical tension-bar fight, Workbench (3D-printer lures + line upgrades),
+   localStorage persistence.
+   ========================================================================== */
+
+/* ---------------- Data ---------------- */
+const LAKES = {
+  holloway: {
+    id: "holloway", name: "Holloway Flats", tag: "STARTER",
+    desc: "Panfish & largemouth bass",
+    water: ["#2e7d6b", "#1d5c4e"], sky: ["#8ec9ee", "#cfeefb"],
+    species: [
+      { id: "bluegill",   name: "Bluegill",       icon: "\u{1F41F}", min: 0.2, max: 0.8, bite: 0.10, fight: 0.25, coins: 8 },
+      { id: "pumpkinseed",name: "Pumpkinseed",    icon: "\u{1F41F}", min: 0.2, max: 0.7, bite: 0.09, fight: 0.25, coins: 8 },
+      { id: "largemouth", name: "Largemouth Bass",icon: "\u{1F41F}", min: 1.0, max: 5.0, bite: 0.06, fight: 0.55, coins: 15 },
+    ],
+  },
+  stclair: {
+    id: "stclair", name: "St. Clair Channels", tag: "MID",
+    desc: "Smallmouth, largemouth & pike",
+    water: ["#2a6f8e", "#1b4d68"], sky: ["#7fb8dd", "#cfe8f7"],
+    species: [
+      { id: "smallmouth", name: "Smallmouth Bass", icon: "\u{1F41F}", min: 1.0, max: 6.0, bite: 0.06, fight: 0.65, coins: 16 },
+      { id: "largemouth", name: "Largemouth Bass", icon: "\u{1F41F}", min: 1.0, max: 5.0, bite: 0.05, fight: 0.55, coins: 15 },
+      { id: "pike",       name: "Northern Pike",   icon: "\u{1F988}", min: 3.0, max: 12.0, bite: 0.04, fight: 0.85, coins: 20 },
+    ],
+  },
+  tahquamenon: {
+    id: "tahquamenon", name: "Tahquamenon Deep", tag: "TROPHY",
+    desc: "Trophy northern pike water",
+    water: ["#1e4a5e", "#122f3d"], sky: ["#6d9cbd", "#b9d4e6"],
+    species: [
+      { id: "pike",    name: "Northern Pike", icon: "\u{1F988}", min: 5.0, max: 20.0, bite: 0.05, fight: 0.95, coins: 20 },
+      { id: "walleye", name: "Walleye",       icon: "\u{1F41F}", min: 2.0, max: 8.0,  bite: 0.05, fight: 0.60, coins: 18 },
+      { id: "perch",   name: "Yellow Perch",  icon: "\u{1F41F}", min: 0.3, max: 1.2,  bite: 0.10, fight: 0.30, coins: 8 },
+    ],
+  },
+};
+
+const WEATHERS = {
+  sunny:    { id: "sunny",    name: "Sunny",    icon: "\u2600\uFE0F", pikeMult: 1.0 },
+  overcast: { id: "overcast", name: "Overcast", icon: "\u2601\uFE0F", pikeMult: 1.0 },
+  rain:     { id: "rain",     name: "Rain",     icon: "\u{1F327}\uFE0F", pikeMult: 1.4 }, // Rain: +40% pike bite & aggression
+};
+
+/* Lures: bite multiplier per species id (1.0 = no effect). */
+const LURES = {
+  senko:  { id: "senko",  name: "Texas-Rigged Senko",  desc: "Soft stickbait. Bass love it.",        cost: 0,   mult: { largemouth: 1.6, smallmouth: 1.6 } },
+  frog:   { id: "frog",   name: "Topwater Frog",       desc: "Skips over weeds. Pike smash it.",     cost: 150, mult: { pike: 1.8, largemouth: 1.3, smallmouth: 1.3 } },
+  crank:  { id: "crank",  name: "Squarebill Crankbait",desc: "Digs deep. Pike & walleye.",           cost: 300, mult: { pike: 1.5, walleye: 1.6, largemouth: 1.2, smallmouth: 1.2 } },
+};
+/* Lines: tension capacity — bigger test forgives harder runs. */
+const LINES = {
+  braid15:  { id: "braid15",  name: "15 lb Braid",       desc: "Starter line. Snaps if you bully it.", cost: 0,   capacity: 100, gain: 1.00 },
+  fluoro25: { id: "fluoro25", name: "25 lb Fluoro Leader", desc: "Tougher. Tension builds slower.",   cost: 200, capacity: 125, gain: 0.75 },
+  braid40:  { id: "braid40",  name: "40 lb Heavy Braid", desc: "Winch cable. For trophy pike.",      cost: 400, capacity: 155, gain: 0.55 },
+};
+
+/* ---------------- Save (localStorage, in-memory fallback) ---------------- */
+const SAVE_KEY = "lunker-rush-save-v1";
+const _mem = {};
+const store = {
+  get(k) { try { return localStorage.getItem(k); } catch (e) { return _mem[k] || null; } },
+  set(k, v) { try { localStorage.setItem(k, v); } catch (e) { _mem[k] = v; } },
+};
+function defaultSave() {
+  return { coins: 0, lures: { senko: true }, lines: { braid15: true },
+           equippedLure: "senko", equippedLine: "braid15",
+           caught: {}, totalCaught: 0, best: {} };
+}
+function loadSave() {
+  try { const raw = store.get(SAVE_KEY); if (raw) return Object.assign(defaultSave(), JSON.parse(raw)); }
+  catch (e) { /* corrupt save -> fresh */ }
+  return defaultSave();
+}
+function persist() { store.set(SAVE_KEY, JSON.stringify(save)); }
+let save = loadSave();
+
+/* ---------------- Helpers ---------------- */
+const W = 720, H = 1280;
+const WATER_TOP = 300, WATER_BOT = 1020;           // fishable water band
+function clamp(v, a, b) { return v < a ? a : v > b ? b : v; }
+function rand(a, b) { return a + Math.random() * (b - a); }
+function pickWeighted(items, weightFn) {
+  let total = 0; for (const it of items) total += weightFn(it);
+  let r = Math.random() * total;
+  for (const it of items) { r -= weightFn(it); if (r <= 0) return it; }
+  return items[items.length - 1];
+}
+function roundRect(ctx, x, y, w, h, r) {
+  ctx.beginPath();
+  ctx.moveTo(x + r, y);
+  ctx.arcTo(x + w, y, x + w, y + h, r);
+  ctx.arcTo(x + w, y + h, x, y + h, r);
+  ctx.arcTo(x, y + h, x, y, r);
+  ctx.arcTo(x, y, x + w, y, r);
+  ctx.closePath();
+}
+function fmtLb(w) { return (Math.round(w * 10) / 10).toFixed(1) + " lb"; }
+
+/* ---------------- State ---------------- */
+const S = {
+  scene: "menu",          // menu | fishing | workbench
+  lake: null,             // lake object
+  weather: WEATHERS.sunny,
+  fish: [],               // swimming fish entities in the water
+  phase: "idle",          // idle | aiming | waiting | strike | fight | result
+  cast: { active: false, sx: 0, sy: 0, x: 0, y: 0, power: 0 },
+  bobber: null,           // {x, y, t}
+  biteTimer: 0, strikeTimer: 0,
+  hooked: null,           // {species, weight, isTrophy}
+  fight: { progress: 0, tension: 0, escape: 0, slack: 0, runT: 0, runDur: 0, running: false, holding: false },
+  drone: { active: false, revealT: 0, coolT: 0 },
+  result: null,           // {text, sub, coins}
+  msg: "", msgT: 0,
+  rain: [],               // rain streak particles
+  t: 0,
+};
+for (let i = 0; i < 90; i++) S.rain.push({ x: rand(0, W), y: rand(0, H), s: rand(9, 15) });
+
+function setMsg(text, dur) { S.msg = text; S.msgT = dur || 2.2; }
+function rollWeather() {
+  const r = Math.random();
+  S.weather = r < 0.45 ? WEATHERS.sunny : r < 0.80 ? WEATHERS.overcast : WEATHERS.rain;
+}
+function lureMult(speciesId) {
+  const lure = LURES[save.equippedLure];
+  return (lure.mult && lure.mult[speciesId]) || 1.0;
+}
+function biteRate(fish) {
+  let rate = fish.species.bite * lureMult(fish.species.id);
+  if (fish.species.id === "pike") rate *= S.weather.pikeMult; // Rain +40% pike bite
+  return rate;
+}
+function spawnFish() {
+  S.fish = [];
+  for (let i = 0; i < 6; i++) {
+    const sp = LAKES[S.lake.id].species[Math.floor(Math.random() * LAKES[S.lake.id].species.length)];
+    S.fish.push({
+      species: sp,
+      weight: rand(sp.min, sp.max),
+      x: rand(60, W - 60), y: rand(WATER_TOP + 60, WATER_BOT - 60),
+      vx: rand(-14, 14), depth: rand(0.5, 1),
+    });
+  }
+}
+
+/* ---------------- Scene flow ---------------- */
+function enterLake(lakeId) {
+  S.lake = LAKES[lakeId];
+  S.scene = "fishing"; S.phase = "idle";
+  S.bobber = null; S.hooked = null; S.result = null;
+  S.fight = { progress: 0, tension: 0, escape: 0, slack: 0, runT: 0, runDur: 0, running: false, holding: false };
+  S.drone = { active: false, revealT: 0, coolT: 0 };
+  rollWeather();
+  spawnFish();
+  setMsg(S.lake.name + " — " + S.weather.icon + " " + S.weather.name, 2.5);
+}
+function enterMenu() { S.scene = "menu"; S.phase = "idle"; S.bobber = null; S.hooked = null; }
+function enterWorkbench() { S.scene = "workbench"; }
+function exitWorkbench() { S.scene = S.lake ? "fishing" : "menu"; }
+
+/* ---------------- Scout Drone ---------------- */
+const DRONE_REVEAL = 5, DRONE_COOLDOWN = 15;
+function useDrone() {
+  if (S.scene !== "fishing") return false;
+  if (S.drone.coolT > 0) { setMsg("Drone recharging — " + Math.ceil(S.drone.coolT) + "s", 1.5); return false; }
+  S.drone.active = true; S.drone.revealT = DRONE_REVEAL; S.drone.coolT = DRONE_COOLDOWN;
+  setMsg("Scout Drone up — fish revealed for 5s", 2);
+  return true;
+}
+
+/* ---------------- Casting ---------------- */
+function startCast(x, y) {
+  if (S.scene !== "fishing" || S.phase !== "idle") return false;
+  if (y < WATER_TOP || y > WATER_BOT) return false;
+  S.phase = "aiming"; S.cast = { active: true, sx: x, sy: y, x, y, power: 0 };
+  return true;
+}
+function dragCast(x, y) {
+  if (S.phase !== "aiming") return;
+  S.cast.x = x; S.cast.y = y;
+  // Power grows as you drag away from the start point (back toward shore = more power).
+  const dx = x - S.cast.sx, dy = y - S.cast.sy;
+  S.cast.power = clamp(Math.sqrt(dx * dx + dy * dy) / 260, 0, 1);
+}
+function releaseCast() {
+  if (S.phase !== "aiming") return false;
+  const c = S.cast;
+  // Cast lands past the drag point: the harder the drag, the farther out.
+  const tx = clamp(c.x + (c.x - c.sx) * 0.6, 50, W - 50);
+  const ty = clamp(c.y + (c.y - c.sy) * 0.6, WATER_TOP + 40, WATER_BOT - 40);
+  S.bobber = { x: tx, y: ty, t: 0 };
+  S.phase = "waiting";
+  S.biteTimer = rand(1.5, 4.5); // first nibble window, then rate-based rolls below
+  setMsg("Line out — wait for a bite…", 1.5);
+  return true;
+}
+function reelIn() { // give up on the cast, back to idle
+  if (S.phase === "waiting" || S.phase === "strike") { S.phase = "idle"; S.bobber = null; setMsg("Reeled in.", 1.2); return true; }
+  return false;
+}
+
+/* ---------------- Bite & hook ---------------- */
+function rollBite(dt) {
+  if (S.phase !== "waiting" || !S.bobber) return;
+  S.biteTimer -= dt;
+  if (S.biteTimer > 0) return;
+  // Per-second bite chance = sum of all swimming fish rates.
+  let rate = 0; for (const f of S.fish) rate += biteRate(f);
+  if (Math.random() < rate * dt) {
+    const fish = pickWeighted(S.fish, biteRate);
+    S.hooked = { species: fish.species, weight: fish.weight,
+                 isTrophy: fish.weight >= fish.species.max * 0.9, fromFish: fish };
+    S.phase = "strike"; S.strikeTimer = 1.25;
+    setMsg("STRIKE! TAP NOW!", 1.2);
+  } else {
+    S.biteTimer = 0.25; // re-roll 4x/second
+  }
+}
+function tapHook() {
+  if (S.phase !== "strike") return false;
+  const f = S.fight;
+  f.progress = 0; f.tension = 0; f.escape = 0; f.slack = 0;
+  f.runT = rand(0.8, 1.6); f.runDur = 0; f.running = false; f.holding = false;
+  S.phase = "fight";
+  setMsg("Hooked a " + S.hooked.species.name + "!", 1.5);
+  return true;
+}
+
+/* ---------------- Tension minigame ---------------- */
+const LINE = () => LINES[save.equippedLine];
+function tapReel() {
+  if (S.phase !== "fight") return false;
+  const f = S.fight;
+  f.progress += 5;               // rhythmic tapping reels the fish in
+  f.tension = Math.max(0, f.tension - 3);
+  f.slack = 0; f.escape = Math.max(0, f.escape - 30);
+  return true;
+}
+function setHolding(on) {
+  if (S.phase !== "fight") return;
+  S.fight.holding = on;
+}
+function updateFight(dt) {
+  const f = S.fight, fish = S.hooked, line = LINE();
+  const aggression = fish.species.fight * (fish.species.id === "pike" ? S.weather.pikeMult : 1); // Rain +40% pike aggression
+  // Fish runs in bursts.
+  f.runT -= dt;
+  if (f.runT <= 0) {
+    if (f.running) { f.running = false; f.runT = rand(1.0, 2.2); }
+    else { f.running = true; f.runDur = rand(0.6, 1.3); f.runT = f.runDur; }
+  }
+  if (f.running) f.tension += 26 * aggression * line.gain * dt;
+  else f.tension = Math.max(0, f.tension - 6 * dt);
+  if (f.holding) { f.progress += 16 * dt; f.tension += 28 * line.gain * dt; } // holding spikes tension
+  // Slack: no input at all lets the fish spit the hook.
+  f.slack += dt;
+  if (f.slack > 1.5) f.escape += 22 * dt;
+  f.tension = clamp(f.tension, 0, 200);
+  // End states.
+  if (f.tension >= line.capacity) return endFight("snap");
+  if (f.escape >= 100) return endFight("spit");
+  if (f.progress >= 100) return endFight("caught");
+  return null;
+}
+function endFight(kind) {
+  const fish = S.hooked;
+  S.phase = "result"; S.bobber = null;
+  if (kind === "caught") {
+    const base = Math.round(fish.weight * fish.species.coins);
+    const coins = fish.isTrophy ? Math.round(base * 1.5) : base;
+    save.coins += coins;
+    save.totalCaught += 1;
+    save.caught[fish.species.id] = (save.caught[fish.species.id] || 0) + 1;
+    if (!save.best[fish.species.id] || fish.weight > save.best[fish.species.id]) save.best[fish.species.id] = Math.round(fish.weight * 10) / 10;
+    persist();
+    // The landed fish leaves the water; a new one swims in.
+    const i = S.fish.indexOf(fish.fromFish);
+    if (i >= 0) S.fish.splice(i, 1);
+    const sp = S.lake.species[Math.floor(Math.random() * S.lake.species.length)];
+    S.fish.push({ species: sp, weight: rand(sp.min, sp.max), x: rand(60, W - 60),
+                  y: rand(WATER_TOP + 60, WATER_BOT - 60), vx: rand(-14, 14), depth: rand(0.5, 1) });
+    S.result = { kind: "caught", title: (fish.isTrophy ? "TROPHY! " : "") + fish.species.name,
+                 sub: fmtLb(fish.weight) + " landed", coins };
+  } else if (kind === "snap") {
+    S.result = { kind: "snap", title: "LINE SNAPPED!", sub: "The " + LINE().name + " couldn't take it. Upgrade your line at the Workbench.", coins: 0 };
+  } else {
+    S.result = { kind: "spit", title: "IT SPIT THE HOOK", sub: "Too much slack — keep tapping to stay tight.", coins: 0 };
+  }
+  S.hooked = null;
+  return kind;
+}
+
+/* ---------------- Workbench ---------------- */
+function buyItem(kind, id) {
+  const cat = kind === "lure" ? LURES : LINES;
+  const item = cat[id];
+  if (!item) return { ok: false, why: "no such item" };
+  const owned = kind === "lure" ? save.lures : save.lines;
+  if (owned[id]) return { ok: false, why: "already owned" };
+  if (save.coins < item.cost) return { ok: false, why: "not enough coins" };
+  save.coins -= item.cost;
+  owned[id] = true;
+  if (kind === "lure") save.equippedLure = id; else save.equippedLine = id;
+  persist();
+  return { ok: true };
+}
+function equipItem(kind, id) {
+  const owned = kind === "lure" ? save.lures : save.lines;
+  if (!owned[id]) return false;
+  if (kind === "lure") save.equippedLure = id; else save.equippedLine = id;
+  persist();
+  return true;
+}
+
+/* ---------------- Update ---------------- */
+function update(dt) {
+  S.t += dt;
+  if (S.msgT > 0) S.msgT -= dt;
+  // Drone timers.
+  if (S.drone.revealT > 0) { S.drone.revealT -= dt; if (S.drone.revealT <= 0) S.drone.active = false; }
+  if (S.drone.coolT > 0) S.drone.coolT -= dt;
+  // Rain streaks.
+  if (S.weather.id === "rain") for (const r of S.rain) { r.y += r.s * 60 * dt; r.x -= r.s * 12 * dt; if (r.y > H) { r.y = -20; r.x = rand(0, W + 100); } }
+  // Fish drift.
+  for (const f of S.fish) {
+    f.x += f.vx * dt;
+    if (f.x < 50 || f.x > W - 50) f.vx *= -1;
+    f.y += Math.sin(S.t * 0.7 + f.x * 0.01) * 6 * dt;
+  }
+  if (S.bobber) S.bobber.t += dt;
+  rollBite(dt);
+  if (S.phase === "strike") { S.strikeTimer -= dt; if (S.strikeTimer <= 0) { S.phase = "waiting"; S.hooked = null; S.biteTimer = rand(1, 3); setMsg("It got away…", 1.5); } }
+  if (S.phase === "fight") updateFight(dt);
+}
+
+/* ---------------- Rendering ---------------- */
+const canvas = document.getElementById("game");
+const ctx = canvas.getContext("2d");
+let hot = []; // clickable rects rebuilt every frame: {id,x,y,w,h}
+function btn(id, x, y, w, h, label, sub, opts) {
+  opts = opts || {};
+  hot.push({ id, x, y, w, h });
+  ctx.save();
+  ctx.fillStyle = opts.disabled ? "#5a6b78" : (opts.color || "#1f6f54");
+  roundRect(ctx, x, y, w, h, 14); ctx.fill();
+  ctx.strokeStyle = "rgba(255,255,255,.35)"; ctx.lineWidth = 2; ctx.stroke();
+  ctx.fillStyle = "#fff"; ctx.textAlign = "center"; ctx.textBaseline = "middle";
+  ctx.font = "bold 26px 'Trebuchet MS', sans-serif";
+  ctx.fillText(label, x + w / 2, y + h / 2 - (sub ? 12 : 0));
+  if (sub) { ctx.font = "18px 'Trebuchet MS', sans-serif"; ctx.fillStyle = "#d7ecdf"; ctx.fillText(sub, x + w / 2, y + h / 2 + 18); }
+  ctx.restore();
+}
+function drawSky() {
+  const g = ctx.createLinearGradient(0, 0, 0, WATER_TOP);
+  g.addColorStop(0, S.lake ? S.lake.sky[0] : "#8ec9ee");
+  g.addColorStop(1, S.lake ? S.lake.sky[1] : "#cfeefb");
+  ctx.fillStyle = g; ctx.fillRect(0, 0, W, WATER_TOP);
+  if (!S.lake) return;
+  if (S.weather.id === "sunny") {
+    ctx.fillStyle = "#ffd94d"; ctx.beginPath(); ctx.arc(600, 90, 46, 0, 7); ctx.fill();
+    ctx.fillStyle = "rgba(255,255,255,.85)";
+    ctx.beginPath(); ctx.ellipse(180, 110, 70, 26, 0, 0, 7); ctx.fill();
+    ctx.beginPath(); ctx.ellipse(240, 130, 55, 20, 0, 0, 7); ctx.fill();
+  } else {
+    ctx.fillStyle = S.weather.id === "rain" ? "rgba(90,100,115,.9)" : "rgba(160,170,180,.9)";
+    for (const cx of [150, 360, 560]) { ctx.beginPath(); ctx.ellipse(cx, 100, 90, 30, 0, 0, 7); ctx.fill(); }
+  }
+  if (S.weather.id === "rain") {
+    ctx.strokeStyle = "rgba(180,200,230,.55)"; ctx.lineWidth = 2;
+    for (const r of S.rain) { ctx.beginPath(); ctx.moveTo(r.x, r.y); ctx.lineTo(r.x - 6, r.y + 16); ctx.stroke(); }
+  }
+}
+function drawWater() {
+  const g = ctx.createLinearGradient(0, WATER_TOP, 0, WATER_BOT);
+  const wcol = S.lake ? S.lake.water : ["#2e7d6b", "#1d5c4e"];
+  g.addColorStop(0, wcol[0]); g.addColorStop(1, wcol[1]);
+  ctx.fillStyle = g; ctx.fillRect(0, WATER_TOP, W, WATER_BOT - WATER_TOP);
+  ctx.strokeStyle = "rgba(255,255,255,.18)"; ctx.lineWidth = 2;
+  for (let i = 0; i < 5; i++) {
+    const y = WATER_TOP + 90 + i * 130;
+    ctx.beginPath();
+    for (let x = 0; x <= W; x += 30) ctx.lineTo(x, y + Math.sin(S.t * 1.2 + x * 0.02 + i) * 6);
+    ctx.stroke();
+  }
+  // Shore dressing per lake.
+  if (S.lake && S.lake.id === "holloway") {
+    ctx.fillStyle = "#3f8f4f";
+    for (const [lx, ly] of [[90, 380], [620, 420], [180, 900], [540, 880]]) {
+      ctx.beginPath(); ctx.ellipse(lx, ly, 42, 16, 0, 0, 7); ctx.fill();
+    }
+  }
+  if (S.lake && S.lake.id === "stclair") {
+    ctx.strokeStyle = "#2f6b3a"; ctx.lineWidth = 5;
+    for (const rx of [70, 110, 640, 680]) {
+      ctx.beginPath(); ctx.moveTo(rx, WATER_BOT - 40); ctx.lineTo(rx + 12, WATER_TOP + 30); ctx.stroke();
+    }
+  }
+  // Drone-revealed fish silhouettes (size + species icon).
+  if (S.drone.active) {
+    for (const f of S.fish) {
+      const len = 26 + f.weight * 2.2;
+      ctx.save(); ctx.translate(f.x, f.y); ctx.scale(f.vx >= 0 ? 1 : -1, 1);
+      ctx.fillStyle = "rgba(6,20,28,.85)";
+      ctx.beginPath(); ctx.ellipse(0, 0, len / 2, len / 5, 0, 0, 7); ctx.fill();
+      ctx.beginPath(); ctx.moveTo(-len / 2, 0); ctx.lineTo(-len / 2 - 14, -10); ctx.lineTo(-len / 2 - 14, 10); ctx.closePath(); ctx.fill();
+      ctx.restore();
+      ctx.font = "26px sans-serif"; ctx.textAlign = "center";
+      ctx.fillText(f.species.icon, f.x, f.y - 22);
+      ctx.font = "bold 17px 'Trebuchet MS', sans-serif"; ctx.fillStyle = "#fff";
+      ctx.fillText(f.species.name + " ~" + fmtLb(f.weight), f.x, f.y + 34);
+    }
+  } else if (S.phase === "waiting" || S.phase === "strike") {
+    // Subtle hints only: bubbles near the bobber.
+    ctx.strokeStyle = "rgba(255,255,255,.5)"; ctx.lineWidth = 2;
+    for (let i = 0; i < 3; i++) {
+      const bx = S.bobber.x + Math.sin(S.t * 2 + i * 2.1) * 26;
+      const by = S.bobber.y + 26 + ((S.t * 14 + i * 22) % 60);
+      ctx.beginPath(); ctx.arc(bx, by, 4 + (i % 2), 0, 7); ctx.stroke();
+    }
+  }
+  // Bobber.
+  if (S.bobber) {
+    const b = S.bobber;
+    const bobY = S.phase === "strike" ? b.y + Math.sin(S.t * 30) * 5 + 8 : b.y;
+    ctx.strokeStyle = "rgba(255,255,255,.5)"; ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.arc(b.x, bobY, 18 + Math.sin(b.t * 3) * 5, 0, 7); ctx.stroke();
+    ctx.fillStyle = "#e33"; ctx.beginPath(); ctx.arc(b.x, bobY, 11, Math.PI, 0); ctx.fill();
+    ctx.fillStyle = "#fff"; ctx.beginPath(); ctx.arc(b.x, bobY, 11, 0, Math.PI); ctx.fill();
+    if (S.phase === "strike") {
+      ctx.font = "bold 44px 'Trebuchet MS', sans-serif"; ctx.textAlign = "center";
+      ctx.fillStyle = "#ffdf3d"; ctx.fillText("STRIKE!", W / 2, WATER_TOP + 120);
+    }
+  }
+  // Casting aim line + power.
+  if (S.phase === "aiming") {
+    ctx.strokeStyle = "rgba(255,255,255,.8)"; ctx.lineWidth = 2;
+    ctx.setLineDash([8, 8]); ctx.beginPath(); ctx.moveTo(360, 1160); ctx.lineTo(S.cast.x, S.cast.y); ctx.stroke(); ctx.setLineDash([]);
+    ctx.fillStyle = "rgba(0,0,0,.45)"; roundRect(ctx, 240, 1060, 240, 26, 8); ctx.fill();
+    ctx.fillStyle = S.cast.power > 0.75 ? "#ff5a3c" : "#7ddc8a";
+    roundRect(ctx, 244, 1064, 232 * S.cast.power, 18, 6); ctx.fill();
+    ctx.fillStyle = "#fff"; ctx.font = "bold 18px 'Trebuchet MS', sans-serif"; ctx.textAlign = "center";
+    ctx.fillText("CAST POWER " + Math.round(S.cast.power * 100) + "%", 360, 1050);
+  }
+}
+function drawHud() {
+  ctx.fillStyle = "rgba(8,24,38,.92)"; ctx.fillRect(0, 0, W, 86);
+  ctx.fillStyle = "#ffd94d"; ctx.font = "bold 30px 'Trebuchet MS', sans-serif"; ctx.textAlign = "left"; ctx.textBaseline = "middle";
+  ctx.fillText("\u{1FA99} " + save.coins, 20, 44);
+  ctx.fillStyle = "#fff"; ctx.textAlign = "center";
+  ctx.fillText(S.lake ? S.lake.name : "Michigan Lunker Rush", W / 2, 44);
+  ctx.textAlign = "right";
+  ctx.fillText(S.weather.icon + " " + S.weather.name, W - 20, 44);
+  ctx.textBaseline = "alphabetic";
+}
+function drawTension() {
+  if (S.phase !== "fight" || !S.hooked) return;
+  const f = S.fight, line = LINE();
+  const bx = 648, by = 340, bh = 540, bw = 42;
+  // Track.
+  ctx.fillStyle = "rgba(0,0,0,.55)"; roundRect(ctx, bx - 8, by - 8, bw + 16, bh + 16, 12); ctx.fill();
+  // Capacity marker (line snap point).
+  const capY = by + bh - (line.capacity / 200) * bh;
+  ctx.strokeStyle = "#ffdf3d"; ctx.lineWidth = 3; ctx.setLineDash([6, 4]);
+  ctx.beginPath(); ctx.moveTo(bx - 8, capY); ctx.lineTo(bx + bw + 8, capY); ctx.stroke(); ctx.setLineDash([]);
+  ctx.fillStyle = "#ffdf3d"; ctx.font = "bold 15px 'Trebuchet MS', sans-serif"; ctx.textAlign = "right";
+  ctx.fillText("SNAP", bx - 12, capY + 5);
+  // Tension fill (green -> yellow -> red).
+  const th = (f.tension / 200) * bh;
+  const grad = ctx.createLinearGradient(0, by + bh, 0, by);
+  grad.addColorStop(0, "#39d353"); grad.addColorStop(0.6, "#ffd94d"); grad.addColorStop(1, "#ff3b30");
+  ctx.fillStyle = grad; roundRect(ctx, bx, by + bh - th, bw, th, 8); ctx.fill();
+  ctx.fillStyle = "#fff"; ctx.font = "bold 18px 'Trebuchet MS', sans-serif"; ctx.textAlign = "center";
+  ctx.fillText("TENSION", bx + bw / 2, by - 22);
+  // Progress (fish distance) bar across the top of the water.
+  ctx.fillStyle = "rgba(0,0,0,.55)"; roundRect(ctx, 40, WATER_TOP + 14, W - 140, 26, 10); ctx.fill();
+  ctx.fillStyle = "#39c6ff"; roundRect(ctx, 44, WATER_TOP + 18, (W - 148) * (f.progress / 100), 18, 7); ctx.fill();
+  ctx.fillStyle = "#fff"; ctx.font = "bold 18px 'Trebuchet MS', sans-serif"; ctx.textAlign = "center";
+  ctx.fillText(S.hooked.species.name + "  •  " + fmtLb(S.hooked.weight) + (S.hooked.isTrophy ? "  •  TROPHY" : ""), W / 2 - 30, WATER_TOP + 66);
+  // Slack warning.
+  if (f.escape > 35) {
+    ctx.fillStyle = f.escape > 70 ? "#ff3b30" : "#ffdf3d";
+    ctx.font = "bold 30px 'Trebuchet MS', sans-serif"; ctx.textAlign = "center";
+    ctx.fillText("SLACK! TAP TO STAY TIGHT", W / 2, WATER_BOT - 60);
+  }
+  // Hold hint.
+  ctx.fillStyle = "#cfe8f7"; ctx.font = "18px 'Trebuchet MS', sans-serif"; ctx.textAlign = "center";
+  ctx.fillText("TAP = reel in   •   HOLD = reel hard (tension spikes!)   •   idle = fish spits hook", W / 2, WATER_BOT - 28);
+}
+function drawBottomBar() {
+  ctx.fillStyle = "rgba(8,24,38,.92)"; ctx.fillRect(0, 1150, W, 130);
+  if (S.scene === "fishing") {
+    btn("workbench", 24, 1176, 200, 76, "\u{1F6E0}\uFE0F Workbench", "lures & line");
+    btn("menu", 248, 1176, 140, 76, "Lakes", "change lake");
+    if (S.phase === "waiting" || S.phase === "strike") btn("reelin", 412, 1176, 140, 76, "Reel In", "give up cast");
+    if (S.phase === "idle") {
+      ctx.fillStyle = "#cfe8f7"; ctx.font = "bold 22px 'Trebuchet MS', sans-serif"; ctx.textAlign = "center";
+      ctx.fillText("Drag on the water to cast", 580, 1216);
+    }
+  }
+}
+function drawDroneBtn() {
+  if (S.scene !== "fishing") return;
+  const d = S.drone;
+  const label = d.active ? "DRONE ON " + Math.ceil(d.revealT) + "s" : d.coolT > 0 ? "DRONE " + Math.ceil(d.coolT) + "s" : "\u{1F6F8}\uFE0F SCOUT DRONE";
+  btn("drone", W - 236, 100, 212, 62, label, d.coolT > 0 && !d.active ? "recharging…" : "reveal fish 5s", { color: d.active ? "#2a7fd4" : "#3a6ea5", disabled: d.coolT > 0 && !d.active });
+}
+function drawMsg() {
+  if (S.msgT <= 0 || !S.msg) return;
+  ctx.save();
+  ctx.globalAlpha = clamp(S.msgT, 0, 1);
+  ctx.fillStyle = "rgba(0,0,0,.6)"; roundRect(ctx, 60, 96, W - 120, 52, 12); ctx.fill();
+  ctx.fillStyle = "#fff"; ctx.font = "bold 24px 'Trebuchet MS', sans-serif"; ctx.textAlign = "center"; ctx.textBaseline = "middle";
+  ctx.fillText(S.msg, W / 2, 123); ctx.restore();
+}
+function drawMenu() {
+  drawSky();
+  ctx.fillStyle = "rgba(8,24,38,.55)"; ctx.fillRect(0, 0, W, H);
+  ctx.fillStyle = "#fff"; ctx.textAlign = "center";
+  ctx.font = "bold 58px 'Trebuchet MS', sans-serif";
+  ctx.fillText("MICHIGAN", W / 2, 180);
+  ctx.fillStyle = "#ffd94d"; ctx.font = "bold 64px 'Trebuchet MS', sans-serif";
+  ctx.fillText("LUNKER RUSH", W / 2, 250);
+  ctx.fillStyle = "#cfe8f7"; ctx.font = "22px 'Trebuchet MS', sans-serif";
+  ctx.fillText("Pick a lake. Cast. Fight the fish. Print better lures.", W / 2, 300);
+  ctx.fillStyle = "#ffd94d"; ctx.font = "bold 30px 'Trebuchet MS', sans-serif"; ctx.textAlign = "left";
+  ctx.fillText("\u{1FA99} " + save.coins + " coins", 40, 350);
+  ctx.textAlign = "right"; ctx.fillStyle = "#fff";
+  ctx.fillText("Caught: " + save.totalCaught + " fish", W - 40, 350);
+  ctx.textAlign = "center";
+  let y = 400;
+  for (const lake of Object.values(LAKES)) {
+    hot.push({ id: "lake:" + lake.id, x: 50, y, w: W - 100, h: 170 });
+    ctx.fillStyle = "rgba(20,60,80,.9)"; roundRect(ctx, 50, y, W - 100, 170, 18); ctx.fill();
+    ctx.strokeStyle = "rgba(255,255,255,.3)"; ctx.lineWidth = 2; ctx.stroke();
+    ctx.fillStyle = "#ffd94d"; ctx.font = "bold 15px 'Trebuchet MS', sans-serif"; ctx.textAlign = "left";
+    ctx.fillText("★ " + lake.tag, 76, y + 34);
+    ctx.fillStyle = "#fff"; ctx.font = "bold 34px 'Trebuchet MS', sans-serif";
+    ctx.fillText(lake.name, 76, y + 78);
+    ctx.fillStyle = "#cfe8f7"; ctx.font = "22px 'Trebuchet MS', sans-serif";
+    ctx.fillText(lake.desc, 76, y + 116);
+    ctx.textAlign = "right"; ctx.fillStyle = "#9fd8b6"; ctx.font = "20px 'Trebuchet MS', sans-serif";
+    ctx.fillText(lake.species.map(s => s.name).join("  •  "), W - 76, y + 148);
+    ctx.textAlign = "center";
+    y += 196;
+  }
+  btn("workbench", 50, y + 6, W - 100, 84, "\u{1F6E0}\uFE0F WORKBENCH — 3D PRINTER", "spend coins on lures & line");
+  ctx.fillStyle = "#8fb8d8"; ctx.font = "18px 'Trebuchet MS', sans-serif"; ctx.textAlign = "center";
+  ctx.fillText("Drag on the water to cast • Tap fast to reel • Hold to reel hard (tension!)", W / 2, 1220);
+  ctx.fillText("Rain makes pike bite 40% more. The Scout Drone shows what's down there.", W / 2, 1250);
+}
+function drawWorkbench() {
+  ctx.fillStyle = "#10222f"; ctx.fillRect(0, 0, W, H);
+  ctx.fillStyle = "#fff"; ctx.textAlign = "center"; ctx.font = "bold 44px 'Trebuchet MS', sans-serif";
+  ctx.fillText("\u{1F6E0}\uFE0F WORKBENCH", W / 2, 90);
+  ctx.fillStyle = "#cfe8f7"; ctx.font = "22px 'Trebuchet MS', sans-serif";
+  ctx.fillText("3D-printer PLA lures & upgraded line — saved on this device", W / 2, 130);
+  ctx.fillStyle = "#ffd94d"; ctx.font = "bold 32px 'Trebuchet MS', sans-serif"; ctx.textAlign = "left";
+  ctx.fillText("\u{1FA99} " + save.coins + " coins", 40, 190);
+  let y = 220;
+  ctx.fillStyle = "#9fd8b6"; ctx.font = "bold 26px 'Trebuchet MS', sans-serif"; ctx.textAlign = "left";
+  ctx.fillText("LURES  (printed PLA)", 40, y); y += 16;
+  for (const lure of Object.values(LURES)) {
+    const owned = !!save.lures[lure.id], eq = save.equippedLure === lure.id;
+    ctx.fillStyle = "rgba(255,255,255,.07)"; roundRect(ctx, 40, y, W - 80, 118, 14); ctx.fill();
+    ctx.fillStyle = "#fff"; ctx.font = "bold 26px 'Trebuchet MS', sans-serif"; ctx.textAlign = "left";
+    ctx.fillText(lure.name + (eq ? "  ★ EQUIPPED" : ""), 60, y + 38);
+    ctx.fillStyle = "#cfe8f7"; ctx.font = "20px 'Trebuchet MS', sans-serif";
+    ctx.fillText(lure.desc, 60, y + 70);
+    ctx.fillText("Bite: " + Object.entries(lure.mult).map(([k, v]) => k + " ×" + v).join(", "), 60, y + 98);
+    btn(owned ? (eq ? "noop" : "equip:lure:" + lure.id) : "buy:lure:" + lure.id,
+        W - 220, y + 22, 160, 72, owned ? (eq ? "EQUIPPED" : "EQUIP") : "\u{1FA99} " + lure.cost,
+        owned ? "" : "buy", { color: eq ? "#3a6ea5" : owned ? "#1f6f54" : "#b8860b", disabled: eq });
+    y += 134;
+  }
+  y += 10;
+  ctx.fillStyle = "#9fd8b6"; ctx.font = "bold 26px 'Trebuchet MS', sans-serif"; ctx.textAlign = "left";
+  ctx.fillText("LINE  (tension capacity)", 40, y); y += 16;
+  for (const line of Object.values(LINES)) {
+    const owned = !!save.lines[line.id], eq = save.equippedLine === line.id;
+    ctx.fillStyle = "rgba(255,255,255,.07)"; roundRect(ctx, 40, y, W - 80, 118, 14); ctx.fill();
+    ctx.fillStyle = "#fff"; ctx.font = "bold 26px 'Trebuchet MS', sans-serif"; ctx.textAlign = "left";
+    ctx.fillText(line.name + (eq ? "  ★ EQUIPPED" : ""), 60, y + 38);
+    ctx.fillStyle = "#cfe8f7"; ctx.font = "20px 'Trebuchet MS', sans-serif";
+    ctx.fillText(line.desc, 60, y + 70);
+    ctx.fillText("Snap at " + line.capacity + " tension", 60, y + 98);
+    btn(owned ? (eq ? "noop" : "equip:line:" + line.id) : "buy:line:" + line.id,
+        W - 220, y + 22, 160, 72, owned ? (eq ? "EQUIPPED" : "EQUIP") : "\u{1FA99} " + line.cost,
+        owned ? "" : "buy", { color: eq ? "#3a6ea5" : owned ? "#1f6f54" : "#b8860b", disabled: eq });
+    y += 134;
+  }
+  btn("back", 40, 1160, W - 80, 76, "← BACK TO THE WATER", "");
+}
+function drawResult() {
+  if (!S.result) return;
+  ctx.fillStyle = "rgba(0,0,0,.62)"; ctx.fillRect(0, 0, W, H);
+  ctx.fillStyle = "#10222f"; roundRect(ctx, 90, 420, W - 180, 420, 22); ctx.fill();
+  ctx.strokeStyle = S.result.kind === "caught" ? "#ffd94d" : "#ff5a3c"; ctx.lineWidth = 4; ctx.stroke();
+  ctx.fillStyle = S.result.kind === "caught" ? "#ffd94d" : "#ff8a7a";
+  ctx.font = "bold 40px 'Trebuchet MS', sans-serif"; ctx.textAlign = "center";
+  ctx.fillText(S.result.title, W / 2, 520);
+  ctx.fillStyle = "#fff"; ctx.font = "26px 'Trebuchet MS', sans-serif";
+  ctx.fillText(S.result.sub, W / 2, 580);
+  if (S.result.coins > 0) {
+    ctx.fillStyle = "#ffd94d"; ctx.font = "bold 44px 'Trebuchet MS', sans-serif";
+    ctx.fillText("+" + S.result.coins + " coins", W / 2, 660);
+  }
+  ctx.fillStyle = "#cfe8f7"; ctx.font = "22px 'Trebuchet MS', sans-serif";
+  ctx.fillText("Tap anywhere to keep fishing", W / 2, 740);
+}
+function render() {
+  hot = [];
+  ctx.clearRect(0, 0, W, H);
+  if (S.scene === "menu") { drawMenu(); }
+  else if (S.scene === "workbench") { drawWorkbench(); }
+  else {
+    drawSky(); drawWater(); drawHud(); drawDroneBtn(); drawTension(); drawBottomBar(); drawMsg();
+    if (S.phase === "result") drawResult();
+  }
+}
+
+/* ---------------- Input ---------------- */
+function toGame(e) {
+  const r = canvas.getBoundingClientRect();
+  return { x: (e.clientX - r.left) * (W / r.width), y: (e.clientY - r.top) * (H / r.height) };
+}
+function hitButton(p) {
+  for (let i = hot.length - 1; i >= 0; i--) {
+    const b = hot[i];
+    if (p.x >= b.x && p.x <= b.x + b.w && p.y >= b.y && p.y <= b.y + b.h) return b.id;
+  }
+  return null;
+}
+function handleAction(id) {
+  if (!id || id === "noop") return true;
+  if (id.startsWith("lake:")) { enterLake(id.slice(5)); return true; }
+  if (id === "workbench") { enterWorkbench(); return true; }
+  if (id === "menu") { enterMenu(); return true; }
+  if (id === "back") { exitWorkbench(); return true; }
+  if (id === "drone") { useDrone(); return true; }
+  if (id === "reelin") { reelIn(); return true; }
+  if (id.startsWith("buy:")) {
+    const [, kind, item] = id.split(":");
+    const r = buyItem(kind, item);
+    setMsg(r.ok ? "Printed! " + (kind === "lure" ? LURES[item].name : LINES[item].name) + " equipped." : "Can't buy: " + r.why + ".", 2);
+    return true;
+  }
+  if (id.startsWith("equip:")) {
+    const [, kind, item] = id.split(":");
+    equipItem(kind, item);
+    setMsg((kind === "lure" ? LURES[item].name : LINES[item].name) + " equipped.", 1.5);
+    return true;
+  }
+  return false;
+}
+canvas.addEventListener("pointerdown", (e) => {
+  e.preventDefault();
+  const p = toGame(e);
+  const id = hitButton(p);
+  if (id) { handleAction(id); return; }
+  if (S.scene === "fishing") {
+    if (S.phase === "result") { S.phase = "idle"; S.result = null; return; }
+    if (S.phase === "strike") { tapHook(); return; }
+    if (S.phase === "fight") { tapReel(); setHolding(true); return; }
+    if (S.phase === "idle") { startCast(p.x, p.y); return; }
+  }
+});
+canvas.addEventListener("pointermove", (e) => { const p = toGame(e); dragCast(p.x, p.y); });
+canvas.addEventListener("pointerup", (e) => { setHolding(false); releaseCast(); });
+canvas.addEventListener("pointercancel", () => { setHolding(false); if (S.phase === "aiming") { S.phase = "idle"; S.cast.active = false; } });
+
+/* ---------------- Boot ---------------- */
+let last = 0;
+function loop(ts) {
+  const dt = Math.min(0.05, (ts - last) / 1000 || 0.016);
+  last = ts;
+  update(dt);
+  render();
+  requestAnimationFrame(loop);
+}
+requestAnimationFrame(loop);
+
+/* Test hooks (used by the Node harness; harmless in the browser). */
+window.LunkerRush = {
+  S, save, LAKES, LURES, LINES, WEATHERS,
+  enterLake, enterMenu, enterWorkbench, exitWorkbench, useDrone,
+  startCast, dragCast, releaseCast, reelIn, tapHook, tapReel, setHolding,
+  buyItem, equipItem, update, rollWeather, endFight, biteRate, lureMult,
+};
+</script>
+</body>
+</html>

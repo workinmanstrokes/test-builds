@@ -1,0 +1,1095 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Slab House Tycoon — Milestone 1-5 Vertical Slice</title>
+<style>
+  :root { --bg:#14161c; --panel:#1e222c; --panel2:#262b38; --ink:#eef1f6; --mut:#9aa3b2;
+    --gold:#f2b705; --green:#3fb950; --blue:#4a90e2; --purple:#a371f7; --red:#e5484d; --orange:#f0883e; }
+  * { box-sizing:border-box; }
+  body { margin:0; background:var(--bg); color:var(--ink); font-family:system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif; }
+  #app { max-width:1060px; margin:0 auto; padding:14px 14px 40px; }
+  header { display:flex; flex-wrap:wrap; gap:10px; align-items:center; justify-content:space-between; }
+  h1 { font-size:22px; margin:0; letter-spacing:.5px; }
+  h1 span { color:var(--gold); }
+  .stats { display:flex; gap:8px; flex-wrap:wrap; }
+  .stat { background:var(--panel); border:1px solid #333a49; border-radius:10px; padding:8px 12px; font-size:14px; }
+  .stat b { color:var(--gold); }
+  nav { display:flex; gap:8px; margin:14px 0; flex-wrap:wrap; }
+  nav button { background:var(--panel2); color:var(--ink); border:1px solid #39415a; border-radius:10px; padding:10px 16px; font-size:15px; cursor:pointer; }
+  nav button.active { background:var(--gold); color:#111; border-color:var(--gold); font-weight:700; }
+  section.screen { display:none; background:var(--panel); border:1px solid #333a49; border-radius:14px; padding:16px; }
+  section.screen.active { display:block; }
+  h2 { margin:0 0 4px; font-size:19px; }
+  .sub { color:var(--mut); font-size:13px; margin:0 0 14px; }
+  .packs { display:grid; grid-template-columns:repeat(auto-fit,minmax(240px,1fr)); gap:12px; }
+  .pack { background:var(--panel2); border:2px solid #39415a; border-radius:12px; padding:14px; }
+  .pack h3 { margin:0 0 6px; }
+  .pack p { margin:4px 0; color:var(--mut); font-size:13px; min-height:34px; }
+  .pack .price { font-size:20px; font-weight:700; color:var(--gold); margin:8px 0; }
+  button { background:var(--gold); color:#111; border:0; border-radius:9px; padding:10px 14px; font-size:15px; font-weight:700; cursor:pointer; }
+  button:disabled { background:#3a4152; color:#8a93a5; cursor:not-allowed; }
+  button.secondary { background:#2d3342; color:var(--ink); border:1px solid #454e63; font-weight:600; }
+  button.danger { background:var(--red); color:#fff; }
+  button.small { padding:6px 10px; font-size:13px; }
+  .msg { margin:10px 0; min-height:20px; font-size:14px; color:var(--mut); }
+  .msg b { color:var(--gold); }
+  .pulls { display:flex; flex-wrap:wrap; gap:10px; margin-top:12px; }
+  .mini { width:150px; background:#10131a; border:2px solid #39415a; border-radius:10px; padding:8px; text-align:center; }
+  .mini .art { font-size:38px; line-height:1.1; }
+  .mini .nm { font-weight:700; font-size:13px; margin:4px 0 2px; }
+  .mini .rl { font-size:12px; font-weight:700; }
+  .mini .vl { color:var(--mut); font-size:12px; }
+  .mini button { margin-top:6px; width:100%; }
+  .desk-wrap { display:flex; gap:16px; flex-wrap:wrap; }
+  #desk { background:#0c0e13; border:1px solid #333a49; border-radius:12px; touch-action:none; cursor:crosshair; }
+  .desk-side { flex:1; min-width:260px; }
+  .metric { background:var(--panel2); border:1px solid #39415a; border-radius:10px; padding:10px 12px; margin-bottom:8px; font-size:14px; }
+  .metric b { display:block; font-size:13px; color:var(--mut); text-transform:uppercase; letter-spacing:.5px; }
+  .metric .val { font-size:16px; font-weight:700; }
+  .metric.done { border-color:var(--green); }
+  .metric.done .val { color:var(--green); }
+  .desk-actions { display:flex; gap:10px; flex-wrap:wrap; margin-top:12px; }
+  .desk-actions button { flex:1; min-width:200px; padding:14px; }
+  input[type=range] { width:100%; }
+  .grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(170px,1fr)); gap:10px; }
+  .card { background:#10131a; border:2px solid #39415a; border-radius:10px; padding:10px; text-align:center; }
+  .card.slabbed { border-color:var(--gold); }
+  .card .art { font-size:40px; }
+  .card .nm { font-weight:700; font-size:13px; margin:4px 0 2px; }
+  .card .rl { font-size:12px; font-weight:700; }
+  .card .vl { color:var(--mut); font-size:12px; }
+  .card .grade { font-size:22px; font-weight:800; color:var(--gold); }
+  .card .row { display:flex; gap:6px; margin-top:8px; }
+  .card .row button { flex:1; }
+  .auc { display:flex; gap:16px; flex-wrap:wrap; }
+  .auc-left { flex:1; min-width:280px; }
+  .auc-right { flex:1; min-width:280px; }
+  .timer { font-size:44px; font-weight:800; color:var(--gold); }
+  .bid { font-size:28px; font-weight:800; }
+  .chat { background:#0c0e13; border:1px solid #333a49; border-radius:10px; height:220px; overflow-y:auto; padding:10px; font-size:13px; }
+  .chat div { margin-bottom:6px; }
+  .chat .who { font-weight:700; }
+  .overlay { position:fixed; inset:0; background:rgba(0,0,0,.72); display:none; align-items:center; justify-content:center; z-index:50; padding:16px; }
+  .overlay.show { display:flex; }
+  .slabbox { background:var(--panel); border:2px solid var(--gold); border-radius:16px; padding:24px; max-width:460px; width:100%; text-align:center; }
+  .slabbox .biggrade { font-size:64px; font-weight:800; color:var(--gold); line-height:1; }
+  .slabbox table { margin:14px auto; border-collapse:collapse; font-size:14px; }
+  .slabbox td { padding:4px 12px; text-align:left; }
+  .slabbox td:last-child { text-align:right; font-weight:700; }
+  #test-output { white-space:pre-wrap; font-family:monospace; font-size:12px; color:#8affc1; margin-top:16px; }
+  footer { color:var(--mut); font-size:12px; margin-top:18px; }
+</style>
+</head>
+<body>
+<div id="app">
+  <header>
+    <h1>🏪 Slab House <span>Tycoon</span></h1>
+    <div class="stats">
+      <div class="stat">Cash: <b id="stat-cash">$500</b></div>
+      <div class="stat">Cards: <b id="stat-cards">0</b></div>
+      <div class="stat">Slabs: <b id="stat-slabs">0</b></div>
+      <div class="stat">Sold: <b id="stat-sold">0</b></div>
+      <div class="stat">Earned: <b id="stat-earned">$0</b></div>
+    </div>
+  </header>
+  <nav>
+    <button id="tab-shop" class="active">🛒 Pack Shop</button>
+    <button id="tab-desk">🔍 Inspection Desk</button>
+    <button id="tab-collection">🗂️ Collection</button>
+    <button id="tab-auction">🔨 Live Auction</button>
+  </nav>
+
+  <section id="screen-shop" class="screen active">
+    <h2>Pack Shop</h2>
+    <p class="sub">Buy a pack, pull 5 cards. Every pack guarantees at least one Rare or better. No timers, no energy — just money.</p>
+    <div class="packs" id="packs"></div>
+    <div class="msg" id="shop-msg"></div>
+    <div id="pulls"></div>
+  </section>
+
+  <section id="screen-desk" class="screen">
+    <h2>Inspection Desk</h2>
+    <p class="sub">Drag the loupe over the card. Corners show whitening, edges show wear, the border shows centering, and tilting the light reveals surface print lines. Inspect all 4 metrics to unlock grading.</p>
+    <div class="desk-wrap">
+      <div>
+        <canvas id="desk" width="720" height="500"></canvas>
+        <div style="margin-top:10px">
+          <label for="light">💡 Light angle: <span id="light-val">0°</span> (tilt past ±25° to reveal surface print lines)</label>
+          <input type="range" id="light" min="-60" max="60" value="0" step="1">
+        </div>
+        <div class="msg" id="desk-msg">Pick a card from the Shop pulls or your Collection to inspect it.</div>
+      </div>
+      <div class="desk-side">
+        <div class="metric" id="m-centering"><b>Front Centering</b><span class="val">Not inspected — loupe the border</span></div>
+        <div class="metric" id="m-corners"><b>4 Corners</b><span class="val">Not inspected — loupe each corner</span></div>
+        <div class="metric" id="m-edges"><b>4 Edges</b><span class="val">Not inspected — loupe each edge</span></div>
+        <div class="metric" id="m-surface"><b>Surface</b><span class="val">Not inspected — tilt light, loupe the face</span></div>
+        <div class="metric"><b>Inspection progress</b><span class="val" id="m-progress">0 / 4 metrics</span></div>
+        <div class="desk-actions">
+          <button id="btn-raw" class="secondary" disabled>Sleeve &amp; Raw Sell</button>
+          <button id="btn-grade" disabled>Submit for Grading ($25)</button>
+        </div>
+        <p class="sub" style="margin-top:10px">Raw sell pays the card's base value. Grading costs $25 and can multiply the value up to 5× at Gem Mint 10 — or less than base if the card is rough.</p>
+      </div>
+    </div>
+  </section>
+
+  <section id="screen-collection" class="screen">
+    <h2>Collection</h2>
+    <p class="sub">Everything you own. Raw cards sell at base value. Slabbed cards sell at their graded value — or send one to the Live Auction and let the bidders fight over it.</p>
+    <div class="msg" id="collection-msg"></div>
+    <div class="grid" id="collection-grid"></div>
+  </section>
+
+  <section id="screen-auction" class="screen">
+    <h2>Live Stream Auction</h2>
+    <p class="sub">15 seconds on the clock. Hype the chat to push bids up, or slam the gavel and take the top bid now. A bid in the final 3 seconds adds 2 seconds (max 2 extensions).</p>
+    <div id="auction-setup">
+      <p>Pick a card from your Collection and press “Send to Auction”, or choose one here:</p>
+      <div class="grid" id="auction-picks"></div>
+    </div>
+    <div id="auction-live" style="display:none">
+      <div class="auc">
+        <div class="auc-left">
+          <div class="timer" id="auc-timer">15.0s</div>
+          <div>Current bid: <span class="bid" id="auc-bid">$0</span> <span id="auc-leader"></span></div>
+          <div class="msg" id="auc-status"></div>
+          <div class="card" id="auc-card" style="max-width:220px"></div>
+          <div style="display:flex;gap:10px;margin-top:12px">
+            <button id="btn-hype" style="flex:1">📣 Hype Chat</button>
+            <button id="btn-gavel" class="danger" style="flex:1">🔨 Gavel Slam</button>
+          </div>
+          <div class="msg" id="auc-hype">Hype: 0% — hype makes bidders bid bigger and faster.</div>
+        </div>
+        <div class="auc-right">
+          <h3 style="margin-top:0">Live Chat</h3>
+          <div class="chat" id="auc-chat"></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <div class="overlay" id="overlay">
+    <div class="slabbox" id="slabbox"></div>
+  </div>
+
+  <div id="test-output"></div>
+  <footer>Slab House Tycoon — Milestone 1–5 vertical slice. All sets, players and creatures are original parody content. Progress saves locally in your browser.</footer>
+</div>
+<script>
+'use strict';
+/* ============================================================
+   Slab House Tycoon — Milestone 1-5 vertical slice
+   Pure game logic is kept free of DOM access so it can be
+   tested headlessly; the UI layer wires it to the page below.
+   ============================================================ */
+
+// ---------- RNG (seedable for tests, Math.random by default) ----------
+function mulberry32(seed) {
+  let a = seed >>> 0;
+  return function () {
+    a |= 0; a = (a + 0x6D2B79F5) | 0;
+    let t = Math.imul(a ^ (a >>> 15), 1 | a);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+let rng = Math.random;
+function setSeed(seed) { rng = mulberry32(seed); }
+function rand() { return rng(); }
+function randInt(min, max) { return min + Math.floor(rand() * (max - min + 1)); }
+function pickWeighted(pairs) { // pairs: [[value, weight], ...]
+  let total = 0; for (const p of pairs) total += p[1];
+  let r = rand() * total;
+  for (const p of pairs) { r -= p[1]; if (r <= 0) return p[0]; }
+  return pairs[pairs.length - 1][0];
+}
+
+// ---------- Card sets: 100% original parody content ----------
+// No real athletes, teams, or copyrighted characters anywhere.
+const RARITY = {
+  common:    { label: 'Common',    color: '#9aa0a6', base: [2, 8],    weight: 55 },
+  uncommon:  { label: 'Uncommon',  color: '#3fb950', base: [8, 25],   weight: 25 },
+  rare:      { label: 'Rare',      color: '#4a90e2', base: [25, 80],  weight: 12 },
+  ultra:     { label: 'Ultra Rare',color: '#a371f7', base: [80, 250], weight: 6 },
+  secret:    { label: 'Secret',    color: '#f2b705', base: [250, 800],weight: 2 },
+};
+const RARITY_ORDER = ['common', 'uncommon', 'rare', 'ultra', 'secret'];
+
+const SETS = {
+  gridiron: {
+    name: 'Gridiron Legends', packPrice: 30, color: '#1f6f3f', desc: 'Parody pigskin heroes from the fictional Metro League.',
+    cards: [
+      { name: 'Brick Wallson', title: 'Lineman · Metro Mammoths', rarity: 'common', art: '🧱' },
+      { name: 'Sammy Slants', title: 'Wide Receiver · Bay Breakers', rarity: 'common', art: '💨' },
+      { name: 'Pete Punt', title: 'Punter · Desert Vipers', rarity: 'common', art: '🦶' },
+      { name: 'Dash Okafor', title: 'Running Back · Metro Mammoths', rarity: 'uncommon', art: '⚡' },
+      { name: 'Marty Blitz', title: 'Linebacker · Ironwood Bears', rarity: 'uncommon', art: '💥' },
+      { name: 'Tank Ramirez', title: 'Running Back · Bay Breakers', rarity: 'rare', art: '🚛' },
+      { name: 'Rocket Reeves', title: 'Quarterback · Desert Vipers', rarity: 'rare', art: '🚀' },
+      { name: 'Blitz McCoy', title: 'Quarterback · Metro Mammoths', rarity: 'ultra', art: '🌩️' },
+      { name: 'Gridiron Ghost', title: 'Legendary QB · Hall of Fame', rarity: 'secret', art: '👻' },
+    ],
+  },
+  kaiju: {
+    name: 'Pocket Kaiju', packPrice: 25, color: '#b3541e', desc: 'Tiny monsters, huge attitudes. Catch them all (in card form).',
+    cards: [
+      { name: 'Bubble Turtle', title: 'Water · Shell Bounce', rarity: 'common', art: '🐢' },
+      { name: 'Leaf Toad', title: 'Grass · Croak Shot', rarity: 'common', art: '🐸' },
+      { name: 'Pebble Pup', title: 'Rock · Rollout', rarity: 'common', art: '🐶' },
+      { name: 'Volt Mouse', title: 'Electric · Static Cheeks', rarity: 'uncommon', art: '🐭' },
+      { name: 'Ember Newt', title: 'Fire · Tail Cinder', rarity: 'uncommon', art: '🦎' },
+      { name: 'Aqua Serpent', title: 'Water · Tidal Coil', rarity: 'rare', art: '🐍' },
+      { name: 'Storm Owl', title: 'Flying · Thunder Hoot', rarity: 'rare', art: '🦉' },
+      { name: 'Inferno Lizard', title: 'Fire · Magma Breath', rarity: 'ultra', art: '🦖' },
+      { name: 'Celestial Dragonet', title: 'Dragon · Starfall', rarity: 'secret', art: '🐉' },
+    ],
+  },
+  mythic: {
+    name: 'Mythic Marvels', packPrice: 35, color: '#5b3a8c', desc: 'Caped crusaders and arcane oddballs from the Mythicverse.',
+    cards: [
+      { name: 'Squire Bright', title: 'Sidekick · Shiny Shield', rarity: 'common', art: '🛡️' },
+      { name: 'The Clockwork Imp', title: 'Trickster · Gear Grin', rarity: 'common', art: '⚙️' },
+      { name: 'Storm Witch', title: 'Sorceress · Lightning Loom', rarity: 'uncommon', art: '🧙' },
+      { name: 'Shadow Fox', title: 'Rogue · Night Pounce', rarity: 'uncommon', art: '🦊' },
+      { name: 'Ironclad Knight', title: 'Guardian · Bulwark Oath', rarity: 'rare', art: '⚔️' },
+      { name: 'Doctor Dimension', title: 'Mystic · Portal Practice', rarity: 'rare', art: '🌀' },
+      { name: 'Captain Cosmos', title: 'Hero · Star Spangled', rarity: 'ultra', art: '🌟' },
+      { name: 'The Silver Streak', title: 'Speedster · Fastest Alive', rarity: 'secret', art: '💫' },
+    ],
+  },
+};
+
+// ---------- Hidden sub-grades ----------
+// Every pulled card gets hidden physical condition. The player can
+// only learn it by inspecting the card at the desk.
+function rollCentering() {
+  // deviation in percent points off 50/50, per axis
+  const dev = pickWeighted([[0, 25], [5, 35], [10, 22], [15, 12], [20, 6]]);
+  const lr = 50 + (rand() < 0.5 ? -dev : dev);
+  const tb = 50 + (rand() < 0.5 ? -dev : dev);
+  return { lr, tb };
+}
+function centeringScore(c) {
+  const dev = Math.max(Math.abs(c.lr - 50), Math.abs(c.tb - 50));
+  return Math.max(1, 10 - dev / 2.5);
+}
+function rollCorners() {
+  const count = pickWeighted([[0, 30], [1, 32], [2, 22], [3, 11], [4, 5]]);
+  const corners = [false, false, false, false];
+  const idx = [0, 1, 2, 3].sort(() => rand() - 0.5);
+  for (let i = 0; i < count; i++) corners[idx[i]] = true; // true = whitening
+  return corners;
+}
+function cornersScore(corners) {
+  const n = corners.filter(Boolean).length;
+  return Math.max(1, 10 - 2.5 * n);
+}
+function rollEdges() { return pickWeighted([[0, 25], [1, 22], [2, 20], [3, 14], [4, 9], [5, 6], [6, 4]]); } // wear 0-6
+function edgesScore(wear) { return Math.max(1, 10 - wear); }
+function rollSurface() { return pickWeighted([[0, 35], [1, 28], [2, 20], [3, 10], [4, 7]]); } // print lines 0-4
+function surfaceScore(lines) { return Math.max(1, 10 - 2 * lines); }
+
+// ---------- Grade calculation: weighted from hidden sub-grades ----------
+const GRADE_MULT = { 10: 5, 9: 3, 8: 2, 7: 1.5, 6: 1.2, 5: 1, 4: 0.7, 3: 0.5, 2: 0.4, 1: 0.3 };
+function gradeCard(card) {
+  const c = centeringScore(card.grades.centering);
+  const k = cornersScore(card.grades.corners);
+  const e = edgesScore(card.grades.edges);
+  const s = surfaceScore(card.grades.surface);
+  const overall = Math.round(0.30 * c + 0.25 * k + 0.20 * e + 0.25 * s);
+  const grade = Math.max(1, Math.min(10, overall));
+  return {
+    grade,
+    subs: { centering: +c.toFixed(1), corners: +k.toFixed(1), edges: +e.toFixed(1), surface: +s.toFixed(1) },
+    mult: GRADE_MULT[grade],
+    value: Math.max(1, Math.round(card.base * GRADE_MULT[grade])),
+  };
+}
+
+// ---------- Card generation ----------
+let nextUid = 1;
+function rollRarity() {
+  return pickWeighted(RARITY_ORDER.map(r => [r, RARITY[r].weight]));
+}
+function makeCard(setKey, rarity) {
+  const set = SETS[setKey];
+  const pool = set.cards.filter(c => c.rarity === rarity);
+  const def = pool.length ? pool[randInt(0, pool.length - 1)]
+    : set.cards[randInt(0, set.cards.length - 1)];
+  const [lo, hi] = RARITY[def.rarity].base;
+  return {
+    uid: nextUid++,
+    set: setKey, setName: set.name,
+    name: def.name, title: def.title, rarity: def.rarity, art: def.art,
+    base: randInt(lo, hi),
+    grades: { centering: rollCentering(), corners: rollCorners(), edges: rollEdges(), surface: rollSurface() },
+    graded: null, // set by grading: { grade, subs, mult, value }
+  };
+}
+function openPack(setKey) {
+  const cards = [];
+  for (let i = 0; i < 4; i++) cards.push(makeCard(setKey, rollRarity()));
+  // Last card guaranteed Rare or better
+  cards.push(makeCard(setKey, pickWeighted([['rare', 55], ['ultra', 32], ['secret', 13]])));
+  return cards;
+}
+function cardValue(card) { return card.graded ? card.graded.value : card.base; }
+function rarityLabel(r) { return RARITY[r].label; }
+function rarityColor(r) { return RARITY[r].color; }
+
+// ---------- Game state & economy ----------
+const GRADING_FEE = 25;
+const START_CASH = 500;
+const SAVE_KEY = 'slab-house-tycoon-v1';
+
+const state = {
+  cash: START_CASH,
+  inventory: [],          // Card objects
+  deskUid: null,          // uid of card on the desk
+  inspected: { centering: false, corners: false, edges: false, surface: false },
+  cornerSeen: [false, false, false, false],
+  edgeSeen: { top: false, bottom: false, left: false, right: false },
+  light: 0,
+  stats: { packs: 0, graded: 0, sold: 0, auctions: 0, earned: 0 },
+  auction: null,          // live auction engine state (see below)
+  screen: 'shop',
+};
+
+function save() {
+  try {
+    localStorage.setItem(SAVE_KEY, JSON.stringify({
+      cash: state.cash, inventory: state.inventory, stats: state.stats, nextUid,
+    }));
+  } catch (e) { /* private mode / headless: ignore */ }
+}
+function load() {
+  try {
+    const raw = localStorage.getItem(SAVE_KEY);
+    if (!raw) return false;
+    const d = JSON.parse(raw);
+    state.cash = d.cash; state.inventory = d.inventory || []; state.stats = d.stats || state.stats;
+    nextUid = d.nextUid || (state.inventory.reduce((m, c) => Math.max(m, c.uid), 0) + 1);
+    return true;
+  } catch (e) { return false; }
+}
+function deskCard() { return state.inventory.find(c => c.uid === state.deskUid) || null; }
+function removeFromInventory(uid) {
+  state.inventory = state.inventory.filter(c => c.uid !== uid);
+  if (state.deskUid === uid) state.deskUid = null;
+}
+
+// Buy a pack: returns { ok, cards } or { ok:false, reason }
+function buyPack(setKey) {
+  const set = SETS[setKey];
+  if (!set) return { ok: false, reason: 'Unknown set.' };
+  if (state.cash < set.packPrice) return { ok: false, reason: 'Not enough cash for a ' + set.name + ' pack ($' + set.packPrice + ').' };
+  state.cash -= set.packPrice;
+  const cards = openPack(setKey);
+  state.inventory.push(...cards);
+  state.stats.packs++;
+  save();
+  return { ok: true, cards };
+}
+// Sleeve & Raw Sell: pays base value, card leaves inventory.
+function rawSell(uid) {
+  const card = state.inventory.find(c => c.uid === uid);
+  if (!card) return { ok: false, reason: 'Card not found.' };
+  if (card.graded) return { ok: false, reason: 'Already slabbed — sell it as a slab instead.' };
+  state.cash += card.base;
+  state.stats.sold++; state.stats.earned += card.base;
+  removeFromInventory(uid);
+  save();
+  return { ok: true, amount: card.base };
+}
+// Submit for grading: $25 fee, grade from hidden sub-grades, card becomes a slab.
+function submitGrading(uid) {
+  const card = state.inventory.find(c => c.uid === uid);
+  if (!card) return { ok: false, reason: 'Card not found.' };
+  if (card.graded) return { ok: false, reason: 'Already graded.' };
+  if (state.cash < GRADING_FEE) return { ok: false, reason: 'Need $' + GRADING_FEE + ' for grading.' };
+  state.cash -= GRADING_FEE;
+  const result = gradeCard(card);
+  card.graded = result;
+  state.stats.graded++;
+  save();
+  return { ok: true, card, result };
+}
+// Sell a slabbed (or raw) card outright at its value.
+function sellCard(uid) {
+  const card = state.inventory.find(c => c.uid === uid);
+  if (!card) return { ok: false, reason: 'Card not found.' };
+  const amount = cardValue(card);
+  state.cash += amount;
+  state.stats.sold++; state.stats.earned += amount;
+  removeFromInventory(uid);
+  save();
+  return { ok: true, amount };
+}
+
+// ---------- Live auction engine (pure, step-driven) ----------
+// Bidders have distinct behaviour:
+//  Whale — rare, huge jumps (+25-40%), cap 2.5x value, loves hype.
+//  SnipeBot — silent until the last 4s, then fires +10-15% bids, cap 1.8x.
+//  BargainHunter — early small +5-8% bids, walks away above 1.2x value.
+const BIDDERS = {
+  whale:    { name: 'Whale 🐋',      color: '#4a90e2', capMult: 2.5 },
+  snipe:    { name: 'SnipeBot 🤖',   color: '#f0883e', capMult: 1.8 },
+  bargain:  { name: 'BargainHunter 🤑', color: '#3fb950', capMult: 1.2 },
+};
+function createAuction(card) {
+  const value = cardValue(card);
+  const startBid = Math.max(1, Math.round(value * 0.5));
+  return {
+    cardUid: card.uid, cardName: card.name, value,
+    timeLeft: 15, bid: startBid, leader: null, hype: 0, over: false,
+    extensions: 0, winner: null, finalBid: 0,
+    log: [{ who: '📢', text: 'Auction open for ' + card.name + ' — starting at $' + startBid + '!' }],
+  };
+}
+function auctionChatLine(who, text, a) {
+  a.log.push({ who, text });
+  if (a.log.length > 60) a.log.shift();
+}
+function auctionBid(a, bidderKey, pct) {
+  const cap = Math.round(a.value * BIDDERS[bidderKey].capMult);
+  const inc = Math.max(1, Math.round(a.bid * pct));
+  const next = a.bid + inc;
+  if (next > cap) return false;
+  a.bid = next;
+  a.leader = bidderKey;
+  auctionChatLine(BIDDERS[bidderKey].name, 'bids $' + next + '!', a);
+  if (a.timeLeft <= 3 && a.extensions < 2) {
+    a.timeLeft += 2; a.extensions++;
+    auctionChatLine('📢', '+2s! A late bid extends the clock.', a);
+  }
+  return true;
+}
+// Advance the auction by dt seconds. Returns true when it just ended.
+function auctionTick(a, dt) {
+  if (a.over) return false;
+  a.timeLeft = Math.max(0, a.timeLeft - dt);
+  const hypeBoost = a.hype / 100;
+  // Whale: rare but huge
+  if (rand() < 0.030 + hypeBoost * 0.05) auctionBid(a, 'whale', 0.25 + rand() * 0.15);
+  // BargainHunter: early, small, quits above 1.2x
+  if (a.timeLeft > 6 && rand() < 0.08 + hypeBoost * 0.04) auctionBid(a, 'bargain', 0.05 + rand() * 0.03);
+  // SnipeBot: only in the last 4 seconds
+  if (a.timeLeft <= 4 && a.timeLeft > 0 && rand() < 0.22 + hypeBoost * 0.10) auctionBid(a, 'snipe', 0.10 + rand() * 0.05);
+  // Idle chatter
+  if (rand() < 0.02) {
+    const lines = ['That centering is CLEAN 👀', 'I would pay double for this', 'My kid would love this one',
+      'Last one like this sold for $400', 'SnipeBot is lurking...', 'HYPE! HYPE! HYPE!',
+      'Slabbed and beautiful', 'My wallet is scared'];
+    auctionChatLine('💬 chat', lines[randInt(0, lines.length - 1)], a);
+  }
+  if (a.timeLeft <= 0) { finishAuction(a); return true; }
+  return false;
+}
+function hypeChat(a) {
+  if (a.over) return false;
+  a.hype = Math.min(100, a.hype + 20);
+  auctionChatLine('📣 YOU', 'HYPE! Everybody in chat — this slab is MINT! 🔥', a);
+  // Hype sometimes triggers an immediate bid.
+  if (rand() < 0.35 + a.hype / 250) {
+    const keys = ['whale', 'bargain', 'snipe'];
+    auctionBid(a, keys[randInt(0, 2)], 0.08 + rand() * 0.08);
+  }
+  return true;
+}
+function gavelSlam(a) { if (!a.over) finishAuction(a); return true; }
+function finishAuction(a) {
+  a.over = true;
+  if (a.leader) {
+    a.winner = a.leader; a.finalBid = a.bid;
+    auctionChatLine('🔨', 'SOLD to ' + BIDDERS[a.leader].name + ' for $' + a.bid + '!', a);
+  } else {
+    auctionChatLine('🔨', 'No bids — the card did not sell.', a);
+  }
+}
+// Settle a finished auction: pay out and remove the card.
+function settleAuction(a) {
+  if (!a.over) return { ok: false, reason: 'Auction still running.' };
+  const card = state.inventory.find(c => c.uid === a.cardUid);
+  if (a.winner && card) {
+    state.cash += a.finalBid;
+    state.stats.auctions++; state.stats.earned += a.finalBid;
+    removeFromInventory(a.cardUid);
+    save();
+    return { ok: true, sold: true, amount: a.finalBid, winner: BIDDERS[a.winner].name };
+  }
+  return { ok: true, sold: false, amount: 0 };
+}
+
+// ============================================================
+// UI layer
+// ============================================================
+const $ = id => document.getElementById(id);
+const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+
+function fmt$(n) { return '$' + Number(n).toLocaleString('en-US'); }
+
+function refreshStats() {
+  $('stat-cash').textContent = fmt$(state.cash);
+  $('stat-cards').textContent = state.inventory.length;
+  $('stat-slabs').textContent = state.inventory.filter(c => c.graded).length;
+  $('stat-sold').textContent = state.stats.sold;
+  $('stat-earned').textContent = fmt$(state.stats.earned);
+}
+function showScreen(name) {
+  state.screen = name;
+  for (const s of ['shop', 'desk', 'collection', 'auction']) {
+    $('screen-' + s).classList.toggle('active', s === name);
+    $('tab-' + s).classList.toggle('active', s === name);
+  }
+  if (name === 'collection') renderCollection();
+  if (name === 'auction') renderAuctionPicks();
+  if (name === 'desk') drawDesk();
+}
+
+// ---------- Shop ----------
+function renderShop() {
+  $('packs').innerHTML = Object.entries(SETS).map(([key, s]) => `
+    <div class="pack" style="border-top:6px solid ${s.color}">
+      <h3>${esc(s.name)}</h3>
+      <p>${esc(s.desc)}</p>
+      <div class="price">${fmt$(s.packPrice)} / pack</div>
+      <button data-pack="${key}">Buy &amp; Open Pack</button>
+    </div>`).join('');
+  $('packs').querySelectorAll('[data-pack]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const r = buyPack(btn.getAttribute('data-pack'));
+      if (!r.ok) { $('shop-msg').innerHTML = '❌ ' + esc(r.reason); return; }
+      refreshStats();
+      $('shop-msg').innerHTML = `📦 Opened a <b>${esc(SETS[btn.getAttribute('data-pack')].name)}</b> pack — 5 cards pulled! Click <b>Inspect</b> on any card to take it to the desk.`;
+      renderPulls(r.cards);
+    });
+  });
+}
+function miniCardHTML(card, withInspect) {
+  return `<div class="mini" style="border-color:${rarityColor(card.rarity)}">
+    <div class="art">${card.art}</div>
+    <div class="nm">${esc(card.name)}</div>
+    <div class="rl" style="color:${rarityColor(card.rarity)}">${rarityLabel(card.rarity)}</div>
+    <div class="vl">${esc(card.title)}</div>
+    <div class="vl">Base ${fmt$(card.base)}</div>
+    ${withInspect ? `<button class="small" data-inspect="${card.uid}">🔍 Inspect</button>` : ''}
+  </div>`;
+}
+function renderPulls(cards) {
+  $('pulls').innerHTML = '<h3 style="width:100%">Your pulls:</h3>' + cards.map(c => miniCardHTML(c, true)).join('');
+  $('pulls').querySelectorAll('[data-inspect]').forEach(btn => {
+    btn.addEventListener('click', () => { state.deskUid = +btn.getAttribute('data-inspect'); resetInspection(); showScreen('desk'); });
+  });
+}
+
+// ---------- Inspection Desk (canvas) ----------
+const desk = $('desk');
+const dctx = desk.getContext('2d');
+// Card geometry on the desk canvas (720x500)
+const CARD = { x: 90, y: 70, w: 250, h: 350 };
+const LOUPE_R = 85;
+let loupe = { x: CARD.x + CARD.w / 2, y: CARD.y + CARD.h / 2, active: false };
+let off = null; // offscreen 2x card render for the loupe
+
+function resetInspection() {
+  state.inspected = { centering: false, corners: false, edges: false, surface: false };
+  state.cornerSeen = [false, false, false, false];
+  state.edgeSeen = { top: false, bottom: false, left: false, right: false };
+  off = null;
+  updateMetricsUI();
+  $('desk-msg').textContent = 'Drag the loupe over the card. Find all 4 metrics to unlock grading.';
+}
+
+function setColorForSet(key) { return SETS[key].color; }
+
+function drawCardFace(ctx, x, y, w, h, card, detail) {
+  const set = SETS[card.set];
+  ctx.save();
+  roundRect(ctx, x, y, w, h, 14); ctx.clip();
+  ctx.fillStyle = '#10131a'; ctx.fillRect(x, y, w, h);
+  // border frame (its thickness shows centering: offset art frame)
+  const lrOff = (card.grades.centering.lr - 50) / 50 * 10;
+  const tbOff = (card.grades.centering.tb - 50) / 50 * 10;
+  ctx.fillStyle = set.color; ctx.fillRect(x, y, w, h);
+  ctx.fillStyle = '#f5f1e6';
+  ctx.fillRect(x + 12 + lrOff, y + 12 + tbOff, w - 24, h - 24);
+  // art area
+  ctx.fillStyle = set.color;
+  ctx.fillRect(x + 22 + lrOff, y + 22 + tbOff, w - 44, h * 0.52);
+  ctx.fillStyle = '#fff';
+  ctx.font = Math.round(h * 0.22) + 'px serif';
+  ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+  ctx.fillText(card.art, x + w / 2 + lrOff, y + h * 0.28 + tbOff);
+  // name / title / rarity
+  ctx.fillStyle = '#14161c'; ctx.textAlign = 'left';
+  ctx.font = 'bold ' + Math.round(w * 0.075) + 'px system-ui, sans-serif';
+  ctx.fillText(card.name, x + 20, y + h * 0.62, w - 40);
+  ctx.font = Math.round(w * 0.055) + 'px system-ui, sans-serif';
+  ctx.fillStyle = '#444a56';
+  ctx.fillText(card.title, x + 20, y + h * 0.70, w - 40);
+  ctx.fillStyle = rarityColor(card.rarity);
+  ctx.font = 'bold ' + Math.round(w * 0.06) + 'px system-ui, sans-serif';
+  ctx.fillText(rarityLabel(card.rarity).toUpperCase(), x + 20, y + h * 0.80);
+  ctx.fillStyle = '#444a56';
+  ctx.font = Math.round(w * 0.05) + 'px system-ui, sans-serif';
+  ctx.fillText(card.setName + '  ·  Base ' + fmt$(card.base), x + 20, y + h * 0.88);
+  if (card.graded) {
+    ctx.fillStyle = '#f2b705';
+    ctx.font = 'bold ' + Math.round(w * 0.09) + 'px system-ui, sans-serif';
+    ctx.fillText('★ ' + card.graded.grade + ' SLAB ★', x + 20, y + h * 0.95);
+  }
+  if (detail) {
+    // Whitening specks on whitened corners (only visible under the loupe)
+    const cs = 26;
+    const corners = [[x, y], [x + w - cs, y], [x, y + h - cs], [x + w - cs, y + h - cs]];
+    ctx.fillStyle = 'rgba(255,255,255,0.95)';
+    card.grades.corners.forEach((white, i) => {
+      if (!white) return;
+      const [cx, cy] = corners[i];
+      for (let k = 0; k < 5; k++) ctx.fillRect(cx + 4 + (k * 4) % (cs - 8), cy + 3 + (k * 7) % (cs - 6), 3, 3);
+    });
+    // Edge nicks
+    ctx.fillStyle = 'rgba(20,20,20,0.55)';
+    for (let k = 0; k < card.grades.edges; k++) {
+      ctx.fillRect(x + 30 + k * 32, y + 1, 10, 3);
+      ctx.fillRect(x + 30 + k * 32, y + h - 4, 10, 3);
+    }
+    // Surface print lines (only visible when light is tilted)
+    if (Math.abs(state.light) > 25 && card.grades.surface > 0) {
+      ctx.strokeStyle = 'rgba(255,255,255,0.75)'; ctx.lineWidth = 1.5;
+      for (let k = 0; k < card.grades.surface; k++) {
+        ctx.beginPath();
+        ctx.moveTo(x + 30 + k * 45, y + 40); ctx.lineTo(x + 60 + k * 45, y + h - 60); ctx.stroke();
+      }
+    }
+  }
+  ctx.restore();
+}
+function roundRect(ctx, x, y, w, h, r) {
+  ctx.beginPath();
+  ctx.moveTo(x + r, y); ctx.arcTo(x + w, y, x + w, y + h, r); ctx.arcTo(x + w, y + h, x, y + h, r);
+  ctx.arcTo(x, y + h, x, y, r); ctx.arcTo(x, y, x + w, y, r); ctx.closePath();
+}
+
+function buildOffscreen(card) {
+  off = document.createElement('canvas');
+  off.width = CARD.w * 2; off.height = CARD.h * 2;
+  const octx = off.getContext('2d');
+  octx.scale(2, 2);
+  drawCardFace(octx, 0, 0, CARD.w, CARD.h, card, true);
+}
+
+function drawDesk() {
+  const card = deskCard();
+  dctx.clearRect(0, 0, desk.width, desk.height);
+  dctx.fillStyle = '#0c0e13'; dctx.fillRect(0, 0, desk.width, desk.height);
+  // felt table
+  dctx.fillStyle = '#17351f';
+  roundRect(dctx, 20, 20, desk.width - 40, desk.height - 40, 18); dctx.fill();
+  if (!card) {
+    dctx.fillStyle = '#9aa3b2'; dctx.font = '20px system-ui, sans-serif'; dctx.textAlign = 'center';
+    dctx.fillText('No card on the desk — open a pack or pick one from your Collection.', desk.width / 2, desk.height / 2);
+    return;
+  }
+  if (!off) buildOffscreen(card);
+  drawCardFace(dctx, CARD.x, CARD.y, CARD.w, CARD.h, card, false);
+  // light sheen across the card (angle follows the slider)
+  const g = dctx.createLinearGradient(CARD.x, CARD.y, CARD.x + CARD.w, CARD.y + CARD.h);
+  const a = Math.abs(state.light) / 60;
+  g.addColorStop(0, 'rgba(255,255,255,' + (a * 0.25) + ')');
+  g.addColorStop(0.5, 'rgba(255,255,255,0)');
+  g.addColorStop(1, 'rgba(255,255,255,' + (a * 0.12) + ')');
+  dctx.fillStyle = g;
+  roundRect(dctx, CARD.x, CARD.y, CARD.w, CARD.h, 14); dctx.fill();
+  // loupe
+  const lx = loupe.x, ly = loupe.y;
+  dctx.save();
+  dctx.beginPath(); dctx.arc(lx, ly, LOUPE_R, 0, Math.PI * 2); dctx.clip();
+  // magnified card region (2x offscreen, centered on loupe)
+  const sx = (lx - CARD.x) * 2 - LOUPE_R, sy = (ly - CARD.y) * 2 - LOUPE_R;
+  dctx.drawImage(off, sx, sy, LOUPE_R * 2, LOUPE_R * 2, lx - LOUPE_R, ly - LOUPE_R, LOUPE_R * 2, LOUPE_R * 2);
+  dctx.restore();
+  dctx.strokeStyle = '#f2b705'; dctx.lineWidth = 4;
+  dctx.beginPath(); dctx.arc(lx, ly, LOUPE_R, 0, Math.PI * 2); dctx.stroke();
+  dctx.strokeStyle = 'rgba(242,183,5,0.6)'; dctx.lineWidth = 2;
+  dctx.beginPath(); dctx.moveTo(lx - 10, ly); dctx.lineTo(lx + 10, ly); dctx.moveTo(lx, ly - 10); dctx.lineTo(lx, ly + 10); dctx.stroke();
+  // hint text
+  dctx.fillStyle = '#eef1f6'; dctx.font = '14px system-ui, sans-serif'; dctx.textAlign = 'left';
+  dctx.fillText('Loupe: drag over corners, edges, border and face. Light: ' + state.light + '°', 30, desk.height - 28);
+}
+
+// Which inspection zone is the loupe over? Returns 'corner-i' | 'edge-name' | 'border' | 'face' | null
+function zoneAt(px, py) {
+  const { x, y, w, h } = CARD;
+  if (px < x || px > x + w || py < y || py > y + h) return null;
+  const cs = 46; // corner zone size
+  if (px < x + cs && py < y + cs) return 'corner-0';
+  if (px > x + w - cs && py < y + cs) return 'corner-1';
+  if (px < x + cs && py > y + h - cs) return 'corner-2';
+  if (px > x + w - cs && py > y + h - cs) return 'corner-3';
+  const es = 12; // edge strip
+  if (py < y + es) return 'edge-top';
+  if (py > y + h - es) return 'edge-bottom';
+  if (px < x + es) return 'edge-left';
+  if (px > x + w - es) return 'edge-right';
+  // border ring (centering) vs face
+  if (px < x + 30 || px > x + w - 30 || py < y + 30 || py > y + h - 30) return 'border';
+  return 'face';
+}
+
+function inspectAt(px, py) {
+  const card = deskCard();
+  if (!card) return;
+  const z = zoneAt(px, py);
+  if (!z) return;
+  if (z.startsWith('corner-')) {
+    const i = +z.split('-')[1];
+    if (!state.cornerSeen[i]) {
+      state.cornerSeen[i] = true;
+      $('desk-msg').textContent = 'Corner ' + ['top-left', 'top-right', 'bottom-left', 'bottom-right'][i] + ': ' +
+        (card.grades.corners[i] ? '⚠️ whitening visible!' : '✅ clean.');
+      if (state.cornerSeen.every(Boolean)) {
+        state.inspected.corners = true;
+        $('desk-msg').textContent = 'All 4 corners checked — Corners metric revealed.';
+      }
+    }
+  } else if (z.startsWith('edge-')) {
+    const e = z.split('-')[1];
+    if (!state.edgeSeen[e]) {
+      state.edgeSeen[e] = true;
+      $('desk-msg').textContent = 'Edge (' + e + ') checked — wear level ' + card.grades.edges + '/6 overall.';
+      if (Object.values(state.edgeSeen).every(Boolean)) {
+        state.inspected.edges = true;
+        $('desk-msg').textContent = 'All 4 edges checked — Edges metric revealed.';
+      }
+    }
+  } else if (z === 'border') {
+    if (!state.inspected.centering) {
+      state.inspected.centering = true;
+      $('desk-msg').textContent = 'Centering measured: ' + card.grades.centering.lr + '/' + (100 - card.grades.centering.lr) +
+        ' L/R, ' + card.grades.centering.tb + '/' + (100 - card.grades.centering.tb) + ' T/B.';
+    }
+  } else if (z === 'face') {
+    if (Math.abs(state.light) > 25 && !state.inspected.surface) {
+      state.inspected.surface = true;
+      $('desk-msg').textContent = 'Under the tilted light you spot ' + card.grades.surface + ' print line(s) on the surface.';
+    } else if (!state.inspected.surface) {
+      $('desk-msg').textContent = 'The face looks clean head-on — tilt the light past ±25° to check for print lines.';
+    }
+  }
+  updateMetricsUI();
+  drawDesk();
+}
+
+function updateMetricsUI() {
+  const card = deskCard();
+  const setMetric = (id, done, text) => {
+    const el = $(id);
+    el.classList.toggle('done', done);
+    el.querySelector('.val').textContent = text;
+  };
+  if (!card) {
+    for (const id of ['m-centering', 'm-corners', 'm-edges', 'm-surface']) $(id).classList.remove('done');
+    $('m-progress').textContent = '0 / 4 metrics';
+    $('btn-raw').disabled = true; $('btn-grade').disabled = true;
+    return;
+  }
+  const c = card.grades.centering;
+  setMetric('m-centering', state.inspected.centering,
+    state.inspected.centering
+      ? `Centering ${c.lr}/${100 - c.lr} L/R · ${c.tb}/${100 - c.tb} T/B — ${centeringScore(c).toFixed(1)}/10`
+      : 'Not inspected — loupe the border');
+  const white = card.grades.corners.filter(Boolean).length;
+  setMetric('m-corners', state.inspected.corners,
+    state.inspected.corners
+      ? `${white} of 4 corners whitened — ${cornersScore(card.grades.corners).toFixed(1)}/10`
+      : `Not inspected — loupe each corner (${state.cornerSeen.filter(Boolean).length}/4 seen)`);
+  setMetric('m-edges', state.inspected.edges,
+    state.inspected.edges
+      ? `Edge wear ${card.grades.edges}/6 — ${edgesScore(card.grades.edges).toFixed(1)}/10`
+      : `Not inspected — loupe each edge (${Object.values(state.edgeSeen).filter(Boolean).length}/4 seen)`);
+  setMetric('m-surface', state.inspected.surface,
+    state.inspected.surface
+      ? `${card.grades.surface} print line(s) — ${surfaceScore(card.grades.surface).toFixed(1)}/10`
+      : 'Not inspected — tilt light, loupe the face');
+  const n = Object.values(state.inspected).filter(Boolean).length;
+  $('m-progress').textContent = n + ' / 4 metrics';
+  $('btn-raw').disabled = false;
+  $('btn-grade').disabled = !(n === 4) || state.cash < GRADING_FEE;
+}
+
+// ---------- Desk events ----------
+function deskPos(e) {
+  const r = desk.getBoundingClientRect();
+  const cx = (e.touches ? e.touches[0].clientX : e.clientX) - r.left;
+  const cy = (e.touches ? e.touches[0].clientY : e.clientY) - r.top;
+  return { x: cx * (desk.width / r.width), y: cy * (desk.height / r.height) };
+}
+desk.addEventListener('pointerdown', e => { loupe.active = true; const p = deskPos(e); loupe.x = p.x; loupe.y = p.y; inspectAt(p.x, p.y); });
+desk.addEventListener('pointermove', e => { if (!loupe.active) return; const p = deskPos(e); loupe.x = p.x; loupe.y = p.y; inspectAt(p.x, p.y); });
+desk.addEventListener('pointerup', () => { loupe.active = false; });
+desk.addEventListener('pointerleave', () => { loupe.active = false; });
+$('light').addEventListener('input', e => {
+  state.light = +e.target.value;
+  $('light-val').textContent = state.light + '°';
+  off = null; // re-render detail layer (print lines appear/disappear)
+  drawDesk();
+});
+$('btn-raw').addEventListener('click', () => {
+  const card = deskCard(); if (!card) return;
+  const r = rawSell(card.uid);
+  if (!r.ok) { $('desk-msg').textContent = '❌ ' + r.reason; return; }
+  $('desk-msg').textContent = `💵 Sleeved & sold raw: ${card.name} for ${fmt$(r.amount)}.`;
+  refreshStats(); resetInspection(); drawDesk();
+});
+$('btn-grade').addEventListener('click', () => {
+  const card = deskCard(); if (!card) return;
+  const r = submitGrading(card.uid);
+  if (!r.ok) { $('desk-msg').textContent = '❌ ' + r.reason; return; }
+  refreshStats();
+  showSlabResult(card, r.result);
+  resetInspection(); drawDesk();
+});
+
+function showSlabResult(card, res) {
+  const label = res.grade === 10 ? '💎 GEM MINT 10' : res.grade >= 9 ? '🔥 MINT ' + res.grade : 'Grade ' + res.grade;
+  $('slabbox').innerHTML = `
+    <div style="font-size:15px;color:#9aa3b2">Slabbed &amp; sealed</div>
+    <div style="font-size:28px;font-weight:800;margin:6px 0">${esc(card.name)}</div>
+    <div class="biggrade">${res.grade}</div>
+    <div style="font-weight:700;color:var(--gold)">${label} · ${res.mult}× value</div>
+    <table>
+      <tr><td>Front Centering</td><td>${res.subs.centering} / 10</td></tr>
+      <tr><td>Corners</td><td>${res.subs.corners} / 10</td></tr>
+      <tr><td>Edges</td><td>${res.subs.edges} / 10</td></tr>
+      <tr><td>Surface</td><td>${res.subs.surface} / 10</td></tr>
+      <tr><td>Base value</td><td>${fmt$(card.base)}</td></tr>
+      <tr><td>Slab value</td><td>${fmt$(res.value)}</td></tr>
+    </table>
+    <button id="btn-slab-ok">Add to Collection</button>`;
+  $('overlay').classList.add('show');
+  $('btn-slab-ok').addEventListener('click', () => {
+    $('overlay').classList.remove('show');
+    showScreen('collection');
+  });
+}
+
+// ---------- Collection ----------
+function renderCollection() {
+  const grid = $('collection-grid');
+  if (!state.inventory.length) {
+    grid.innerHTML = '<p style="color:#9aa3b2">No cards yet — buy a pack in the Shop.</p>';
+    $('collection-msg').textContent = '';
+    return;
+  }
+  grid.innerHTML = state.inventory.map(card => `
+    <div class="card ${card.graded ? 'slabbed' : ''}">
+      <div class="art">${card.art}</div>
+      <div class="nm">${esc(card.name)}</div>
+      <div class="rl" style="color:${rarityColor(card.rarity)}">${rarityLabel(card.rarity)}</div>
+      <div class="vl">${esc(card.setName)}</div>
+      ${card.graded ? `<div class="grade">★ ${card.graded.grade}</div><div class="vl">Slab value ${fmt$(card.graded.value)}</div>`
+        : `<div class="vl">Base ${fmt$(card.base)}</div><div class="vl">Ungraded</div>`}
+      <div class="row">
+        <button class="small secondary" data-desk="${card.uid}">🔍 Desk</button>
+        <button class="small" data-sell="${card.uid}">Sell ${fmt$(cardValue(card))}</button>
+      </div>
+      <div class="row"><button class="small secondary" data-auction="${card.uid}">🔨 Auction</button></div>
+    </div>`).join('');
+  grid.querySelectorAll('[data-desk]').forEach(b => b.addEventListener('click', () => {
+    state.deskUid = +b.getAttribute('data-desk'); resetInspection(); showScreen('desk');
+  }));
+  grid.querySelectorAll('[data-sell]').forEach(b => b.addEventListener('click', () => {
+    const r = sellCard(+b.getAttribute('data-sell'));
+    $('collection-msg').textContent = r.ok ? `💵 Sold for ${fmt$(r.amount)}.` : '❌ ' + r.reason;
+    refreshStats(); renderCollection();
+  }));
+  grid.querySelectorAll('[data-auction]').forEach(b => b.addEventListener('click', () => {
+    startAuctionUI(+b.getAttribute('data-auction'));
+  }));
+}
+
+// ---------- Auction UI ----------
+let aucTimer = null;
+function stopAuctionTimer() { if (aucTimer) { clearInterval(aucTimer); aucTimer = null; } }
+function renderAuctionPicks() {
+  const el = $('auction-picks');
+  if (!state.inventory.length) {
+    el.innerHTML = '<p style="color:#9aa3b2">No cards to auction — buy a pack first.</p>';
+    return;
+  }
+  el.innerHTML = state.inventory.map(card => `
+    <div class="card ${card.graded ? 'slabbed' : ''}">
+      <div class="art">${card.art}</div>
+      <div class="nm">${esc(card.name)}</div>
+      <div class="vl">${card.graded ? '★ ' + card.graded.grade + ' slab' : 'Raw'} · ${fmt$(cardValue(card))}</div>
+      <div class="row"><button class="small" data-apick="${card.uid}">🔨 Auction this card</button></div>
+    </div>`).join('');
+  el.querySelectorAll('[data-apick]').forEach(b => b.addEventListener('click', () => startAuctionUI(+b.getAttribute('data-apick'))));
+}
+function startAuctionUI(uid) {
+  const card = state.inventory.find(c => c.uid === uid);
+  if (!card) return;
+  stopAuctionTimer();
+  state.auction = createAuction(card);
+  $('auction-setup').style.display = 'none';
+  $('auction-live').style.display = 'block';
+  $('auc-chat').innerHTML = '';
+  $('btn-hype').disabled = false; $('btn-gavel').disabled = false;
+  $('auc-card').innerHTML = `
+    <div class="art">${card.art}</div>
+    <div class="nm">${esc(card.name)}</div>
+    <div class="rl" style="color:${rarityColor(card.rarity)}">${rarityLabel(card.rarity)}</div>
+    <div class="vl">${esc(card.setName)}</div>
+    <div class="vl">${card.graded ? '★ Grade ' + card.graded.grade + ' slab' : 'Raw card'} · value ${fmt$(cardValue(card))}</div>`;
+  showScreen('auction');
+  renderAuctionFrame();
+  let lastHype = 0;
+  aucTimer = setInterval(() => {
+    const a = state.auction;
+    if (!a) { stopAuctionTimer(); return; }
+    const ended = auctionTick(a, 0.25);
+    renderAuctionFrame();
+    if (ended) {
+      stopAuctionTimer();
+      const r = settleAuction(a);
+      $('btn-hype').disabled = true; $('btn-gavel').disabled = true;
+      $('auc-status').innerHTML = r.sold
+        ? `🔨 <b>SOLD</b> to ${esc(r.winner)} for <b>${fmt$(r.amount)}</b>!`
+        : '🔨 Auction ended with no bids — the card is back in your Collection.';
+      refreshStats();
+      setTimeout(() => { $('auction-live').style.display = 'none'; $('auction-setup').style.display = 'block'; renderAuctionPicks(); }, 4000);
+    }
+    lastHype = a.hype;
+  }, 250);
+}
+function renderAuctionFrame() {
+  const a = state.auction;
+  if (!a) return;
+  $('auc-timer').textContent = a.timeLeft.toFixed(1) + 's';
+  $('auc-bid').textContent = fmt$(a.bid);
+  $('auc-leader').textContent = a.leader ? '— leading: ' + BIDDERS[a.leader].name : '(no bids yet)';
+  $('auc-hype').textContent = 'Hype: ' + a.hype + '% — hype makes bidders bid bigger and faster.';
+  $('auc-chat').innerHTML = a.log.map(l => `<div><span class="who">${esc(l.who)}</span> ${esc(l.text)}</div>`).join('');
+  $('auc-chat').scrollTop = $('auc-chat').scrollHeight;
+}
+$('btn-hype').addEventListener('click', () => {
+  const a = state.auction; if (!a || a.over) return;
+  hypeChat(a); renderAuctionFrame();
+});
+$('btn-gavel').addEventListener('click', () => {
+  const a = state.auction; if (!a || a.over) return;
+  gavelSlam(a);
+  const r = settleAuction(a);
+  stopAuctionTimer();
+  $('btn-hype').disabled = true; $('btn-gavel').disabled = true;
+  renderAuctionFrame();
+  $('auc-status').innerHTML = r.sold
+    ? `🔨 <b>SOLD</b> to ${esc(r.winner)} for <b>${fmt$(r.amount)}</b>!`
+    : '🔨 Gavel slammed — no bids, the card is back in your Collection.';
+  refreshStats();
+  setTimeout(() => { $('auction-live').style.display = 'none'; $('auction-setup').style.display = 'block'; renderAuctionPicks(); }, 4000);
+});
+
+// ---------- Tabs ----------
+for (const s of ['shop', 'desk', 'collection', 'auction']) {
+  $('tab-' + s).addEventListener('click', () => showScreen(s));
+}
+
+// ---------- Self-test (in-page ?autotest=1, and headless harness) ----------
+function selfTest() {
+  const out = [];
+  const ok = (name, cond) => out.push((cond ? 'PASS' : 'FAIL') + ' ' + name);
+  try {
+    setSeed(12345);
+    state.cash = 500; state.inventory = []; state.stats = { packs: 0, graded: 0, sold: 0, auctions: 0, earned: 0 };
+    // 1. Buy pack
+    const buy = buyPack('gridiron');
+    ok('buy pack ok', buy.ok && buy.cards.length === 5 && state.cash === 470);
+    ok('pack guarantees rare+', buy.cards.some(c => ['rare', 'ultra', 'secret'].includes(c.rarity)));
+    ok('cards have hidden grades', buy.cards.every(c => c.grades && c.grades.corners.length === 4));
+    // 2. Grade math: perfect card grades 10 with 5x
+    const perfect = { base: 100, grades: { centering: { lr: 50, tb: 50 }, corners: [false, false, false, false], edges: 0, surface: 0 } };
+    const gp = gradeCard(perfect);
+    ok('perfect card = Gem Mint 10, 5x, $500', gp.grade === 10 && gp.mult === 5 && gp.value === 500);
+    // 3. Rough card grades low
+    const rough = { base: 100, grades: { centering: { lr: 70, tb: 70 }, corners: [true, true, true, true], edges: 6, surface: 4 } };
+    const gr = gradeCard(rough);
+    ok('rough card grades <= 4', gr.grade <= 4 && gr.mult < 1);
+    // 4. Inspection: simulate loupe over all zones of first card
+    state.deskUid = buy.cards[0].uid; resetInspection();
+    const card = deskCard();
+    const zones = [[CARD.x + 10, CARD.y + 10], [CARD.x + CARD.w - 10, CARD.y + 10],
+      [CARD.x + 10, CARD.y + CARD.h - 10], [CARD.x + CARD.w - 10, CARD.y + CARD.h - 10],
+      [CARD.x + CARD.w / 2, CARD.y + 5], [CARD.x + CARD.w / 2, CARD.y + CARD.h - 5],
+      [CARD.x + 5, CARD.y + CARD.h / 2], [CARD.x + CARD.w - 5, CARD.y + CARD.h / 2],
+      [CARD.x + 100, CARD.y + 22]];
+    for (const [x, y] of zones) inspectAt(x, y);
+    state.light = 40; inspectAt(CARD.x + CARD.w / 2, CARD.y + CARD.h / 2);
+    ok('inspection reveals all 4 metrics', Object.values(state.inspected).every(Boolean));
+    // 5. Submit grading (needs $25)
+    const before = state.cash;
+    const sub = submitGrading(card.uid);
+    ok('submit grading charges $25 and slabs', sub.ok && state.cash === before - 25 && card.graded && card.graded.grade >= 1 && card.graded.grade <= 10);
+    // 6. Raw sell
+    const raw = buy.cards[1];
+    const cashBefore = state.cash;
+    const rs = rawSell(raw.uid);
+    ok('raw sell pays base', rs.ok && rs.amount === raw.base && state.cash === cashBefore + raw.base);
+    // 7. Auction engine: run a full 15s auction, seeded
+    const aucCard = buy.cards[2];
+    const a = createAuction(aucCard);
+    ok('auction starts at 50% of value', a.bid === Math.max(1, Math.round(cardValue(aucCard) * 0.5)));
+    let ended = false;
+    for (let i = 0; i < 200 && !ended; i++) ended = auctionTick(a, 0.25);
+    ok('auction ends within 50s of ticks', ended && a.over);
+    ok('auction produced bids or ended cleanly', a.log.length > 1);
+    // 8. Hype raises hype meter
+    const a2 = createAuction(aucCard);
+    hypeChat(a2); hypeChat(a2);
+    ok('hype chat raises hype to 40', a2.hype === 40);
+    // 9. Gavel slam ends auction
+    const a3 = createAuction(aucCard);
+    auctionTick(a3, 1); gavelSlam(a3);
+    ok('gavel slam ends auction', a3.over === true);
+    // 10. Settle pays out when there is a winner
+    const a4 = createAuction(aucCard);
+    a4.leader = 'whale'; a4.bid = 999; a4.winner = 'whale'; a4.finalBid = 999; a4.over = true;
+    const cashB = state.cash;
+    const st = settleAuction(a4);
+    ok('settle pays winner bid and removes card', st.ok && st.sold && state.cash === cashB + 999 && !state.inventory.find(c => c.uid === aucCard.uid));
+    // 11. Not enough cash blocks pack
+    state.cash = 5;
+    ok('insufficient cash blocks pack', buyPack('kaiju').ok === false);
+    ok('insufficient cash blocks grading', submitGrading(buy.cards[3].uid).ok === false);
+    out.push('SELF-TEST DONE: ' + out.filter(l => l.startsWith('PASS')).length + '/' + out.filter(l => l.startsWith('PASS') || l.startsWith('FAIL')).length + ' passed');
+  } catch (e) {
+    out.push('FAIL exception: ' + (e && e.stack || e));
+  }
+  return out.join('\n');
+}
+
+// ---------- Init ----------
+load();
+renderShop();
+refreshStats();
+updateMetricsUI();
+drawDesk();
+if (typeof window !== 'undefined' && window.location && window.location.search.indexOf('autotest') !== -1) {
+  const result = selfTest();
+  $('test-output').textContent = result;
+  document.title = result.indexOf('FAIL') === -1 ? 'AUTOTEST PASS' : 'AUTOTEST FAIL';
+}
+
+// Testable API (used by the headless harness)
+window.SHT = {
+  state, SETS, RARITY, buyPack, openPack, makeCard, gradeCard, rawSell, submitGrading, sellCard,
+  createAuction, auctionTick, hypeChat, gavelSlam, settleAuction, finishAuction,
+  inspectAt, resetInspection, deskCard, setSeed, selfTest, CARD, zoneAt,
+};
+</script>
+</body>
+</html>

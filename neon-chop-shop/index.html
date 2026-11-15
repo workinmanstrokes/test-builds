@@ -1,0 +1,1113 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>Neon Chop Shop — Milestone 1-3 Vertical Slice</title>
+<style>
+  html,body{margin:0;padding:0;background:#05050a;height:100%;overflow:hidden;
+    font-family:"Courier New",monospace;-webkit-user-select:none;user-select:none;}
+  #wrap{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;}
+  canvas{display:block;background:#0a0a14;touch-action:none;
+    box-shadow:0 0 60px rgba(0,255,255,.15),0 0 120px rgba(255,0,255,.08);}
+  #selftest{position:absolute;left:8px;top:8px;max-width:700px;max-height:1200px;overflow:auto;
+    color:#0f0;background:rgba(0,0,0,.85);font:12px/1.4 monospace;white-space:pre-wrap;
+    padding:8px;display:none;z-index:10;}
+</style>
+</head>
+<body>
+<div id="wrap"><canvas id="game" width="720" height="1280"></canvas></div>
+<pre id="selftest"></pre>
+<script>
+"use strict";
+/* =====================================================================
+   NEON CHOP SHOP — Milestone 1-3 vertical slice
+   Portrait 720x1280. Phase 1: cyber-surgery table (diagnose, drag-and-
+   drop implant, color-coded wires, Overclock). Phase 2: turn-based ICE
+   card battler (draw 4/turn, RAM costs, Trace Meter, Jack Out).
+   Roguelite stakes: failed surgery (Heat 100) or Trace 100 triggers a
+   Raid that wipes unbanked credits + the active implant, but keeps
+   unlocked 3D-printer blueprints (persisted in localStorage).
+   ===================================================================== */
+
+// ---------- constants ----------
+const W = 720, H = 1280;
+const SAVE_KEY = "neon_chop_shop_state_v1";
+
+const SLOTS = [
+  { id: "optics",  name: "Optics",         x: 360, y: 400, r: 46, color: "#22d3ee" },
+  { id: "neural",  name: "Neural Link",     x: 360, y: 575, r: 46, color: "#e879f9" },
+  { id: "reflex",  name: "Reflex Booster",  x: 530, y: 650, r: 42, color: "#4ade80" },
+];
+const IMPLANTS = [
+  { slot: "optics", name: "OPTICS",  color: "#22d3ee" },
+  { slot: "neural", name: "NEURAL",  color: "#e879f9" },
+  { slot: "reflex", name: "REFLEX",  color: "#4ade80" },
+];
+const WIRES = [
+  { id: "red",   color: "#ef4444" },
+  { id: "blue",  color: "#3b82f6" },
+  { id: "green", color: "#22c55e" },
+];
+const BLUEPRINTS = [
+  { id: "optics2",  name: "Optics Mk II",        cost: 200, desc: "+25% surgery payout" },
+  { id: "neural2",  name: "Neural Link Mk II",   cost: 200, desc: "Start ICE battles with +2 RAM" },
+  { id: "reflex2",  name: "Reflex Booster Mk II",cost: 200, desc: "Surgery generates 20% less Heat" },
+  { id: "cloakfw",  name: "Cloak Firmware",      cost: 300, desc: "Cloak cards cut Trace by 25 (was 15)" },
+  { id: "ocgov",    name: "Overclock Governor",  cost: 300, desc: "Overclock Heat penalty halved" },
+  { id: "plaspool", name: "PLA+ Spool",          cost: 150, desc: "Draw 5 cards per ICE turn (was 4)" },
+];
+const CARDS = [
+  { id: "spike",      name: "SPIKE",      cost: 2, dmg: 3, trace: 0,   desc: "3 damage to one ICE node." },
+  { id: "spoof",      name: "SPOOF",      cost: 1, dmg: 2, trace: -5,  desc: "2 damage. Trace -5." },
+  { id: "cloak",      name: "CLOAK",      cost: 2, dmg: 0, trace: -15, desc: "No damage. Trace -15." },
+  { id: "overcharge", name: "OVERCHARGE", cost: 3, dmg: 6, trace: 10,  desc: "6 damage. Trace +10." },
+];
+const ICE_NODES = [
+  { id: "sentry", name: "SENTRY-7",    hp: 8  },
+  { id: "black",  name: "BLACK ICE",    hp: 10 },
+  { id: "gate",   name: "GATEKEEPER",   hp: 12 },
+];
+
+// ---------- persistence (banked credits + blueprints survive raids) ----------
+const store = {
+  load() {
+    try {
+      const raw = localStorage.getItem(SAVE_KEY);
+      if (!raw) return null;
+      return JSON.parse(raw);
+    } catch (e) { return null; }
+  },
+  save(data) {
+    try { localStorage.setItem(SAVE_KEY, JSON.stringify(data)); } catch (e) {}
+  },
+  clear() { try { localStorage.removeItem(SAVE_KEY); } catch (e) {} },
+};
+
+function freshSave() {
+  return { banked: 0, blueprints: {}, jobs: 0, raids: 0, hacks: 0, best: 0 };
+}
+
+// ---------- game state ----------
+const S = {
+  screen: "title",            // title | workbench | surgery | ice | raid | jobdone | howto
+  save: null,                 // persisted: banked, blueprints, jobs, raids, hacks, best
+  // job state (memory only — wiped by a Raid)
+  job: null,                  // { num, faultySlot, diagnosed, seated, wires:{}, overclock, heat, payout, implant }
+  unbanked: 0,                // credits earned this job, not yet banked
+  log: [],                    // surgery/ice log lines
+  // ice state
+  ice: null,                  // { nodes:[{hp,max,alive}], deck, discard, hand, ram, ramMax, trace, turn, stolen }
+  selectedCard: -1,           // hand index selected, or -1
+  raidInfo: null,             // { reason, lostCredits, lostImplant }
+  jobDoneInfo: null,          // { title, lines[] }
+  showHowto: false,
+  drag: null,                 // { kind:'implant'|'wire', ... , x, y }
+  mouse: { x: 0, y: 0 },
+};
+
+function persist() { store.save(S.save); }
+function log(msg) {
+  S.log.push(msg);
+  if (S.log.length > 6) S.log.shift();
+}
+function hasBlueprint(id) { return !!S.save.blueprints[id]; }
+
+// ---------- canvas setup ----------
+const canvas = document.getElementById("game");
+const ctx = canvas.getContext("2d");
+function fitCanvas() {
+  const scale = Math.min(window.innerWidth / W, window.innerHeight / H);
+  canvas.style.width = Math.floor(W * scale) + "px";
+  canvas.style.height = Math.floor(H * scale) + "px";
+}
+window.addEventListener("resize", fitCanvas);
+fitCanvas();
+
+// ---------- drawing helpers ----------
+function rr(x, y, w, h, r) {
+  ctx.beginPath();
+  ctx.moveTo(x + r, y);
+  ctx.arcTo(x + w, y, x + w, y + h, r);
+  ctx.arcTo(x + w, y + h, x, y + h, r);
+  ctx.arcTo(x, y + h, x, y, r);
+  ctx.arcTo(x, y, x + w, y, r);
+  ctx.closePath();
+}
+function panel(x, y, w, h, fill, stroke) {
+  rr(x, y, w, h, 14);
+  ctx.fillStyle = fill || "rgba(16,20,40,0.92)";
+  ctx.fill();
+  ctx.strokeStyle = stroke || "#1e3a5f";
+  ctx.lineWidth = 2;
+  ctx.stroke();
+}
+function neonText(text, x, y, size, color, align, glow) {
+  ctx.font = "bold " + size + "px 'Courier New', monospace";
+  ctx.textAlign = align || "center";
+  ctx.textBaseline = "middle";
+  if (glow) { ctx.shadowColor = color; ctx.shadowBlur = glow; }
+  ctx.fillStyle = color;
+  ctx.fillText(text, x, y);
+  ctx.shadowBlur = 0;
+}
+function button(x, y, w, h, label, opts) {
+  opts = opts || {};
+  const enabled = opts.enabled !== false;
+  const active = !!opts.active;
+  rr(x, y, w, h, 10);
+  ctx.fillStyle = !enabled ? "#1a1a26" : (active ? (opts.activeFill || "#0e7490") : (opts.fill || "#12233d"));
+  ctx.fill();
+  ctx.strokeStyle = !enabled ? "#333" : (opts.stroke || "#22d3ee");
+  ctx.lineWidth = 2;
+  ctx.stroke();
+  neonText(label, x + w / 2, y + h / 2 + 1, opts.size || 22,
+           !enabled ? "#555" : (opts.color || "#a5f3fc"), "center", enabled ? 8 : 0);
+  return { x, y, w, h, id: opts.id, action: opts.action, enabled };
+}
+function bar(x, y, w, h, frac, fill, bg, label) {
+  rr(x, y, w, h, 6);
+  ctx.fillStyle = bg || "#111";
+  ctx.fill();
+  if (frac > 0) {
+    rr(x, y, Math.max(8, w * Math.min(1, frac)), h, 6);
+    ctx.fillStyle = fill;
+    ctx.fill();
+  }
+  ctx.strokeStyle = "#334155";
+  ctx.lineWidth = 1;
+  ctx.stroke();
+  if (label) neonText(label, x + w / 2, y + h / 2 + 1, 15, "#e2e8f0");
+}
+
+// ---------- job / surgery logic ----------
+function startJob() {
+  const faulty = SLOTS[Math.floor(Math.random() * SLOTS.length)].id;
+  const base = 150 + 25 * S.save.jobs;           // payout grows with experience
+  S.job = {
+    num: S.save.jobs + 1,
+    faultySlot: faulty,
+    diagnosed: false,
+    seated: null,                                 // slot id once implant snaps in
+    wires: {},                                    // color id -> true when connected
+    overclock: false,
+    heat: 0,
+    basePayout: base,
+    implant: null,
+  };
+  S.unbanked = 0;
+  S.log = [];
+  S.selectedCard = -1;
+  S.ice = null;
+  log(">> New client on the table. Run diagnostics.");
+  log(">> Fault unknown. Slots: Optics / Neural Link / Reflex Booster.");
+  S.screen = "surgery";
+}
+
+function heatGain(n) {
+  // Overclock multiplies all Heat gains; Governor blueprint halves the penalty.
+  let mult = 1;
+  if (S.job && S.job.overclock) mult = hasBlueprint("ocgov") ? 1.125 : 1.25;
+  if (hasBlueprint("reflex2")) mult *= 0.8;
+  return Math.round(n * mult);
+}
+function addHeat(n, why) {
+  if (!S.job) return;
+  const g = heatGain(n);
+  S.job.heat = Math.min(100, S.job.heat + g);
+  log(">> Heat +" + g + " (" + why + "). Heat " + S.job.heat + "%");
+  if (S.job.heat >= 100) triggerRaid("Surgery overheated — the implant cooked off mid-operation.");
+}
+
+function diagnose() {
+  if (!S.job || S.job.diagnosed) return;
+  const slot = SLOTS.find(s => s.id === S.job.faultySlot);
+  S.job.diagnosed = true;
+  addHeat(5, "diagnostics");
+  log(">> DIAGNOSTIC COMPLETE: " + slot.name.toUpperCase() + " is FAULTY.");
+  log(">> Seat the matching implant, then route all 3 circuits.");
+}
+
+function implantChipRect(i) {
+  // tray chips: 3 across, y 730-820
+  return { x: 60 + i * 215, y: 730, w: 170, h: 90 };
+}
+function slotAt(x, y) {
+  for (const s of SLOTS) {
+    const dx = x - s.x, dy = y - s.y;
+    if (dx * dx + dy * dy <= (s.r + 14) * (s.r + 14)) return s;
+  }
+  return null;
+}
+function trySeatImplant(implantIdx, x, y) {
+  const slot = slotAt(x, y);
+  const imp = IMPLANTS[implantIdx];
+  if (!S.job.diagnosed) { log(">> Run diagnostics first — you don't know what's faulty."); return false; }
+  if (S.job.seated) { log(">> Implant already seated."); return false; }
+  if (!slot) { log(">> Drop the implant onto a body slot."); return false; }
+  if (slot.id !== imp.slot) {
+    addHeat(12, "wrong slot — " + imp.name + " doesn't fit " + slot.name);
+    log(">> " + imp.name + " implant REJECTED by " + slot.name + " slot.");
+    return false;
+  }
+  S.job.seated = slot.id;
+  S.job.implant = imp.name;
+  addHeat(10, "implant seated");
+  log(">> " + imp.name + " implant SNAPPED into " + slot.name + ".");
+  log(">> Now drag each colored wire to its matching node.");
+  return true;
+}
+
+// wire panel geometry (shown once the implant is seated)
+function wireStartPos(i) { return { x: 100, y: 880 + i * 55 }; }
+function wireNodePos(i)  { return { x: 620, y: 880 + i * 55 }; }
+function tryConnectWire(colorId, x, y) {
+  const i = WIRES.findIndex(w => w.id === colorId);
+  const node = wireNodePos(i);
+  const dx = x - node.x, dy = y - node.y;
+  if (S.job.wires[colorId]) return true;
+  if (dx * dx + dy * dy <= 42 * 42) {
+    S.job.wires[colorId] = true;
+    addHeat(8, "circuit routed (" + colorId + ")");
+    log(">> " + colorId.toUpperCase() + " circuit connected.");
+    return true;
+  }
+  addHeat(6, "misrouted wire (" + colorId + ")");
+  log(">> " + colorId.toUpperCase() + " wire missed its node.");
+  return false;
+}
+
+function surgeryPayout() {
+  let p = S.job.basePayout;
+  if (hasBlueprint("optics2")) p = Math.round(p * 1.25);
+  if (S.job.overclock) p = Math.round(p * 1.5);
+  return p;
+}
+function surgeryComplete() {
+  const missing = WIRES.filter(w => !S.job.wires[w.id]);
+  if (!S.job.seated) { log(">> No implant seated yet."); return false; }
+  if (missing.length) { log(">> Circuits incomplete: " + missing.map(w => w.id).join(", ") + "."); return false; }
+  const pay = surgeryPayout();
+  S.unbanked += pay;
+  log(">> SURGERY COMPLETE. Client pays " + pay + "cr" + (S.job.overclock ? " (OVERCLOCKED)" : "") + ".");
+  log(">> The client's deck is live. Jack in for Phase 2?");
+  startIce();
+  return true;
+}
+
+// ---------- ICE battler logic ----------
+function startIce() {
+  const deck = [];
+  const counts = { spike: 4, spoof: 3, cloak: 3, overcharge: 2 };
+  for (const [id, n] of Object.entries(counts))
+    for (let i = 0; i < n; i++) deck.push(CARDS.find(c => c.id === id));
+  shuffle(deck);
+  S.ice = {
+    nodes: ICE_NODES.map(n => ({ ...n, max: n.hp, alive: true })),
+    deck, discard: [],
+    hand: [],
+    ram: 4 + (hasBlueprint("neural2") ? 2 : 0),
+    ramMax: 10,
+    trace: 10,
+    turn: 1,
+    stolen: 0,
+    drawN: hasBlueprint("plaspool") ? 5 : 4,
+  };
+  S.selectedCard = -1;
+  S.screen = "ice";
+  drawHand();
+  log(">> JACKED IN. 3 firewall nodes. Draw " + S.ice.drawN + " cards per turn.");
+  log(">> Trace starts at 10%. At 100% the police raid the shop.");
+}
+function shuffle(a) {
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+function drawHand() {
+  const ice = S.ice;
+  ice.discard.push(...ice.hand);
+  ice.hand = [];
+  for (let i = 0; i < ice.drawN; i++) {
+    if (!ice.deck.length) {
+      ice.deck = shuffle(ice.discard);
+      ice.discard = [];
+      if (!ice.deck.length) break;
+    }
+    ice.hand.push(ice.deck.pop());
+  }
+}
+function cloakTraceCut() { return hasBlueprint("cloakfw") ? 25 : 15; }
+function playCard(handIdx, nodeIdx) {
+  const ice = S.ice;
+  if (!ice || handIdx < 0 || handIdx >= ice.hand.length) return false;
+  const card = ice.hand[handIdx];
+  if (ice.ram < card.cost) { log(">> Not enough RAM for " + card.name + " (" + card.cost + ")."); return false; }
+  if (card.dmg > 0) {
+    if (nodeIdx == null || !ice.nodes[nodeIdx] || !ice.nodes[nodeIdx].alive) {
+      log(">> Pick a live ICE node to hit.");
+      return false;
+    }
+    const node = ice.nodes[nodeIdx];
+    ice.ram -= card.cost;
+    node.hp -= card.dmg;
+    ice.trace = Math.max(0, ice.trace + card.trace);
+    log(">> " + card.name + " hits " + node.name + " for " + card.dmg + " (" + Math.max(0, node.hp) + "/" + node.max + " HP).");
+    if (node.hp <= 0) {
+      node.alive = false;
+      node.hp = 0;
+      ice.stolen += 100;
+      S.unbanked += 100;
+      log(">> " + node.name + " DOWN. Stole 100cr of tech.");
+    }
+    if (card.id === "overcharge") log(">> Overcharge spikes Trace +10.");
+  } else {
+    // Cloak: no target needed
+    ice.ram -= card.cost;
+    const cut = cloakTraceCut();
+    ice.trace = Math.max(0, ice.trace - cut);
+    log(">> CLOAK engaged. Trace -" + cut + " (now " + ice.trace + "%).");
+  }
+  ice.discard.push(ice.hand.splice(handIdx, 1)[0]);
+  S.selectedCard = -1;
+  if (ice.nodes.every(n => !n.alive)) hackComplete();
+  return true;
+}
+function endTurn() {
+  const ice = S.ice;
+  if (!ice) return;
+  let gain = 5;
+  for (const n of ice.nodes) if (n.alive) gain += 3;
+  ice.trace = Math.min(100, ice.trace + gain);
+  log(">> Trace +" + gain + " (turn " + ice.turn + " end). Trace " + ice.trace + "%.");
+  if (ice.trace >= 100) { triggerRaid("Trace hit 100% — police triangulated the shop."); return; }
+  ice.turn++;
+  ice.ram = Math.min(ice.ramMax, ice.ram + 3);
+  drawHand();
+  log(">> Turn " + ice.turn + ". RAM +" + 3 + " (" + ice.ram + "/" + ice.ramMax + "). Drew " + ice.hand.length + " cards.");
+}
+function hackComplete() {
+  const bonus = 250;
+  S.unbanked += bonus;
+  S.ice.stolen += bonus;
+  S.save.hacks++;
+  bankCredits();
+  S.jobDoneInfo = {
+    title: "HACK COMPLETE",
+    lines: [
+      "All 3 firewall nodes destroyed.",
+      "Stolen tech: " + S.ice.stolen + "cr  •  Surgery: " + surgeryPayout() + "cr",
+      "Job #" + S.job.num + " closed. Credits banked.",
+    ],
+  };
+  S.save.jobs++;
+  persist();
+  S.ice = null;
+  S.screen = "jobdone";
+}
+function jackOut() {
+  if (!S.ice) return;
+  const kept = S.unbanked;
+  bankCredits();
+  S.save.jobs++;
+  persist();
+  S.jobDoneInfo = {
+    title: "JACKED OUT",
+    lines: [
+      "You slipped out before the Trace peaked.",
+      "Kept " + kept + "cr of unbanked earnings. Credits banked.",
+      "Job #" + S.job.num + " closed (partial).",
+    ],
+  };
+  S.ice = null;
+  S.screen = "jobdone";
+}
+function bankCredits() {
+  S.save.banked += S.unbanked;
+  if (S.save.banked > S.save.best) S.save.best = S.save.banked;
+  S.unbanked = 0;
+  persist();
+}
+
+// ---------- raid ----------
+function triggerRaid(reason) {
+  const lost = S.unbanked;
+  const implant = S.job ? S.job.implant : null;
+  S.save.raids++;
+  S.unbanked = 0;
+  S.job = null;
+  S.ice = null;
+  S.selectedCard = -1;
+  persist();
+  S.raidInfo = { reason, lostCredits: lost, lostImplant: implant };
+  S.screen = "raid";
+}
+function buyBlueprint(id) {
+  const bp = BLUEPRINTS.find(b => b.id === id);
+  if (!bp || hasBlueprint(id)) return false;
+  if (S.save.banked < bp.cost) { log(">> Not enough banked credits for " + bp.name + "."); return false; }
+  S.save.banked -= bp.cost;
+  S.save.blueprints[id] = true;
+  persist();
+  log(">> Blueprint unlocked: " + bp.name + " — printed and filed. Survives raids.");
+  return true;
+}
+
+// ---------- input: pointer → game coords ----------
+function toGame(e) {
+  const r = canvas.getBoundingClientRect();
+  return {
+    x: (e.clientX - r.left) * (W / r.width),
+    y: (e.clientY - r.top) * (H / r.height),
+  };
+}
+let clickables = [];   // rebuilt every render: {x,y,w,h,action,enabled}
+let draggables = [];   // rebuilt every render: {kind, idx/color, x,y,r, canDrag()}
+let downPos = null;
+
+canvas.addEventListener("pointerdown", e => {
+  const p = toGame(e);
+  S.mouse = p;
+  downPos = p;
+  // draggables first
+  for (const d of draggables) {
+    const dx = p.x - d.x, dy = p.y - d.y;
+    if (dx * dx + dy * dy <= d.r * d.r && d.canDrag()) {
+      S.drag = { ...d, ox: p.x - d.x, oy: p.y - d.y };
+      canvas.setPointerCapture(e.pointerId);
+      return;
+    }
+  }
+});
+canvas.addEventListener("pointermove", e => {
+  const p = toGame(e);
+  S.mouse = p;
+  if (S.drag) { S.drag.x = p.x - S.drag.ox; S.drag.y = p.y - S.drag.oy; }
+});
+canvas.addEventListener("pointerup", e => {
+  const p = toGame(e);
+  if (S.drag) {
+    const d = S.drag;
+    S.drag = null;
+    if (d.kind === "implant") trySeatImplant(d.idx, p.x, p.y);
+    else if (d.kind === "wire") tryConnectWire(d.color, p.x, p.y);
+    return;
+  }
+  if (!downPos) return;
+  const moved = Math.hypot(p.x - downPos.x, p.y - downPos.y);
+  downPos = null;
+  if (moved > 14) return; // it was a drag, not a tap
+  // tap: topmost clickable wins (iterate reverse)
+  for (let i = clickables.length - 1; i >= 0; i--) {
+    const c = clickables[i];
+    if (!c.enabled) continue;
+    if (p.x >= c.x && p.x <= c.x + c.w && p.y >= c.y && p.y <= c.y + c.h) {
+      if (c.action) c.action();
+      return;
+    }
+  }
+  // tap on a card / node handled by screen-specific tap zones below
+  screenTap(p.x, p.y);
+});
+canvas.addEventListener("pointercancel", () => { S.drag = null; downPos = null; });
+
+// screen-specific taps (cards, nodes) that aren't rectangular buttons
+function screenTap(x, y) {
+  if (S.screen === "ice" && S.ice) {
+    // tap a card to select it; tap again to play Cloak, tap a node to attack
+    const ice = S.ice;
+    for (let i = 0; i < ice.hand.length; i++) {
+      const r = cardRect(i, ice.hand.length);
+      if (x >= r.x && x <= r.x + r.w && y >= r.y && y <= r.y + r.h) {
+        const card = ice.hand[i];
+        if (S.selectedCard === i) {
+          if (card.dmg === 0) playCard(i, null); // Cloak: tap again to use
+          else S.selectedCard = -1;
+        } else {
+          S.selectedCard = i;
+          if (card.dmg === 0) log(">> " + card.name + " selected — tap again to run it.");
+          else log(">> " + card.name + " selected — tap a live ICE node.");
+        }
+        return;
+      }
+    }
+    if (S.selectedCard >= 0) {
+      const card = ice.hand[S.selectedCard];
+      if (card && card.dmg > 0) {
+        for (let n = 0; n < ice.nodes.length; n++) {
+          const nr = nodeRect(n);
+          const dx = x - nr.x, dy = y - nr.y;
+          if (dx * dx + dy * dy <= nr.r * nr.r) { playCard(S.selectedCard, n); return; }
+        }
+      }
+    }
+  }
+}
+function cardRect(i, n) {
+  const w = 150, h = 260, gap = 13, total = n * w + (n - 1) * gap;
+  const x0 = (W - total) / 2;
+  const lift = (S.selectedCard === i) ? -34 : 0;
+  return { x: x0 + i * (w + gap), y: 860 + lift, w, h };
+}
+function nodeRect(n) { return { x: 140 + n * 220, y: 380, r: 92 }; }
+
+// ---------- rendering ----------
+function drawTopBar() {
+  panel(16, 14, W - 32, 56, "rgba(10,14,30,0.95)", "#123");
+  neonText("NEON CHOP SHOP", 36, 42, 20, "#22d3ee", "left", 10);
+  neonText("BANKED " + S.save.banked + "cr", W - 36, 42, 20, "#fbbf24", "right", 6);
+}
+function drawLog(x, y, w, h) {
+  panel(x, y, w, h, "rgba(4,8,16,0.95)", "#123");
+  ctx.save();
+  ctx.beginPath(); ctx.rect(x + 8, y + 8, w - 16, h - 16); ctx.clip();
+  ctx.font = "15px 'Courier New', monospace";
+  ctx.textAlign = "left"; ctx.textBaseline = "top";
+  const lines = S.log.slice(-5);
+  lines.forEach((ln, i) => {
+    ctx.fillStyle = ln.startsWith(">>") ? "#7dd3fc" : "#94a3b8";
+    ctx.fillText(ln, x + 14, y + 12 + i * 20);
+  });
+  ctx.restore();
+}
+
+function renderTitle() {
+  ctx.fillStyle = "#07070f"; ctx.fillRect(0, 0, W, H);
+  // neon skyline
+  ctx.save();
+  for (let i = 0; i < 12; i++) {
+    const bx = i * 62 + 8, bh = 120 + ((i * 53) % 180);
+    ctx.fillStyle = i % 3 === 0 ? "rgba(34,211,238,0.10)" : "rgba(232,121,249,0.08)";
+    ctx.fillRect(bx, H - 260 - bh, 50, bh);
+  }
+  ctx.restore();
+  neonText("NEON", 360, 210, 110, "#22d3ee", "center", 26);
+  neonText("CHOP SHOP", 360, 320, 74, "#e879f9", "center", 26);
+  neonText("cyber-surgery • ice hacking • one wrong wire = raid", 360, 400, 19, "#94a3b8");
+  neonText("BANKED  " + S.save.banked + "cr    •    JOBS " + S.save.jobs +
+           "    •    RAIDS " + S.save.raids, 360, 470, 20, "#fbbf24");
+  const owned = Object.keys(S.save.blueprints).length;
+  neonText("3D-printer blueprints owned: " + owned + " / " + BLUEPRINTS.length, 360, 505, 18, "#4ade80");
+  clickables.push(button(140, 570, 440, 88, "▶  NEW JOB", { id: "newjob", action: startJob, size: 28 }));
+  clickables.push(button(140, 678, 440, 88, "▣  WORKBENCH — 3D PRINTER", { id: "bench", action: () => { S.screen = "workbench"; }, size: 24 }));
+  clickables.push(button(140, 786, 440, 88, "?  HOW TO PLAY", { id: "howto", action: () => { S.showHowto = true; }, size: 24 }));
+  neonText("Milestone 1-3 vertical slice • progress saves on this device", 360, 930, 16, "#64748b");
+  neonText("Raid wipes unbanked credits + the active implant.", 360, 962, 16, "#64748b");
+  neonText("Blueprints are never lost.", 360, 994, 16, "#4ade80");
+  if (S.showHowto) drawHowto();
+}
+
+function drawHowto() {
+  panel(60, 180, 600, 880, "rgba(5,8,18,0.97)", "#22d3ee");
+  neonText("HOW TO PLAY", 360, 230, 30, "#22d3ee", "center", 12);
+  const lines = [
+    "PHASE 1 — SURGERY",
+    "1. Tap DIAGNOSE: the log names the faulty slot.",
+    "2. Drag the matching implant chip onto that slot.",
+    "   Wrong slot = +12 Heat and a rejection.",
+    "3. Drag each colored wire to its matching node.",
+    "4. OVERCLOCK: +50% payout, but Heat gains x1.25.",
+    "5. Tap COMPLETE SURGERY. Heat 100% = RAID.",
+    "",
+    "PHASE 2 — ICE BATTLER",
+    "Draw 4 cards a turn (RAM +3/turn, max 10).",
+    "SPIKE 2RAM/3dmg • SPOOF 1RAM/2dmg, Trace-5",
+    "CLOAK 2RAM/Trace-15 • OVERCHARGE 3RAM/6dmg, Trace+10",
+    "Destroy all 3 ICE nodes to finish the hack.",
+    "Trace +5/turn, +3 per live node. Trace 100% = RAID.",
+    "JACK OUT any time to bank what you stole.",
+    "",
+    "RAID: unbanked credits + active implant are gone.",
+    "Banked credits and blueprints ALWAYS survive.",
+  ];
+  ctx.font = "17px 'Courier New', monospace";
+  ctx.textAlign = "left"; ctx.textBaseline = "top";
+  lines.forEach((ln, i) => {
+    ctx.fillStyle = ln.startsWith("PHASE") || ln.startsWith("RAID") ? "#e879f9" : "#cbd5e1";
+    ctx.fillText(ln, 92, 272 + i * 30);
+  });
+  clickables.push(button(240, 980, 240, 64, "CLOSE", { id: "closehowto", action: () => { S.showHowto = false; } }));
+}
+
+function renderWorkbench() {
+  ctx.fillStyle = "#07070f"; ctx.fillRect(0, 0, W, H);
+  drawTopBar();
+  neonText("3D PRINTER — WORKBENCH", 360, 110, 30, "#4ade80", "center", 12);
+  neonText("Blueprints persist through raids. Buy with banked credits.", 360, 148, 17, "#94a3b8");
+  BLUEPRINTS.forEach((bp, i) => {
+    const y = 180 + i * 148;
+    const owned = hasBlueprint(bp.id);
+    panel(40, y, 640, 132, owned ? "rgba(20,60,35,0.9)" : "rgba(16,20,40,0.92)",
+           owned ? "#4ade80" : "#1e3a5f");
+    neonText(bp.name, 64, y + 32, 24, owned ? "#4ade80" : "#e2e8f0", "left", owned ? 8 : 0);
+    neonText(bp.desc, 64, y + 66, 17, "#94a3b8", "left");
+    neonText(owned ? "OWNED ✓" : bp.cost + " cr", 64, y + 100, 18, owned ? "#4ade80" : "#fbbf24", "left");
+    if (!owned) {
+      clickables.push(button(500, y + 40, 150, 56, "PRINT", {
+        id: "buy-" + bp.id, action: () => buyBlueprint(bp.id),
+        enabled: S.save.banked >= bp.cost, size: 20,
+      }));
+    }
+  });
+  clickables.push(button(40, 1090, 640, 72, "←  BACK TO SHOP", { id: "back", action: () => { S.screen = "title"; }, size: 22 }));
+  neonText("Banked: " + S.save.banked + "cr", 360, 1210, 18, "#fbbf24");
+}
+
+function renderSurgery() {
+  const job = S.job;
+  ctx.fillStyle = "#07070f"; ctx.fillRect(0, 0, W, H);
+  drawTopBar();
+  // heat + job line
+  neonText("JOB #" + job.num + "  •  UNBANKED " + S.unbanked + "cr", 40, 100, 19, "#fbbf24", "left");
+  neonText("HEAT " + job.heat + "%", 700, 100, 19, job.heat >= 70 ? "#ef4444" : "#fb923c", "right");
+  bar(40, 118, 640, 18, job.heat / 100, job.heat >= 70 ? "#ef4444" : "#f97316");
+  // log + diagnose
+  drawLog(40, 150, 460, 112);
+  clickables.push(button(520, 180, 140, 52, job.diagnosed ? "DIAGNOSED ✓" : "▶ DIAGNOSE",
+    { id: "diag", action: diagnose, enabled: !job.diagnosed, size: 16 }));
+  // body diagram
+  panel(40, 280, 640, 420, "rgba(10,16,32,0.9)", "#1e3a5f");
+  // torso + head silhouette
+  ctx.strokeStyle = "#2dd4bf"; ctx.lineWidth = 3;
+  ctx.beginPath(); ctx.arc(360, 400, 74, 0, Math.PI * 2); ctx.stroke();            // head
+  rr(288, 486, 144, 190, 40); ctx.stroke();                                        // torso
+  ctx.beginPath(); ctx.moveTo(432, 520); ctx.lineTo(560, 600); ctx.lineTo(590, 680);
+  ctx.moveTo(288, 520); ctx.lineTo(180, 600); ctx.lineTo(150, 680); ctx.stroke();  // arms
+  neonText("CLIENT", 360, 320, 16, "#64748b");
+  // slots
+  for (const s of SLOTS) {
+    const faulty = job.diagnosed && s.id === job.faultySlot;
+    const seated = job.seated === s.id;
+    ctx.beginPath(); ctx.arc(s.x, s.y, s.r, 0, Math.PI * 2);
+    ctx.fillStyle = seated ? s.color : "rgba(10,20,40,0.9)";
+    ctx.fill();
+    ctx.strokeStyle = faulty ? "#ef4444" : s.color;
+    ctx.lineWidth = faulty ? 5 : 2;
+    ctx.setLineDash(faulty ? [8, 6] : []);
+    ctx.stroke(); ctx.setLineDash([]);
+    if (faulty && !seated) {
+      neonText("⚠ FAULTY", s.x, s.y - s.r - 16, 15, "#ef4444", "center", 8);
+    }
+    neonText(seated ? "✓ " + s.name.toUpperCase() : s.name.toUpperCase(),
+             s.x, s.y + 1, seated ? 13 : 16, seated ? "#052e16" : "#e2e8f0");
+    if (!seated) neonText(s.name, s.x, s.y + s.r + 22, 14, "#94a3b8");
+  }
+  // implant tray
+  neonText("IMPLANT TRAY — drag the matching chip onto the faulty slot", 360, 716, 15, "#94a3b8");
+  IMPLANTS.forEach((imp, i) => {
+    const r = implantChipRect(i);
+    const isDrag = S.drag && S.drag.kind === "implant" && S.drag.idx === i;
+    const dimmed = job.seated || !job.diagnosed;
+    const x = isDrag ? S.drag.x - 85 : r.x, y = isDrag ? S.drag.y - 45 : r.y;
+    rr(x, y, r.w, r.h, 12);
+    ctx.fillStyle = dimmed ? "rgba(30,30,44,0.85)" : "rgba(20,30,55,0.95)";
+    ctx.fill();
+    ctx.strokeStyle = imp.color; ctx.lineWidth = 2; ctx.stroke();
+    neonText(imp.name, x + r.w / 2, y + 32, 22, dimmed ? "#666" : imp.color, "center", dimmed ? 0 : 8);
+    neonText("→ " + SLOTS.find(s => s.id === imp.slot).name, x + r.w / 2, y + 64, 14, "#94a3b8");
+    if (!job.seated && job.diagnosed) {
+      draggables.push({ kind: "implant", idx: i, x: r.x + r.w / 2, y: r.y + r.h / 2, r: 70,
+        canDrag: () => job.diagnosed && !job.seated });
+    }
+  });
+  // wire panel (appears once implant is seated)
+  if (job.seated) {
+    panel(40, 850, 640, 170, "rgba(10,16,32,0.9)", "#1e3a5f");
+    neonText("CIRCUIT BOARD — drag each wire to its matching node", 360, 878, 15, "#94a3b8");
+    WIRES.forEach((w, i) => {
+      const sp = wireStartPos(i), np = wireNodePos(i);
+      const done = !!job.wires[w.id];
+      const isDrag = S.drag && S.drag.kind === "wire" && S.drag.color === w.id;
+      // node
+      ctx.beginPath(); ctx.arc(np.x, np.y, 30, 0, Math.PI * 2);
+      ctx.fillStyle = done ? w.color : "rgba(20,26,44,0.95)";
+      ctx.fill();
+      ctx.strokeStyle = w.color; ctx.lineWidth = 3; ctx.stroke();
+      neonText(done ? "✓" : "○", np.x, np.y + 1, 22, done ? "#052e16" : w.color);
+      // wire end (draggable) or drawn wire
+      if (done) {
+        ctx.beginPath(); ctx.moveTo(sp.x, sp.y);
+        ctx.bezierCurveTo(sp.x + 160, sp.y, np.x - 160, np.y, np.x, np.y);
+        ctx.strokeStyle = w.color; ctx.lineWidth = 6; ctx.stroke();
+        ctx.beginPath(); ctx.arc(sp.x, sp.y, 16, 0, Math.PI * 2);
+        ctx.fillStyle = w.color; ctx.fill();
+      } else {
+        const dx = isDrag ? S.drag.x : sp.x, dy = isDrag ? S.drag.y : sp.y;
+        ctx.beginPath(); ctx.arc(dx, dy, 20, 0, Math.PI * 2);
+        ctx.fillStyle = w.color; ctx.fill();
+        ctx.strokeStyle = "#fff"; ctx.lineWidth = 2; ctx.stroke();
+        draggables.push({ kind: "wire", color: w.id, x: sp.x, y: sp.y, r: 30,
+          canDrag: () => !!job.seated && !job.wires[w.id] });
+      }
+    });
+  } else {
+    neonText(job.diagnosed ? "Seat the implant to unlock the circuit board."
+                           : "Run diagnostics, then seat the matching implant.",
+             360, 930, 17, "#64748b");
+  }
+  // bottom controls
+  const wiresDone = WIRES.every(w => job.wires[w.id]);
+  clickables.push(button(40, 1050, 300, 76,
+    job.overclock ? "OVERCLOCK: ON (+50% pay)" : "OVERCLOCK: OFF",
+    { id: "oc", action: () => { job.overclock = !job.overclock;
+      log(">> Overclock " + (job.overclock ? "ON — payout +50%, Heat gains x" +
+        (hasBlueprint("ocgov") ? "1.125" : "1.25") + "." : "OFF.")); },
+      active: job.overclock, activeFill: "#7c2d12", size: 18 }));
+  clickables.push(button(380, 1050, 300, 76, "COMPLETE SURGERY",
+    { id: "complete", action: surgeryComplete, enabled: !!job.seated && wiresDone, size: 19 }));
+  neonText("Payout on completion: " + surgeryPayout() + "cr" +
+           (job.overclock ? " (overclocked)" : "") +
+           "   •   Heat " + job.heat + "% — 100% fails the surgery",
+           360, 1160, 16, "#94a3b8");
+  neonText("Wrong slot +12 Heat • missed wire +6 Heat", 360, 1190, 15, "#64748b");
+}
+
+function renderIce() {
+  const ice = S.ice;
+  ctx.fillStyle = "#05050f"; ctx.fillRect(0, 0, W, H);
+  // trace bar (the big threat)
+  neonText("CYBERSPACE — TRACE", 40, 42, 20, "#e879f9", "left", 10);
+  neonText("TURN " + ice.turn, W - 40, 42, 20, "#94a3b8", "right");
+  bar(40, 62, 640, 26, ice.trace / 100, ice.trace >= 70 ? "#ef4444" : "#d946ef",
+      "#111", "TRACE " + ice.trace + "%");
+  neonText("RAM " + ice.ram + "/" + ice.ramMax + "   •   STOLEN " + ice.stolen + "cr   •   UNBANKED " + S.unbanked + "cr",
+           360, 116, 18, "#fbbf24");
+  // ICE nodes
+  ice.nodes.forEach((n, i) => {
+    const nr = nodeRect(i);
+    ctx.beginPath();
+    for (let k = 0; k < 6; k++) {
+      const a = Math.PI / 6 + k * Math.PI / 3;
+      const px = nr.x + Math.cos(a) * nr.r, py = nr.y + Math.sin(a) * nr.r * 0.86;
+      if (k === 0) ctx.moveTo(px, py); else ctx.lineTo(px, py);
+    }
+    ctx.closePath();
+    ctx.fillStyle = n.alive ? "rgba(80,10,40,0.9)" : "rgba(20,40,25,0.9)";
+    ctx.fill();
+    ctx.strokeStyle = n.alive ? "#f43f5e" : "#4ade80";
+    ctx.lineWidth = 3;
+    ctx.stroke();
+    if (n.alive) {
+      neonText(n.name, nr.x, nr.y - 18, 19, "#fda4af", "center", 8);
+      neonText("HP " + n.hp + "/" + n.max, nr.x, nr.y + 14, 20, "#fff");
+      bar(nr.x - 62, nr.y + 44, 124, 12, n.hp / n.max, "#f43f5e");
+    } else {
+      neonText("DOWN ✓", nr.x, nr.y - 6, 20, "#4ade80", "center", 8);
+      neonText(n.name, nr.x, nr.y + 22, 14, "#4ade80");
+    }
+  });
+  // hint line
+  const sel = S.selectedCard >= 0 ? ice.hand[S.selectedCard] : null;
+  neonText(sel ? (sel.dmg > 0 ? sel.name + " armed — tap a live ICE node."
+                              : sel.name + " — tap again to run it.")
+               : "Tap a card to select it. Destroy all 3 nodes to finish the hack.",
+           360, 540, 17, "#94a3b8");
+  drawLog(40, 570, 640, 150);
+  neonText("END TURN: Trace +5, +3 per live node. RAM +3. Draw " + ice.drawN + " fresh cards.",
+           360, 760, 15, "#64748b");
+  // hand
+  ice.hand.forEach((card, i) => {
+    const r = cardRect(i, ice.hand.length);
+    const isSel = S.selectedCard === i;
+    const afford = ice.ram >= card.cost;
+    rr(r.x, r.y, r.w, r.h, 12);
+    ctx.fillStyle = isSel ? "rgba(40,60,110,0.97)" : "rgba(16,20,44,0.95)";
+    ctx.fill();
+    ctx.strokeStyle = isSel ? "#22d3ee" : (afford ? "#38bdf8" : "#334155");
+    ctx.lineWidth = isSel ? 4 : 2;
+    ctx.stroke();
+    neonText(card.name, r.x + r.w / 2, r.y + 34, 20, afford ? "#e0f2fe" : "#64748b", "center", afford ? 6 : 0);
+    neonText(card.cost + " RAM", r.x + r.w / 2, r.y + 66, 17, afford ? "#fbbf24" : "#64748b");
+    ctx.font = "14px 'Courier New', monospace";
+    ctx.textAlign = "center"; ctx.textBaseline = "top";
+    ctx.fillStyle = "#cbd5e1";
+    wrapText(card.desc, r.x + 10, r.y + 92, r.w - 20, 18);
+    neonText(card.dmg > 0 ? "DMG " + card.dmg : "TRACE " + card.trace,
+             r.x + r.w / 2, r.y + r.h - 28, 17, card.dmg > 0 ? "#f87171" : "#4ade80");
+  });
+  clickables.push(button(40, 1160, 300, 76, "END TURN ⏎", { id: "endturn", action: endTurn, size: 22 }));
+  clickables.push(button(380, 1160, 300, 76, "⚡ JACK OUT", { id: "jackout", action: jackOut, size: 22, fill: "#3f1d2e", stroke: "#f472b6" }));
+}
+function wrapText(text, x, y, maxW, lh) {
+  const words = text.split(" ");
+  let line = "", yy = y;
+  for (const w of words) {
+    if (ctx.measureText(line + w).width > maxW && line) {
+      ctx.fillText(line.trim(), x + maxW / 2, yy);
+      line = ""; yy += lh;
+    }
+    line += w + " ";
+  }
+  ctx.fillText(line.trim(), x + maxW / 2, yy);
+}
+
+function renderRaid() {
+  const r = S.raidInfo;
+  ctx.fillStyle = "#160404"; ctx.fillRect(0, 0, W, H);
+  neonText("⚠  RAID  ⚠", 360, 260, 84, "#ef4444", "center", 30);
+  neonText(r.reason, 360, 360, 20, "#fca5a5");
+  panel(90, 430, 540, 380, "rgba(20,6,10,0.95)", "#7f1d1d");
+  neonText("SEIZED BY POLICE", 360, 480, 24, "#ef4444", "center", 10);
+  neonText("Unbanked credits lost:  " + r.lostCredits + "cr", 360, 540, 21, "#fca5a5");
+  neonText("Active implant lost:  " + (r.lostImplant || "none"), 360, 580, 21, "#fca5a5");
+  neonText("—", 360, 625, 21, "#64748b");
+  neonText("KEPT: banked " + S.save.banked + "cr", 360, 665, 21, "#4ade80");
+  neonText("KEPT: " + Object.keys(S.save.blueprints).length + " blueprints — the printer stash survived",
+           360, 705, 18, "#4ade80");
+  neonText("Blueprints are never lost to a raid.", 360, 745, 17, "#94a3b8");
+  clickables.push(button(160, 880, 400, 84, "RETURN TO SHOP", { id: "raidback",
+    action: () => { S.screen = "title"; S.raidInfo = null; }, size: 24 }));
+}
+function renderJobDone() {
+  const j = S.jobDoneInfo;
+  ctx.fillStyle = "#04140a"; ctx.fillRect(0, 0, W, H);
+  neonText(j.title, 360, 300, 64, "#4ade80", "center", 24);
+  j.lines.forEach((ln, i) => neonText(ln, 360, 420 + i * 44, 20, "#cbd5e1"));
+  neonText("Banked: " + S.save.banked + "cr   •   Jobs done: " + S.save.jobs, 360, 620, 20, "#fbbf24");
+  clickables.push(button(160, 700, 400, 84, "BACK TO SHOP", { id: "doneback",
+    action: () => { S.screen = "title"; S.jobDoneInfo = null; }, size: 24 }));
+  clickables.push(button(160, 810, 400, 84, "▶  NEXT JOB", { id: "nextjob", action: startJob, size: 24 }));
+}
+
+// ---------- main render loop ----------
+function render() {
+  clickables = [];
+  draggables = [];
+  ctx.clearRect(0, 0, W, H);
+  switch (S.screen) {
+    case "title": renderTitle(); break;
+    case "workbench": renderWorkbench(); break;
+    case "surgery": renderSurgery(); break;
+    case "ice": renderIce(); break;
+    case "raid": renderRaid(); break;
+    case "jobdone": renderJobDone(); break;
+    default: renderTitle();
+  }
+  // drag ghost
+  if (S.drag) {
+    ctx.save();
+    ctx.globalAlpha = 0.85;
+    if (S.drag.kind === "implant") {
+      const imp = IMPLANTS[S.drag.idx];
+      rr(S.drag.x - 85, S.drag.y - 45, 170, 90, 12);
+      ctx.fillStyle = "rgba(20,30,55,0.95)"; ctx.fill();
+      ctx.strokeStyle = imp.color; ctx.lineWidth = 3; ctx.stroke();
+      neonText(imp.name, S.drag.x, S.drag.y - 12, 22, imp.color, "center", 8);
+      neonText("→ " + SLOTS.find(s => s.id === imp.slot).name, S.drag.x, S.drag.y + 20, 14, "#94a3b8");
+    } else {
+      const w = WIRES.find(w => w.id === S.drag.color);
+      ctx.beginPath(); ctx.arc(S.drag.x, S.drag.y, 22, 0, Math.PI * 2);
+      ctx.fillStyle = w.color; ctx.fill();
+      ctx.strokeStyle = "#fff"; ctx.lineWidth = 2; ctx.stroke();
+    }
+    ctx.restore();
+  }
+  requestAnimationFrame(render);
+}
+
+// ---------- boot ----------
+(function boot() {
+  S.save = store.load() || freshSave();
+  if (!S.save.blueprints) S.save.blueprints = {};
+  persist();
+  render();
+})();
+
+// ---------- debug / test hook ----------
+window.NCS = {
+  get state() { return S; },
+  save: () => S.save,
+  startJob, diagnose, trySeatImplant, tryConnectWire, surgeryComplete,
+  playCard, endTurn, jackOut, buyBlueprint, startIce,
+  setHand(ids) {
+    if (!S.ice) return false;
+    S.ice.discard.push(...S.ice.hand);
+    S.ice.hand = ids.map(id => CARDS.find(c => c.id === id)).filter(Boolean);
+    return true;
+  },
+  addHeat, triggerRaid, bankCredits,
+  wipeSave() { store.clear(); S.save = freshSave(); persist(); },
+};
+
+// ---------- self-test (?selftest=1) ----------
+const params = new URLSearchParams(location.search);
+if (params.get("selftest") === "1") {
+  const out = document.getElementById("selftest");
+  out.style.display = "block";
+  const lines = [];
+  let pass = 0, fail = 0;
+  function t(name, cond, extra) {
+    if (cond) { pass++; lines.push("PASS  " + name); }
+    else { fail++; lines.push("FAIL  " + name + (extra ? "  — " + extra : "")); }
+    out.textContent = lines.join("\n");
+  }
+  const sleep = ms => new Promise(r => setTimeout(r, ms));
+  function clientFor(gx, gy) {
+    const r = canvas.getBoundingClientRect();
+    return { x: r.left + gx * (r.width / W), y: r.top + gy * (r.height / H) };
+  }
+  function pointer(type, gx, gy) {
+    const c = clientFor(gx, gy);
+    canvas.dispatchEvent(new PointerEvent(type, {
+      bubbles: true, cancelable: true, pointerId: 1,
+      clientX: c.x, clientY: c.y, isPrimary: true,
+    }));
+  }
+  async function drag(gx1, gy1, gx2, gy2) {
+    pointer("pointerdown", gx1, gy1); await sleep(30);
+    pointer("pointermove", (gx1 + gx2) / 2, (gy1 + gy2) / 2); await sleep(30);
+    pointer("pointermove", gx2, gy2); await sleep(30);
+    pointer("pointerup", gx2, gy2); await sleep(30);
+  }
+
+  (async () => {
+    try {
+      // fresh state
+      window.NCS.wipeSave();
+      t("fresh save: banked 0, no blueprints", S.save.banked === 0 && Object.keys(S.save.blueprints).length === 0);
+
+      // --- Phase 1 ---
+      startJob();
+      t("startJob: surgery screen + job created", S.screen === "surgery" && !!S.job);
+      const faulty = S.job.faultySlot;
+      const fslot = SLOTS.find(s => s.id === faulty);
+      t("faulty slot is a real slot", ["optics", "neural", "reflex"].includes(faulty));
+      t("cannot seat implant before diagnosis", trySeatImplant(0, fslot.x, fslot.y) === false && !S.job.seated);
+      diagnose();
+      t("diagnose marks job diagnosed", S.job.diagnosed === true);
+      const wrongIdx = IMPLANTS.findIndex(i => i.slot !== faulty);
+      const heatBefore = S.job.heat;
+      t("wrong implant rejected + heat rises", trySeatImplant(wrongIdx, fslot.x, fslot.y) === false && S.job.heat > heatBefore);
+      // seat the correct implant via a REAL pointer drag (tests hit-testing)
+      // (wait a beat so a render frame populates the draggable hit zones)
+      await sleep(50);
+      const rightIdx = IMPLANTS.findIndex(i => i.slot === faulty);
+      const chip = implantChipRect(rightIdx);
+      await drag(chip.x + chip.w / 2, chip.y + chip.h / 2, fslot.x, fslot.y);
+      t("real pointer drag seats correct implant", S.job.seated === faulty);
+      // wires: one wrong drop first, then all three correct
+      const wHeat = S.job.heat;
+      t("wire dropped on wrong node rejected", tryConnectWire("red", 100, 100) === false && S.job.heat > wHeat);
+      let wiresOk = true;
+      for (const w of WIRES) {
+        const np = wireNodePos(WIRES.indexOf(w));
+        if (!tryConnectWire(w.id, np.x, np.y)) wiresOk = false;
+      }
+      t("all 3 wires connect to matching nodes", wiresOk && WIRES.every(w => S.job.wires[w.id]));
+      // overclock math
+      S.job.overclock = true;
+      const expectedPay = Math.round(S.job.basePayout * 1.5);
+      t("overclock payout = base x1.5", surgeryPayout() === expectedPay, "got " + surgeryPayout() + " want " + expectedPay);
+      const unbankedBefore = S.unbanked;
+      t("complete surgery -> ICE phase", surgeryComplete() === true && S.screen === "ice" && !!S.ice);
+      t("surgery payout landed in unbanked", S.unbanked === unbankedBefore + expectedPay);
+
+      // --- Phase 2 ---
+      t("ICE hand draws 4 cards", S.ice.hand.length === 4, "got " + S.ice.hand.length);
+      t("ICE has 3 live nodes", S.ice.nodes.filter(n => n.alive).length === 3);
+      t("RAM starts >= 4", S.ice.ram >= 4, "ram=" + S.ice.ram);
+      window.NCS.setHand(["spike", "spoof", "cloak", "overcharge"]);
+      const hp0 = S.ice.nodes[0].hp, ram0 = S.ice.ram;
+      t("SPIKE damages node 0 by 3, costs 2 RAM",
+        playCard(0, 0) === true && S.ice.nodes[0].hp === hp0 - 3 && S.ice.ram === ram0 - 2);
+      const trace0 = S.ice.trace;
+      t("CLOAK cuts trace (no target needed)",
+        playCard(1, null) === true && S.ice.trace < trace0, "trace " + trace0 + " -> " + S.ice.trace);
+      t("cannot play card without enough RAM", (() => {
+        S.ice.ram = 0;
+        const ok = playCard(0, 0) === false;
+        S.ice.ram = 4;
+        return ok;
+      })());
+      const turn0 = S.ice.turn, trace1 = S.ice.trace;
+      endTurn();
+      t("END TURN advances turn, trace climbs, hand redraws 4",
+        S.ice.turn === turn0 + 1 && S.ice.trace > trace1 && S.ice.hand.length === 4);
+      // destroy all nodes -> hack complete
+      window.NCS.setHand(["overcharge", "overcharge", "overcharge", "overcharge"]);
+      S.ice.ram = 10;
+      let guard = 0;
+      while (S.ice && S.ice.nodes.some(n => n.alive) && guard++ < 12) {
+        const alive = S.ice.nodes.findIndex(n => n.alive);
+        window.NCS.setHand(["overcharge", "overcharge", "overcharge", "overcharge"]);
+        S.ice.ram = 10;
+        playCard(0, alive);
+      }
+      t("destroying all nodes completes the hack", S.screen === "jobdone" && S.save.jobs === 1, "screen=" + S.screen);
+      t("hack banks credits (banked > 0)", S.save.banked > 0, "banked=" + S.save.banked);
+      t("unbanked is 0 after banking", S.unbanked === 0);
+
+      // --- Workbench + persistence ---
+      const bankedBefore = S.save.banked;
+      t("buy blueprint with banked credits",
+        buyBlueprint("plaspool") === true && hasBlueprint("plaspool") && S.save.banked === bankedBefore - 150);
+      const reloaded = store.load();
+      t("blueprint persists in localStorage", !!(reloaded && reloaded.blueprints && reloaded.blueprints.plaspool));
+      t("cannot buy an owned blueprint twice", buyBlueprint("plaspool") === false);
+      t("cannot buy without enough credits", (() => {
+        S.save.banked = 0; persist();
+        const ok = buyBlueprint("optics2") === false;
+        S.save.banked = bankedBefore - 150; persist();
+        return ok;
+      })());
+
+      // --- Raid: heat path, blueprints survive ---
+      startJob();
+      S.job.overclock = false;
+      S.unbanked = 999;
+      S.job.heat = 99;
+      addHeat(5, "selftest");
+      t("heat 100 triggers Raid", S.screen === "raid", "screen=" + S.screen);
+      t("raid wipes unbanked credits", S.unbanked === 0);
+      t("raid keeps banked credits", S.save.banked === bankedBefore - 150);
+      t("raid PRESERVES blueprints", hasBlueprint("plaspool") === true);
+      t("raid counted in save", S.save.raids === 1);
+      const reloaded2 = store.load();
+      t("post-raid save still has blueprint", !!(reloaded2 && reloaded2.blueprints.plaspool));
+
+      // --- Raid: trace path ---
+      S.screen = "title";
+      startJob();
+      diagnose();
+      const f2 = SLOTS.find(s => s.id === S.job.faultySlot);
+      const r2 = IMPLANTS.findIndex(i => i.slot === S.job.faultySlot);
+      trySeatImplant(r2, f2.x, f2.y);
+      for (const w of WIRES) { const np = wireNodePos(WIRES.indexOf(w)); tryConnectWire(w.id, np.x, np.y); }
+      surgeryComplete();
+      t("second job reaches ICE", S.screen === "ice");
+      S.ice.trace = 99;
+      endTurn();
+      t("trace 100 triggers Raid", S.screen === "raid", "screen=" + S.screen);
+      t("blueprint still owned after trace raid", hasBlueprint("plaspool") === true);
+
+      // --- Jack Out path ---
+      S.screen = "title";
+      startJob();
+      diagnose();
+      const f3 = SLOTS.find(s => s.id === S.job.faultySlot);
+      const r3 = IMPLANTS.findIndex(i => i.slot === S.job.faultySlot);
+      trySeatImplant(r3, f3.x, f3.y);
+      for (const w of WIRES) { const np = wireNodePos(WIRES.indexOf(w)); tryConnectWire(w.id, np.x, np.y); }
+      surgeryComplete();
+      window.NCS.setHand(["spike", "spike", "spike", "spike"]);
+      S.ice.ram = 10;
+      playCard(0, 0);
+      const bankedBeforeJack = S.save.banked;
+      jackOut();
+      t("JACK OUT banks earnings + closes job", S.screen === "jobdone" && S.save.banked > bankedBeforeJack && S.unbanked === 0);
+    } catch (err) {
+      fail++;
+      lines.push("ERROR  " + (err && err.stack || err));
+      out.textContent = lines.join("\n");
+    }
+    lines.push("");
+    lines.push((fail === 0 ? "SELFTEST PASS" : "SELFTEST FAIL") + " — " + pass + " passed, " + fail + " failed");
+    out.textContent = lines.join("\n");
+    document.title = fail === 0 ? "SELFTEST PASS" : "SELFTEST FAIL";
+  })();
+}
+</script>
+</body>
+</html>
