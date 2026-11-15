@@ -1,0 +1,125 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#07060f">
+<title>Diddlerrr Arcade</title>
+<meta name="description" content="Every DowntownDiddlerrr game and app, updated daily.">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="brand-192.png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="preload" href="unbounded.woff2" as="font" type="font/woff2" crossorigin>
+<style>
+@font-face{font-family:Unbounded;src:url(unbounded.woff2) format("woff2");font-weight:200 900;font-display:swap}
+@font-face{font-family:Outfit;src:url(outfit.woff2) format("woff2");font-weight:100 900;font-display:swap}
+:root{--bg:#07060f;--card:#12101f;--line:rgba(255,255,255,.08);--txt:#f4f2ff;--mut:#a29fbd;--a1:#8b5cf6;--a2:#22d3ee;--a3:#f472b6;--r:20px}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html{-webkit-text-size-adjust:100%;background:var(--bg)}
+body{margin:0;color:var(--txt);font:400 15px/1.4 Outfit,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;min-height:100vh;overflow-x:hidden;
+ padding:0 0 max(28px,env(safe-area-inset-bottom))}
+body:before{content:"";position:fixed;inset:-20vh -20vw auto;height:80vh;z-index:-1;pointer-events:none;
+ background:radial-gradient(40% 50% at 20% 30%,rgba(139,92,246,.35),transparent 70%),radial-gradient(35% 45% at 85% 15%,rgba(34,211,238,.22),transparent 70%),radial-gradient(30% 40% at 60% 60%,rgba(244,114,182,.14),transparent 70%)}
+.wrap{max-width:1100px;margin:0 auto;padding:0 16px}
+header{padding:max(18px,env(safe-area-inset-top)) 0 6px;display:flex;align-items:center;gap:12px}
+header img{width:44px;height:44px;border-radius:12px;box-shadow:0 6px 24px rgba(139,92,246,.45)}
+.brand b{display:block;font:800 19px/1.05 Unbounded,Outfit,sans-serif;letter-spacing:-.3px}
+.brand span{font-size:11.5px;letter-spacing:2.2px;text-transform:uppercase;color:var(--mut)}
+.count{margin-left:auto;font:700 12px Outfit;color:#dcd6ff;background:rgba(139,92,246,.18);border:1px solid rgba(139,92,246,.35);padding:6px 10px;border-radius:999px;white-space:nowrap}
+.hero{position:relative;margin:16px 0 4px;border-radius:26px;overflow:hidden;min-height:228px;display:flex;align-items:flex-end;isolation:isolate;
+ border:1px solid var(--line);background:#100d1d;box-shadow:0 20px 60px -20px rgba(139,92,246,.5)}
+.hero .bgimg{position:absolute;inset:0;z-index:-2;background-size:cover;background-position:center 30%;transform:scale(1.15);filter:blur(18px) saturate(1.3) brightness(.65)}
+.hero:after{content:"";position:absolute;inset:0;z-index:-1;background:linear-gradient(180deg,rgba(7,6,15,0) 0%,rgba(7,6,15,.55) 55%,rgba(7,6,15,.95) 100%)}
+.hero .shot{position:absolute;right:14px;top:14px;bottom:14px;width:34%;max-width:170px;border-radius:16px;object-fit:cover;object-position:top;box-shadow:0 12px 40px rgba(0,0,0,.6);border:1px solid rgba(255,255,255,.12)}
+.hero .in{padding:18px;max-width:64%}
+.kick{display:inline-flex;gap:6px;align-items:center;font:800 10.5px Unbounded,sans-serif;letter-spacing:1.4px;text-transform:uppercase;color:#0b0716;background:linear-gradient(90deg,var(--a2),#a5f3fc);padding:5px 9px;border-radius:999px}
+.hero h2{margin:10px 0 4px;font:800 23px/1.08 Unbounded,sans-serif;letter-spacing:-.5px}
+.hero p{margin:0 0 14px;color:#cfcae6;font-size:14px}
+.bar{position:sticky;top:0;z-index:5;margin:14px -16px 0;padding:10px 16px 10px;background:rgba(7,6,15,.78);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);border-bottom:1px solid var(--line)}
+.search{display:flex;align-items:center;gap:8px;background:#141126;border:1px solid var(--line);border-radius:14px;padding:0 12px;height:44px}
+.search svg{flex:none;opacity:.6}
+.search input{flex:1;min-width:0;background:none;border:0;outline:0;color:var(--txt);font:500 16px Outfit,sans-serif}
+.chips{display:flex;gap:8px;overflow-x:auto;scrollbar-width:none;margin-top:10px;padding-bottom:2px}
+.chips::-webkit-scrollbar{display:none}
+.chip{flex:none;border:1px solid var(--line);background:#141126;color:#d7d3ee;font:600 13.5px Outfit;padding:8px 14px;border-radius:999px;cursor:pointer}
+.chip[aria-pressed=true]{background:linear-gradient(135deg,var(--a1),#6d28d9);border-color:transparent;color:#fff;box-shadow:0 6px 18px -6px rgba(139,92,246,.8)}
+h3.sec{font:800 13px Unbounded,sans-serif;letter-spacing:1.6px;text-transform:uppercase;color:var(--mut);margin:22px 2px 12px}
+.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+@media(min-width:640px){.grid{grid-template-columns:repeat(3,minmax(0,1fr));gap:16px}}
+@media(min-width:960px){.grid{grid-template-columns:repeat(4,minmax(0,1fr))}}
+.card{position:relative;display:flex;flex-direction:column;background:linear-gradient(180deg,#151227,#0f0d1c);border:1px solid var(--line);border-radius:var(--r);overflow:hidden;
+ box-shadow:0 10px 30px -14px rgba(0,0,0,.8);animation:up .45s both cubic-bezier(.2,.7,.2,1)}
+@keyframes up{from{opacity:0;transform:translateY(12px)}}
+.cover{position:relative;aspect-ratio:4/5;overflow:hidden;background:#0d0b18}
+.cover img.s{width:100%;height:100%;object-fit:cover;object-position:top center;display:block;transition:transform .5s}
+.cover .blur{position:absolute;inset:-20%;background-size:cover;background-position:center;filter:blur(26px) saturate(1.4) brightness(.8)}
+.cover .big{position:absolute;left:50%;top:46%;width:52%;aspect-ratio:1;transform:translate(-50%,-50%);border-radius:24%;box-shadow:0 14px 40px rgba(0,0,0,.55);object-fit:cover}
+.cover:after{content:"";position:absolute;inset:auto 0 0;height:55%;background:linear-gradient(180deg,transparent,rgba(15,13,28,.96))}
+.card:active .cover img.s{transform:scale(1.04)}
+.ico{position:absolute;left:10px;bottom:-18px;z-index:2;width:46px;height:46px;border-radius:13px;object-fit:cover;background:#1b1830;border:2px solid #151227;box-shadow:0 6px 16px rgba(0,0,0,.5)}
+.badge{position:absolute;top:9px;left:9px;z-index:2;font:800 10px Unbounded,sans-serif;letter-spacing:1px;padding:5px 8px;border-radius:999px;color:#160a1f;background:linear-gradient(90deg,#fde047,#f472b6);box-shadow:0 4px 14px rgba(244,114,182,.5)}
+.tag{position:absolute;top:9px;right:9px;z-index:2;font:600 10.5px Outfit;padding:4px 8px;border-radius:999px;background:rgba(7,6,15,.62);backdrop-filter:blur(6px);border:1px solid rgba(255,255,255,.12);color:#e8e4ff;max-width:60%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.body{padding:24px 12px 12px;display:flex;flex-direction:column;gap:4px;flex:1}
+.body h4{margin:0;font:700 15.5px/1.2 Outfit,sans-serif;letter-spacing:-.1px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.body p{margin:0;color:var(--mut);font-size:12.5px;line-height:1.35;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
+.btns{display:flex;gap:8px;margin-top:auto;padding-top:10px}
+.btn{flex:1;display:inline-flex;align-items:center;justify-content:center;gap:6px;height:40px;border-radius:12px;text-decoration:none;font:700 13.5px Outfit;color:#fff;white-space:nowrap;min-width:0}
+.btn.play{background:linear-gradient(135deg,var(--a1),#6d28d9);box-shadow:0 8px 20px -8px rgba(139,92,246,.9)}
+.btn.apk{background:rgba(34,211,238,.12);border:1px solid rgba(34,211,238,.4);color:#bff5ff}
+.btn svg{flex:none}
+.hero .btns{max-width:300px}
+.empty{color:var(--mut);text-align:center;padding:40px 0}
+footer{margin:30px 0 0;text-align:center;color:#6f6b8a;font-size:12px;line-height:1.7}
+footer a{color:#a5a0c9}
+</style>
+</head>
+<body>
+<div class="wrap">
+ <header>
+  <img src="brand-192.png" alt="">
+  <div class="brand"><b>Diddlerrr Arcade</b><span>DowntownDiddlerrr</span></div>
+  <div class="count" id="count"></div>
+ </header>
+ <section class="hero" id="hero" hidden></section>
+ <div class="bar">
+  <label class="search"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.4" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+  <input id="q" type="search" placeholder="Search games and apps" autocomplete="off" enterkeyhint="search"></label>
+  <div class="chips" id="chips"></div>
+ </div>
+ <main id="list"></main>
+ <footer id="foot"></footer>
+</div>
+<script>
+const I={play:'<svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M7 4.5v15a1 1 0 0 0 1.5.86l12.4-7.5a1 1 0 0 0 0-1.72L8.5 3.64A1 1 0 0 0 7 4.5z"/></svg>',
+apk:'<svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor"><path d="M17.6 9.48 19.44 6.3a.38.38 0 0 0-.66-.38l-1.87 3.23A11.4 11.4 0 0 0 12 8.13c-1.77 0-3.43.37-4.9 1.02L5.22 5.92a.38.38 0 0 0-.66.38L6.4 9.48A10.8 10.8 0 0 0 1 18h22a10.8 10.8 0 0 0-5.4-8.52zM7 15.25a1.25 1.25 0 1 1 0-2.5 1.25 1.25 0 0 1 0 2.5zm10 0a1.25 1.25 0 1 1 0-2.5 1.25 1.25 0 0 1 0 2.5z"/></svg>'};
+const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const btns=g=>`<div class="btns">${g.play?`<a class="btn play" href="${esc(g.play)}">${I.play}Play</a>`:''}${g.apk?`<a class="btn apk" href="${esc(g.apk)}" download>${I.apk}${g.play?'APK':'Android APK'}</a>`:''}</div>`;
+const cover=g=>g.art?`<img class="s" src="${esc(g.art)}" alt="" loading="lazy" decoding="async">`
+ :`<div class="blur" style="background-image:url('${esc(g.icon)}')"></div><img class="big" src="${esc(g.icon)}" alt="" loading="lazy">`;
+const card=(g,i)=>`<article class="card" style="animation-delay:${Math.min(i,12)*35}ms"><div class="cover">${cover(g)}${g.isNew?'<span class="badge">NEW</span>':''}<span class="tag">${esc(g.genre||(g.kind==='app'?'App':'Game'))}</span><img class="ico" src="${esc(g.icon)}" alt="" loading="lazy"></div>
+<div class="body"><h4>${esc(g.title)}</h4><p>${esc(g.desc)}</p>${btns(g)}</div></article>`;
+const F=[['all','All'],['game','Games'],['app','Apps'],['new','New'],['web','Play in browser'],['apk','Android']];
+let G=[],f='all';
+function render(){
+ const q=document.getElementById('q').value.trim().toLowerCase();
+ const ok=g=>(f==='all'||(f==='new'&&g.isNew)||(f==='web'&&g.play)||(f==='apk'&&g.apk)||g.kind===f)&&(!q||(g.title+' '+g.desc+' '+g.genre).toLowerCase().includes(q));
+ const v=G.filter(ok),gm=v.filter(g=>g.kind==='game'),ap=v.filter(g=>g.kind!=='game');
+ const sec=(t,a)=>a.length?`<h3 class="sec">${t} · ${a.length}</h3><div class="grid">${a.map(card).join('')}</div>`:'';
+ document.getElementById('list').innerHTML=v.length?sec('Games',gm)+sec('Apps',ap):'<div class="empty">Nothing matches that yet.</div>';
+}
+function chips(){document.getElementById('chips').innerHTML=F.filter(([k])=>k!=='new'||G.some(g=>g.isNew)).map(([k,t])=>`<button class="chip" data-k="${k}" aria-pressed="${k===f}">${t}</button>`).join('')}
+document.getElementById('chips').onclick=e=>{const b=e.target.closest('.chip');if(!b)return;f=b.dataset.k;chips();render()};
+document.getElementById('q').oninput=render;
+fetch('games.json',{cache:'no-cache'}).then(r=>r.json()).then(d=>{
+ G=d.games;const n=G.filter(g=>g.isNew).length;
+ document.getElementById('count').textContent=`${G.length} titles${n?` · ${n} new`:''}`;
+ const h=[...G].filter(g=>g.isNew&&g.kind==='game').sort((a,b)=>b.added.localeCompare(a.added))[0]||G[0];
+ if(h){const el=document.getElementById('hero');el.hidden=false;
+  el.innerHTML=`<div class="bgimg" style="background-image:url('${esc(h.art||h.icon)}')"></div>${h.art?`<img class="shot" src="${esc(h.art)}" alt="">`:`<img class="shot" src="${esc(h.icon)}" alt="" style="object-fit:cover;aspect-ratio:1;bottom:auto;width:30%;border-radius:24%">`}
+  <div class="in"><span class="kick">${h.isNew?'★ Just added':'★ Featured'}</span><h2>${esc(h.title)}</h2><p>${esc(h.desc)}</p>${btns(h)}</div>`}
+ chips();render();
+ const t=new Date(d.generated);document.getElementById('foot').innerHTML=`Updates daily with every new repo · last refresh ${t.toLocaleString([], {month:'short',day:'numeric',hour:'numeric',minute:'2-digit'})}<br>Debug test builds · <a href="../">all builds</a>`;
+}).catch(()=>{document.getElementById('list').innerHTML='<div class="empty">Could not load the arcade. Pull to refresh.</div>'});
+</script>
+</body>
+</html>
