@@ -1,5 +1,5 @@
 {
-  "generated": "2026-11-15T05:51-05:00",
+  "generated": "2026-11-15T05:52-05:00",
   "count": 20,
   "games": [
     {
@@ -41,7 +41,7 @@
       "genre": "Action RPG",
       "desc": "Godot hybrid-combat RPG slice built for the S25 Ultra. Android only.",
       "icon": "../comanche-rpg/icon.png",
-      "art": null,
+      "art": "../arcade/art/comanche-rpg.jpg",
       "artPos": null,
       "play": null,
       "apk": "https://github.com/workinmanstrokes/test-builds/releases/download/apks/ComancheRPG.apk?v=20261115",
