@@ -13,6 +13,7 @@ APK_MAP = {
     "BrainrotAuraRush": "brainrot-aura-rush",
     "WhosTheBrainrot": "whos-the-brainrot",
     "CardScanner": "card-scanner",
+    "ComancheRPG": "comanche-rpg",
     "Period8": "period-8",
     "PlusOneAura": "plus-one-aura",
     "SpinAndDeal": "spin-and-deal",
