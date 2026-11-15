@@ -1,6 +1,6 @@
 {
-  "generated": "2026-11-15T05:52-05:00",
-  "count": 20,
+  "generated": "2026-11-15T06:15-05:00",
+  "count": 21,
   "games": [
     {
       "id": "nhl94-remake",
@@ -47,6 +47,22 @@
       "apk": "https://github.com/workinmanstrokes/test-builds/releases/download/apks/ComancheRPG.apk?v=20261115",
       "repo": "https://github.com/workinmanstrokes/comanche-rpg",
       "added": "2026-11-14",
+      "updated": "2026-11-15",
+      "isNew": true
+    },
+    {
+      "id": "bronze-and-blood",
+      "title": "Bronze & Blood",
+      "kind": "game",
+      "genre": "Real-time strategy",
+      "desc": "Hold your city together as the Bronze Age collapses.",
+      "icon": "../bronze-and-blood/icon-512.png",
+      "art": "../arcade/art/bronze-and-blood.jpg",
+      "artPos": null,
+      "play": "../bronze-and-blood/",
+      "apk": "https://github.com/workinmanstrokes/test-builds/releases/download/apks/BronzeAndBlood.apk?v=20261115",
+      "repo": "https://github.com/Scofather/bronze-and-blood",
+      "added": "2026-11-15",
       "updated": "2026-11-15",
       "isNew": true
     },
@@ -259,6 +275,22 @@
       "isNew": false
     },
     {
+      "id": "fishing-almanac",
+      "title": "Fishing Almanac",
+      "kind": "app",
+      "genre": "Outdoors",
+      "desc": "Solunar tables, stream gauges, lake depth maps and fishing reports.",
+      "icon": "../fishing-almanac/icons/icon-512.png",
+      "art": "../arcade/art/fishing-almanac.jpg",
+      "artPos": null,
+      "play": "../fishing-almanac/",
+      "apk": "https://github.com/workinmanstrokes/test-builds/releases/download/apks/FishingAlmanac.apk?v=20261111",
+      "repo": "https://github.com/workinmanstrokes/fishing-almanac",
+      "added": "2026-10-17",
+      "updated": "2026-11-15",
+      "isNew": false
+    },
+    {
       "id": "print-doctor",
       "title": "Print Doctor",
       "kind": "app",
@@ -288,22 +320,6 @@
       "repo": "https://github.com/workinmanstrokes/dirttrack",
       "added": "2026-10-24",
       "updated": "2026-11-12",
-      "isNew": false
-    },
-    {
-      "id": "fishing-almanac",
-      "title": "Fishing Almanac",
-      "kind": "app",
-      "genre": "Outdoors",
-      "desc": "Solunar tables, stream gauges, lake depth maps and fishing reports.",
-      "icon": "../fishing-almanac/icons/icon-512.png",
-      "art": "../arcade/art/fishing-almanac.jpg",
-      "artPos": null,
-      "play": "../fishing-almanac/",
-      "apk": "https://github.com/workinmanstrokes/test-builds/releases/download/apks/FishingAlmanac.apk?v=20261111",
-      "repo": "https://github.com/workinmanstrokes/fishing-almanac",
-      "added": "2026-10-17",
-      "updated": "2026-11-08",
       "isNew": false
     },
     {

@@ -1,0 +1,76 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no, viewport-fit=cover, maximum-scale=1">
+  <meta name="theme-color" content="#1a120c">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Bronze & Blood">
+  <title>Bronze &amp; Blood</title>
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="apple-touch-icon" href="apple-touch-icon.png">
+  <link rel="icon" type="image/png" href="icons/icon-192.png">
+  <link rel="stylesheet" href="game.css">
+</head>
+<body>
+  <canvas id="world"></canvas>
+
+  <div id="menu" class="overlay">
+    <div class="menu-panel">
+      <p class="kicker">c. 1200 BCE · The Levant</p>
+      <h1>Bronze <span>&amp;</span> Blood</h1>
+      <p class="tag">Hold your city together as the Bronze Age collapses.</p>
+      <p class="blurb">The Sea Peoples are coming for your city-state. Train spearmen, archers and chariots, send workers to the fields and mines, and hold the walls through eight invasion waves.</p>
+      <button type="button" id="btn-start" class="cta">Begin Defense</button>
+      <ul class="howto">
+        <li>Tap a unit to select it, then tap the ground to move.</li>
+        <li>Pinch to zoom. Drag to pan the map.</li>
+        <li>Train troops below. Upgrade them to Bronze with Copper and Tin.</li>
+        <li>Protect the palace. Survive 8 waves to claim victory.</li>
+      </ul>
+    </div>
+  </div>
+
+  <div id="hud" class="hud" hidden>
+    <div class="hud-top">
+      <header class="topbar">
+        <div class="res" id="res-grain" title="Grain"><i class="ic grain"></i><b>500</b><small>Grain</small></div>
+        <div class="res" id="res-copper" title="Copper"><i class="ic copper"></i><b>200</b><small>Copper</small></div>
+        <div class="res" id="res-tin" title="Tin"><i class="ic tin"></i><b>200</b><small>Tin</small></div>
+        <div class="res" id="res-inf" title="Influence"><i class="ic inf"></i><b>0</b><small>Influence</small></div>
+        <div class="wavebox">
+          <small id="wave-label">The calm before</small>
+          <b id="wave-num">Wave 0 / 8</b>
+        </div>
+        <button type="button" id="btn-pause" class="iconbtn" aria-label="Pause">II</button>
+      </header>
+      <div id="citybar" class="citybar"><span id="cityfill"></span><em>Palace</em></div>
+    </div>
+    <div id="toast" class="toast" hidden></div>
+    <div id="wheel" class="wheel" hidden></div>
+    <footer class="dock">
+      <div class="train" id="train"></div>
+    </footer>
+  </div>
+
+  <div id="pause" class="overlay" hidden>
+    <div class="menu-panel slim">
+      <h2>Paused</h2>
+      <button type="button" id="btn-resume" class="cta">Resume</button>
+      <button type="button" id="btn-menu" class="ghost">Abandon to Menu</button>
+    </div>
+  </div>
+
+  <div id="end" class="overlay" hidden>
+    <div class="menu-panel">
+      <p class="kicker" id="end-kicker"></p>
+      <h1 id="end-title"></h1>
+      <p class="tag" id="end-tag"></p>
+      <button type="button" id="btn-again" class="cta">Fight Again</button>
+    </div>
+  </div>
+
+  <script src="game.js"></script>
+</body>
+</html>
