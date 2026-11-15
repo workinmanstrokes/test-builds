@@ -2,7 +2,7 @@
 (() => {
   'use strict';
   const $ = id => document.getElementById(id), qs = (s, r = document) => r.querySelector(s), qsa = (s, r = document) => [...r.querySelectorAll(s)];
-  const MAXDIM = 2400, HKEY = 'cpg.history.v1';
+  const MAXDIM = 4096, HKEY = 'cpg.history.v1';
   const worker = new Worker('js/worker.js'); let seq = 0; const pending = new Map();
   worker.onmessage = e => { const p = pending.get(e.data.id); if (!p) return; pending.delete(e.data.id); e.data.ok ? p.res(e.data) : p.rej(new Error(e.data.error)); };
   const call = (op, img, quad) => new Promise((res, rej) => { const id = ++seq; pending.set(id, { res, rej }); const buf = img.d.buffer.slice(0); worker.postMessage({ id, op, img: { w: img.w, h: img.h, buf }, quad }, [buf]); });
@@ -41,33 +41,238 @@
   $('scanBtn').onclick = () => { newScan(); show('camera'); };
 
   // ---------- camera ----------
-  let stream = null, liveTimer = null, liveBusy = false, lastLock = 0;
+  // The S25 Ultra preview was zoomed in for two stacked reasons: getUserMedia asked
+  // for 3840×2160, so Chrome crop-and-scaled the 4:3 main sensor to 16:9, and
+  // object-fit:cover then cropped that again to fill the tall screen. The logical
+  // rear camera also defaults toward ultrawide or a digital crop unless zoom is
+  // pinned at 1 (the main lens — the sharp one for a card held close).
+  let stream = null, liveTimer = null, liveBusy = false, lastLock = 0, liveQuad = null, liveK = 1;
+  let zoomCap = null, baseZoom = 1, zoomNow = 1, zoomTimer = 0, zoomHide = 0;
+  const pointers = new Map();
+  function videoConstraints(deviceId) {
+    const video = { width: { ideal: 4000 }, height: { ideal: 3000 }, aspectRatio: { ideal: 4 / 3 }, resizeMode: 'none' };
+    if (deviceId) video.deviceId = { exact: deviceId };
+    else video.facingMode = { ideal: 'environment' };
+    return { audio: false, video };
+  }
+  async function openVideo(deviceId) {
+    try { return await navigator.mediaDevices.getUserMedia(videoConstraints(deviceId)); }
+    catch (e) {
+      const video = deviceId ? { deviceId: { exact: deviceId } } : { facingMode: { ideal: 'environment' } };
+      video.width = { ideal: 1920 }; video.height = { ideal: 1440 };
+      return navigator.mediaDevices.getUserMedia({ audio: false, video });
+    }
+  }
+  function capsOf(track) {
+    let caps = {}, st = {};
+    try { caps = track.getCapabilities ? track.getCapabilities() : {}; } catch (e) {}
+    try { st = track.getSettings ? track.getSettings() : {}; } catch (e) {}
+    return {
+      deviceId: st.deviceId, label: track.label || '', facing: st.facingMode,
+      zoomMin: caps.zoom && caps.zoom.min, zoomMax: caps.zoom && caps.zoom.max, zoomStep: caps.zoom && caps.zoom.step,
+      width: (caps.width && caps.width.max) || st.width, height: (caps.height && caps.height.max) || st.height,
+      caps,
+    };
+  }
+  async function openRear() {
+    const stream0 = await openVideo(null);
+    const info = capsOf(stream0.getVideoTracks()[0]);
+    const opened = [{ ...info, stream: stream0 }];
+    const rank0 = CamLens.rankCamera(info);
+    // A logical camera already at 1× is the S25 Ultra main lens. A fixed "1×"
+    // camera may be the ultrawide, so keep looking for the logical one.
+    if (!rank0 || rank0.kind === 'fixed' || rank0.kind === 'rear') {
+      let devices = [];
+      try { devices = await navigator.mediaDevices.enumerateDevices(); } catch (e) {}
+      for (const d of devices) {
+        if (d.kind !== 'videoinput' || d.deviceId === info.deviceId) continue;
+        if (CamLens.facingOf({ label: d.label }) === 'user') continue;
+        try {
+          const s2 = await openVideo(d.deviceId);
+          opened.push({ ...capsOf(s2.getVideoTracks()[0]), label: s2.getVideoTracks()[0].label || d.label, stream: s2 });
+        } catch (e) {}
+      }
+    }
+    const pick = CamLens.chooseCamera(opened) || { cam: opened[0], zoom: CamLens.naturalZoom(opened[0].caps && opened[0].caps.zoom) };
+    const chosen = opened.find(o => o.deviceId && o.deviceId === pick.cam.deviceId) || opened[0];
+    for (const o of opened) if (o.stream !== chosen.stream) o.stream.getTracks().forEach(t => t.stop());
+    const track = chosen.stream.getVideoTracks()[0];
+    const caps = chosen.caps || {};
+    const z = pick.zoom != null ? pick.zoom : CamLens.naturalZoom(caps.zoom);
+    if (z != null && caps.zoom) {
+      try { await track.applyConstraints({ advanced: [{ zoom: z }] }); } catch (e) {}
+    }
+    try {
+      const modes = caps.focusMode || [];
+      if (modes.includes('continuous')) await track.applyConstraints({ advanced: [{ focusMode: 'continuous' }] });
+      else if (modes.includes('manual') && caps.focusDistance) {
+        const fd = caps.focusDistance, close = Math.min(fd.max, Math.max(fd.min, 5));
+        await track.applyConstraints({ advanced: [{ focusMode: 'manual', focusDistance: close }] });
+      }
+    } catch (e) {}
+    return { stream: chosen.stream, track, caps, baseZoom: z != null ? z : 1 };
+  }
+  function frameMap(v) {
+    const el = $('camera');
+    return CamLens.containMap(v.videoWidth, v.videoHeight, el.clientWidth, el.clientHeight);
+  }
+  function showZoom(rel) {
+    const el = $('zoomReadout');
+    const n = Math.round(rel * 10) / 10;
+    el.textContent = (Math.abs(n - Math.round(n)) < 0.05 ? String(Math.round(n)) : n.toFixed(1)) + '×';
+    el.classList.add('show');
+    clearTimeout(zoomHide); zoomHide = setTimeout(() => el.classList.remove('show'), 700);
+    qsa('#zoomPresets button').forEach(b => b.classList.toggle('on', Math.abs(rel - Number(b.dataset.z)) < 0.15));
+  }
+  function setZoom(z) {
+    if (!zoomCap) return;
+    z = CamLens.clampZoom(z, zoomCap);
+    if (z == null) return;
+    zoomNow = z;
+    showZoom(baseZoom ? z / baseZoom : z);
+    clearTimeout(zoomTimer);
+    zoomTimer = setTimeout(() => {
+      const track = stream && stream.getVideoTracks()[0];
+      if (track) track.applyConstraints({ advanced: [{ zoom: zoomNow }] }).catch(() => {});
+    }, 40);
+  }
+  async function tapFocus(clientX, clientY) {
+    const v = $('video'), track = stream && stream.getVideoTracks()[0];
+    if (!track || !v.videoWidth) return;
+    const r = $('camera').getBoundingClientRect(), m = frameMap(v);
+    const nx = (clientX - r.left - m.ox) / (v.videoWidth * m.k), ny = (clientY - r.top - m.oy) / (v.videoHeight * m.k);
+    if (nx < 0 || ny < 0 || nx > 1 || ny > 1) return;
+    const ring = $('focusRing');
+    ring.style.left = (clientX - r.left) + 'px'; ring.style.top = (clientY - r.top) + 'px';
+    ring.classList.remove('show'); void ring.offsetWidth; ring.classList.add('show');
+    let caps = {};
+    try { caps = track.getCapabilities ? track.getCapabilities() : {}; } catch (e) {}
+    const set = {};
+    if (caps.pointsOfInterest) set.pointsOfInterest = [{ x: nx, y: ny }];
+    const modes = caps.focusMode || [];
+    if (modes.includes('single-shot')) set.focusMode = 'single-shot';
+    else if (modes.includes('manual') && caps.focusDistance) {
+      set.focusMode = 'manual';
+      set.focusDistance = Math.min(caps.focusDistance.max, Math.max(caps.focusDistance.min, 6));
+    }
+    if (!Object.keys(set).length) return;
+    try { await track.applyConstraints({ advanced: [set] }); } catch (e) { return; }
+    if (modes.includes('continuous') && set.focusMode && set.focusMode !== 'continuous') {
+      clearTimeout(tapFocus._t);
+      tapFocus._t = setTimeout(() => { const t = stream && stream.getVideoTracks()[0]; if (t) t.applyConstraints({ advanced: [{ focusMode: 'continuous' }] }).catch(() => {}); }, 900);
+    }
+  }
+  function drawCamLoupe(v) {
+    const el = $('camLoupe');
+    if (!liveQuad) { el.hidden = true; return; }
+    el.hidden = false;
+    const which = Math.floor(Date.now() / 1200) % 4, [x, y] = liveQuad[which];
+    const c = qs('canvas', el), ctx = c.getContext('2d'), z = 64;
+    ctx.imageSmoothingEnabled = false;
+    ctx.drawImage(v, x / liveK - z / 2, y / liveK - z / 2, z, z, 0, 0, c.width, c.height);
+    ctx.strokeStyle = '#22d3ee'; ctx.lineWidth = 2;
+    ctx.beginPath(); const mid = c.width / 2; ctx.moveTo(mid, mid - 16); ctx.lineTo(mid, mid + 16); ctx.moveTo(mid - 16, mid); ctx.lineTo(mid + 16, mid); ctx.stroke();
+    qs('small', el).textContent = ['Top left', 'Top right', 'Bottom right', 'Bottom left'][which];
+  }
   async function startCam() {
     $('camSide').textContent = S.side === 'front' ? 'Front of card' : 'Back of card';
     $('skipBack').hidden = S.side !== 'back'; $('camSpacer').hidden = S.side === 'back';
-    $('camStatus').textContent = 'Looking for card edges…'; $('camStatus').classList.remove('ok'); $('guide').classList.remove('lock');
+    $('camStatus').textContent = 'Opening the main lens…'; $('camStatus').classList.remove('ok'); $('guide').classList.remove('lock');
+    $('camLoupe').hidden = true; liveQuad = null; $('zoomPresets').hidden = true;
     try {
-      stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: { ideal: 'environment' }, width: { ideal: 3840 }, height: { ideal: 2160 } }, audio: false });
+      const opened = await openRear();
+      stream = opened.stream; baseZoom = opened.baseZoom || 1; zoomNow = baseZoom;
+      zoomCap = opened.caps.zoom || null;
+      const canZoom = !!(zoomCap && zoomCap.max > baseZoom * 1.15);
+      $('zoomPresets').hidden = !canZoom;
+      showZoom(1);
+      $('zoomReadout').classList.remove('show');
+      $('camHint').textContent = canZoom ? 'Main lens · 1× · pinch or tap 2×' : 'Main lens · tap the card to focus';
       const v = $('video'); v.srcObject = stream; await v.play().catch(() => {});
       liveTimer = setInterval(liveDetect, 450);
-    } catch (err) { $('camStatus').textContent = 'Camera unavailable. Use a gallery photo instead.'; }
+    } catch (err) { $('camStatus').textContent = 'Camera unavailable. Use a gallery photo instead.'; $('camHint').textContent = 'Out of the sleeve and toploader'; }
   }
-  function stopCam() { clearInterval(liveTimer); liveTimer = null; if (stream) stream.getTracks().forEach(t => t.stop()); stream = null; const c = $('live'); c.getContext('2d').clearRect(0, 0, c.width, c.height); }
-  function coverMap(v, el) { const vw = v.videoWidth, vh = v.videoHeight, W = el.clientWidth, H = el.clientHeight, k = Math.max(W / vw, H / vh); return { k, ox: (W - vw * k) / 2, oy: (H - vh * k) / 2 }; }
+  function stopCam() {
+    clearInterval(liveTimer); liveTimer = null; clearTimeout(zoomTimer); clearTimeout(tapFocus._t);
+    if (stream) stream.getTracks().forEach(t => t.stop()); stream = null; liveQuad = null;
+    const c = $('live'); const x = c.getContext('2d'); x.setTransform(1, 0, 0, 1, 0, 0); x.clearRect(0, 0, c.width, c.height);
+    $('camLoupe').hidden = true; pointers.clear();
+  }
   async function liveDetect() {
     const v = $('video'); if (liveBusy || !v.videoWidth) return; liveBusy = true;
     try {
-      const k = 360 / Math.max(v.videoWidth, v.videoHeight), c = canvasFrom(v, Math.round(v.videoWidth * k), Math.round(v.videoHeight * k));
-      const det = (await call('detect', imgData(c))).res, lc = $('live'), ctx = lc.getContext('2d'); lc.width = lc.clientWidth * devicePixelRatio; lc.height = lc.clientHeight * devicePixelRatio; ctx.scale(devicePixelRatio, devicePixelRatio);
+      const long = 640, k = long / Math.max(v.videoWidth, v.videoHeight), c = canvasFrom(v, Math.round(v.videoWidth * k), Math.round(v.videoHeight * k));
+      const det = (await call('detect', imgData(c))).res, lc = $('live'), ctx = lc.getContext('2d');
+      lc.width = lc.clientWidth * devicePixelRatio; lc.height = lc.clientHeight * devicePixelRatio; ctx.setTransform(devicePixelRatio, 0, 0, devicePixelRatio, 0, 0);
       if (det.found && det.confidence > 0.55) {
-        const m = coverMap(v, $('camera')), pts = det.quad.map(([x, y]) => [x / k * m.k + m.ox, y / k * m.k + m.oy]);
-        ctx.beginPath(); pts.forEach((p, i) => i ? ctx.lineTo(...p) : ctx.moveTo(...p)); ctx.closePath(); ctx.fillStyle = 'rgba(52,211,153,.10)'; ctx.fill(); ctx.lineWidth = 3; ctx.strokeStyle = '#34d399'; ctx.shadowColor = '#34d399'; ctx.shadowBlur = 12; ctx.stroke();
-        $('camStatus').textContent = 'Card found · hold steady and tap'; $('camStatus').classList.add('ok'); $('guide').classList.add('lock'); lastLock = Date.now();
-      } else if (Date.now() - lastLock > 900) { $('camStatus').textContent = 'Looking for card edges…'; $('camStatus').classList.remove('ok'); $('guide').classList.remove('lock'); }
+        liveQuad = det.quad; liveK = k;
+        const m = frameMap(v), pts = det.quad.map(([x, y]) => [x / k * m.k + m.ox, y / k * m.k + m.oy]);
+        ctx.beginPath(); pts.forEach((p, i) => i ? ctx.lineTo(...p) : ctx.moveTo(...p)); ctx.closePath(); ctx.fillStyle = 'rgba(52,211,153,.12)'; ctx.fill(); ctx.lineWidth = 2.5; ctx.strokeStyle = '#34d399'; ctx.shadowColor = '#34d399'; ctx.shadowBlur = 10; ctx.stroke();
+        $('camStatus').textContent = 'Card found · hold steady'; $('camStatus').classList.add('ok'); $('guide').classList.add('lock'); lastLock = Date.now();
+        drawCamLoupe(v);
+      } else if (Date.now() - lastLock > 900) {
+        liveQuad = null; $('camLoupe').hidden = true;
+        $('camStatus').textContent = 'Fit the card in the frame'; $('camStatus').classList.remove('ok'); $('guide').classList.remove('lock');
+      } else if (liveQuad) drawCamLoupe(v);
     } catch (e) {} finally { liveBusy = false; }
   }
-  $('shutter').onclick = async () => { const v = $('video'); if (!v.videoWidth) return; const k = Math.min(1, MAXDIM / Math.max(v.videoWidth, v.videoHeight)); const c = canvasFrom(v, Math.round(v.videoWidth * k), Math.round(v.videoHeight * k)); stopCam(); await takePhoto(c); };
+  async function bitmapFromBlob(blob) {
+    try { return await createImageBitmap(blob, { imageOrientation: 'from-image' }); }
+    catch (e) { return await new Promise((res, rej) => { const i = new Image(); i.onload = () => res(i); i.onerror = rej; i.src = URL.createObjectURL(blob); }); }
+  }
+  async function grabStill() {
+    const v = $('video'), track = stream && stream.getVideoTracks()[0];
+    if (track && typeof ImageCapture === 'function') {
+      try {
+        const blob = await new ImageCapture(track).takePhoto();
+        const bmp = await bitmapFromBlob(blob);
+        const k = Math.min(1, MAXDIM / Math.max(bmp.width, bmp.height));
+        const c = canvasFrom(bmp, Math.round(bmp.width * k), Math.round(bmp.height * k));
+        if (bmp.close) bmp.close();
+        return c;
+      } catch (e) {}
+    }
+    if (!v.videoWidth) return null;
+    const k = Math.min(1, MAXDIM / Math.max(v.videoWidth, v.videoHeight));
+    return canvasFrom(v, Math.round(v.videoWidth * k), Math.round(v.videoHeight * k));
+  }
+  $('shutter').onclick = async () => {
+    const v = $('video'); if (!v.videoWidth || $('shutter').disabled) return;
+    $('shutter').disabled = true;
+    try { const c = await grabStill(); if (!c) return; stopCam(); await takePhoto(c); }
+    catch (e) { toast('Could not capture that photo.'); }
+    finally { $('shutter').disabled = false; }
+  };
   $('skipBack').onclick = () => showResults();
+  qsa('#zoomPresets button').forEach(b => b.onclick = () => { const z = CamLens.presetZoom(baseZoom, Number(b.dataset.z), zoomCap); if (z != null) setZoom(z); });
+  const touch = $('camTouch');
+  touch.addEventListener('pointerdown', e => {
+    touch.setPointerCapture(e.pointerId);
+    pointers.set(e.pointerId, { x: e.clientX, y: e.clientY, sx: e.clientX, sy: e.clientY });
+    if (pointers.size === 2 && zoomCap) {
+      const [a, b] = [...pointers.values()];
+      touch._pinch = { dist: Math.hypot(a.x - b.x, a.y - b.y) || 1, zoom: zoomNow };
+    }
+  });
+  touch.addEventListener('pointermove', e => {
+    const p = pointers.get(e.pointerId); if (!p) return;
+    p.x = e.clientX; p.y = e.clientY;
+    if (pointers.size >= 2 && touch._pinch && zoomCap) {
+      const [a, b] = [...pointers.values()];
+      const dist = Math.hypot(a.x - b.x, a.y - b.y) || 1;
+      setZoom(touch._pinch.zoom * (dist / touch._pinch.dist));
+    }
+  });
+  touch.addEventListener('pointerup', e => {
+    const p = pointers.get(e.pointerId);
+    pointers.delete(e.pointerId);
+    if (pointers.size < 2) { if (touch._pinch) touch._pinched = true; touch._pinch = null; }
+    if (p && pointers.size === 0) {
+      if (touch._pinched) touch._pinched = false;
+      else if (Math.hypot(e.clientX - p.sx, e.clientY - p.sy) < 14) tapFocus(e.clientX, e.clientY);
+    }
+  });
+  touch.addEventListener('pointercancel', e => { pointers.delete(e.pointerId); if (pointers.size < 2) touch._pinch = null; });
 
   // ---------- adjust corners ----------
   let adj = null;
@@ -126,7 +331,8 @@
   let current = null; // {res:{front,back}, card:{front,back}, grade, t}
   function showResults() {
     const g = GradeCore.grade(S.res.front, S.res.back || null);
-    current = { res: { front: S.res.front, back: S.res.back || null }, card: { front: S.card.front, back: S.card.back || null }, grade: g, t: Date.now(), scale: 1, tok: S.tok, ident: S.ident || { status: 'loading', step: 'Reading the card text' } };
+    const shotOf = side => S.photo[side] && S.res[side] ? { canvas: S.photo[side].canvas, quad: S.res[side].quad } : null;
+    current = { res: { front: S.res.front, back: S.res.back || null }, card: { front: S.card.front, back: S.card.back || null }, grade: g, t: Date.now(), scale: 1, tok: S.tok, ident: S.ident || { status: 'loading', step: 'Reading the card text' }, shot: { front: shotOf('front'), back: shotOf('back') } };
     saveHistory(current); track('scan_complete', { range: g.range.join('-'), back: !!S.res.back });
     stack.length = 0; show('result', false); history.pushState({}, ''); renderResult();
   }
@@ -186,14 +392,26 @@
       x.shadowBlur = 0; for (const c of r.corners) { if (!c.measurable || c.wear < 0.15) continue; const cx = c.x < 10 ? 0 : W, cy = c.y < 10 ? 0 : H; x.strokeStyle = c.wear > 0.5 ? '#f87171' : '#fbbf24'; x.lineWidth = 3.5 * u; x.beginPath(); x.arc(cx, cy, 60 * u, 0, 7); x.stroke(); } }
   }
   function renderCorners(r, cc) {
-    const grid = $('cornerGrid'); grid.innerHTML = ''; const k = current.scale || 1, S0 = Math.round(cc.width * 0.16);
-    for (const c of r.corners) {
-      const d = document.createElement('div'); d.className = 'corner'; const cv = document.createElement('canvas'); cv.width = 160; cv.height = 160; const x = cv.getContext('2d');
-      const sx = c.x < 10 ? 0 : cc.width - S0, sy = c.y < 10 ? 0 : cc.height - S0; x.imageSmoothingQuality = 'high'; x.drawImage(cc, sx, sy, S0, S0, 0, 0, 160, 160);
+    const grid = $('cornerGrid'); grid.innerHTML = '';
+    const src = current.shot && current.shot[S.viewSide];
+    r.corners.forEach((c, i) => {
+      const d = document.createElement('div'); d.className = 'corner'; const cv = document.createElement('canvas'); cv.width = 180; cv.height = 180; const x = cv.getContext('2d');
+      x.imageSmoothingEnabled = true; x.imageSmoothingQuality = 'high';
+      const pt = (src && src.quad && src.quad[i]) || c.src;
+      if (src && src.canvas && pt) {
+        const side = Math.hypot(src.quad[1][0] - src.quad[0][0], src.quad[1][1] - src.quad[0][1]) || src.canvas.width;
+        const rect = GradeCore.cornerCropRect(pt[0], pt[1], Math.max(48, side * 0.065));
+        x.drawImage(src.canvas, rect.x, rect.y, rect.w, rect.h, 0, 0, 180, 180);
+      } else {
+        const S0 = Math.round(cc.width * 0.18);
+        const sx = (c.x < 10 ? 0 : cc.width) - S0 / 2, sy = (c.y < 10 ? 0 : cc.height) - S0 / 2;
+        x.drawImage(cc, sx, sy, S0, S0, 0, 0, 180, 180);
+      }
+      x.strokeStyle = 'rgba(34,211,238,.95)'; x.lineWidth = 1.4; x.beginPath(); x.moveTo(90, 78); x.lineTo(90, 102); x.moveTo(78, 90); x.lineTo(102, 90); x.stroke();
       const col = !c.measurable ? '#334155' : c.wear > 0.5 ? '#f87171' : c.wear > 0.15 ? '#fbbf24' : '#34d399'; d.style.setProperty('--cc', col);
       const label = !c.measurable ? 'n/a' : c.wear > 0.5 ? 'Worn' : c.wear > 0.15 ? 'Light wear' : 'Sharp';
       d.append(cv); d.insertAdjacentHTML('beforeend', `<b style="color:${col}">${label}</b><small>${c.name.replace('-', ' ')}</small>`); grid.append(d);
-    }
+    });
   }
 
   // ---------- Scan & Price ----------

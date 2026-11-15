@@ -49,6 +49,13 @@
   }
   const grayAt = (g, w, h, x, y) => { x = clamp(x, 0, w - 1.001); y = clamp(y, 0, h - 1.001); const x0 = x | 0, y0 = y | 0, fx = x - x0, fy = y - y0, i = y0 * w + x0;
     return (g[i] * (1 - fx) + g[i + 1] * fx) * (1 - fy) + (g[i + w] * (1 - fx) + g[i + w + 1] * fx) * fy; };
+  function sampleRGBAt(img, x, y) {
+    x = clamp(x, 0, img.w - 1.001); y = clamp(y, 0, img.h - 1.001);
+    const x0 = x | 0, y0 = y | 0, fx = x - x0, fy = y - y0, W = img.w, s = img.d;
+    const i00 = (y0 * W + x0) * 4, i10 = i00 + 4, i01 = i00 + W * 4, i11 = i01 + 4, c = [0, 0, 0];
+    for (let k = 0; k < 3; k++) c[k] = (s[i00 + k] * (1 - fx) + s[i10 + k] * fx) * (1 - fy) + (s[i01 + k] * (1 - fx) + s[i11 + k] * fx) * fy;
+    return c;
+  }
 
   // ---------- geometry ----------
   function solve(A, b) { // Gaussian elimination, n<=8
@@ -261,29 +268,91 @@
     const confidence = clamp((best.nFrame ? 0.5 : 1) * Math.min(1, minSide / 60), 0, 1);
     return { quad, found: best.nFrame < 4, method: best.nFrame ? 'partial-frame' : 'edges', confidence, holder };
   }
-  // Sub-pixel refinement of each side on a larger image: max normal gradient near the side, robust line fit.
-  function refineQuad(img, quad) {
-    const big = fit(img, 1600), k = big.w / img.w, W = big.w, H = big.h, ta = new Float32Array(4), tb = new Float32Array(4);
-    const cdiff = (x1, y1, x2, y2) => { sampleRGB(big, x1 - .5, y1 - .5, ta, 0); sampleRGB(big, x2 - .5, y2 - .5, tb, 0); return Math.hypot(ta[0] - tb[0], ta[1] - tb[1], ta[2] - tb[2]); };
-    const q = quad.map(([x, y]) => [x * k, y * k]), out = [];
-    const sides = [[0, 1], [1, 2], [2, 3], [3, 0]], L = [];
-    const cx = q.reduce((s, p) => s + p[0], 0) / 4, cy = q.reduce((s, p) => s + p[1], 0) / 4;
-    for (const [a, b] of sides) {
-      const A = q[a], B = q[b], dx = B[0] - A[0], dy = B[1] - A[1], len = Math.hypot(dx, dy); let nx = -dy / len, ny = dx / len;
-      const mx = (A[0] + B[0]) / 2, my = (A[1] + B[1]) / 2; if ((cx - mx) * nx + (cy - my) * ny < 0) { nx = -nx; ny = -ny; } // n points inward
-      const R = Math.max(4, Math.round(len * 0.012)), pts = [];
-      for (let t = 0.12; t <= 0.88; t += 0.76 / 60) { const px = A[0] + dx * t, py = A[1] + dy * t; let bestV = 0, bestO = null;
-        for (let o = -R; o <= R; o += 0.5) { const x = px + nx * o, y = py + ny * o; if (x < 2 || y < 2 || x > W - 3 || y > H - 3) continue;
-          const v = cdiff(x + nx, y + ny, x - nx, y - ny); if (v > bestV) { bestV = v; bestO = o; } }
-        if (bestO !== null && bestV > 6) pts.push([px + nx * bestO, py + ny * bestO]); }
-      if (pts.length < 12) { L.push({ p: A, d: [dx / len, dy / len] }); continue; }
-      let line = fitLine(pts); 
-      for (let it = 0; it < 2; it++) { const r = pts.map(p => distToLine(line, p)), m = median(r); const keep = pts.filter((p, i) => r[i] <= Math.max(1, 2.5 * m)); if (keep.length >= 10) line = fitLine(keep); }
-      L.push(line);
+  // Pinpoint each corner on the full-resolution image. The straight part of every
+  // side (past the rounded corner) is fit as a line; the corner is where those
+  // lines meet, which is the cut even when the physical corner is rounded.
+  // Rays stay near the coarse edge, so a stripe, inner frame, glare streak, or
+  // toploader lip further out does not steal the line.
+  const glarePix = p => { if (!p) return false; const mn = Math.min(p[0], p[1], p[2]), mx = Math.max(p[0], p[1], p[2]); return mn > 248 && mx - mn < 14; };
+  function locateEdge(img, px, py, nx, ny, R) {
+    const W = img.w, H = img.h, step = R > 8 ? 0.5 : 0.25, n = Math.max(6, Math.round((2 * R) / step)), dt = (2 * R) / n;
+    const cols = new Array(n + 1);
+    for (let i = 0; i <= n; i++) {
+      const o = -R + i * dt, x = px + nx * o, y = py + ny * o;
+      // Quad and photo geometry are pixel-center coordinates (the renderer tests x+0.5).
+      // sampleRGBAt addresses pixels by index, so subtract half a pixel or every corner lands 0.5px high-left.
+      cols[i] = (x < 1.5 || y < 1.5 || x >= W - 1.5 || y >= H - 1.5) ? null : sampleRGBAt(img, x - 0.5, y - 0.5);
     }
-    for (let i = 0; i < 4; i++) { const p = lineInter(L[(i + 3) % 4], L[i]); out.push(p ? [p[0] / k, p[1] / k] : quad[i]); }
-    if (Math.abs(quadArea(out) / quadArea(quad) - 1) > 0.15) return quad; // refinement went astray
+    const outer = [];
+    for (let i = 0; i < Math.max(2, Math.round(n * 0.18)); i++) if (cols[i] && !glarePix(cols[i])) outer.push(cols[i]);
+    if (outer.length < 2) return null;
+    const oRef = [0, 1, 2].map(c => median(outer.map(p => p[c])));
+    const dist = cols.map(p => p ? Math.hypot(p[0] - oRef[0], p[1] - oRef[1], p[2] - oRef[2]) : null);
+    const grad = new Float32Array(n + 1);
+    for (let i = 1; i < n; i++) {
+      if (dist[i - 1] == null || dist[i + 1] == null || glarePix(cols[i])) continue;
+      const g = dist[i + 1] - dist[i - 1];
+      if (g > 0) grad[i] = g;
+    }
+    const sigma = Math.max(1.75, R * 0.5);
+    let best = -1, bestS = 0;
+    for (let i = 1; i < n; i++) {
+      if (grad[i] < 12 || grad[i] < grad[i - 1] || grad[i] < grad[i + 1]) continue;
+      const o = -R + i * dt, s = grad[i] * Math.exp(-((o / sigma) ** 2));
+      if (s > bestS) { bestS = s; best = i; }
+    }
+    if (best < 0) return null;
+    const g0 = grad[best - 1], g1 = grad[best], g2 = grad[best + 1], den = g0 - 2 * g1 + g2;
+    let delta = 0;
+    if (Math.abs(den) > 1e-6) delta = clamp(0.5 * (g0 - g2) / den, -0.65, 0.65);
+    const o = -R + (best + delta) * dt;
+    return [px + nx * o, py + ny * o];
+  }
+  function refineQuad(img, quad) {
+    const big = fit(img, 4096), k = big.w / img.w;
+    const limit = len => Math.max(8, len * 0.025);
+    const snap = (q, wide) => {
+      const cx = q.reduce((s, p) => s + p[0], 0) / 4, cy = q.reduce((s, p) => s + p[1], 0) / 4, lines = [];
+      for (const [a, b] of [[0, 1], [1, 2], [2, 3], [3, 0]]) {
+        const A = q[a], B = q[b], dx = B[0] - A[0], dy = B[1] - A[1], len = Math.hypot(dx, dy) || 1;
+        let nx = -dy / len, ny = dx / len;
+        if ((cx - (A[0] + B[0]) / 2) * nx + (cy - (A[1] + B[1]) / 2) * ny < 0) { nx = -nx; ny = -ny; }
+        const R = wide ? Math.max(6, Math.min(22, len * 0.016)) : Math.max(2.5, Math.min(6, len * 0.005));
+        const pts = [], nRay = Math.max(28, Math.min(72, Math.round(len / 16)));
+        // Skip both ends: a trading-card corner is rounded (~3 mm). Fit the straight edge and extend it.
+        for (let s = 0; s < nRay; s++) {
+          const t = 0.16 + 0.68 * (s + 0.5) / nRay, hit = locateEdge(big, A[0] + dx * t, A[1] + dy * t, nx, ny, R);
+          if (hit) pts.push(hit);
+        }
+        if (pts.length < 12) { lines.push({ p: [(A[0] + B[0]) / 2, (A[1] + B[1]) / 2], d: [dx / len, dy / len] }); continue; }
+        let line = fitLine(pts);
+        for (let it = 0; it < 3; it++) {
+          const r = pts.map(p => distToLine(line, p)), m = median(r), tol = Math.max(0.4, 2.0 * m);
+          const keep = pts.filter((_, i) => r[i] <= tol);
+          if (keep.length >= 10) line = fitLine(keep);
+        }
+        lines.push(line);
+      }
+      return q.map((coarse, i) => {
+        const p = lineInter(lines[(i + 3) % 4], lines[i]);
+        const len = Math.hypot(q[(i + 1) % 4][0] - coarse[0], q[(i + 1) % 4][1] - coarse[1]);
+        if (!p || Math.hypot(p[0] - coarse[0], p[1] - coarse[1]) > limit(len)) return coarse.slice();
+        return p;
+      });
+    };
+    let q = quad.map(([x, y]) => [x * k, y * k]);
+    q = snap(q, true);
+    q = snap(q, false);
+    const out = q.map(([x, y]) => [x / k, y / k]);
+    if (Math.abs(quadArea(out) / (quadArea(quad) || 1) - 1) > 0.12) return quad;
+    const far = Math.max(18, 0.04 * Math.max(img.w, img.h));
+    if (out.some((p, i) => Math.hypot(p[0] - quad[i][0], p[1] - quad[i][1]) > far)) return quad;
     return out;
+  }
+  // Source window centered on a corner so a high-zoom crop shows the true corner, not the thumbnail's edge.
+  function cornerCropRect(x, y, win) {
+    const w = Math.max(8, win || 64);
+    return { x: x - w / 2, y: y - w / 2, w, h: w, cx: x, cy: y };
   }
 
   // ---------- centering ----------
@@ -667,6 +736,8 @@
       vis[name] = [0.05, 0.3, 0.5, 0.7, 0.95].every(t => inImg(...f(t)));
     const card = make(cw, ch); for (let y = 0; y < ch; y++) card.d.set(cm.d.subarray(((y + M) * cm.w + M) * 4, ((y + M) * cm.w + M + cw) * 4), y * cw * 4);
     const q = quality(card), cent = measureCentering(card), bp = detectBorderParallel(card, cent), pl = printLines(card, q, cent), sc = scratches(card, q, pl), ew = edgeWear(cm, M, vis), cw2 = cornerWear(cm, M, vis);
+    // Corner wear is sampled on the warped cut, which is the line-intersection corner. Keep the source point so crops can center on it.
+    cw2.forEach((c, i) => { if (quad[i]) c.src = [+quad[i][0].toFixed(2), +quad[i][1].toFixed(2)]; });
     const lipSides = Object.entries(ew.sides).filter(([, s]) => s.lip).map(([n]) => n);
     const holder = det.holder || (lipSides.length ? { kind: 'case', edges: lipSides } : null);
     const notes = [];
@@ -748,6 +819,6 @@
     return { subs, why, est: +est.toFixed(2), range, confidence: +conf.toFixed(2), label: conf > 0.75 ? 'High' : conf > 0.5 ? 'Medium' : 'Low' };
   }
 
-  const api = { CW, CH, make, resize, fit, gray, warp, homography, applyH, detectCard, refineQuad, detectBorderParallel, measureCentering, quality, printLines, scratches, edgeWear, cornerWear, analyzeSide, grade, fmtRatio, centeringScore, edgeScore, median };
+  const api = { CW, CH, make, resize, fit, gray, warp, homography, applyH, detectCard, refineQuad, cornerCropRect, detectBorderParallel, measureCentering, quality, printLines, scratches, edgeWear, cornerWear, analyzeSide, grade, fmtRatio, centeringScore, edgeScore, median };
   root.GradeCore = api; if (typeof module !== 'undefined' && module.exports) module.exports = api;
 })(typeof self !== 'undefined' ? self : globalThis);
