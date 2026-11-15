@@ -94,7 +94,7 @@ const I={play:'<svg width="14" height="14" viewBox="0 0 24 24" fill="currentColo
 apk:'<svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor"><path d="M17.6 9.48 19.44 6.3a.38.38 0 0 0-.66-.38l-1.87 3.23A11.4 11.4 0 0 0 12 8.13c-1.77 0-3.43.37-4.9 1.02L5.22 5.92a.38.38 0 0 0-.66.38L6.4 9.48A10.8 10.8 0 0 0 1 18h22a10.8 10.8 0 0 0-5.4-8.52zM7 15.25a1.25 1.25 0 1 1 0-2.5 1.25 1.25 0 0 1 0 2.5zm10 0a1.25 1.25 0 1 1 0-2.5 1.25 1.25 0 0 1 0 2.5z"/></svg>'};
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const btns=g=>`<div class="btns">${g.play?`<a class="btn play" href="${esc(g.play)}">${I.play}Play</a>`:''}${g.apk?`<a class="btn apk" href="${esc(g.apk)}" download>${I.apk}${g.play?'APK':'Android APK'}</a>`:''}</div>`;
-const cover=g=>g.art?`<img class="s" src="${esc(g.art)}" alt="" loading="lazy" decoding="async">`
+const cover=g=>g.art?`<img class="s" src="${esc(g.art)}"${g.artPos?` style="object-position:${esc(g.artPos)}"`:''} alt="" loading="lazy" decoding="async">`
  :`<div class="blur" style="background-image:url('${esc(g.icon)}')"></div><img class="big" src="${esc(g.icon)}" alt="" loading="lazy">`;
 const card=(g,i)=>`<article class="card" style="animation-delay:${Math.min(i,12)*35}ms"><div class="cover">${cover(g)}${g.isNew?'<span class="badge">NEW</span>':''}<span class="tag">${esc(g.genre||(g.kind==='app'?'App':'Game'))}</span><img class="ico" src="${esc(g.icon)}" alt="" loading="lazy"></div>
 <div class="body"><h4>${esc(g.title)}</h4><p>${esc(g.desc)}</p>${btns(g)}</div></article>`;
