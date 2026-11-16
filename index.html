@@ -1,0 +1,34 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="theme-color" content="#101a22">
+  <meta name="description" content="Diddlers Arcade — free games to play on your phone or computer.">
+  <title>Diddlers Arcade</title>
+  <link rel="manifest" href="./manifest.webmanifest">
+  <link rel="icon" href="./icon.svg" type="image/svg+xml">
+  <style>
+    :root{color-scheme:dark;--bg:#101a22;--panel:#192832;--ink:#f4f0e5;--muted:#a8b8b8;--gold:#ffcf70;--mint:#89e0bd;--line:#ffffff20}*{box-sizing:border-box}body{margin:0;min-height:100vh;background:radial-gradient(ellipse at 75% -5%,#38505a 0,transparent 42%),var(--bg);color:var(--ink);font:16px/1.5 system-ui,-apple-system,Segoe UI,sans-serif}a{color:inherit}.wrap{width:min(1080px,100% - 32px);margin:auto}.top{display:flex;align-items:center;justify-content:space-between;padding:18px 0}.brand{font-weight:900;letter-spacing:.04em}.brand b{color:var(--gold)}.pill,.button{border:1px solid var(--line);border-radius:999px;background:#ffffff0b;color:var(--ink);padding:10px 16px;font:inherit;font-weight:750;text-decoration:none;cursor:pointer}.button.primary{background:var(--gold);color:#241b0d;border-color:transparent}.button:hover{transform:translateY(-1px);filter:brightness(1.08)}button:focus-visible,a:focus-visible{outline:3px solid var(--mint);outline-offset:3px}.hero{padding:42px 0 34px}.eyebrow{color:var(--mint);font-size:.78rem;font-weight:900;letter-spacing:.16em;text-transform:uppercase}.hero h1{max-width:700px;margin:8px 0;font-size:clamp(2.6rem,9vw,5.3rem);line-height:.98;letter-spacing:-.055em}.hero p{max-width:570px;color:var(--muted);font-size:1.08rem}.section-head{display:flex;align-items:end;justify-content:space-between;margin:16px 0}.section-head h2{margin:0;font-size:1.5rem}.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,290px),1fr));gap:16px;padding-bottom:38px}.card{position:relative;overflow:hidden;display:flex;flex-direction:column;min-height:300px;padding:22px;border:1px solid var(--line);border-radius:22px;background:linear-gradient(155deg,#ffffff0a,transparent 55%),var(--panel)}.card .art{height:115px;display:grid;place-items:center;margin:-5px 0 13px;border-radius:15px;background:radial-gradient(circle,#66867955,transparent 68%),#0e171c;font-size:4rem}.card h3{margin:0;font-size:1.45rem}.card p{margin:6px 0 18px;color:var(--muted);flex:1}.tags{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px}.tag{border:1px solid var(--line);border-radius:99px;padding:3px 9px;color:#c7d6d4;font-size:.75rem}.actions{display:flex;gap:9px;flex-wrap:wrap}.notice{padding:16px 18px;margin:4px 0 30px;border:1px solid #ffcf7040;border-radius:16px;background:#ffcf7010;color:#e5d9bb}.notice strong{color:var(--gold)}footer{padding:24px 0 calc(24px + env(safe-area-inset-bottom));border-top:1px solid var(--line);color:var(--muted);font-size:.9rem}.toast{position:fixed;left:50%;bottom:22px;transform:translate(-50%,20px);padding:11px 16px;border:1px solid var(--line);border-radius:12px;background:#1a2932;opacity:0;pointer-events:none;transition:.2s}.toast.show{opacity:1;transform:translate(-50%,0)}@media(max-width:520px){.hero{padding-top:28px}.hero p{font-size:1rem}.top{padding-top:calc(14px + env(safe-area-inset-top))}}
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <header class="top"><a class="brand" href="./" aria-label="Diddlers Arcade home">DIDDLERS <b>ARCADE</b></a><button class="pill" id="install" hidden>＋ Install arcade</button></header>
+    <main>
+      <section class="hero"><div class="eyebrow">A pocket-sized game room</div><h1>Pick a game.<br>Jump right in.</h1><p>Free test builds made to play in your browser. No account, no downloads required to start.</p></section>
+      <div class="section-head"><h2>Play now</h2><span class="tag">Phone friendly</span></div>
+      <section class="grid" aria-label="Playable games">
+        <article class="card"><div class="art" aria-hidden="true">🟡</div><h3>Loop Pop</h3><p>Send color blasters around the loop, clear the picture, and keep the holding bay from filling. Endless levels, daily puzzle, and saved progress.</p><div class="tags"><span class="tag">Puzzle</span><span class="tag">Offline after loading</span><span class="tag">Installable</span></div><div class="actions"><a class="button primary" href="./loop-pop/">Play Loop Pop →</a></div></article>
+        <article class="card"><div class="art" aria-hidden="true">🛡️</div><h3>Bronze &amp; Blood</h3><p>Lead a Bronze Age city-state. Gather supplies, train defenders, repair your walls, and survive the Sea Peoples. This is a lightweight browser playtest.</p><div class="tags"><span class="tag">Strategy</span><span class="tag">New playtest</span><span class="tag">Touch controls</span></div><div class="actions"><a class="button primary" href="./bronze-and-blood/">Play Bronze &amp; Blood →</a></div></article>
+      </section>
+      <aside class="notice"><strong>About Lantern Quest:</strong> its current test build needs Ollama running on a computer, so it isn't listed as a phone-ready game. We'll add it here when there's a version that works without that setup.</aside>
+    </main>
+    <footer>Diddlers Arcade · Test builds · Install this arcade from your browser menu to add it to your home screen.</footer>
+  </div>
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+  <script>
+    let installEvent;const installButton=document.querySelector('#install');window.addEventListener('beforeinstallprompt',event=>{event.preventDefault();installEvent=event;installButton.hidden=false});installButton.addEventListener('click',async()=>{if(!installEvent)return;installEvent.prompt();await installEvent.userChoice;installEvent=null;installButton.hidden=true});if('serviceWorker'in navigator)window.addEventListener('load',()=>navigator.serviceWorker.register('./sw.js').catch(()=>{}));
+  </script>
+</body>
+</html>
