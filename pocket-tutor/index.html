@@ -1,0 +1,632 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Pocket Tutor</title>
+<meta name="description" content="Lessons, quizzes and answers from a local Ollama model.">
+<style>
+  :root {
+    --bg: #0f1419;
+    --panel: #18202a;
+    --panel-2: #212c39;
+    --line: #2f3d4d;
+    --ink: #e8eef4;
+    --muted: #93a4b5;
+    --accent: #5fd1b3;
+    --accent-ink: #062019;
+    --good: #6fcf7f;
+    --bad: #ef7a6d;
+    --radius: 12px;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font: 16px/1.55 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  }
+  button, input, select, textarea { font: inherit; color: inherit; }
+  .wrap { max-width: 760px; margin: 0 auto; padding: 16px; }
+  header { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+  h1 { margin: 0; font-size: 24px; color: var(--accent); }
+  .sub { color: var(--muted); font-size: 13px; }
+  .panel { background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius); padding: 14px; margin-top: 12px; }
+  label { display: block; font-size: 13px; color: var(--muted); margin: 12px 0 4px; }
+  label:first-child { margin-top: 0; }
+  input[type=text], select {
+    width: 100%; background: var(--panel-2); border: 1px solid var(--line); border-radius: 8px; padding: 10px 12px;
+  }
+  input:focus, select:focus, button:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+  .row { display: flex; gap: 8px; flex-wrap: wrap; }
+  .row > .grow { flex: 1 1 160px; min-width: 0; }
+  .btn { background: var(--panel-2); border: 1px solid var(--line); border-radius: 8px; padding: 10px 14px; cursor: pointer; }
+  .btn:hover:not(:disabled) { border-color: var(--accent); }
+  .btn:disabled { opacity: .5; cursor: not-allowed; }
+  .btn.primary { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); font-weight: 600; }
+  .chips { display: flex; flex-wrap: wrap; gap: 8px; }
+  .chip { background: var(--panel-2); border: 1px solid var(--line); border-radius: 999px; padding: 6px 13px; cursor: pointer; font-size: 14px; }
+  .chip[aria-pressed=true] { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
+  .status { font-size: 14px; margin-top: 10px; display: flex; gap: 8px; align-items: flex-start; }
+  .dot { width: 10px; height: 10px; border-radius: 50%; background: var(--muted); margin-top: 6px; flex: 0 0 auto; }
+  .dot.ok { background: var(--good); }
+  .dot.err { background: var(--bad); }
+  .help { font-size: 13px; color: var(--muted); margin-top: 8px; }
+  code { background: #0a0e12; border: 1px solid var(--line); border-radius: 5px; padding: 1px 5px; font: 13px ui-monospace, Menlo, Consolas, monospace; overflow-wrap: anywhere; }
+  pre { background: #0a0e12; border: 1px solid var(--line); border-radius: 8px; padding: 10px 12px; overflow-x: auto; margin: 10px 0; }
+  pre code { background: none; border: 0; padding: 0; overflow-wrap: normal; }
+  details summary { cursor: pointer; color: var(--muted); font-size: 14px; }
+  .tabs { display: flex; gap: 6px; margin-top: 14px; }
+  .tab { flex: 1; text-align: center; padding: 10px 6px; border: 1px solid var(--line); border-bottom: 0; border-radius: 10px 10px 0 0; background: var(--bg); color: var(--muted); cursor: pointer; }
+  .tab[aria-selected=true] { background: var(--panel); color: var(--ink); font-weight: 600; }
+  .view { border-top-left-radius: 0; border-top-right-radius: 0; margin-top: 0; min-height: 220px; }
+  .prose { overflow-wrap: anywhere; }
+  .prose p { margin: 0 0 10px; }
+  .prose h3 { margin: 14px 0 6px; font-size: 17px; color: var(--accent); }
+  .prose ul { margin: 0 0 10px; padding-left: 22px; }
+  .empty { color: var(--muted); font-size: 14px; }
+  .cursor::after { content: "▍"; color: var(--accent); }
+  .opts { display: grid; gap: 8px; margin-top: 12px; }
+  .opt { text-align: left; }
+  .opt.right { border-color: var(--good); background: rgba(111, 207, 127, .14); }
+  .opt.wrong { border-color: var(--bad); background: rgba(239, 122, 109, .14); }
+  .score { font-size: 14px; color: var(--muted); }
+  .score b { color: var(--accent); }
+  .verdict { margin-top: 12px; font-weight: 600; }
+  .verdict.ok { color: var(--good); }
+  .verdict.no { color: var(--bad); }
+  .msg { margin: 0 0 12px; }
+  .msg.you { color: var(--accent); }
+  .msg.you::before { content: "You: "; font-weight: 600; }
+  .err { color: var(--bad); font-size: 14px; margin-top: 10px; }
+  .hidden { display: none !important; }
+  footer { color: var(--muted); font-size: 12px; padding: 16px 0 8px; text-align: center; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>Pocket Tutor</h1>
+    <span class="sub">Lessons and quizzes from the model on your own device</span>
+  </header>
+
+  <section class="panel">
+    <details id="conn" open>
+      <summary id="connSummary">Connection</summary>
+      <label for="url">Ollama address</label>
+      <div class="row">
+        <input id="url" class="grow" type="text" spellcheck="false" autocomplete="off">
+        <button id="reconnect" class="btn" type="button">Connect</button>
+      </div>
+      <div class="status"><span id="dot" class="dot"></span><span id="statusText">Checking for Ollama…</span></div>
+      <div id="connHelp" class="help hidden"></div>
+      <label for="model">Model</label>
+      <select id="model" disabled><option>No models found</option></select>
+    </details>
+  </section>
+
+  <section class="panel">
+    <label>Topic</label>
+    <div id="topics" class="chips"></div>
+    <div class="row" style="margin-top:10px">
+      <input id="custom" class="grow" type="text" maxlength="80" placeholder="…or type your own topic">
+      <select id="level" style="flex:0 1 170px" aria-label="Level">
+        <option value="beginner">Beginner</option>
+        <option value="intermediate">Intermediate</option>
+        <option value="advanced">Advanced</option>
+      </select>
+    </div>
+  </section>
+
+  <div class="tabs" role="tablist">
+    <button class="tab" role="tab" data-tab="learn" aria-selected="true">Learn</button>
+    <button class="tab" role="tab" data-tab="quiz" aria-selected="false">Quiz</button>
+    <button class="tab" role="tab" data-tab="ask" aria-selected="false">Ask</button>
+  </div>
+
+  <section id="view-learn" class="panel view">
+    <div id="lesson" class="prose"><p class="empty">Pick a topic and press Start lesson. Each lesson is short, and Next lesson carries on from where you stopped.</p></div>
+    <div id="learnErr" class="err hidden"></div>
+    <div class="row" style="margin-top:12px">
+      <button id="lessonStart" class="btn primary" type="button" disabled>Start lesson</button>
+      <button id="lessonNext" class="btn" type="button" disabled>Next lesson</button>
+      <button id="lessonSimpler" class="btn" type="button" disabled>Explain it simpler</button>
+    </div>
+  </section>
+
+  <section id="view-quiz" class="panel view hidden">
+    <div class="score" id="score"></div>
+    <div id="quizBody"><p class="empty">Press New question to be quizzed on the topic above.</p></div>
+    <div id="quizErr" class="err hidden"></div>
+    <div class="row" style="margin-top:12px">
+      <button id="quizNext" class="btn primary" type="button" disabled>New question</button>
+      <button id="quizReset" class="btn" type="button">Reset score</button>
+    </div>
+  </section>
+
+  <section id="view-ask" class="panel view hidden">
+    <div id="chat" class="prose"><p class="empty">Ask anything about the topic. Answers come from the local model, which has no internet access.</p></div>
+    <div id="askErr" class="err hidden"></div>
+    <form id="askForm" class="row" style="margin-top:12px">
+      <input id="askInput" class="grow" type="text" maxlength="400" placeholder="Type a question" autocomplete="off">
+      <button id="askSend" class="btn primary" type="submit" disabled>Ask</button>
+      <button id="askClear" class="btn" type="button">Clear</button>
+    </form>
+  </section>
+
+  <footer>Runs on your device with no cloud and no tokens. Small models make mistakes, so double-check anything important.</footer>
+</div>
+
+<script>
+(() => {
+  'use strict';
+
+  const PREF_KEY = 'pocket-tutor:prefs';
+  const SCORE_KEY = 'pocket-tutor:scores';
+  const TOPICS = [
+    'Computer basics', 'Linux command line', 'Networking', 'Python',
+    'HTML, CSS and JavaScript', 'Git', 'Cybersecurity basics', 'How AI models work',
+  ];
+  const QUIZ_SCHEMA = {
+    type: 'object',
+    properties: {
+      question: { type: 'string' },
+      correct_answer: { type: 'string' },
+      wrong_answers: { type: 'array', items: { type: 'string' } },
+      explanation: { type: 'string' },
+    },
+    required: ['question', 'correct_answer', 'wrong_answers', 'explanation'],
+  };
+
+  const $ = (id) => document.getElementById(id);
+  const store = {
+    get(k) { try { return JSON.parse(localStorage.getItem(k)); } catch { return null; } },
+    set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch { /* ignore */ } },
+  };
+  const prefs = Object.assign(
+    { url: 'http://localhost:11434', model: '', topic: TOPICS[0], custom: '', level: 'beginner', tab: 'learn' },
+    store.get(PREF_KEY) || {},
+  );
+  const savePrefs = () => store.set(PREF_KEY, prefs);
+  const scores = store.get(SCORE_KEY) || {};
+
+  let connected = false;
+  let busy = false;
+  let lessonHistory = [];   // messages for the lesson thread
+  let lessonTopicKey = '';
+  let chatHistory = [];
+  let asked = [];           // earlier quiz questions for this topic
+  let current = null;       // current quiz question
+
+  const topic = () => (prefs.custom.trim() || prefs.topic);
+  const topicKey = () => `${topic().toLowerCase()}|${prefs.level}`;
+  const baseUrl = () => prefs.url.trim().replace(/\/+$/, '');
+
+  // ---------- Ollama ----------
+  async function listModels() {
+    const res = await fetch(`${baseUrl()}/api/tags`);
+    if (!res.ok) throw new Error(`Ollama answered ${res.status}`);
+    const data = await res.json();
+    return (data.models || []).map((m) => m.name).filter((n) => !/embed/i.test(n)).sort();
+  }
+
+  async function chat(messages, { format, onText, maxTokens = 700, temperature = 0.6 } = {}) {
+    const body = {
+      model: $('model').value,
+      messages,
+      stream: true,
+      options: { temperature, num_ctx: 4096, num_predict: maxTokens },
+    };
+    if (format) body.format = format;
+    const res = await fetch(`${baseUrl()}/api/chat`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    });
+    if (!res.ok) {
+      let detail = '';
+      try { detail = (await res.json()).error || ''; } catch { /* ignore */ }
+      throw new Error(detail || `Ollama answered ${res.status}`);
+    }
+    const reader = res.body.getReader();
+    const decoder = new TextDecoder();
+    let pending = '';
+    let content = '';
+    const handle = (line) => {
+      if (!line.trim()) return;
+      const chunk = JSON.parse(line);
+      if (chunk.error) throw new Error(chunk.error);
+      if (chunk.message && chunk.message.content) {
+        content += chunk.message.content;
+        if (onText) onText(content);
+      }
+    };
+    for (;;) {
+      const { value, done } = await reader.read();
+      if (done) break;
+      pending += decoder.decode(value, { stream: true });
+      const lines = pending.split('\n');
+      pending = lines.pop();
+      lines.forEach(handle);
+    }
+    handle(pending);
+    content = content.replace(/<think>[\s\S]*?<\/think>/g, '').trim();
+    if (!content) throw new Error('The model returned an empty answer. Try again.');
+    return content;
+  }
+
+  function friendly(err) {
+    const msg = String((err && err.message) || err);
+    if (/failed to fetch|networkerror|load failed/i.test(msg)) return 'Could not reach Ollama. Is it still running?';
+    return msg;
+  }
+
+  // ---------- tiny safe markdown ----------
+  const esc = (s) => s.replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]);
+  function inline(s) {
+    return esc(s)
+      .replace(/`([^`]+)`/g, '<code>$1</code>')
+      .replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
+  }
+  function render(text) {
+    const out = [];
+    const parts = text.replace(/<think>[\s\S]*?(<\/think>|$)/g, '').split(/```/);
+    parts.forEach((part, i) => {
+      if (i % 2) {
+        out.push(`<pre><code>${esc(part.replace(/^[a-zA-Z0-9+#-]*\n/, '').replace(/\n$/, ''))}</code></pre>`);
+        return;
+      }
+      let list = [];
+      const flush = () => { if (list.length) { out.push(`<ul>${list.join('')}</ul>`); list = []; } };
+      part.split('\n').forEach((raw) => {
+        const line = raw.trim();
+        if (!line) { flush(); return; }
+        const h = line.match(/^#{1,6}\s+(.*)$/);
+        const li = line.match(/^(?:[-*•]|\d+[.)])\s+(.*)$/);
+        if (li) { list.push(`<li>${inline(li[1])}</li>`); return; }
+        flush();
+        out.push(h ? `<h3>${inline(h[1])}</h3>` : `<p>${inline(line)}</p>`);
+      });
+      flush();
+    });
+    return out.join('');
+  }
+
+  // ---------- shared UI ----------
+  function setBusy(v) {
+    busy = v;
+    refreshButtons();
+  }
+  function refreshButtons() {
+    const ready = connected && !busy;
+    $('lessonStart').disabled = !ready;
+    $('lessonNext').disabled = !ready || !lessonHistory.length || lessonTopicKey !== topicKey();
+    $('lessonSimpler').disabled = !ready || !lessonHistory.length || lessonTopicKey !== topicKey();
+    $('quizNext').disabled = !ready;
+    $('askSend').disabled = !ready;
+  }
+  function showErr(id, err) {
+    const el = $(id);
+    el.textContent = err ? friendly(err) : '';
+    el.classList.toggle('hidden', !err);
+  }
+  function selectTab(name) {
+    prefs.tab = name;
+    savePrefs();
+    document.querySelectorAll('.tab').forEach((t) => t.setAttribute('aria-selected', String(t.dataset.tab === name)));
+    ['learn', 'quiz', 'ask'].forEach((n) => $(`view-${n}`).classList.toggle('hidden', n !== name));
+  }
+  function renderTopics() {
+    const box = $('topics');
+    box.textContent = '';
+    TOPICS.forEach((t) => {
+      const b = document.createElement('button');
+      b.type = 'button';
+      b.className = 'chip';
+      b.textContent = t;
+      b.setAttribute('aria-pressed', String(!prefs.custom.trim() && prefs.topic === t));
+      b.addEventListener('click', () => {
+        prefs.topic = t;
+        prefs.custom = '';
+        $('custom').value = '';
+        savePrefs();
+        topicChanged();
+      });
+      box.appendChild(b);
+    });
+  }
+  function topicChanged() {
+    renderTopics();
+    asked = [];
+    renderScore();
+    refreshButtons();
+  }
+
+  // ---------- Learn ----------
+  const tutorSystem = () =>
+    `You are a patient computer tutor teaching "${topic()}" to a ${prefs.level} student. ` +
+    'Write in plain, friendly language. Keep each lesson under 180 words: one idea, a short real-world example, ' +
+    'and a command or code snippet in a fenced code block when it helps. End with one small exercise the student can try. ' +
+    'If you are not sure about a fact, say so instead of guessing.';
+
+  async function lesson(kind) {
+    if (busy || !connected) return;
+    showErr('learnErr');
+    if (kind === 'start' || lessonTopicKey !== topicKey()) {
+      lessonHistory = [];
+      lessonTopicKey = topicKey();
+      kind = 'start';
+    }
+    const ask = {
+      start: `Teach me the first lesson on ${topic()}.`,
+      next: 'Give me the next lesson. Build on what you already taught and do not repeat it.',
+      simpler: 'I did not fully understand that. Explain the same lesson again in simpler words with an everyday comparison.',
+    }[kind];
+    const messages = [{ role: 'system', content: tutorSystem() }, ...lessonHistory.slice(-6), { role: 'user', content: ask }];
+    const box = $('lesson');
+    box.innerHTML = '<p class="cursor"></p>';
+    setBusy(true);
+    try {
+      const text = await chat(messages, { onText: (t) => { box.innerHTML = render(t) + '<span class="cursor"></span>'; } });
+      box.innerHTML = render(text);
+      lessonHistory.push({ role: 'user', content: ask }, { role: 'assistant', content: text });
+    } catch (err) {
+      box.innerHTML = '<p class="empty">No lesson yet.</p>';
+      showErr('learnErr', err);
+    }
+    setBusy(false);
+  }
+
+  // ---------- Quiz ----------
+  function renderScore() {
+    const s = scores[topicKey()] || { right: 0, total: 0 };
+    $('score').innerHTML = `Score on this topic: <b>${s.right}</b> of <b>${s.total}</b>`;
+  }
+
+  function parseQuestion(raw) {
+    let obj;
+    try { obj = JSON.parse(raw); } catch {
+      const a = raw.indexOf('{');
+      const b = raw.lastIndexOf('}');
+      if (a < 0 || b <= a) throw new Error('bad');
+      obj = JSON.parse(raw.slice(a, b + 1));
+    }
+    const clean = (v) => String(v == null ? '' : v).trim();
+    const question = clean(obj.question);
+    const correct = clean(obj.correct_answer);
+    const seen = new Set([correct.toLowerCase()]);
+    const wrong = (Array.isArray(obj.wrong_answers) ? obj.wrong_answers : []).map(clean).filter((w) => {
+      const k = w.toLowerCase();
+      if (!w || seen.has(k)) return false;
+      seen.add(k);
+      return true;
+    }).slice(0, 3);
+    if (!question || !correct || wrong.length < 2) throw new Error('bad');
+    const options = [correct, ...wrong];
+    for (let i = options.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [options[i], options[j]] = [options[j], options[i]];
+    }
+    return { question, options, answer: options.indexOf(correct), explanation: clean(obj.explanation) };
+  }
+
+  async function newQuestion() {
+    if (busy || !connected) return;
+    showErr('quizErr');
+    const body = $('quizBody');
+    body.innerHTML = '<p class="empty cursor">Writing a question </p>';
+    setBusy(true);
+    const avoid = asked.slice(-8).map((q) => `- ${q}`).join('\n');
+    const messages = [
+      { role: 'system', content: 'You write multiple-choice quiz questions for computer training. Reply with a single JSON object only.' },
+      {
+        role: 'user',
+        content:
+          `Write one ${prefs.level}-level multiple-choice question about "${topic()}".\n` +
+          'Fields: question; correct_answer (the one right answer); wrong_answers (exactly 3 plausible but clearly wrong answers); ' +
+          'explanation (1 or 2 sentences on why the right answer is right). Keep every answer under 15 words.' +
+          (avoid ? `\nDo not repeat these earlier questions:\n${avoid}` : ''),
+      },
+    ];
+    try {
+      let q = null;
+      for (let attempt = 0; attempt < 2 && !q; attempt++) {
+        const raw = await chat(messages, { format: QUIZ_SCHEMA, maxTokens: 350, temperature: 0.9 });
+        try { q = parseQuestion(raw); } catch { /* retry once */ }
+      }
+      if (!q) throw new Error('The model did not produce a usable question. Try again, or try a larger model.');
+      current = q;
+      asked.push(q.question);
+      renderQuestion();
+    } catch (err) {
+      body.innerHTML = '<p class="empty">No question yet.</p>';
+      showErr('quizErr', err);
+    }
+    setBusy(false);
+  }
+
+  function renderQuestion() {
+    const body = $('quizBody');
+    body.textContent = '';
+    const p = document.createElement('p');
+    p.style.margin = '10px 0 0';
+    p.style.fontWeight = '600';
+    p.textContent = current.question;
+    const opts = document.createElement('div');
+    opts.className = 'opts';
+    current.options.forEach((text, i) => {
+      const b = document.createElement('button');
+      b.type = 'button';
+      b.className = 'btn opt';
+      b.textContent = text;
+      b.addEventListener('click', () => answer(i));
+      opts.appendChild(b);
+    });
+    body.append(p, opts);
+  }
+
+  function answer(i) {
+    if (!current || current.done) return;
+    current.done = true;
+    const right = i === current.answer;
+    const s = scores[topicKey()] || { right: 0, total: 0 };
+    s.total += 1;
+    if (right) s.right += 1;
+    scores[topicKey()] = s;
+    store.set(SCORE_KEY, scores);
+    renderScore();
+    const body = $('quizBody');
+    body.querySelectorAll('.opt').forEach((b, n) => {
+      b.disabled = true;
+      if (n === current.answer) b.classList.add('right');
+      else if (n === i) b.classList.add('wrong');
+    });
+    const v = document.createElement('p');
+    v.className = `verdict ${right ? 'ok' : 'no'}`;
+    v.textContent = right ? 'Correct.' : 'Not quite.';
+    body.appendChild(v);
+    if (current.explanation) {
+      const e = document.createElement('p');
+      e.className = 'sub';
+      e.style.fontSize = '14px';
+      e.textContent = current.explanation;
+      body.appendChild(e);
+    }
+  }
+
+  // ---------- Ask ----------
+  function renderChat(streaming) {
+    const box = $('chat');
+    if (!chatHistory.length && !streaming) {
+      box.innerHTML = '<p class="empty">Ask anything about the topic. Answers come from the local model, which has no internet access.</p>';
+      return;
+    }
+    box.textContent = '';
+    chatHistory.forEach((m) => {
+      const div = document.createElement('div');
+      div.className = `msg ${m.role === 'user' ? 'you' : 'bot'}`;
+      if (m.role === 'user') div.textContent = m.content; else div.innerHTML = render(m.content);
+      box.appendChild(div);
+    });
+    if (streaming !== undefined) {
+      const div = document.createElement('div');
+      div.className = 'msg bot';
+      div.innerHTML = render(streaming) + '<span class="cursor"></span>';
+      box.appendChild(div);
+    }
+  }
+
+  async function ask(question) {
+    question = question.trim();
+    if (busy || !connected || !question) return;
+    showErr('askErr');
+    chatHistory.push({ role: 'user', content: question });
+    $('askInput').value = '';
+    renderChat('');
+    setBusy(true);
+    const messages = [
+      {
+        role: 'system',
+        content: `You are a helpful computer tutor. The student is studying "${topic()}" at ${prefs.level} level. ` +
+          'Answer clearly and briefly, with a short example when useful. You have no internet access. ' +
+          'If you are unsure or the question needs up-to-date facts, say so plainly instead of guessing, and never invent links or sources.',
+      },
+      ...chatHistory.slice(-8),
+    ];
+    try {
+      const text = await chat(messages, { onText: (t) => renderChat(t) });
+      chatHistory.push({ role: 'assistant', content: text });
+      renderChat();
+    } catch (err) {
+      chatHistory.pop();
+      $('askInput').value = question;
+      renderChat();
+      showErr('askErr', err);
+    }
+    setBusy(false);
+  }
+
+  // ---------- connection ----------
+  function setStatus(kind, text, help) {
+    $('dot').className = `dot ${kind}`;
+    $('statusText').textContent = text;
+    $('connHelp').classList.toggle('hidden', !help);
+    $('connHelp').innerHTML = help || '';
+  }
+
+  let seq = 0;
+  async function connect() {
+    const mine = ++seq;
+    prefs.url = $('url').value.trim() || 'http://localhost:11434';
+    savePrefs();
+    connected = false;
+    refreshButtons();
+    setStatus('', 'Checking for Ollama…');
+    $('model').disabled = true;
+    try {
+      const models = await listModels();
+      if (mine !== seq) return;
+      if (!models.length) {
+        setStatus('err', 'Ollama is running but has no models yet.',
+          'Pull one in a terminal, for example <code>ollama pull qwen3.5:4b</code>, then press Connect.');
+        return;
+      }
+      const sel = $('model');
+      sel.textContent = '';
+      models.forEach((m) => {
+        const o = document.createElement('option');
+        o.value = o.textContent = m;
+        sel.appendChild(o);
+      });
+      if (models.includes(prefs.model)) sel.value = prefs.model;
+      sel.disabled = false;
+      connected = true;
+      setStatus('ok', `Connected. ${models.length} model${models.length === 1 ? '' : 's'} available.`);
+      $('connSummary').textContent = `Connection: ${sel.value}`;
+      $('conn').open = false;
+    } catch {
+      if (mine !== seq) return;
+      $('conn').open = true;
+      $('connSummary').textContent = 'Connection';
+      setStatus('err', 'Could not reach Ollama.',
+        '1. Start Ollama (<code>ollama serve</code>).<br>' +
+        '2. Open this page from <code>http://localhost</code> (see the README). Ollama allows that by default.<br>' +
+        '3. If it is still blocked, start Ollama with <code>OLLAMA_ORIGINS=*</code> set.');
+    }
+    refreshButtons();
+  }
+
+  // ---------- wiring ----------
+  $('url').value = prefs.url;
+  $('custom').value = prefs.custom;
+  $('level').value = prefs.level;
+  renderTopics();
+  renderScore();
+  selectTab(['learn', 'quiz', 'ask'].includes(prefs.tab) ? prefs.tab : 'learn');
+
+  document.querySelectorAll('.tab').forEach((t) => t.addEventListener('click', () => selectTab(t.dataset.tab)));
+  $('reconnect').addEventListener('click', connect);
+  $('url').addEventListener('keydown', (e) => { if (e.key === 'Enter') connect(); });
+  $('model').addEventListener('change', () => {
+    prefs.model = $('model').value;
+    savePrefs();
+    $('connSummary').textContent = `Connection: ${prefs.model}`;
+  });
+  $('custom').addEventListener('input', () => { prefs.custom = $('custom').value; savePrefs(); topicChanged(); });
+  $('level').addEventListener('change', () => { prefs.level = $('level').value; savePrefs(); topicChanged(); });
+  $('lessonStart').addEventListener('click', () => lesson('start'));
+  $('lessonNext').addEventListener('click', () => lesson('next'));
+  $('lessonSimpler').addEventListener('click', () => lesson('simpler'));
+  $('quizNext').addEventListener('click', newQuestion);
+  $('quizReset').addEventListener('click', () => {
+    delete scores[topicKey()];
+    store.set(SCORE_KEY, scores);
+    renderScore();
+  });
+  $('askForm').addEventListener('submit', (e) => { e.preventDefault(); ask($('askInput').value); });
+  $('askClear').addEventListener('click', () => { if (!busy) { chatHistory = []; renderChat(); showErr('askErr'); } });
+  connect();
+})();
+</script>
+</body>
+</html>
