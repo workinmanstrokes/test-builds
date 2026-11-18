@@ -1,0 +1,20 @@
+{
+  "name": "hydraulic-press",
+  "version": "1.0.0",
+  "description": "",
+  "scripts": {
+    "start": "node tools/serve.mjs",
+    "playtest": "node tools/playtest.mjs",
+    "check": "node tools/check-data.mjs"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "three": "^0.170.0"
+  },
+  "devDependencies": {
+    "playwright": "^1.63.0"
+  },
+  "type": "module"
+}
