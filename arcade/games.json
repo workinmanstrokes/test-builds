@@ -1,7 +1,23 @@
 {
-  "generated": "2026-11-16T06:19-05:00",
-  "count": 23,
+  "generated": "2026-11-18T01:58-05:00",
+  "count": 24,
   "games": [
+    {
+      "id": "hydraulic-press",
+      "title": "Hydraulic Press & Foundry",
+      "kind": "game",
+      "genre": "Sim",
+      "desc": "Run a press shop: flatten to spec, crack geodes without shattering them, crush mystery crates.",
+      "icon": "../hydraulic-press/icon-512.png",
+      "art": "../arcade/art/hydraulic-press.jpg",
+      "artPos": "50% 22%",
+      "play": "../hydraulic-press/",
+      "apk": null,
+      "repo": null,
+      "added": "2026-11-18",
+      "updated": "2026-11-18",
+      "isNew": true
+    },
     {
       "id": "bronze-and-blood",
       "title": "Bronze And Blood",
