@@ -1,9 +1,36 @@
-// Minimal offline shell: cache-first for app assets, network for everything else.
-const C = 'dirttrack-cbaac9205b';
-self.addEventListener('install', (e) => { self.skipWaiting(); e.waitUntil(caches.open(C).then((c) => c.addAll(['./', './index.html', './icon.svg'].map((u) => new Request(u, { cache: 'reload' }))))); });
-self.addEventListener('activate', (e) => e.waitUntil(caches.keys().then((ks) => Promise.all(ks.filter((k) => k.startsWith('dirttrack-') && k !== C).map((k) => caches.delete(k))))));
+// Network-first app shell. A failed script or style must not be replaced with
+// index.html — that parse error pins a broken copy of the app. Only a
+// navigation falls back to the cached shell. caches from older builds
+// (including dirttrack-<sha>) are dropped on activate.
+const C = 'paydirt-v2';
+self.addEventListener('install', (e) => {
+  self.skipWaiting();
+  e.waitUntil(caches.open(C).then((c) => c.addAll(['./', './index.html', './icon.svg', './manifest.webmanifest'])));
+});
+self.addEventListener('activate', (e) => e.waitUntil(
+  caches.keys()
+    .then((ks) => Promise.all(ks.filter((k) => k !== C).map((k) => caches.delete(k))))
+    .then(() => self.clients.claim()),
+));
 self.addEventListener('fetch', (e) => {
   const u = new URL(e.request.url);
   if (e.request.method !== 'GET' || u.origin !== location.origin) return;
-  e.respondWith(fetch(e.request).then((r) => { const cp = r.clone(); caches.open(C).then((c) => c.put(e.request, cp)); return r; }).catch(() => caches.match(e.request).then((r) => r || caches.match('./index.html'))));
+  e.respondWith((async () => {
+    try {
+      const r = await fetch(e.request);
+      if (r.ok) {
+        const cp = r.clone();
+        caches.open(C).then((c) => c.put(e.request, cp)).catch(() => {});
+      }
+      return r;
+    } catch {
+      const cached = await caches.match(e.request);
+      if (cached) return cached;
+      if (e.request.mode === 'navigate') {
+        const shell = await caches.match('./index.html');
+        if (shell) return shell;
+      }
+      return new Response('Offline', { status: 503, headers: { 'content-type': 'text/plain' } });
+    }
+  })());
 });
