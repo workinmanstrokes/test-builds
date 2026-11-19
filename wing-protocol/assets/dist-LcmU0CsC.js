@@ -1,0 +1,1 @@
+import{n as e}from"./routes-ZthKByYB.js";export{e as Capacitor};

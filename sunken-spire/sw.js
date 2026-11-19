@@ -1,4 +1,4 @@
-const C = 'sunkenspire-81cf9e8d71';const F=["./","./assets/index-wo941VnF.css","./assets/index-JSQ3x_YW.js","./icon.svg","./icons/icon-192.png","./icons/icon-512.png","./manifest.webmanifest"];
+const C='sunkenspire-mwnxgmxy';const F=["./","./assets/index-CaiBjC1-.css","./assets/index-CVghSRnv.js","./assets/index-lnrApjMZ.js","./assets/web-7gFnNWIq.js","./icon.svg","./icons/icon-192.png","./icons/icon-512.png","./manifest.webmanifest"];
 self.addEventListener('install',e=>{e.waitUntil(caches.open(C).then(c=>c.addAll(F.map(u=>new Request(u,{cache:'reload'})))).then(()=>self.skipWaiting()))});
-self.addEventListener('activate',e=>{e.waitUntil(caches.keys().then(k=>Promise.all(k.filter(x=>x.startsWith('sunkenspire-')&&x!==C).map(x=>caches.delete(x)))).then(()=>self.clients.claim()))});
+self.addEventListener('activate',e=>{e.waitUntil(caches.keys().then(k=>Promise.all(k.filter(x=>x.startsWith(C.slice(0,C.lastIndexOf('-')+1))&&x!==C).map(x=>caches.delete(x)))).then(()=>self.clients.claim()))});
 self.addEventListener('fetch',e=>{if(e.request.method!=='GET')return;e.respondWith(caches.match(e.request,{ignoreSearch:true}).then(r=>r||fetch(e.request).then(res=>{const cp=res.clone();caches.open(C).then(c=>c.put(e.request,cp));return res}).catch(()=>caches.match('./'))))});

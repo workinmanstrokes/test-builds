@@ -21,13 +21,19 @@
       <p class="kicker">c. 1200 BCE · The Levant</p>
       <h1>Bronze <span>&amp;</span> Blood</h1>
       <p class="tag">Hold your city together as the Bronze Age collapses.</p>
-      <p class="blurb">The Sea Peoples are coming for your city-state. Train spearmen, archers and chariots, send workers to the fields and mines, and hold the walls through eight invasion waves.</p>
+      <p class="blurb">The Sea Peoples are coming for your city-state. Raise an army, work the fields and mines, and hold the gate through eight landings.</p>
+      <div class="diffs" id="diffs" role="group" aria-label="Difficulty">
+        <button type="button" data-diff="easy">Steward</button>
+        <button type="button" data-diff="normal">Basileus</button>
+        <button type="button" data-diff="hard">Collapse</button>
+      </div>
+      <p class="bestline" id="best-line"></p>
       <button type="button" id="btn-start" class="cta">Begin Defense</button>
       <ul class="howto">
-        <li>Tap a unit to select it, then tap the ground to move.</li>
-        <li>Pinch to zoom. Drag to pan the map.</li>
-        <li>Train troops below. Upgrade them to Bronze with Copper and Tin.</li>
-        <li>Protect the palace. Survive 8 waves to claim victory.</li>
+        <li>Tap a unit to select it. Double-tap to select all of its kind.</li>
+        <li>Army selects every soldier. Tap ground to march, an enemy to attack.</li>
+        <li>Workers gather on their own. Spend Influence in the Council.</li>
+        <li>Enemies batter the gate. Break all 8 waves to win.</li>
       </ul>
     </div>
   </div>
@@ -35,23 +41,48 @@
   <div id="hud" class="hud" hidden>
     <div class="hud-top">
       <header class="topbar">
-        <div class="res" id="res-grain" title="Grain"><i class="ic grain"></i><b>500</b><small>Grain</small></div>
-        <div class="res" id="res-copper" title="Copper"><i class="ic copper"></i><b>200</b><small>Copper</small></div>
-        <div class="res" id="res-tin" title="Tin"><i class="ic tin"></i><b>200</b><small>Tin</small></div>
-        <div class="res" id="res-inf" title="Influence"><i class="ic inf"></i><b>0</b><small>Influence</small></div>
-        <div class="wavebox">
-          <small id="wave-label">The calm before</small>
-          <b id="wave-num">Wave 0 / 8</b>
-        </div>
-        <button type="button" id="btn-pause" class="iconbtn" aria-label="Pause">II</button>
+        <div class="res" id="res-grain" title="Grain"><i class="ic grain"></i><b>0</b></div>
+        <div class="res" id="res-copper" title="Copper"><i class="ic copper"></i><b>0</b></div>
+        <div class="res" id="res-tin" title="Tin"><i class="ic tin"></i><b>0</b></div>
+        <div class="res" id="res-inf" title="Influence"><i class="ic inf"></i><b>0</b></div>
+        <div class="res" id="res-pop" title="Population"><i class="ic pop"></i><b>0/12</b></div>
       </header>
-      <div id="citybar" class="citybar"><span id="cityfill"></span><em>Palace</em></div>
+      <div class="cityrow">
+        <div id="citybar" class="citybar"><span id="cityfill"></span><em>Palace</em><b id="citynum"></b></div>
+        <button type="button" id="btn-repair" class="repair" title="Repair: 40 Grain, 1 Influence">Repair</button>
+      </div>
+      <div class="wavestrip">
+        <div class="wavetxt"><small id="wave-label"></small><b id="wave-num"></b></div>
+        <div class="preview" id="wave-preview"></div>
+        <button type="button" id="btn-call" class="callbtn">Call now<small id="call-bonus"></small></button>
+      </div>
     </div>
+
+    <div class="sidebtns">
+      <button type="button" id="btn-army" class="sbtn wide">Army</button>
+      <button type="button" id="btn-tech" class="sbtn wide">Council<i id="tech-badge" hidden></i></button>
+      <button type="button" id="btn-speed" class="sbtn" aria-label="Game speed">1×</button>
+      <button type="button" id="btn-mute" class="sbtn" aria-label="Sound">♪</button>
+      <button type="button" id="btn-pause" class="sbtn" aria-label="Pause">II</button>
+    </div>
+
+    <div id="banner" class="banner" hidden><small></small><b></b><p></p><em></em></div>
     <div id="toast" class="toast" hidden></div>
     <div id="wheel" class="wheel" hidden></div>
     <footer class="dock">
+      <div id="selinfo" class="selinfo" hidden></div>
       <div class="train" id="train"></div>
     </footer>
+  </div>
+
+  <div id="tech" class="overlay" hidden>
+    <div class="menu-panel">
+      <p class="kicker">Spend Influence</p>
+      <h2>The Council</h2>
+      <p class="techinf"><i class="ic inf"></i><b id="tech-inf">0</b> Influence</p>
+      <ul class="techlist" id="tech-list"></ul>
+      <button type="button" id="btn-tech-close" class="cta">Return to the walls</button>
+    </div>
   </div>
 
   <div id="pause" class="overlay" hidden>
@@ -66,11 +97,19 @@
     <div class="menu-panel">
       <p class="kicker" id="end-kicker"></p>
       <h1 id="end-title"></h1>
+      <p class="stars" id="end-stars"></p>
       <p class="tag" id="end-tag"></p>
+      <div class="stats" id="end-stats"></div>
+      <p class="bestline" id="end-score"></p>
       <button type="button" id="btn-again" class="cta">Fight Again</button>
+      <button type="button" id="btn-end-menu" class="ghost">Menu</button>
     </div>
   </div>
 
-  <script src="game.js"></script>
+  <script src="data.js"></script>
+  <script src="audio.js"></script>
+  <script src="core.js"></script>
+  <script src="render.js"></script>
+  <script src="ui.js"></script>
 </body>
 </html>

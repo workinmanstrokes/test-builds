@@ -1,5 +1,7 @@
 // "+1 Speed Escape": pure runner logic (no DOM). A 3-lane escape run where speed rises +1 every second.
-// Swipe or tap left/right to change lanes, dodge the walls, grab aura wisps. One rewarded revive per run.
+// Scope freeze (Playtest Retune Update): Speed Escape is a 60-second BONUS minigame, not a second game — every run
+// ends at 60 s ('timeup') and the Aura paid back to the main game is capped (RUN.bonusAuraCap x one tap).
+// Swipe or tap left/right to change lanes, dodge the walls, grab aura wisps. One rewarded revive per run (crash only).
 // Cosmetic tie-ins only: the current skin, aura ring tier and halos are drawn on the runner, but no upgrade, halo,
 // skin or purchase changes speed, hitboxes, spawns or revives (not pay-to-win). Aura earned goes to the main game.
 export const RUN = {
@@ -17,6 +19,8 @@ export const RUN = {
   orbChance: 0.45,       // chance a row also carries an aura wisp in a free lane
   auraPerM: 0.1,         // aura reward = (dist * auraPerM + wisps * auraPerWisp) * value of one tap
   auraPerWisp: 3,
+  bonusDurationSec: 60, // bonus minigame: every run ends at 60 s ('timeup'), win or lose
+  bonusAuraCap: 300,    // max aura paid back = 300 x the value of one tap (a great 60 s run earns ~240 + wisps)
 };
 
 /** Speed at time t (seconds into the run): a +1 step every second. */
@@ -30,7 +34,7 @@ export function rng(seed) { let a = seed >>> 0; return () => { a = (a + 0x6D2B79
 export function newRun(seed = (Math.random() * 2 ** 32) >>> 0) {
   return {
     t: 0, speed: RUN.startSpeed, dist: 0, lane: 1, laneFrom: 1, laneK: 1, alive: true, revived: false, invuln: 0,
-    obstacles: [], orbs: [], wisps: 0, nextRow: RUN.firstRowAt, lastFree: [0, 1, 2], seed, rnd: rng(seed), deaths: 0, events: [],
+    obstacles: [], orbs: [], wisps: 0, nextRow: RUN.firstRowAt, lastFree: [0, 1, 2], seed, rnd: rng(seed), deaths: 0, timedOut: false, events: [],
   };
 }
 
@@ -73,7 +77,7 @@ function spawnRow(r, at) {
 }
 
 /**
- * Advance the run by dt seconds. Returns events: 'speed' (each +1), 'wisp', 'dead'.
+ * Advance the run by dt seconds. Returns events: 'speed' (each +1), 'wisp', 'dead', 'timeup' (60 s bonus over).
  * Physics: speed is constant within each second, distance += speed * dt.
  */
 export function step(r, dt) {
@@ -83,6 +87,7 @@ export function step(r, dt) {
   r.t += dt; r.speed = speedAt(r.t);
   if (r.speed > before) ev.push({ type: 'speed', speed: r.speed, gained: r.speed - before });
   r.dist += r.speed * dt;
+  if (r.t >= RUN.bonusDurationSec) { r.alive = false; r.timedOut = true; ev.push({ type: 'timeup', dist: r.dist, speed: r.speed }); return ev; }
   r.laneK = Math.min(1, r.laneK + dt / RUN.laneTweenSec);
   if (r.invuln > 0) r.invuln = Math.max(0, r.invuln - dt);
   const horizon = r.dist + viewAhead(r.speed) + 10;
@@ -106,8 +111,10 @@ export function revive(r) {
   return true;
 }
 
-/** Aura paid into the main game at the end of a run. tapValue = value of one tap (cosmetic tie-in: no gameplay effect). */
-export const runAura = (r, tapValue = 1) => Math.max(0, Math.round((Math.floor(r.dist) * RUN.auraPerM + r.wisps * RUN.auraPerWisp) * Math.max(1, tapValue)));
+/** Aura paid into the main game at the end of a run. tapValue = value of one tap (cosmetic tie-in: no gameplay effect).
+ *  Capped: a 60-second bonus never pays more than RUN.bonusAuraCap x one tap, however far it went. */
+export const runAura = (r, tapValue = 1) => Math.min(RUN.bonusAuraCap * Math.max(1, tapValue),
+  Math.max(0, Math.round((Math.floor(r.dist) * RUN.auraPerM + r.wisps * RUN.auraPerWisp) * Math.max(1, tapValue))));
 
 /** Record keeping in the main save (s.escape). Returns { newBest }. */
 export function recordRun(esc, r) {

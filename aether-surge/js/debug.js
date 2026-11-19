@@ -6,7 +6,7 @@ if(!/[?&]debug=1/.test(q))return;
 window.__AS=AS;
 var G=AS.G,el=document.getElementById("dbg");el.style.display="block";
 var frames=[],cpu=[],lastT=performance.now(),acc=0;
-el.innerHTML='<div id="dbgT"></div><button data-a="stress">stress 300</button><button data-a="spawn">+100</button><button data-a="god">god</button><button data-a="skip">+60s</button><button data-a="auto">autopick</button><button data-a="sig">+sigils</button><button data-a="cache">+cache</button><button data-a="relic">+relic</button><button data-a="motes">+500 motes</button>';
+el.innerHTML='<div id="dbgT"></div><button data-a="stress">stress 300</button><button data-a="spawn">+100</button><button data-a="god">god</button><button data-a="skip">+60s</button><button data-a="auto">autopick</button><button data-a="sig">+sigils</button><button data-a="cache">+cache</button><button data-a="relic">+relic</button><button data-a="motes">+500 motes</button><button data-a="tele">playtest ↓</button>';
 var T=document.getElementById("dbgT");
 el.addEventListener("click",function(e){
   var a=e.target.getAttribute&&e.target.getAttribute("data-a");if(!a)return;e.stopPropagation();
@@ -19,6 +19,7 @@ el.addEventListener("click",function(e){
   else if(a==="cache")G.queue.push({k:"cache"});
   else if(a==="relic")G.queue.push({k:"relic",tier:1});
   else if(a==="motes"){AS.save.addMotes(500);}
+  else if(a==="tele"){if(AS.playtest)AS.playtest.download();} // export playtest sessions (telemetry) as JSON
 });
 function pct(arr,p){if(!arr.length)return 0;var s=arr.slice().sort(function(a,b){return a-b;});return s[Math.min(s.length-1,Math.floor(s.length*p))];}
 function tick(now){
@@ -31,6 +32,9 @@ function tick(now){
     T.textContent="fps "+(1000/avg).toFixed(0)+" | cpu "+cavg.toFixed(2)+"ms p95 "+pct(cpu,0.95).toFixed(2)+
       " | E "+G.eCount+" P "+G.pCount+" EP "+G.epCount+" S "+G.sCount+" L "+G.loot.length+" | t "+Math.floor(G.runT||0)+"s"+
       (G.stress?" STRESS":"")+(G.god?" GOD":"")+(G.autoPick?" AUTO":"");
+    // Dark Rift balance update: while stress mode runs, record FPS + live enemy
+    // count samples into the playtest session (export via the playtest button).
+    if(AS.playtest&&G.stress)AS.playtest.stress(Math.round(1000/avg),G.eCount,G.runT||0);
   }
   requestAnimationFrame(tick);
 }

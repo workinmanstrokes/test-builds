@@ -61,12 +61,34 @@ AS.SCHEDULE=[
   {t:85,  rate:5.0, hp:1.32, spd:1.05, dmg:1.15, mix:{swarmer:5,scout:2,raider:5,caster:3,splitter:2,brute:1}},
   {t:120, rate:6.4, hp:1.55, spd:1.09, dmg:1.28, mix:{swarmer:6,raider:5,caster:4,splitter:3,brute:2,shielder:1}},
   {t:160, rate:8.6, hp:2.02, spd:1.12, dmg:1.40, mix:{swarmer:6,raider:5,caster:4,splitter:3,brute:3,shielder:1.5,bulwark:0.8}},
-  {t:210, rate:11.4,hp:2.60, spd:1.16, dmg:1.64, mix:{swarmer:6,raider:6,caster:4,splitter:3,brute:3,shielder:2,bulwark:1.5,warlord:0.6}},
-  {t:250, rate:15,  hp:3.45, spd:1.22, dmg:1.90, mix:{swarmer:7,raider:6,caster:5,splitter:3,brute:4,shielder:2.5,bulwark:2,warlord:1}},
+  {t:210, rate:11.4,hp:2.50, spd:1.16, dmg:1.58, mix:{swarmer:6,raider:6,caster:4,splitter:3,brute:3,shielder:2,bulwark:1.5,warlord:0.6}},
+  {t:250, rate:15,  hp:2.95, spd:1.22, dmg:1.70, mix:{swarmer:7,raider:6,caster:5,splitter:3,brute:4,shielder:2.5,bulwark:2,warlord:1}},
   {t:300, rate:8,   hp:3.80, spd:1.24, dmg:2.00, mix:{swarmer:6,raider:5,caster:4,brute:3,shielder:2,warlord:0.6}}
 ];
 
 // Timeline events (elapsed seconds). Timer shows time LEFT, e.g. t:45 = 4:15 left.
+// Dark Rift balance update (VEX 5.0/10 review): the pre-boss spike is flattened —
+// the wave before the final boss (t:250) now scales HP x2.95 / damage x1.70 instead
+// of x3.45 / x1.90, and the ramp into it (t:210) is gentler (x2.50 / x1.58). The
+// numbers are published in AS.WAVE_TABLE (verified by tests/playtest.test.js) and
+// in docs/DARK-RIFT-BALANCE.md; playtest telemetry (www/js/playtest.js) records
+// XP-to-level time, deaths by wave and boss attempts so the curve is proven with
+// data from at least 5 fresh players, not asserted.
+AS.RIFT_TEAR={pull:150,dmg:16,radius:92,shardPull:260,warn:"🌀 RIFT TEAR — it pulls you and your shards!"};
+// Published wave table: one row per schedule step. w = wave no., from/to = run-time
+// window (s), hp/dmg = multipliers vs base enemy stats, rate = spawns/sec,
+// xp = mix-weighted average XP per kill (before XP multipliers).
+AS.WAVE_TABLE=[
+  {w:1,from:0,  to:25, hp:1.00,dmg:1.00,rate:2.1, xp:1.5},
+  {w:2,from:25, to:50, hp:1.05,dmg:1.04,rate:2.9, xp:1.8},
+  {w:3,from:50, to:85, hp:1.15,dmg:1.08,rate:3.9, xp:2.3},
+  {w:4,from:85, to:120,hp:1.32,dmg:1.15,rate:5.0, xp:3.0},
+  {w:5,from:120,to:160,hp:1.55,dmg:1.28,rate:6.4, xp:3.6},
+  {w:6,from:160,to:210,hp:2.02,dmg:1.40,rate:8.6, xp:4.3},
+  {w:7,from:210,to:250,hp:2.50,dmg:1.58,rate:11.4,xp:4.8},
+  {w:8,from:250,to:300,hp:2.95,dmg:1.70,rate:15,  xp:5.2},
+  {w:9,from:300,to:300,hp:3.80,dmg:2.00,rate:8,   xp:4.5}
+];
 AS.EVENTS=[
   {t:18,  kind:"cache"},                       // floor Sigil Cache near the player
   {t:35,  kind:"swarm", pattern:"ring"},
@@ -220,7 +242,7 @@ AS.ARENA=[
   {t:0,  id:"calm",    n:"",                          tint:null},
   {t:70, id:"ember",   n:"🔥 Ember Vents erupt",      tint:"rgba(255,90,30,.06)",  every:4.6},
   {t:150,id:"frost",   n:"❄ A Frost Storm rolls in",  tint:"rgba(120,200,255,.07)",every:3.7},
-  {t:225,id:"void",    n:"🌀 Void Rifts tear open",    tint:"rgba(170,80,255,.08)", every:4.3},
+  {t:225,id:"void",    n:"🌀 RIFT TEAR — it pulls you and your shards!", tint:"rgba(170,80,255,.08)", every:4.3},
   {t:300,id:"collapse",n:"☄ The Rift is collapsing",  tint:"rgba(255,40,60,.07)",  every:3.0}
 ];
 AS.WORLD={chunk:520};

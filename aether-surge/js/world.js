@@ -91,7 +91,7 @@ var zt=0;
 function arena(dt){
   var G=C.G,A=AS.ARENA,i=W.arena;
   while(i+1<A.length&&A[i+1].t<=G.runT)i++;
-  if(i!==W.arena){W.arena=i;W.tint=A[i].tint;if(A[i].n)C.banner(A[i].n,true);zt=1.5;}
+  if(i!==W.arena){W.arena=i;W.tint=A[i].tint;if(A[i].n)C.banner(A[i].n,true);zt=1.5;if(A[i].id==="void")spawnTear();}
   var ph=A[i];if(!ph.every)return;
   zt-=dt;if(zt<=0){zt=ph.every*(0.8+Math.random()*0.4);spawnZone(ph.id);}
 }
@@ -101,8 +101,17 @@ function spawnZone(id){
   // M5: bigger, longer-lived, more damaging hazards; ember vents come in pairs
   if(id==="ember"){W.zones.push({k:"ember",x:x,y:y,R:76,warm:0.9,life:4.2,tick:0});if(Math.random()<(G.runT>200?0.6:0.3)){var a2=a+(Math.random()<0.5?1:-1)*(0.8+Math.random()*0.6);W.zones.push({k:"ember",x:P.x+Math.cos(a2)*r,y:P.y+Math.sin(a2)*r,R:64,warm:1.1,life:3.8,tick:0});}}
   else if(id==="frost"){W.zones.push({k:"ice",x:x,y:y,R:105,warm:0.6,life:6.5,tick:0});if(Math.random()<0.8)G.haz.push({x:P.x+j.x*30,y:P.y+j.y*30,R:52,t:0.85,max:0.85,dmg:17*dm,c:"#a8e8ff"});}
-  else if(id==="void")W.zones.push({k:"void",x:x,y:y,R:92,warm:0.75,life:5.5,tick:0});
+  else if(id==="void"){var RT=AS.RIFT_TEAR||{radius:92};W.zones.push({k:"void",tear:true,x:x,y:y,R:RT.radius,warm:0.75,life:6.5,tick:0});}
   else if(id==="collapse"){G.haz.push({x:P.x+j.x*60,y:P.y+j.y*60,R:66,t:0.9,max:0.9,dmg:24*dm,c:"#ff5050"});if(Math.random()<0.6)W.zones.push({k:"ember",x:x,y:y,R:72,warm:0.9,life:4,tick:0});}
+}
+/* Rift Tear (Dark Rift balance update): the void phase's signature hazard. It
+   spawns the moment the phase begins (t:225) so it is visible within the first
+   30 seconds of the zone, pulls the player AND nearby XP shards toward its
+   centre, and damages anyone standing inside it. Tuned by AS.RIFT_TEAR. */
+function spawnTear(){
+  var G=C.G,P=C.P,RT=AS.RIFT_TEAR||{radius:92};
+  var j=AS.input.joy,a=(j.x||j.y)?Math.atan2(j.y,j.x):Math.random()*TAU,r=120;
+  W.zones.push({k:"void",tear:true,x:P.x+Math.cos(a)*r,y:P.y+Math.sin(a)*r,R:RT.radius,warm:0.9,life:9,tick:0});
 }
 function drain(d){var G=C.G,P=C.P;if(G.god||P.inv>90||d<=0)return;d*=(1-(P.eff.armor||0));P.hp-=d;G.dmgTaken+=d;G.hurtFx=Math.max(G.hurtFx,0.35);onHurt();C.checkDeath();}
 function zones(dt){
@@ -115,8 +124,11 @@ function zones(dt){
       if(z.tick<=0){z.tick=0.5;var n=C.gridQuery(z.x,z.y,z.R+20);for(var q=0;q<n;q++){var e=E[QB[q]];if(!e.dead&&(e.x-z.x)*(e.x-z.x)+(e.y-z.y)*(e.y-z.y)<z.R*z.R)C.ignite(e,8);}}}
     else if(z.k==="ice"){if(inside)P.slowZ=true;
       if(z.tick<=0){z.tick=0.3;var n2=C.gridQuery(z.x,z.y,z.R+20);for(var q2=0;q2<n2;q2++){var e2=E[QB[q2]];if(!e2.dead&&(e2.x-z.x)*(e2.x-z.x)+(e2.y-z.y)*(e2.y-z.y)<z.R*z.R){e2.slowT=0.4;e2.slowF=0.45;}}}}
-    else if(z.k==="void"){var pr=z.R*1.8;
-      if(d2<pr*pr){var d=Math.sqrt(d2)||1;P.x-=dx/d*105*dt;P.y-=dy/d*105*dt;if(d<z.R*0.45)drain(16*G.dmgMul*dt);}
+    else if(z.k==="void"){var pr=z.R*1.8,RT=AS.RIFT_TEAR||{pull:150,dmg:16,shardPull:260};
+      if(d2<pr*pr){var d=Math.sqrt(d2)||1;P.x-=dx/d*RT.pull*dt;P.y-=dy/d*RT.pull*dt;if(d<z.R*0.45)drain(RT.dmg*G.dmgMul*dt);}
+      // Rift Tear drags XP shards toward its centre too: shards cluster at the
+      // tear, so collecting them means standing near the hazard.
+      var SH=C.G.S,nS=C.G.sCount;for(var q4=0;q4<nS;q4++){var sh=SH[q4],sx4=z.x-sh.x,sy4=z.y-sh.y,sd4=Math.sqrt(sx4*sx4+sy4*sy4)||1;if(sd4<RT.shardPull&&sd4>8){sh.x+=sx4/sd4*120*dt;sh.y+=sy4/sd4*120*dt;}}
       if(z.tick<=0){z.tick=0.2;var n3=C.gridQuery(z.x,z.y,pr);for(var q3=0;q3<n3;q3++){var e3=E[QB[q3]];if(e3.dead||e3.boss)continue;var fx=z.x-e3.x,fy=z.y-e3.y,fd=Math.sqrt(fx*fx+fy*fy)||1;if(fd<pr&&fd>8){e3.x+=fx/fd*18;e3.y+=fy/fd*18;}if(fd<z.R*0.4)C.dmgE(e3,6,e3.x,e3.y,null,"sigil");}}}
   }
 }
@@ -196,7 +208,7 @@ function drawUnder(ox,oy){
   var G=C?C.G:AS.G,i,s,sx,sy,Wd=V.W,H=V.H;if(!C)return;
   for(i=0;i<W.zones.length;i++){var z=W.zones[i];sx=z.x+ox;sy=z.y+oy;if(sx<-150||sx>Wd+150||sy<-150||sy>H+150)continue;
     if(z.warm>0){ctx.globalAlpha=0.6;ctx.strokeStyle=z.k==="ember"?"#ff8040":z.k==="ice"?"#bff0ff":"#c080ff";ctx.lineWidth=2;ctx.setLineDash([6,6]);ctx.beginPath();ctx.arc(sx,sy,z.R,0,TAU);ctx.stroke();ctx.setLineDash([]);ctx.globalAlpha=1;continue;}
-    s=zoneSprite(z.k,z.R);ctx.globalAlpha=Math.min(1,z.life*1.5);if(z.k==="void"){ctx.save();ctx.translate(sx,sy);ctx.rotate(G.gT*1.5);ctx.drawImage(s,-s.lw/2,-s.lh/2,s.lw,s.lh);ctx.restore();}else ctx.drawImage(s,sx-s.lw/2,sy-s.lh/2,s.lw,s.lh);ctx.globalAlpha=1;}
+    s=zoneSprite(z.k,z.R);ctx.globalAlpha=Math.min(1,z.life*1.5);if(z.k==="void"){ctx.save();ctx.translate(sx,sy);ctx.rotate(G.gT*1.5);ctx.drawImage(s,-s.lw/2,-s.lh/2,s.lw,s.lh);ctx.restore();}else ctx.drawImage(s,sx-s.lw/2,sy-s.lh/2,s.lw,s.lh);ctx.globalAlpha=1;if(z.tear){ctx.font="bold 22px system-ui";ctx.textAlign="center";ctx.fillText("🌀",sx,sy+8);}}
   var m=W.mission;if(m&&m.k==="zone"){sx=m.x+ox;sy=m.y+oy;ctx.strokeStyle="#ffe566";ctx.lineWidth=3;ctx.globalAlpha=0.5+0.3*Math.sin(G.gT*5);ctx.beginPath();ctx.arc(sx,sy,m.R,0,TAU);ctx.stroke();ctx.globalAlpha=1;
     ctx.lineWidth=6;ctx.beginPath();ctx.arc(sx,sy,m.R+6,-Math.PI/2,-Math.PI/2+TAU*Math.min(1,m.prog/m.n));ctx.stroke();}
   for(i=0;i<W.des.length;i++){var d=W.des[i];if(d.dead)continue;sx=d.x+ox;sy=d.y+oy;if(sx<-30||sx>Wd+30||sy<-30||sy>H+30)continue;if(d.fl>0)d.fl-=1/60;s=desSprite(d.kind,d.fl>0);ctx.drawImage(s,sx-20,sy-24,40,44);}

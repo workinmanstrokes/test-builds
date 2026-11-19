@@ -1,7 +1,7 @@
 /* Aether Surge — core simulation: one 5:00 run, wave director, bosses, weapons, sigils, relics, XP, picks, UI flow. */
 (function(AS){
 "use strict";
-var V=AS.view,N=AS.native,S=AS.sfx,IN=AS.input,R=AS.render;
+var V=AS.view,N=AS.native,S=AS.sfx,IN=AS.input,R=AS.render,TP=AS.playtest,OB=AS.onboard;
 function $(id){return document.getElementById(id);}
 function showErr(m){var e=$("err");if(e){e.style.display="block";e.textContent="Error: "+m;}console.error(m);}
 
@@ -168,6 +168,7 @@ function spawnBoss(key){
   if(!e)return false;
   e.boss=b;e.bkey=key;e.st=0;e.stT=1.6;e.el=true;e.phase=0;e.bInv=0;e.spA=0;e.spAng=0;e.dd2=false;if(R.bossSprite)e.spr=R.bossSprite(key,e.r);
   G.bosses.push(e);G.bossFocus=e;
+  if(TP)TP.bossAttempt(key,G.runT);if(OB)OB.onBossWarn();
   if(b.final&&G.mode==="surge"){G.finalSpawned=true;banner("⚠ THE "+b.n.toUpperCase()+" AWAKENS",true);}
   else banner("⚠ "+b.n.toUpperCase(),true);
   S.warn();N.haptic("HEAVY");G.cam.sh=0.4;
@@ -303,7 +304,7 @@ function killE(e){
   S.death();boom(e.x,e.y,e.c,e.el?12:5);if(R.fx)R.fx("fx_death_poof_5f",e.x,e.y,0.4,Math.max(0.7,e.r/11)*(e.boss?1.4:1),e.c);if(AS.FX.bursts&&(e.el||G.fxQ))AS.FX.bursts.push({x:e.x,y:e.y,c:e.c,r:e.boss?220:(e.el?90:e.r*2.6),life:e.boss?0.8:0.32,max:e.boss?0.8:0.32});
   if(e.boss){
     var b=e.boss,n=6;for(var k=0;k<n;k++)addShard(e.x+(Math.random()-0.5)*50,e.y+(Math.random()-0.5)*50,Math.ceil(b.xp/n)+1);
-    G.bossKills++;boom(e.x,e.y,"#ffe040",24);G.cam.sh=0.7;N.haptic("HEAVY");
+    G.bossKills++;if(TP)TP.bossOutcome(e.bkey||(e.boss&&e.boss.n),true,G.runT);boom(e.x,e.y,"#ffe040",24);G.cam.sh=0.7;N.haptic("HEAVY");
     var bi=G.bosses.indexOf(e);if(bi>=0)G.bosses.splice(bi,1);
     if(G.bossFocus===e)G.bossFocus=G.bosses.length?G.bosses[G.bosses.length-1]:null;
     if(G.mode==="boss"){P.pl=Math.floor(P.pl*1.2)+500;P.hp=Math.min(P.maxHp,P.hp+P.maxHp*AS.HEAL.mini);vacuum();bossModeNext(b);return;}
@@ -387,6 +388,7 @@ function update(dt){
   G.gT+=dt;G.ftFrame=0;
   if(G.state!=="playing")return;
   G.runT+=dt;
+  if(OB)OB.tick(G.runT);
   if(P.xpBoostT>0)P.xpBoostT=Math.max(0,P.xpBoostT-dt);
   if(G.mode==="surge"&&G.runT<G.runLen){var wv=Math.floor(G.runT/60);if(wv>G.xpWave){G.xpWave=wv;armXp();}} // each minute of Surge = one wave
   recalc();
@@ -421,6 +423,7 @@ function update(dt){
   if(dt>0&&(P.x!==bx||P.y!==by)){AS.move.slide(P,P.x-bx,P.y-by);} // slide along obstacles instead of grinding into them
   var spN=Math.hypot(P.vx,P.vy);
   P.moving=spN>12||dsh.t>0;P.spdN=Math.min(1,spN/Math.max(1,P.spd*ef.spd));
+  if(OB&&P.moving)OB.onMove();
   AS.move.face(P,dsh.t>0?dsh.dx:P.vx,dsh.t>0?dsh.dy:P.vy,jx,jy,dt);
   if(P.form===1){P.ascT=(P.ascT||0)-dt;if(P.ascT<=0){P.ascT=0.05;var aa=Math.random()*TAU,ar=10+Math.random()*14;
     addP(P.x+Math.cos(aa)*ar,P.y+6+Math.sin(aa)*ar*0.5,(Math.random()-0.5)*24,-70-Math.random()*90,0.5+Math.random()*0.35,1.6+Math.random()*1.8,Math.random()<0.3?"#fff6c8":"#ffd040");}}
@@ -572,7 +575,7 @@ function update(dt){
     var s=SH[i],sx2=P.x-s.x,sy2=P.y-s.y,sd=sx2*sx2+sy2*sy2;
     if(!s.mag&&sd<pickR2)s.mag=true;
     if(s.mag){var sdl=Math.sqrt(sd)||1,v=Math.min(sdl/dt,560+G.runT*0.4);s.x+=sx2/sdl*v*dt;s.y+=sy2/sdl*v*dt;sd=(P.x-s.x)*(P.x-s.x)+(P.y-s.y)*(P.y-s.y);}
-    if(sd<colR2){gainXp(s.v);G.sCount--;if(i<G.sCount){var ts=SH[i];SH[i]=SH[G.sCount];SH[G.sCount]=ts;}}
+    if(sd<colR2){gainXp(s.v);if(TP)TP.shard();if(OB)OB.onShard();G.sCount--;if(i<G.sCount){var ts=SH[i];SH[i]=SH[G.sCount];SH[G.sCount]=ts;}}
   }
   updateLoot(dt);if(AS.dia)AS.dia.update(dt);if(AS.rift)AS.rift.update(dt);
   modeTick(dt);if(G.state!=="playing")return;
@@ -593,7 +596,7 @@ function compact(){
 }
 function gainXp(v){
   v*=P.eff.xp*(P.xpBoostT>0?2:1);P.xp+=v;G.xpTotal+=v;S.gem();
-  while(P.xp>=P.xpN){P.xp-=P.xpN;P.lv++;P.xpN=AS.xpNeed(P.lv);G.queue.push({k:"lvl"});P.pl=Math.floor(P.pl*1.04+40);if(R.fx)R.fx("fx_levelup_ring_4f",P.x,P.y,0.5,1,null,true);
+  while(P.xp>=P.xpN){P.xp-=P.xpN;P.lv++;P.xpN=AS.xpNeed(P.lv);if(TP)TP.levelUp(P.lv,G.runT);G.queue.push({k:"lvl"});P.pl=Math.floor(P.pl*1.04+40);if(R.fx)R.fx("fx_levelup_ring_4f",P.x,P.y,0.5,1,null,true);
     var nt=tierOfLv(P.lv);if(nt>P.tier){P.tier=nt;banner("Resonance "+AS.ROMAN[nt+1]+" — your aura grows",false);for(var k=0;k<20;k++){var a=k/20*TAU;addP(P.x,P.y,Math.cos(a)*260,Math.sin(a)*260,0.5,3,TIER_C[nt]);}shake(0.2);}}
 }
 
@@ -724,10 +727,12 @@ function openPick(){
   offers=rollFor(curPick);
   if(G.autoPick){choose(0);return;}
   if(curPick.k==="lvl")S.levelUp();else S.lvl();N.haptic("MEDIUM");renderOffers();$("lvlUp").style.display="flex";
+  if(curPick.k==="lvl"&&OB)OB.onLevelUp();
 }
 function choose(idx){
   var o=offers[idx];if(!o||G.state!=="levelup")return;
   o.apply();
+  if(OB)OB.onPicked();
   if($("xpOffer").style.display==="block"&&$("xpOffer").parentNode===$("lvlUp"))G.xpArm=false; // offered once per wave; skipping is just picking a card
   $("xpOffer").style.display="none";$("lvlUp").style.display="none";G.state="playing";hud(true);renderSigRow();
   if(G.queue.length)openPick();
@@ -903,6 +908,7 @@ function startGame(cfg){
   setMuteBtn(S.isMuted());
   showHud(true);IN.reset();N.hideBanner();renderSigRow();
   G.state="playing";hud(true);
+  if(TP)TP.begin(G.mode);if(OB)OB.begin();
   if(G.mode==="tower")banner("TOWER — FLOOR 1. Clear floors, pick a path between them.",false);
   else if(G.mode==="boss"){
     // head start: level up to the fight's starting level (you choose each pick), plus one Sigil
@@ -940,7 +946,8 @@ function showResults(won){
     "<span>Missions</span><b>"+G.missionsDone+" / "+AS.MISSION_TIMES.length+"</b>"+
     "<span>Objects broken</span><b>"+G.desBroken+"</b>"+
     (AS.dia?"<span>Loot found</span><b>"+AS.dia.summary()+"</b>":"")+(rr?"<span>Renown</span><b>+"+rr.renown+(rr.pts?' <span class="nb">+'+rr.pts+' SKILL POINT'+(rr.pts>1?"S":"")+'</span>':"")+"</b>":"")+
-    "<span>Legendary</span><b>"+(AS.CORES.filter(function(c){return AS.world.cores[c.id];}).map(function(c){return c.n;}).join(", ")||"—")+"</b>";
+    "<span>Legendary</span><b>"+(AS.CORES.filter(function(c){return AS.world.cores[c.id];}).map(function(c){return c.n;}).join(", ")||"—")+"</b>"+
+    "<span>Playtest</span><b>"+(TP?TP.summaryText(G.lastSession||TP.current):"—")+"</b>";
   renderMotes();
   updateAdBtns();
   $("end").style.display="flex";showHud(false);N.showBanner();
@@ -968,8 +975,8 @@ function updateAdBtns(){
   $("reviveBtn").style.display=rv?"block":"none";if(rv)$("reviveBtn").textContent="▶ REVIVE (Watch Ad • "+rl+" left today)";
   $("doubleBtn").style.display=(over&&!G.doubled&&G.motesAwarded>0&&ready)?"block":"none";
 }
-function gameOver(){G.state="dead";S.stopMusic();N.haptic("HEAVY");showResults(false);}
-function winRun(){G.state="won";S.stopMusic();N.haptic("HEAVY");showResults(true);}
+function gameOver(){G.state="dead";S.stopMusic();N.haptic("HEAVY");if(TP){TP.death(G.runT,AS.SCHEDULE);G.lastSession=TP.end(false);}showResults(false);}
+function winRun(){G.state="won";S.stopMusic();N.haptic("HEAVY");if(TP)G.lastSession=TP.end(true);showResults(true);}
 function revivePlayer(){
   G.revived=true;
   P.hp=Math.max(1,Math.floor(P.maxHp*0.5));P.inv=2.5;G.epCount=0;
@@ -1068,9 +1075,9 @@ function renderGfx(){var t=AS.setRow("Graphics",GF.q==="high"?"HIGH":"LOW",GF.q=
 function toggleGfx(){GF.autoLowered=false;GF.set(GF.q==="high"?"low":"high","user");renderGfx();}
 $("gfxBtn").addEventListener("click",toggleGfx);$("gfxBtn2").addEventListener("click",toggleGfx);renderGfx();
 GF.listeners.push(function(q,why){renderGfx();if(why==="auto")banner("Graphics set to LOW to keep it smooth",false);});
-$("go").addEventListener("click",function(){var cfg=AS.menu?AS.menu.selected():G.modeCfg,go=function(){N.breakBeforePlay(function(){if(G.state==="start")startGame(cfg);});};if(AS.art&&!AS.art.ready)AS.art.onReady(go);else go();}); // sprite art is local + small; only waits on a cold first load
+$("go").addEventListener("click",function(){S.ensure();S.resume().catch(function(){});var cfg=AS.menu?AS.menu.selected():G.modeCfg,go=function(){N.breakBeforePlay(function(){if(G.state==="start")startGame(cfg);});};if(AS.art&&!AS.art.ready)AS.art.onReady(go);else go();}); // unlock audio on the tap itself: breakBeforePlay may run startGame outside the gesture, leaving the AudioContext suspended (no sound on the test build)
 $("privacyBtn").addEventListener("click",function(){N.showPrivacyOptions();});
-$("nx").addEventListener("click",function(){N.maybeInterstitial(function(){startGame(G.modeCfg);});});
+$("nx").addEventListener("click",function(){S.ensure();S.resume().catch(function(){});N.maybeInterstitial(function(){startGame(G.modeCfg);});});
 $("menuBtn").addEventListener("click",backToStart);
 $("pauseBtn").addEventListener("click",function(e){e.stopPropagation();pauseGame();});
 $("resumeBtn").addEventListener("click",resumeGame);$("armoryBtn").addEventListener("click",function(){if(AS.dia)AS.dia.open();});
@@ -1112,6 +1119,7 @@ function loop(now){
 AS.core={G:G,P:P,E:E,QB:QB,gridQuery:gridQuery,nearest:nearest,dmgE:dmgE,aoe:aoe,spawnPr:spawnPr,addP:addP,boom:boom,ignite:ignite,
   banner:banner,hurtPlayer:hurtPlayer,checkDeath:checkDeath,vacuum:vacuum,spawnElite:spawnElite,shake:shake,addFt:addFt};
 AS.save.load();MT.load();renderBest();menuInit();
+if(OB)OB.attach(); // onboarding prompt: tap to skip
 N.init({
   onBack:function(){
     if(G.state==="playing"||G.state==="levelup")pauseGame();

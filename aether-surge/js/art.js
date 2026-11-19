@@ -29,12 +29,13 @@ var SPRITES=["player","player_anim","player_ascended","player_anim_ascended","he
 var FXS=["shot_player","shot_gold","shot_shock","shot_caster","orb_orbit","xp_small","xp_medium","xp_large","fx_hit_spark_4f","fx_death_poof_5f","fx_levelup_ring_4f","fx_crit_star"];
 var GROUNDS=["s1_ground","s2_ground","s3_ground","s4_ground","s5_ground","s6_ground"];
 var A=AS.art={img:IMG,meta:META,fxMeta:FX_META,bossArt:BOSS_ART,heroArt:HERO_ART,playerAnim:PLAYER_ANIM,shotArt:SHOT_ART,gen:0,loaded:0,failed:0,total:0,ready:false,listeners:[],
+  ascendedFallback:false, // set when the ascended art fails to load: render.js then draws the deliberate gold-recolour placeholder
   off:/[?&]art=0/.test(location.search||"")};  // ?art=0 forces the original shape renderer (debug / comparison)
 function load(key,path,cb){
   if(A.off){if(cb)cb(false);return;}
   var im=new Image();im.decoding="async";
   im.onload=function(){IMG[key]=im;A.loaded++;A.gen++;if(cb)cb(true);};
-  im.onerror=function(){A.failed++;if(cb)cb(false);};
+  im.onerror=function(){A.failed++;if(key==="player_ascended"||key==="player_anim_ascended")A.ascendedFallback=true;if(cb)cb(false);};
   im.src=BASE+path;
 }
 var pending=0;
@@ -47,6 +48,7 @@ function preload(){
   setTimeout(function(){if(!A.ready){A.ready=true;A.listeners.forEach(function(f){try{f();}catch(e){}});}},10000); // never block on slow art
 }
 A.onReady=function(f){if(A.ready)f();else A.listeners.push(f);};
+A.ascendedReady=function(){return !!IMG.player_ascended||!!IMG.player_anim_ascended;}; // false = gold-recolour placeholder is in use (see ascendedFallback)
 A.has=function(k){return !!IMG[k];};
 var asked={};
 // on-demand stage art (menu backdrop): sky + far row for theme 1..6

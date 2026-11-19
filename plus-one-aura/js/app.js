@@ -396,14 +396,16 @@ function offline() {
   $('mDouble').onclick = async () => { $('mDouble').disabled = true; const ok = await showRewarded(s, 'offline'); collect(ok ? g.value * 2 : g.value); };
 }
 
-// ---------- +1 Speed Escape (runner mode; logic in runner.js, art in escape.js) ----------
-// Cosmetic tie-ins only: current skin + stage, aura ring tier and halos are drawn on the runner. Aura earned is paid into
-// the main game (scaled by the value of one tap). Nothing bought or upgraded changes speed, hitboxes or revives.
+// ---------- +1 Speed Escape (60-second BONUS minigame, not a second game; logic in runner.js, art in escape.js) ----------
+// Scope freeze (Playtest Retune Update): the runner is a bonus launched from the tap game — every run ends at 60 s
+// ('timeup') and the Aura paid back is capped (RUN.bonusAuraCap x one tap). Cosmetic tie-ins only: current skin + stage,
+// aura ring tier and halos are drawn on the runner. Aura earned is paid into the main game (scaled by the value of one
+// tap). Nothing bought or upgraded changes speed, hitboxes or revives.
 const escView = createEscapeView(canvas, fx);
-let run = null, escHud = { d: -1, spd: -1, w: -1 };
+let run = null, escHud = { d: -1, spd: -1, w: -1, tm: -1 };
 escView.bindInput(() => (screen === 'escape' && run?.alive && !paused && $('modal').hidden ? run : null), d => escMove(d));
 function escMove(d) { if (!run?.alive || paused || !$('modal').hidden) return; if (R.move(run, d)) { run.moves.push([run.t, run.lane]); sfx('buy'); buzz('tap'); if (!$('escHint').classList.contains('gone') && run.t > 1.5) $('escHint').classList.add('gone'); } }
-function refreshEscBest() { $('tEscBest').textContent = s.escape.best > 0 ? `BEST ${s.escape.best} m · TOP SPEED ${s.escape.bestSpeed}` : 'speed +1 every second · dodge the walls'; }
+function refreshEscBest() { $('tEscBest').textContent = s.escape.best > 0 ? `BEST ${s.escape.best} m · TOP SPEED ${s.escape.bestSpeed}` : '60 s bonus · speed +1 every second · dodge the walls'; }
 // extras (daily challenge best, own ghost, login streak) live in their own key so the main save format is unchanged
 const XKEY = 'plusoneaura.extra.v1';
 let X = (() => { try { return JSON.parse(localStorage.getItem(XKEY)) || {}; } catch { return {}; } })();
@@ -419,7 +421,7 @@ function startEscape(via, opts = {}) {
   run = opts.daily ? R.newRun(D.daySeed(day)) : R.newRun(); run.moves = []; run.daily = opts.daily ? day : null;
   run.ghost = s.settings.ghosts === false ? null : (raceGhost || ownGhost());
   $('esc').classList.toggle('daily', !!opts.daily); $('escDaily').hidden = !opts.daily;
-  escHud = { d: -1, spd: -1, w: -1 }; $('escBest').textContent = `${s.escape.best} m`;
+  escHud = { d: -1, spd: -1, w: -1, tm: -1 }; $('escBest').textContent = `${s.escape.best} m`;
   track('escape_start', { via, daily: !!opts.daily, ghost: run.ghost ? (run.ghost.own ? 'own' : 'friend') : 'none', best: s.escape.best, runs: s.escape.runs }); track('da_level_start', { level: s.floor }); unlockAudio(); gameplayStart(); save();
 }
 function exitEscape() {
@@ -439,6 +441,10 @@ function escEvents(evs) {
       fx.shake(1); fx.flash('#ff2a1a', 1); fx.burst(px, g.py, ['#ff6a5a', '#fff', st.accent], 30, 360, 5); sfx('overheat'); buzz('error');
       track('escape_crash', { dist: Math.floor(e.dist), speed: e.speed, revived: run.revived });
       setTimeout(() => { if (screen === 'escape' && run && !run.alive) escOver(); }, 450);
+    } else if (e.type === 'timeup') {
+      fx.shake(0.4); fx.flash('#ffe27a', .7); banner('TIME! BONUS OVER'); sfx('levelUp'); buzz('success');
+      track('escape_timeup', { dist: Math.floor(e.dist), speed: e.speed, wisps: run.wisps });
+      setTimeout(() => { if (screen === 'escape' && run && !run.alive) escResults(); }, 450);
     }
   }
 }
@@ -459,7 +465,8 @@ function escOver() {
 }
 function escResults() {
   if (!run || run.alive || run.paid) return; run.paid = true;
-  const d = Math.floor(run.dist), { newBest } = R.recordRun(s.escape, run), v = R.runAura(run, G.basePerTap(s, Date.now()));
+  const d = Math.floor(run.dist), { newBest } = R.recordRun(s.escape, run), tapValue = G.basePerTap(s, Date.now()), v = R.runAura(run, tapValue);
+  const capped = v >= R.RUN.bonusAuraCap * Math.max(1, tapValue);
   // ghost: keep the timeline of your best distance (local), upload it for friends to race
   const og = X.ghost && D.decodeGhost(X.ghost);
   if (d > 0 && (!og || d > og.dist)) { X.ghost = D.encodeGhost(run.moves, run.t); saveX(); if (!isPortal) SOC.uploadGhost(X.ghost, D.distAt(run.t), isPortal).catch(() => {}); }
@@ -469,7 +476,8 @@ function escResults() {
   const evs = G.grant(s, v); bumpTotal();
   track('escape_end', { dist: d, speed: run.speed, wisps: run.wisps, revived: run.revived, aura: v, new_best: newBest });
   track(newBest ? 'da_level_complete' : 'da_level_fail', { level: s.floor, deaths: 1 + (run.revived ? 1 : 0) });
-  modal(`<div id="escOver"></div><h2>${newBest ? 'NEW BEST! 🏆' : 'RUN OVER'}</h2><p class="esc-res"><b>${d} m</b>top speed ${run.speed} · ✦ ${run.wisps} wisps<br>Best ${s.escape.best} m</p>
+  modal(`<div id="escOver"></div><h2>${run.timedOut ? 'BONUS DONE! ⏱' : newBest ? 'NEW BEST! 🏆' : 'RUN OVER'}</h2><p class="esc-res"><b>${d} m</b>top speed ${run.speed} · ✦ ${run.wisps} wisps<br>Best ${s.escape.best} m</p>
+    <p class="esc-bonus">60-second bonus · reward capped at ${R.RUN.bonusAuraCap}× one tap${capped ? ' — cap reached' : ''}</p>
     ${run.daily ? `<p class="esc-daily">📅 Daily ${run.daily} · today's best <b>${X.daily.best} m</b>${dailyNew ? ' · NEW!' : ''}</p>` : ''}${run.ghost ? `<p class="esc-ghost">👻 ${beatGhost ? 'You beat' : 'You lost to'} ${esc(run.ghost.name)} (${run.ghost.g.dist} m)</p>` : ''}
     <p>+${G.fmt(v)} ${skin.text.currency}</p><div class="row"><button class="btn primary" id="mEAgain">⚡ Run again</button><button class="btn" id="mETap">Tap mode</button><button class="btn" id="mEHome">Home</button></div><div class="row"><button class="btn" id="mEShare">📤 Share · Beat my score</button><button class="btn" id="mEGhost">👻 Ghosts</button>${run.daily ? '<button class="btn" id="mEDRank">📅 Daily ranks</button>' : ''}</div>`);
   if (newBest) { sfx('unlock'); fx.flash('#ffe27a', .6); } else sfx('bank');
@@ -488,6 +496,7 @@ function escHudTick() {
   if (run.speed !== escHud.spd) { escHud.spd = run.speed; $('escSpd').textContent = run.speed; }
   if (run.wisps !== escHud.w) { escHud.w = run.wisps; $('escWisps').textContent = `✦ ${run.wisps}`; }
   if (d > s.escape.best && s.escape.best > 0) $('escBest').textContent = `${d} m`;
+  const tm = Math.max(0, Math.ceil(R.RUN.bonusDurationSec - run.t)); if (tm !== escHud.tm) { escHud.tm = tm; $('escTime').textContent = tm; }
 }
 
 // ---------- HUD ----------

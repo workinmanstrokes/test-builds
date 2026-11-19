@@ -1,11 +1,14 @@
 // Fishing Almanac service worker.
-// - App shell: network-first, cached copy when offline.
+// - App shell: network-first, cached copy when offline. The Almanac guide
+//   (species, bait and lure pages) is in-app views of this shell, so the
+//   whole guide — including the Lure picker and trip checklist — works
+//   offline once visited. Cache bumped to v8 for the tester update, v9 for the 2026-11-19 follow-up (Yellow Perch profile added to the guide data).
 // - Map tiles (Esri imagery/labels): cache-first from any cache, so tiles of
 //   saved offline spots (fishing-almanac-spots-v1, written by the page) and
 //   tiles you've viewed load instantly and with no signal.
 // - Michigan DNR depth (ArcGIS) and USGS gauges: network-first with
 //   an opportunistic cache for offline fallback.
-const CACHE = 'fishing-almanac-b1fc0b9250';
+const CACHE = "fishing-almanac-v9";
 const DATA = "fishing-almanac-data-v1";
 const SPOTS = "fishing-almanac-spots-v1"; // owned by src/lib/offlineSpots.js; never trimmed here
 const DATA_MAX = 1500; // entries; tiles are ~20-60 KB each
@@ -15,7 +18,7 @@ const DATA_HOSTS = /^services3\.arcgis\.com$|^waterservices\.usgs\.gov$/;
 // Open-Meteo is not cached here: lib/weather.js keeps the last forecast with its real age.
 
 self.addEventListener("install", (event) => event.waitUntil(caches.open(CACHE).then((cache) => cache.addAll(SHELL)).then(() => self.skipWaiting())));
-self.addEventListener("activate", (event) => event.waitUntil(caches.keys().then((keys) => Promise.all(keys.filter((key) => key.startsWith('fishing-almanac-') && ![CACHE, DATA, SPOTS].includes(key)).map((key) => caches.delete(key)))).then(() => self.clients.claim())));
+self.addEventListener("activate", (event) => event.waitUntil(caches.keys().then((keys) => Promise.all(keys.filter((key) => key.startsWith('fishing-almanac-') && ![CACHE, DATA, SPOTS].includes(key)) /* the arcade's other games share this cache storage */.map((key) => caches.delete(key)))).then(() => self.clients.claim())));
 
 async function trim(cache) {
   const keys = await cache.keys();

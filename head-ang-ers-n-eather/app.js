@@ -1,545 +1,1059 @@
-/* Soundboard — single-page PWA.
- * Pads play either a synthesised starter sound (Web Audio, offline, instant)
- * or a saved clip (Internet Archive URL or a mic recording stored on-device).
- * Storage: localStorage key "soundboard.pads.v1" holds user pads + recordings
- * (recordings as data URLs, capped at ~4 MB each so the board stays fast).
- */
-'use strict';
+import { archiveDownloadUrl, archiveSearchUrl, MAX_BYTES, pickClipFile, safeTerm } from './lib/archive.js';
+import { clearClips, deleteClip, getClip, putClip } from './lib/clip-store.js';
+import { INK_CREAM, inkFor } from './lib/color.js';
+import { createEngine } from './lib/engine.js';
+import { classifyLicense, formatAttribution } from './lib/licenses.js';
+import { padMark } from './lib/marks.js';
+import { bootTelemetry, currentStats, setStatsEnabled, track } from './telemetry.js';
 
-const STORAGE_KEY = 'soundboard.pads.v1';
+const PAD_KEY = 'soundboard.pads.v2';
+const LEGACY_PAD_KEY = 'soundboard.pads.v1';
 const MACRO_KEY = 'soundboard.macros.v1';
-const STARTER_URL = 'data/starter-pack.json';
+const SETTINGS_KEY = 'soundboard.settings.v1';
+const MAX_CHAIN = 8;
+const MAX_RECORD_SECONDS = 60;
 
-/* ---------- audio core: one shared AudioContext, reused across taps ----------
- * Reusing a warm context (instead of creating one per tap) is the main
- * tap-to-sound delay fix: first tap unlocks audio, later taps play at once. */
-let audioCtx = null;
-let masterGain = null;
-const activeSources = new Set(); // every live source, so Stop All can kill them
-const activeAudio = new Set(); // live <audio> elements (saved clips, recordings, previews) — Stop All must kill these too
+const LEGACY_SYNTH = {
+  airhorn: 'airhorn',
+  rimshot: 'rimshot',
+  sadTrombone: 'sad-trombone',
+  boing: 'boing',
+  laser: 'laser',
+  whistle: 'whistle',
+  applause: 'applause',
+  drumroll: 'drum-roll',
+  quack: 'quack',
+  moo: 'moo',
+  ding: 'ding',
+  buzzer: 'buzzer',
+  coin: 'coin',
+  fart: 'fart',
+  tada: 'tada',
+  cricket: 'crickets',
+};
 
-function ensureAudio() {
-  if (!audioCtx) {
-    const AC = window.AudioContext || window.webkitAudioContext;
-    audioCtx = new AC();
-    masterGain = audioCtx.createGain();
-    masterGain.gain.value = volumeEl.value / 100;
-    masterGain.connect(audioCtx.destination);
-  }
-  if (audioCtx.state === 'suspended') void audioCtx.resume();
-  return audioCtx;
+const PALETTE = ['#c81f36', '#ef7d12', '#5346e4', '#0d7a4d', '#1f5fd4', '#0c7380', '#c21868', '#d4652a'];
+
+const $ = (id) => document.getElementById(id);
+const engine = createEngine();
+const buffers = new Map();
+const loading = new Map();
+const queued = new Map();
+const playing = new Map();
+
+let catalog = [];
+let pads = [];
+let macros = [];
+let playToken = 0;
+let macroArmed = false;
+let editArmed = false;
+let macroChain = [];
+let editingId = null;
+let sheetName = '';
+let mediaRecorder = null;
+let recStream = null;
+let recStarted = 0;
+let recTimerId = 0;
+let recCapId = 0;
+let discardTake = false;
+let deferredInstall = null;
+
+const volumeEl = $('volume');
+
+function uid() {
+  return 'pad-' + Math.random().toString(36).slice(2, 10);
 }
 
-function stopAll() {
-  for (const src of [...activeSources]) {
-    try { src.stop(); } catch (_) { /* already stopped */ }
+function readJson(key) {
+  try {
+    return JSON.parse(localStorage.getItem(key) || 'null');
+  } catch (_) {
+    return null;
   }
-  activeSources.clear();
-  for (const audio of [...activeAudio]) {
-    try { audio.pause(); } catch (_) { /* already stopped */ }
-  }
-  activeAudio.clear();
-  document.querySelectorAll('.pad.playing').forEach(el => el.classList.remove('playing'));
-  setStatus('Stopped everything.');
 }
 
-function track(source, padEl) {
-  activeSources.add(source);
-  if (padEl) padEl.classList.add('playing');
-  source.onended = () => {
-    activeSources.delete(source);
-    if (padEl) padEl.classList.remove('playing');
+function savePads() {
+  localStorage.setItem(PAD_KEY, JSON.stringify(pads));
+}
+
+function saveMacros() {
+  localStorage.setItem(MACRO_KEY, JSON.stringify(macros));
+}
+
+function saveSettings() {
+  localStorage.setItem(SETTINGS_KEY, JSON.stringify({ volume: Number(volumeEl.value) }));
+}
+
+function setStatus(text) {
+  $('status').textContent = text;
+}
+
+function isNative() {
+  return !!(window.Capacitor && typeof window.Capacitor.isNativePlatform === 'function' && window.Capacitor.isNativePlatform());
+}
+
+function padById(id) {
+  return pads.find((p) => p.id === id) || null;
+}
+
+function bufferKey(pad) {
+  return pad.kind === 'starter' ? 'starter:' + pad.soundId : 'clip:' + pad.clipId;
+}
+
+function makeStarter(def, overrides = {}) {
+  return {
+    id: overrides.id || uid(),
+    label: overrides.label || def.label,
+    colour: overrides.colour || def.colour,
+    kind: 'starter',
+    soundId: def.id,
+    duration: def.duration,
+    source: 'Original synthesis, generated for this app',
+    licenseName: 'Original',
   };
 }
 
-/* ---------- tiny synth engine for the starter pack ---------- */
-function tone({ freq = 440, freqEnd = null, type = 'sine', dur = 0.3, delay = 0, gain = 0.5, attack = 0.005 }) {
-  const ctx = ensureAudio();
-  const t0 = ctx.currentTime + delay;
-  const osc = ctx.createOscillator();
-  const g = ctx.createGain();
-  osc.type = type;
-  osc.frequency.setValueAtTime(freq, t0);
-  if (freqEnd !== null) osc.frequency.exponentialRampToValueAtTime(Math.max(1, freqEnd), t0 + dur);
-  g.gain.setValueAtTime(0, t0);
-  g.gain.linearRampToValueAtTime(gain, t0 + attack);
-  g.gain.exponentialRampToValueAtTime(0.001, t0 + dur);
-  osc.connect(g).connect(masterGain);
-  osc.start(t0);
-  osc.stop(t0 + dur + 0.05);
-  track({ stop() { try { osc.stop(); } catch (_) {} }, set onended(_) {} }, null);
-  return osc;
+function metaLabel(pad) {
+  if (pad.kind === 'starter') return 'Original';
+  if (pad.kind === 'recording') return 'On this device';
+  return pad.licenseName || 'Saved';
 }
 
-function noiseBurst({ dur = 0.3, delay = 0, gain = 0.5, lowpass = 4000 }) {
-  const ctx = ensureAudio();
-  const t0 = ctx.currentTime + delay;
-  const len = Math.max(1, Math.floor(ctx.sampleRate * dur));
-  const buf = ctx.createBuffer(1, len, ctx.sampleRate);
-  const data = buf.getChannelData(0);
-  for (let i = 0; i < len; i++) data[i] = (Math.random() * 2 - 1) * (1 - i / len);
-  const src = ctx.createBufferSource();
-  src.buffer = buf;
-  const filter = ctx.createBiquadFilter();
-  filter.type = 'lowpass';
-  filter.frequency.value = lowpass;
-  const g = ctx.createGain();
-  g.gain.value = gain;
-  src.connect(filter).connect(g).connect(masterGain);
-  src.start(t0);
-  track(src, null);
-  return src;
+function slug(name) {
+  return String(name || 'sound').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || 'sound';
 }
 
-/* One synth recipe per starter sound. Durations stay short (0.2–2.5 s). */
-const SYNTH = {
-  airhorn() { // loud three-note blast
-    [220, 277, 330].forEach(f => tone({ freq: f, type: 'sawtooth', dur: 0.9, gain: 0.28 }));
-    noiseBurst({ dur: 0.5, gain: 0.15, lowpass: 2500 });
-  },
-  rimshot() { tone({ freq: 180, type: 'square', dur: 0.08, gain: 0.5 }); noiseBurst({ dur: 0.12, gain: 0.5, lowpass: 6000 }); },
-  sadTrombone() { [233, 220, 207, 196].forEach((f, i) => tone({ freq: f, type: 'sawtooth', dur: 0.45, delay: i * 0.42, gain: 0.3 })); },
-  boing() { tone({ freq: 120, freqEnd: 700, type: 'sine', dur: 0.35, gain: 0.5 }); },
-  laser() { tone({ freq: 1400, freqEnd: 120, type: 'sawtooth', dur: 0.35, gain: 0.35 }); },
-  whistle() { tone({ freq: 2200, freqEnd: 2600, type: 'sine', dur: 0.18, gain: 0.3 }); tone({ freq: 2600, freqEnd: 2200, type: 'sine', dur: 0.18, delay: 0.2, gain: 0.3 }); },
-  applause() { for (let i = 0; i < 9; i++) noiseBurst({ dur: 0.15, delay: i * 0.09, gain: 0.3, lowpass: 5000 }); },
-  drumroll() { for (let i = 0; i < 14; i++) noiseBurst({ dur: 0.06, delay: i * 0.06, gain: 0.35, lowpass: 3000 }); tone({ freq: 60, type: 'sine', dur: 0.5, delay: 0.9, gain: 0.6 }); },
-  quack() { tone({ freq: 300, freqEnd: 180, type: 'square', dur: 0.12, gain: 0.4 }); tone({ freq: 300, freqEnd: 180, type: 'square', dur: 0.12, delay: 0.16, gain: 0.4 }); },
-  moo() { tone({ freq: 180, freqEnd: 120, type: 'sawtooth', dur: 0.7, gain: 0.3 }); },
-  ding() { tone({ freq: 880, type: 'sine', dur: 0.8, gain: 0.4 }); tone({ freq: 1318, type: 'sine', dur: 0.6, delay: 0.02, gain: 0.2 }); },
-  buzzer() { tone({ freq: 140, type: 'square', dur: 0.6, gain: 0.4 }); },
-  coin() { tone({ freq: 988, type: 'sine', dur: 0.09, gain: 0.4 }); tone({ freq: 1319, type: 'sine', dur: 0.4, delay: 0.09, gain: 0.4 }); },
-  fart() { tone({ freq: 90, freqEnd: 55, type: 'sawtooth', dur: 0.5, gain: 0.5 }); noiseBurst({ dur: 0.4, gain: 0.2, lowpass: 800 }); },
-  tada() { [523, 659, 784, 1047].forEach((f, i) => tone({ freq: f, type: 'triangle', dur: 0.35, delay: i * 0.12, gain: 0.4 })); },
-  cricket() { for (let i = 0; i < 6; i++) tone({ freq: 4200, type: 'sine', dur: 0.05, delay: i * 0.12, gain: 0.18 }); },
-};
-
-/* ---------- state ---------- */
-const $ = id => document.getElementById(id);
-const padGrid = $('padGrid'), boardStatus = $('boardStatus'), volumeEl = $('volume');
-let pads = [];   // {id, label, colour, kind: 'synth'|'url'|'recording', synth?, url?, duration}
-let macros = []; // {id, name, steps: [padId, ...]}
-let selectedPadId = null;
-let macroChain = [];
-let deferredInstallPrompt = null;
-let lastPointerDownAt = 0; // for the tap-to-sound latency readout
-
-function setStatus(msg) { boardStatus.textContent = msg; }
-
-function loadState() {
-  try { pads = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]'); } catch (_) { pads = []; }
-  try { macros = JSON.parse(localStorage.getItem(MACRO_KEY) || '[]'); } catch (_) { macros = []; }
+function paintPlaying(padId) {
+  const set = playing.get(padId);
+  const el = document.querySelector(`[data-pad-id="${CSS.escape(padId)}"]`);
+  if (el) el.classList.toggle('playing', !!(set && set.size));
 }
-function saveState() {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(pads));
-  localStorage.setItem(MACRO_KEY, JSON.stringify(macros));
-}
-const uid = () => 'pad-' + Math.random().toString(36).slice(2, 9);
 
-async function loadStarterPack() {
-  if (pads.length) return; // user board already exists — never clobber it
-  try {
-    const res = await fetch(STARTER_URL);
-    const data = await res.json();
-    pads = data.sounds.map(s => ({
-      id: uid(), label: s.label, colour: s.colour,
-      kind: 'synth', synth: s.synth, duration: s.duration, source: s.source,
-    }));
-  } catch (err) {
-    // Offline / file:// fallback: a minimal built-in pack so the board is never empty.
-    pads = [
-      { id: uid(), label: 'Airhorn', colour: '#e5484d', kind: 'synth', synth: 'airhorn', duration: 0.9 },
-      { id: uid(), label: 'Rimshot', colour: '#f5a623', kind: 'synth', synth: 'rimshot', duration: 0.2 },
-      { id: uid(), label: 'Sad Trombone', colour: '#7c5cff', kind: 'synth', synth: 'sadTrombone', duration: 1.8 },
-      { id: uid(), label: 'Boing', colour: '#2fbf71', kind: 'synth', synth: 'boing', duration: 0.4 },
-    ];
+function startVoice(pad, buffer, when) {
+  let voiceId = 0;
+  voiceId = engine.play(buffer, {
+    when,
+    onEnd: () => {
+      const set = playing.get(pad.id);
+      if (set) set.delete(voiceId);
+      if (set && !set.size) playing.delete(pad.id);
+      paintPlaying(pad.id);
+    },
+  });
+  const set = playing.get(pad.id) || new Set();
+  set.add(voiceId);
+  playing.set(pad.id, set);
+  paintPlaying(pad.id);
+}
+
+async function ensureBuffer(pad) {
+  const key = bufferKey(pad);
+  if (buffers.has(key)) return buffers.get(key);
+  if (loading.has(key)) return loading.get(key);
+  const job = (async () => {
+    let bytes;
+    if (pad.kind === 'starter') {
+      const def = catalog.find((s) => s.id === pad.soundId);
+      if (!def) throw new Error('missing starter');
+      const res = await fetch(def.file);
+      if (!res.ok) throw new Error('missing file');
+      bytes = await res.arrayBuffer();
+    } else {
+      const blob = await getClip(pad.clipId);
+      if (!blob) throw new Error('missing clip');
+      bytes = await blob.arrayBuffer();
+    }
+    const audio = await engine.decode(bytes);
+    buffers.set(key, audio);
+    loading.delete(key);
+    return audio;
+  })().catch((err) => {
+    loading.delete(key);
+    throw err;
+  });
+  loading.set(key, job);
+  return job;
+}
+
+function playPad(pad, opts = {}) {
+  if (!pad) return;
+  if (!opts.quiet) {
+    const kind = pad.kind === 'recording' ? 'recording' : pad.kind === 'starter' ? 'starter' : 'saved';
+    track('pad_played', { kind });
   }
-  saveState();
-}
-
-/* ---------- playback ---------- */
-function playPad(pad, padEl) {
-  ensureAudio();
-  if (lastPointerDownAt) {
-    const ms = Math.round(performance.now() - lastPointerDownAt);
-    const lat = document.getElementById('latencyStatus');
-    if (lat) lat.textContent = `Last tap \u2192 sound: ~${ms} ms (pointerdown to playback start).`;
-    lastPointerDownAt = 0;
-  }
-  if (pad.kind === 'synth' && SYNTH[pad.synth]) {
-    SYNTH[pad.synth]();
-    if (padEl) { padEl.classList.add('playing'); setTimeout(() => padEl.classList.remove('playing'), (pad.duration || 0.5) * 1000); }
+  engine.unlock();
+  const token = playToken;
+  const key = bufferKey(pad);
+  const el = document.querySelector(`[data-pad-id="${CSS.escape(pad.id)}"]`);
+  if (buffers.has(key)) {
+    startVoice(pad, buffers.get(key));
     return;
   }
-  if (pad.url) { // saved search clip or recording
-    const audio = new Audio(pad.url);
-    audio.volume = volumeEl.value / 100;
-    activeAudio.add(audio);
-    audio.onended = () => { activeAudio.delete(audio); if (padEl) padEl.classList.remove('playing'); };
-    audio.play().catch(() => { activeAudio.delete(audio); setStatus('Could not play that sound — the link may have expired.'); });
-    if (padEl) padEl.classList.add('playing');
-    return;
+  queued.set(key, (queued.get(key) || 0) + 1);
+  el?.classList.add('loading');
+  ensureBuffer(pad).then((buf) => {
+    el?.classList.remove('loading');
+    const waiting = queued.get(key) || 0;
+    queued.set(key, 0);
+    if (token !== playToken || waiting <= 0) return;
+    startVoice(pad, buf);
+  }).catch(() => {
+    el?.classList.remove('loading');
+    queued.set(key, 0);
+    if (token === playToken) setStatus('That sound could not be loaded.');
+  });
+}
+
+function stopAll() {
+  playToken += 1;
+  queued.clear();
+  engine.stopAll();
+  document.querySelectorAll('.pad.loading').forEach((el) => el.classList.remove('loading'));
+  setStatus('Stopped');
+}
+
+function renderMacros() {
+  const strip = $('macroStrip');
+  strip.replaceChildren();
+  if (!macros.length) {
+    strip.hidden = true;
+  } else {
+    strip.hidden = false;
+    for (const macro of macros) {
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'chip';
+      btn.textContent = macro.name;
+      btn.addEventListener('pointerdown', (e) => {
+        if (e.button) return;
+        e.preventDefault();
+        playMacro(macro);
+      });
+      strip.append(btn);
+    }
   }
-  setStatus('That pad has no sound attached.');
+  const chain = $('macroChain');
+  if (chain) {
+    chain.textContent = macroChain.length
+      ? macroChain.map((id) => (padById(id) || {}).label || 'Missing').join(' → ')
+      : '—';
+  }
+  const list = $('macroList');
+  if (!list) return;
+  list.replaceChildren();
+  for (const macro of macros) {
+    const row = document.createElement('div');
+    row.className = 'macro-item';
+    const play = document.createElement('button');
+    play.type = 'button';
+    play.textContent = macro.name;
+    play.addEventListener('pointerdown', (e) => {
+      if (e.button) return;
+      e.preventDefault();
+      playMacro(macro);
+    });
+    const del = document.createElement('button');
+    del.type = 'button';
+    del.className = 'text-btn';
+    del.textContent = 'Delete';
+    del.setAttribute('aria-label', 'Delete chain ' + macro.name);
+    del.addEventListener('click', () => {
+      macros = macros.filter((m) => m.id !== macro.id);
+      saveMacros();
+      renderMacros();
+      setStatus('Deleted “' + macro.name + '”.');
+    });
+    row.append(play, del);
+    list.append(row);
+  }
+  const arm = $('macroArm');
+  if (arm) {
+    arm.textContent = macroArmed ? 'Adding pads…' : 'Add pads';
+    arm.setAttribute('aria-pressed', macroArmed ? 'true' : 'false');
+  }
 }
 
 function renderPads() {
-  padGrid.innerHTML = '';
-  pads.forEach(pad => {
+  const grid = $('padGrid');
+  grid.replaceChildren();
+  for (const pad of pads) {
     const btn = document.createElement('button');
     btn.type = 'button';
-    btn.className = 'pad' + (pad.id === selectedPadId ? ' selected' : '');
-    btn.style.background = pad.colour;
+    btn.className = 'pad';
     btn.dataset.padId = pad.id;
-    btn.innerHTML = `${escapeHtml(pad.label)}<small>${pad.kind === 'synth' ? 'built-in' : pad.kind === 'recording' ? 'my recording' : 'saved search'} · ${pad.duration ? pad.duration + 's' : '—'}</small>`;
-    // pointerdown (not click) keeps tap-to-sound delay as low as possible.
-    btn.addEventListener('pointerdown', e => {
-      e.preventDefault();
-      lastPointerDownAt = performance.now();
-      btn.classList.add('pressed');
-      playPad(pad, btn);
-    });
+    btn.style.setProperty('--pad', pad.colour);
+    const ink = inkFor(pad.colour);
+    btn.style.setProperty('--ink-color', ink);
+    btn.dataset.ink = ink === INK_CREAM ? 'light' : 'dark';
+    btn.setAttribute('aria-label', pad.label + ', ' + metaLabel(pad));
+    const mark = document.createElement('span');
+    mark.innerHTML = padMark(pad.kind === 'starter' ? pad.soundId : pad.kind);
+    const name = document.createElement('span');
+    name.className = 'pad-name';
+    name.textContent = pad.label;
+    const meta = document.createElement('span');
+    meta.className = 'pad-meta';
+    meta.textContent = metaLabel(pad);
+    btn.append(mark, name, meta);
+    btn.addEventListener('pointerdown', (e) => onPadPointer(e, pad, btn));
     btn.addEventListener('pointerup', () => btn.classList.remove('pressed'));
-    btn.addEventListener('pointerleave', () => btn.classList.remove('pressed'));
-    btn.addEventListener('contextmenu', e => { e.preventDefault(); selectPad(pad.id); });
-    padGrid.appendChild(btn);
-  });
-  renderPadSelect();
+    btn.addEventListener('pointercancel', () => btn.classList.remove('pressed'));
+    btn.addEventListener('contextmenu', (e) => e.preventDefault());
+    grid.append(btn);
+  }
   renderMacros();
+  renderSources();
 }
 
-function escapeHtml(s) {
-  return String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
-}
-
-/* ---------- pad editor ---------- */
-function selectPad(id) {
-  selectedPadId = id;
-  renderPads();
-  const pad = pads.find(p => p.id === id);
-  if (pad) $('padNameInput').value = pad.label;
-}
-function renderPadSelect() {
-  const sel = $('padSelect');
-  sel.innerHTML = '';
-  pads.forEach(pad => {
-    const opt = document.createElement('option');
-    opt.value = pad.id;
-    opt.textContent = pad.label;
-    if (pad.id === selectedPadId) opt.selected = true;
-    sel.appendChild(opt);
-  });
-}
-
-/* ---------- Internet Archive search ----------
- * One call to advancedsearch, then the metadata API for the top hits.
- * Preview plays in-page; Save adds the clip URL to the board in one tap. */
-async function searchArchive(term) {
-  const q = `(${term}) AND mediatype:audio AND (format:mp3 OR format:ogg)`;
-  const url = 'https://archive.org/advancedsearch.php?q=' + encodeURIComponent(q)
-    + '&fl[]=identifier,title&rows=8&page=1&output=json';
-  const res = await fetch(url);
-  if (!res.ok) throw new Error('Search failed (' + res.status + ')');
-  const data = await res.json();
-  const docs = (data.response && data.response.docs) || [];
-  // Fetch the per-item metadata in parallel, not one by one: the sequential
-  // version made the search step the slowest part of search-to-save.
-  const settled = await Promise.all(docs.slice(0, 6).map(async doc => {
-    try {
-      const meta = await (await fetch(`https://archive.org/metadata/${doc.identifier}`)).json();
-      const file = (meta.files || []).find(f => /\.(mp3|ogg)$/i.test(f.name) && (f.length || 0) < 30);
-      if (!file) return null;
-      return {
-        title: doc.title || doc.identifier,
-        identifier: doc.identifier,
-        url: `https://archive.org/download/${doc.identifier}/${encodeURIComponent(file.name)}`,
-        duration: file.length ? Math.round(file.length) : null,
-      };
-    } catch (_) { return null; /* skip items whose metadata fails */ }
-  }));
-  return settled.filter(Boolean);
-}
-
-function renderSearchResults(results, term) {
-  const box = $('searchResults');
-  box.innerHTML = '';
-  if (!results.length) {
-    box.innerHTML = `<p class="status">No short clips found for “${escapeHtml(term)}”. Try another word.</p>`;
+function onPadPointer(e, pad, btn) {
+  if (e.button) return;
+  e.preventDefault();
+  if (editArmed) {
+    editArmed = false;
+    updateBanner();
+    openEditor(pad.id);
     return;
   }
-  results.forEach(r => {
-    const row = document.createElement('div');
-    row.className = 'result';
-    row.innerHTML = `<div class="title"><b>${escapeHtml(r.title)}</b><span>archive.org · ${r.duration ? r.duration + 's' : 'short clip'}</span></div>`;
-    const preview = document.createElement('button');
-    preview.type = 'button';
-    preview.textContent = '▶ Preview';
-    preview.addEventListener('click', () => {
-      stopAll();
-      const audio = new Audio(r.url);
-      activeAudio.add(audio);
-      audio.onended = () => activeAudio.delete(audio);
-      audio.play().catch(() => { activeAudio.delete(audio); setStatus('Preview failed to load.'); });
-    });
-    const save = document.createElement('button');
-    save.type = 'button';
-    save.textContent = '＋ Save to board';
-    save.addEventListener('click', () => {
-      pads.push({ id: uid(), label: r.title.slice(0, 28), colour: pickColour(), kind: 'url', url: r.url, duration: r.duration, source: 'Internet Archive: ' + r.identifier });
-      saveState();
-      renderPads();
-      setStatus(`Saved “${r.title.slice(0, 28)}” to the board.`);
-    });
-    row.append(preview, save);
-    box.appendChild(row);
-  });
+  btn.classList.add('pressed');
+  if (macroArmed) addToChain(pad.id);
+  playPad(pad);
 }
 
-const PALETTE = ['#e5484d', '#f5a623', '#2fbf71', '#3d8bfd', '#7c5cff', '#ff6fb5', '#12a5a5', '#ff8c42'];
-const pickColour = () => PALETTE[pads.length % PALETTE.length];
-
-/* ---------- mic recorder ---------- */
-let mediaRecorder = null, recChunks = [], recStart = 0, recTimerId = null, recCapTimerId = null;
-const MAX_REC_SECONDS = 60; // cap keeps recordings under the ~4 MB storage cap instead of discarding them after the fact
-function pickMimeType() {
-  if (typeof MediaRecorder === 'undefined' || !MediaRecorder.isTypeSupported) return '';
-  for (const t of ['audio/webm;codecs=opus', 'audio/webm', 'audio/mp4', 'audio/ogg']) {
-    if (MediaRecorder.isTypeSupported(t)) return t;
+function updateBanner() {
+  const banner = $('banner');
+  if (editArmed) {
+    banner.hidden = false;
+    banner.textContent = 'Tap a pad to edit it.';
+  } else if (macroArmed) {
+    banner.hidden = false;
+    banner.textContent = macroChain.length
+      ? 'Tap pads to extend the chain (' + macroChain.length + '/' + MAX_CHAIN + ').'
+      : 'Tap pads in order. Up to ' + MAX_CHAIN + '.';
+  } else {
+    banner.hidden = true;
+    banner.textContent = '';
   }
-  return '';
+  const editBtn = $('editArm');
+  if (editBtn) editBtn.textContent = editArmed ? 'Editing… tap a pad' : 'Edit a pad';
 }
+
+function addToChain(id) {
+  if (macroChain.length >= MAX_CHAIN) {
+    setStatus('A chain holds ' + MAX_CHAIN + ' pads. Save or clear it first.');
+    return;
+  }
+  macroChain.push(id);
+  renderMacros();
+  updateBanner();
+}
+
+function playMacro(macro) {
+  stopAll();
+  track('chain_played', { kind: 'chain' });
+  engine.unlock();
+  let when = engine.ctx.currentTime + 0.01;
+  let scheduled = 0;
+  for (const id of macro.steps) {
+    const pad = padById(id);
+    if (!pad) continue;
+    const buf = buffers.get(bufferKey(pad));
+    if (!buf) {
+      playPad(pad, { quiet: true });
+      when += Math.max(0.25, pad.duration || 0.4);
+      scheduled += 1;
+      continue;
+    }
+    startVoice(pad, buf, when);
+    when += Math.max(0.25, buf.duration);
+    scheduled += 1;
+  }
+  setStatus(scheduled ? 'Playing “' + macro.name + '”.' : 'That chain has no pads left.');
+}
+
+function renderSources() {
+  const box = $('sourceList');
+  if (!box) return;
+  box.replaceChildren();
+  const archived = pads.filter((p) => p.kind === 'archive');
+  if (!archived.length) return;
+  const title = document.createElement('p');
+  title.textContent = 'Saved from the Internet Archive:';
+  box.append(title);
+  for (const pad of archived) {
+    const p = document.createElement('p');
+    p.textContent = pad.attribution || pad.label;
+    box.append(p);
+  }
+}
+
+function openSheet(name) {
+  sheetName = name;
+  for (const section of document.querySelectorAll('.sheet-card section')) {
+    section.hidden = section.id !== 'panel-' + name;
+  }
+  const section = $('panel-' + name);
+  $('sheetTitle').textContent = section ? section.dataset.title || 'Laugh Pad' : 'Laugh Pad';
+  $('sheet').hidden = false;
+  document.querySelectorAll('.dock-btn').forEach((btn) => {
+    btn.setAttribute('aria-current', btn.dataset.open === name ? 'page' : 'false');
+  });
+  const focus = section && section.querySelector('input, button');
+  if (focus) focus.focus();
+}
+
+function closeSheet() {
+  $('sheet').hidden = true;
+  sheetName = '';
+  document.querySelectorAll('.dock-btn').forEach((btn) => btn.setAttribute('aria-current', 'false'));
+}
+
+function openEditor(id) {
+  const pad = padById(id);
+  if (!pad) return;
+  editingId = id;
+  $('padName').value = pad.label;
+  $('editStatus').textContent = '';
+  const lines = [pad.source || '', pad.licenseName || ''];
+  if (pad.attribution) lines.push(pad.attribution);
+  if (pad.duration) lines.push(pad.duration + 's');
+  $('padMeta').textContent = lines.filter(Boolean).join(' · ');
+  openSheet('editor');
+}
+
+async function loadCatalog() {
+  const res = await fetch('data/starter-pack.json');
+  if (!res.ok) throw new Error('starter pack');
+  const data = await res.json();
+  catalog = data.sounds || [];
+}
+
+async function migrateLegacy(oldPads) {
+  const out = [];
+  for (const p of oldPads) {
+    if (p.kind === 'synth' && LEGACY_SYNTH[p.synth]) {
+      const def = catalog.find((s) => s.id === LEGACY_SYNTH[p.synth]);
+      if (def) out.push(makeStarter(def, { id: p.id, label: p.label, colour: p.colour }));
+    } else if (p.kind === 'recording' && typeof p.url === 'string' && p.url.startsWith('data:')) {
+      try {
+        const blob = await (await fetch(p.url)).blob();
+        await putClip(p.id, blob);
+        out.push({
+          id: p.id,
+          clipId: p.id,
+          kind: 'recording',
+          label: p.label,
+          colour: p.colour,
+          duration: p.duration || null,
+          source: 'Microphone on this device',
+          licenseName: 'Your recording',
+        });
+      } catch (_) { /* drop a recording that cannot be stored */ }
+    }
+  }
+  return out;
+}
+
+function keepPad(pad) {
+  if (!pad || !pad.id || !pad.kind) return false;
+  if (pad.kind === 'archive') return classifyLicense(pad.licenseUrl, '').ok && !!pad.clipId;
+  if (pad.kind === 'starter') return catalog.some((s) => s.id === pad.soundId);
+  if (pad.kind === 'recording') return !!pad.clipId;
+  return false;
+}
+
+async function bootPads() {
+  const saved = readJson(PAD_KEY);
+  if (Array.isArray(saved) && saved.length) {
+    pads = saved.filter(keepPad);
+    if (pads.length !== saved.length) savePads();
+    return;
+  }
+  const legacy = readJson(LEGACY_PAD_KEY);
+  if (Array.isArray(legacy) && legacy.length) {
+    pads = await migrateLegacy(legacy);
+    localStorage.removeItem(LEGACY_PAD_KEY);
+  }
+  if (!pads.length) pads = catalog.map((def) => makeStarter(def));
+  savePads();
+}
+
+async function preload() {
+  const starters = pads.filter((p) => p.kind === 'starter');
+  await Promise.all(starters.map((p) => ensureBuffer(p).catch(() => null)));
+  const clips = pads.filter((p) => p.kind !== 'starter');
+  await Promise.all(clips.map((p) => ensureBuffer(p).catch(() => null)));
+}
+
 function recorderSupported() {
   return !!(navigator.mediaDevices && navigator.mediaDevices.getUserMedia && typeof MediaRecorder !== 'undefined');
 }
-async function startRecording() {
-  try {
-    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-    recChunks = [];
-    mediaRecorder = new MediaRecorder(stream, pickMimeType() ? { mimeType: pickMimeType() } : undefined);
-    mediaRecorder.ondataavailable = e => { if (e.data.size) recChunks.push(e.data); };
-    mediaRecorder.onstop = () => {
-      stream.getTracks().forEach(t => t.stop());
-      const blob = new Blob(recChunks, { type: mediaRecorder.mimeType || 'audio/webm' });
-      if (blob.size > 4 * 1024 * 1024) {
-        $('recStatus').textContent = 'That recording is over 4 MB — kept recordings are capped so the board stays fast. Try a shorter one.';
-        return;
-      }
-      const reader = new FileReader();
-      reader.onload = () => {
-        pads.push({ id: uid(), label: 'My recording ' + new Date().toLocaleTimeString(), colour: pickColour(), kind: 'recording', url: reader.result, duration: Math.round((Date.now() - recStart) / 1000), source: 'mic recording' });
-        saveState();
-        renderPads();
-        $('recStatus').textContent = 'Saved your recording to a new pad.';
-      };
-      reader.readAsDataURL(blob);
-    };
-    mediaRecorder.start();
-    recStart = Date.now();
-    // Auto-stop at the cap so a long recording is saved, not thrown away.
-    recCapTimerId = setTimeout(() => {
-      if (mediaRecorder && mediaRecorder.state !== 'inactive') {
-        $('recStatus').textContent = `Stopped at the ${MAX_REC_SECONDS}s cap — recordings are kept short so they fit on-device storage.`;
-        stopRecording();
-      }
-    }, MAX_REC_SECONDS * 1000);
-    $('recBtn').disabled = true;
-    $('recStopBtn').disabled = false;
-    $('recStatus').textContent = 'Recording… tap “Stop & save to a pad” when done.';
-    recTimerId = setInterval(() => { $('recTimer').textContent = Math.floor((Date.now() - recStart) / 1000) + 's'; }, 250);
-  } catch (err) {
-    // Permission denied (or no mic): say so plainly and keep the board working.
-    $('recStatus').textContent = err && err.name === 'NotAllowedError'
-      ? 'Microphone access was denied. Allow the mic in your browser settings to record, or use search instead.'
-      : 'Could not start the microphone on this device/browser (' + (err && err.name ? err.name : 'unknown error') + ').';
+
+function pickMime() {
+  if (typeof MediaRecorder === 'undefined' || !MediaRecorder.isTypeSupported) return '';
+  for (const type of ['audio/webm;codecs=opus', 'audio/webm', 'audio/mp4', 'audio/ogg']) {
+    if (MediaRecorder.isTypeSupported(type)) return type;
   }
+  return '';
 }
-function stopRecording() {
-  if (mediaRecorder && mediaRecorder.state !== 'inactive') mediaRecorder.stop();
+
+function extFor(type) {
+  if (!type) return 'webm';
+  if (type.includes('mp4')) return 'm4a';
+  if (type.includes('ogg')) return 'ogg';
+  if (type.includes('mpeg') || type.includes('mp3')) return 'mp3';
+  if (type.includes('wav')) return 'wav';
+  return 'webm';
+}
+
+function resetRecUi() {
   clearInterval(recTimerId);
-  clearTimeout(recCapTimerId);
+  clearTimeout(recCapId);
   $('recTimer').textContent = '';
-  $('recBtn').disabled = false;
-  $('recStopBtn').disabled = true;
+  $('recBtn').disabled = !recorderSupported();
+  $('recBtn').textContent = 'Record';
+  $('recBtn').dataset.state = 'idle';
+  $('recDiscard').hidden = true;
 }
 
-/* ---------- macros ----------
- * Scope (was undescribed): a macro is a named list of at most 8 pad steps,
- * played in order (each step waits for the previous sound, at least 250 ms
- * apart). Chain-building is an explicit armed mode so normal taps never
- * hijack the board; each saved macro has its own delete button. */
-const MAX_MACRO_STEPS = 8;
-let macroArmed = false;
-function renderMacros() {
-  $('macroChain').textContent = macroChain.length
-    ? macroChain.map(id => (pads.find(p => p.id === id) || {}).label || '?').join(' → ')
-    : '—';
-  const list = $('macroList');
-  list.innerHTML = '';
-  macros.forEach(m => {
-    const wrap = document.createElement('div');
-    wrap.className = 'macro-item';
-    const btn = document.createElement('button');
-    btn.type = 'button';
-    btn.textContent = '▶ ' + m.name;
-    btn.addEventListener('click', () => playMacro(m));
-    const del = document.createElement('button');
-    del.type = 'button';
-    del.className = 'macro-del';
-    del.textContent = '✕';
-    del.setAttribute('aria-label', 'Delete macro ' + m.name);
-    del.addEventListener('click', () => {
-      macros = macros.filter(x => x.id !== m.id);
-      saveState(); renderMacros();
-      setStatus(`Deleted macro “${m.name}”.`);
-    });
-    wrap.append(btn, del);
-    list.appendChild(wrap);
-  });
-  $('macroArmBtn').classList.toggle('armed', macroArmed);
-  $('macroArmBtn').textContent = macroArmed ? '✓ Building chain — tap pads' : '＋ Add pads to chain';
-}
-function playMacro(macro) {
-  ensureAudio();
-  let delayMs = 0;
-  macro.steps.forEach(id => {
-    const pad = pads.find(p => p.id === id);
-    if (!pad) return;
-    setTimeout(() => playPad(pad, document.querySelector(`[data-pad-id="${id}"]`)), delayMs);
-    delayMs += Math.max(250, (pad.duration || 0.5) * 1000);
-  });
-}
-
-/* ---------- wire up ---------- */
-$('stopAllBtn').addEventListener('click', stopAll);
-volumeEl.addEventListener('input', () => { if (masterGain) masterGain.gain.value = volumeEl.value / 100; });
-
-$('searchForm').addEventListener('submit', async e => {
-  e.preventDefault();
-  const term = $('searchInput').value.trim();
-  if (!term) return;
-  $('searchResults').innerHTML = '<p class="status">Searching the Internet Archive…</p>';
-  try {
-    renderSearchResults(await searchArchive(term), term);
-  } catch (err) {
-    $('searchResults').innerHTML = '<p class="status">Search failed — check your connection and try again.</p>';
+function micDeniedMessage(err) {
+  const name = err && err.name;
+  if (name === 'NotAllowedError' || name === 'PermissionDeniedError') {
+    const where = isNative()
+      ? ' You can turn it on in Settings → Apps → Laugh Pad → Permissions.'
+      : ' You can turn it on in the browser site settings.';
+    return 'Microphone access is off, so nothing was recorded.' + where + ' The pads still play.';
   }
-});
+  if (name === 'NotFoundError') return 'No microphone was found on this device. The pads still play.';
+  if (name === 'SecurityError') return 'Recording needs a secure connection. The pads still play.';
+  return 'The microphone could not be started. The pads still play.';
+}
 
-$('recBtn').addEventListener('click', startRecording);
-$('recStopBtn').addEventListener('click', stopRecording);
-
-$('padSelect').addEventListener('change', e => selectPad(e.target.value));
-$('renameBtn').addEventListener('click', () => {
-  const pad = pads.find(p => p.id === $('padSelect').value);
-  const name = $('padNameInput').value.trim();
-  if (!pad || !name) return;
-  pad.label = name;
-  saveState(); renderPads();
-  $('editStatus').textContent = `Renamed pad to “${name}”.`;
-});
-$('downloadBtn').addEventListener('click', () => {
-  const pad = pads.find(p => p.id === $('padSelect').value);
-  if (!pad || !pad.url) { $('editStatus').textContent = 'Built-in sounds cannot be downloaded — save a search clip or a recording first.'; return; }
-  const a = document.createElement('a');
-  a.href = pad.url;
-  a.download = pad.label.replace(/[^a-z0-9]+/gi, '-').toLowerCase() + '.audio';
-  a.click();
-});
-$('deleteBtn').addEventListener('click', () => {
-  const id = $('padSelect').value;
-  const pad = pads.find(p => p.id === id);
-  if (!pad) return;
-  pads = pads.filter(p => p.id !== id);
-  selectedPadId = null;
-  saveState(); renderPads();
-  $('editStatus').textContent = `Deleted pad “${pad.label}”.`;
-});
-
-// Tapping a pad while chain-building is armed adds it to the chain (max 8 steps).
-padGrid.addEventListener('click', e => {
-  const btn = e.target.closest('.pad');
-  if (!btn || !macroArmed) return;
-  if (macroChain.length >= MAX_MACRO_STEPS) {
-    setStatus(`Macros hold at most ${MAX_MACRO_STEPS} steps — save or clear this chain first.`);
+async function startRecording() {
+  if (mediaRecorder && mediaRecorder.state === 'recording') {
+    stopRecording(false);
     return;
   }
-  macroChain.push(btn.dataset.padId);
-  renderMacros();
-});
-$('macroArmBtn').addEventListener('click', () => {
-  macroArmed = !macroArmed;
-  renderMacros();
-});
-$('macroSaveBtn').addEventListener('click', () => {
-  const name = $('macroName').value.trim();
-  if (!name || !macroChain.length) return;
-  macros.push({ id: uid(), name, steps: [...macroChain] });
+  $('recStatus').textContent = '';
+  let stream;
+  try {
+    stream = await navigator.mediaDevices.getUserMedia({
+      audio: { echoCancellation: false, noiseSuppression: false, autoGainControl: false },
+    });
+  } catch (err) {
+    const denied = err && (err.name === 'NotAllowedError' || err.name === 'PermissionDeniedError' || err.name === 'SecurityError');
+    if (denied) {
+      $('recStatus').textContent = micDeniedMessage(err);
+      return;
+    }
+    try {
+      stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    } catch (fallbackErr) {
+      $('recStatus').textContent = micDeniedMessage(fallbackErr || err);
+      return;
+    }
+  }
+  recStream = stream;
+  discardTake = false;
+  const mime = pickMime();
+  const chunks = [];
+  try {
+    mediaRecorder = new MediaRecorder(stream, mime ? { mimeType: mime } : undefined);
+  } catch (_) {
+    stream.getTracks().forEach((t) => t.stop());
+    $('recStatus').textContent = 'This device cannot record audio. The pads still play.';
+    return;
+  }
+  mediaRecorder._chunks = chunks;
+  mediaRecorder.ondataavailable = (e) => {
+    if (e.data && e.data.size) chunks.push(e.data);
+  };
+  mediaRecorder.start(200);
+  recStarted = Date.now();
+  $('recBtn').textContent = 'Stop and save';
+  $('recBtn').dataset.state = 'recording';
+  $('recDiscard').hidden = false;
+  $('recStatus').textContent = 'Recording. It stops automatically at ' + MAX_RECORD_SECONDS + ' seconds and stays on this device.';
+  recTimerId = setInterval(() => {
+    $('recTimer').textContent = Math.floor((Date.now() - recStarted) / 1000) + 's';
+  }, 200);
+  recCapId = setTimeout(() => {
+    if (mediaRecorder && mediaRecorder.state === 'recording') {
+      $('recStatus').textContent = 'Stopped at ' + MAX_RECORD_SECONDS + ' seconds so the clip fits on this device.';
+      stopRecording(false);
+    }
+  }, MAX_RECORD_SECONDS * 1000);
+}
+
+function stopRecording(discard) {
+  discardTake = discard;
+  const recorder = mediaRecorder;
+  const started = recStarted;
+  if (recorder && recorder.state !== 'inactive') {
+    const chunks = recorder._chunks || [];
+    recorder.onstop = () => {
+      finishStream();
+      saveTake(chunks, recorder.mimeType, discard, started);
+    };
+    recorder.stop();
+  } else {
+    finishStream();
+  }
+  resetRecUi();
+}
+
+function finishStream() {
+  if (recStream) recStream.getTracks().forEach((t) => t.stop());
+  recStream = null;
+}
+
+async function saveTake(chunks, mime, discard, started) {
+  if (discard) {
+    $('recStatus').textContent = 'Discarded. Nothing was saved.';
+    return;
+  }
+  const blob = new Blob(chunks, { type: mime || 'audio/webm' });
+  if (!blob.size) {
+    $('recStatus').textContent = 'That take was empty. Try again.';
+    return;
+  }
+  if (blob.size > 4 * 1024 * 1024) {
+    $('recStatus').textContent = 'That recording is over 4 MB, so it was not saved. Try a shorter one.';
+    return;
+  }
+  const id = uid();
+  try {
+    await putClip(id, blob);
+    const audio = await engine.decode(await blob.arrayBuffer());
+    buffers.set('clip:' + id, audio);
+  } catch (_) {
+    $('recStatus').textContent = 'Could not store that recording on this device.';
+    return;
+  }
+  const seconds = Math.max(1, Math.round((Date.now() - started) / 1000));
+  pads.push({
+    id,
+    clipId: id,
+    kind: 'recording',
+    label: 'Recording ' + new Date().toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' }),
+    colour: PALETTE[pads.length % PALETTE.length],
+    duration: seconds,
+    source: 'Microphone on this device',
+    licenseName: 'Your recording',
+  });
+  savePads();
+  renderPads();
+  $('recStatus').textContent = 'Saved on this device.';
+  setStatus('Recording added to the board.');
+}
+
+async function previewResult(result) {
+  stopAll();
+  const mine = playToken;
+  $('searchStatus').textContent = 'Loading preview…';
+  try {
+    const res = await fetch(result.url);
+    if (!res.ok) throw new Error('preview');
+    const blob = await res.blob();
+    if (blob.size > MAX_BYTES) {
+      $('searchStatus').textContent = 'That file is too large to preview.';
+      return;
+    }
+    const audio = await engine.decode(await blob.arrayBuffer());
+    if (mine !== playToken) return;
+    engine.play(audio);
+    $('searchStatus').textContent = 'Playing preview.';
+  } catch (_) {
+    if (mine === playToken) $('searchStatus').textContent = 'Preview did not load.';
+  }
+}
+
+async function saveResult(result, button) {
+  button.disabled = true;
+  $('searchStatus').textContent = 'Saving onto this device…';
+  try {
+    const res = await fetch(result.url);
+    if (!res.ok) throw new Error('download');
+    const blob = await res.blob();
+    if (blob.size > MAX_BYTES || !blob.size) throw new Error('size');
+    const id = uid();
+    await putClip(id, blob);
+    const audio = await engine.decode(await blob.arrayBuffer());
+    buffers.set('clip:' + id, audio);
+    const pad = {
+      id,
+      clipId: id,
+      kind: 'archive',
+      label: result.title.slice(0, 32),
+      colour: PALETTE[pads.length % PALETTE.length],
+      duration: result.duration,
+      source: 'Internet Archive',
+      licenseName: result.license.name,
+      licenseUrl: result.license.url,
+      creator: result.creator,
+      identifier: result.identifier,
+      attribution: result.attribution,
+    };
+    pads.push(pad);
+    savePads();
+    renderPads();
+    $('searchStatus').textContent = 'Saved “' + pad.label + '”. ' + result.license.name + '.';
+    setStatus('Saved to the board.');
+  } catch (_) {
+    button.disabled = false;
+    $('searchStatus').textContent = 'Could not save that clip.';
+  }
+}
+
+function renderResults(results) {
+  const box = $('searchResults');
+  box.replaceChildren();
+  for (const result of results) {
+    const row = document.createElement('div');
+    row.className = 'result';
+    const title = document.createElement('div');
+    const name = document.createElement('b');
+    name.textContent = result.title;
+    const meta = document.createElement('div');
+    meta.className = 'meta';
+    meta.textContent = (result.creator ? result.creator + ' · ' : '') + (result.duration ? result.duration + 's' : '');
+    const badge = document.createElement('span');
+    badge.className = 'badge';
+    badge.textContent = result.license.name;
+    title.append(name, meta, badge);
+    const actions = document.createElement('div');
+    actions.className = 'stack-row';
+    const preview = document.createElement('button');
+    preview.type = 'button';
+    preview.textContent = 'Preview';
+    preview.addEventListener('click', () => previewResult(result));
+    const save = document.createElement('button');
+    save.type = 'button';
+    save.textContent = 'Save';
+    save.addEventListener('click', () => saveResult(result, save));
+    actions.append(preview, save);
+    row.append(title, actions);
+    box.append(row);
+  }
+}
+
+async function searchArchive(term) {
+  const url = archiveSearchUrl(term);
+  const res = await fetch(url);
+  if (!res.ok) throw new Error('search');
+  const data = await res.json();
+  const docs = (data.response && data.response.docs) || [];
+  const settled = await Promise.all(docs.map(async (doc) => {
+    try {
+      const metaRes = await fetch('https://archive.org/metadata/' + encodeURIComponent(doc.identifier));
+      if (!metaRes.ok) return null;
+      const meta = await metaRes.json();
+      const md = meta.metadata || {};
+      const license = classifyLicense(md.licenseurl || doc.licenseurl, md.rights || doc.rights);
+      if (!license.ok) return null;
+      const file = pickClipFile(meta.files);
+      if (!file) return null;
+      const creatorRaw = md.creator;
+      const creator = Array.isArray(creatorRaw) ? creatorRaw.join(', ') : (creatorRaw || '');
+      const title = String(doc.title || doc.identifier);
+      return {
+        title,
+        identifier: doc.identifier,
+        url: archiveDownloadUrl(doc.identifier, file.name),
+        duration: Math.round(file.seconds * 10) / 10,
+        license,
+        creator,
+        attribution: formatAttribution({ title, creator, license, identifier: doc.identifier }),
+      };
+    } catch (_) {
+      return null;
+    }
+  }));
+  return settled.filter(Boolean).slice(0, 8);
+}
+
+async function downloadPad(pad) {
+  if (pad.kind === 'starter') {
+    const def = catalog.find((s) => s.id === pad.soundId);
+    if (!def) return;
+    const a = document.createElement('a');
+    a.href = def.file;
+    a.download = slug(pad.label) + '.wav';
+    a.click();
+    return;
+  }
+  const blob = await getClip(pad.clipId);
+  if (!blob) {
+    $('editStatus').textContent = 'That audio is not on this device anymore.';
+    return;
+  }
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = slug(pad.label) + '.' + extFor(blob.type);
+  a.click();
+  setTimeout(() => URL.revokeObjectURL(url), 4000);
+}
+
+async function deletePad(pad) {
+  if (pad.clipId) {
+    try { await deleteClip(pad.clipId); } catch (_) { /* still drop the pad */ }
+    buffers.delete(bufferKey(pad));
+  }
+  pads = pads.filter((p) => p.id !== pad.id);
+  macros = macros
+    .map((m) => ({ ...m, steps: m.steps.filter((id) => id !== pad.id) }))
+    .filter((m) => m.steps.length);
+  savePads();
+  saveMacros();
+  editingId = null;
+  renderPads();
+  closeSheet();
+  setStatus('Deleted “' + pad.label + '”.');
+}
+
+async function resetBoard() {
+  stopAll();
+  localStorage.removeItem(PAD_KEY);
+  localStorage.removeItem(LEGACY_PAD_KEY);
+  localStorage.removeItem(MACRO_KEY);
+  try { await clearClips(); } catch (_) { /* storage may already be empty */ }
+  buffers.clear();
+  pads = catalog.map((def) => makeStarter(def));
+  macros = [];
   macroChain = [];
   macroArmed = false;
-  $('macroName').value = '';
-  saveState(); renderMacros();
-  setStatus(`Saved macro “${name}”.`);
-});
-$('macroClearBtn').addEventListener('click', () => { macroChain = []; renderMacros(); });
-
-$('resetBtn').addEventListener('click', () => {
-  if (!confirm('Reset the board to the 16-sound starter pack? Your saved pads and recordings will be removed.')) return;
-  localStorage.removeItem(STORAGE_KEY);
-  localStorage.removeItem(MACRO_KEY);
-  pads = []; macros = [];
-  loadStarterPack().then(renderPads);
-  setStatus('Board reset to the starter pack.');
-});
-
-// PWA install prompt (Android Chrome); iOS uses Share → Add to Home Screen.
-window.addEventListener('beforeinstallprompt', e => {
-  e.preventDefault();
-  deferredInstallPrompt = e;
-  $('installBtn').hidden = false;
-});
-$('installBtn').addEventListener('click', async () => {
-  if (!deferredInstallPrompt) return;
-  deferredInstallPrompt.prompt();
-  const choice = await deferredInstallPrompt.userChoice;
-  $('installStatus').textContent = choice.outcome === 'accepted' ? 'Installed — find Soundboard on your home screen.' : 'Install dismissed — you can still add it from the browser menu.';
-  deferredInstallPrompt = null;
-  $('installBtn').hidden = true;
-});
-
-if ('serviceWorker' in navigator) {
-  window.addEventListener('load', () => {
-    navigator.serviceWorker.register('sw.js').catch(() => { /* offline cache is a bonus, not a blocker */ });
-  });
-}
-
-/* ---------- keyboard hotkeys (weakness: no keyboard/hotkey control) ----------
- * Keys 1-9, 0, Q, W, E, R, T, Y play pads 1-16 in grid order; Esc stops all.
- * Ignored while typing in an input, select, or textarea. */
-const HOTKEYS = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '0', 'q', 'w', 'e', 'r', 't', 'y'];
-document.addEventListener('keydown', e => {
-  const tag = (e.target && e.target.tagName) || '';
-  if (/^(INPUT|SELECT|TEXTAREA)$/.test(tag)) return;
-  if (e.key === 'Escape') { stopAll(); return; }
-  const idx = HOTKEYS.indexOf(String(e.key).toLowerCase());
-  if (idx >= 0 && pads[idx]) {
-    const padEl = document.querySelector(`[data-pad-id="${pads[idx].id}"]`);
-    if (padEl) padEl.classList.add('pressed');
-    playPad(pads[idx], padEl);
-    if (padEl) setTimeout(() => padEl.classList.remove('pressed'), 150);
-  }
-});
-
-/* Recorder support check: on browsers without getUserMedia/MediaRecorder
- * (old browsers, insecure contexts) the recorder is disabled with a plain
- * explanation instead of failing when tapped. */
-if (!recorderSupported()) {
-  $('recBtn').disabled = true;
-  $('recStatus').textContent = 'Mic recording is not supported in this browser — use search to fill the board instead.';
-}
-
-/* ---------- boot ---------- */
-loadState();
-loadStarterPack().then(() => {
+  editArmed = false;
+  savePads();
+  saveMacros();
   renderPads();
-  setStatus(pads.length + ' sounds ready — tap a pad.');
-});
+  updateBanner();
+  closeSheet();
+  setStatus('Loading sounds…');
+  await preload();
+  setStatus(pads.length + ' sounds ready');
+}
+
+function triggerIndex(index) {
+  const pad = pads[index];
+  if (!pad) return;
+  const el = document.querySelector(`[data-pad-id="${CSS.escape(pad.id)}"]`);
+  if (editArmed) {
+    editArmed = false;
+    updateBanner();
+    openEditor(pad.id);
+    return;
+  }
+  if (macroArmed) addToChain(pad.id);
+  if (el) {
+    el.classList.add('pressed');
+    setTimeout(() => el.classList.remove('pressed'), 120);
+  }
+  playPad(pad);
+}
+
+function wire() {
+  document.addEventListener('pointerdown', () => engine.unlock(), { capture: true });
+  document.addEventListener('keydown', () => engine.unlock(), { capture: true });
+
+  $('stopAll').addEventListener('click', stopAll);
+  volumeEl.addEventListener('input', () => {
+    engine.setVolume(Number(volumeEl.value) / 100);
+    saveSettings();
+  });
+
+  document.querySelectorAll('[data-open]').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      if (sheetName === btn.dataset.open && !$('sheet').hidden) closeSheet();
+      else openSheet(btn.dataset.open);
+    });
+  });
+  document.querySelectorAll('[data-close]').forEach((btn) => {
+    btn.addEventListener('click', closeSheet);
+  });
+
+  $('searchForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const term = safeTerm($('searchInput').value);
+    if (!term) return;
+    $('searchBtn').disabled = true;
+    $('searchStatus').textContent = 'Searching the Internet Archive…';
+    $('searchResults').replaceChildren();
+    try {
+      const results = await searchArchive(term);
+      if (!results.length) {
+        $('searchStatus').textContent = 'No short clip with a clear license came back. Try another word, or record your own.';
+      } else {
+        $('searchStatus').textContent = results.length + ' licensed clip' + (results.length === 1 ? '' : 's') + '.';
+        renderResults(results);
+      }
+    } catch (_) {
+      $('searchStatus').textContent = 'Search did not complete. Check your connection. Pads you already have still play offline.';
+    } finally {
+      $('searchBtn').disabled = false;
+    }
+  });
+
+  $('recBtn').addEventListener('click', () => {
+    if (mediaRecorder && mediaRecorder.state === 'recording') stopRecording(false);
+    else startRecording();
+  });
+  $('recDiscard').addEventListener('click', () => stopRecording(true));
+
+  $('macroArm').addEventListener('click', () => {
+    macroArmed = !macroArmed;
+    if (macroArmed) editArmed = false;
+    updateBanner();
+    renderMacros();
+  });
+  $('macroClear').addEventListener('click', () => {
+    macroChain = [];
+    renderMacros();
+    updateBanner();
+  });
+  $('macroSave').addEventListener('click', () => {
+    const name = $('macroName').value.trim();
+    if (!name || !macroChain.length) {
+      setStatus('Name the chain and add at least one pad.');
+      return;
+    }
+    macros.push({ id: uid(), name, steps: macroChain.slice(0, MAX_CHAIN) });
+    macroChain = [];
+    macroArmed = false;
+    $('macroName').value = '';
+    saveMacros();
+    renderMacros();
+    updateBanner();
+    setStatus('Saved “' + name + '”.');
+  });
+
+  $('editArm').addEventListener('click', () => {
+    editArmed = !editArmed;
+    if (editArmed) macroArmed = false;
+    updateBanner();
+    renderMacros();
+    if (editArmed) closeSheet();
+  });
+  $('resetAsk').addEventListener('click', () => openSheet('reset'));
+  $('resetConfirm').addEventListener('click', () => { resetBoard(); });
+
+  $('renameBtn').addEventListener('click', () => {
+    const pad = padById(editingId);
+    const name = $('padName').value.trim();
+    if (!pad || !name) return;
+    pad.label = name;
+    savePads();
+    renderPads();
+    $('editStatus').textContent = 'Renamed.';
+  });
+  $('downloadBtn').addEventListener('click', () => {
+    const pad = padById(editingId);
+    if (pad) downloadPad(pad);
+  });
+  $('deleteBtn').addEventListener('click', () => {
+    const pad = padById(editingId);
+    if (pad) deletePad(pad);
+  });
+
+  const hotkeys = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '0', 'q', 'w', 'e', 'r', 't', 'y'];
+  document.addEventListener('keydown', (e) => {
+    const tag = (e.target && e.target.tagName) || '';
+    if (e.key === 'Escape') {
+      stopAll();
+      if (!$('sheet').hidden) closeSheet();
+      return;
+    }
+    if (/^(INPUT|TEXTAREA|SELECT)$/.test(tag)) return;
+    if (!$('sheet').hidden) return;
+    const index = hotkeys.indexOf(String(e.key).toLowerCase());
+    if (index >= 0) triggerIndex(index);
+  });
+
+  document.addEventListener('backbutton', (e) => {
+    if (!$('sheet').hidden) {
+      e.preventDefault();
+      closeSheet();
+    }
+  });
+
+  window.addEventListener('beforeinstallprompt', (e) => {
+    e.preventDefault();
+    deferredInstall = e;
+    $('installBtn').hidden = false;
+  });
+  $('installBtn').addEventListener('click', async () => {
+    if (!deferredInstall) return;
+    deferredInstall.prompt();
+    await deferredInstall.userChoice;
+    deferredInstall = null;
+    $('installBtn').hidden = true;
+  });
+
+  if (!recorderSupported()) {
+    $('recBtn').disabled = true;
+    $('recStatus').textContent = 'This browser cannot record from the microphone. The pads still play.';
+  }
+
+  const statsBox = $('statsToggle');
+  if (statsBox) {
+    const paintStats = () => {
+      const plan = currentStats();
+      const note = $('statsState');
+      statsBox.checked = plan.reason !== 'off' && plan.reason !== 'dnt';
+      statsBox.disabled = plan.reason === 'dnt';
+      if (!note) return;
+      if (plan.reason === 'dnt') note.textContent = 'This device asked not to be tracked. Nothing is sent.';
+      else if (plan.reason === 'off') note.textContent = 'Off. Nothing is sent. This choice stays on this device.';
+      else if (plan.reason === 'no-keys') note.textContent = 'On, but this build has no crash or stats keys, so nothing is sent.';
+      else if (plan.reason === 'local') note.textContent = 'This page is on a local server, so nothing is sent.';
+      else {
+        const parts = [];
+        if (plan.sentry) parts.push('crash reports');
+        if (plan.posthog) parts.push('play stats');
+        note.textContent = 'On. Sending ' + parts.join(' and ') + '. No recordings and no names.';
+      }
+    };
+    paintStats();
+    statsBox.addEventListener('change', () => {
+      setStatsEnabled(statsBox.checked);
+      paintStats();
+    });
+    bootTelemetry();
+    paintStats();
+  }
+}
+
+async function boot() {
+  wire();
+  const settings = readJson(SETTINGS_KEY) || {};
+  if (typeof settings.volume === 'number') volumeEl.value = String(settings.volume);
+  engine.setVolume(Number(volumeEl.value) / 100);
+  try {
+    await loadCatalog();
+  } catch (_) {
+    setStatus('The starter pack did not load.');
+    return;
+  }
+  await bootPads();
+  macros = readJson(MACRO_KEY);
+  if (!Array.isArray(macros)) macros = [];
+  renderPads();
+  setStatus('Loading sounds…');
+  await preload();
+  setStatus(pads.length + ' sounds ready');
+  if (location.hash === '#test') {
+    window.__sb = {
+      activeVoices: () => engine.activeCount,
+      padCount: () => pads.length,
+      playIndex: (i) => triggerIndex(i),
+    };
+  }
+  if ('serviceWorker' in navigator) {
+    if (isNative()) {
+      navigator.serviceWorker.getRegistrations().then((regs) => regs.forEach((r) => r.unregister())).catch(() => {});
+    } else {
+      navigator.serviceWorker.register('sw.js').catch(() => {});
+    }
+  }
+}
+
+boot();
