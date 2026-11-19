@@ -937,10 +937,17 @@ function frame(now) {
   requestAnimationFrame(frame);
 }
 
-initScene();
+let sceneOk = true;
+try { initScene(); } catch (e) {
+  // No WebGL (old phone, or hardware acceleration switched off): say so instead of showing a dead screen.
+  sceneOk = false; console.warn('3D unavailable:', e);
+  const m = document.createElement('div'); m.className = 'nogl';
+  m.innerHTML = '<b>3D isn\u2019t available in this browser</b><span>Hydraulic Press &amp; Foundry needs WebGL. Open it in Chrome and make sure hardware acceleration is on, then reload.</span>';
+  stage.appendChild(m);
+}
 if (!S.orders.length) fillBoard(true); else fillBoard();
 renderAll();
-requestAnimationFrame(frame);
+if (sceneOk) requestAnimationFrame(frame);
 if (S.firstRun) setTimeout(() => toast('Welcome! Take the soda can job, then hold PRESS. Use FINE to sneak up on the target.'), 600);
 
 // ============================================================

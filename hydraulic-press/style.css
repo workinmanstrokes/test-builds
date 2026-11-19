@@ -260,3 +260,8 @@ dialog::backdrop { background: rgba(0,0,0,.65); backdrop-filter: blur(4px); }
   font-size: 13px; font-weight: 700; opacity: 0; transition: .25s; pointer-events: none; z-index: 50; max-width: 90vw; text-align: center;
 }
 .toast.show { opacity: 1; transform: translate(-50%, 0); }
+
+/* Shown only when the browser can't create a WebGL context */
+.nogl { position: absolute; inset: 0; z-index: 5; display: grid; place-content: center; gap: 8px; padding: 24px; text-align: center; background: radial-gradient(circle at 50% 40%, #2a1d12, #0b0a09 70%); color: #f3e9dc; }
+.nogl b { font-size: 1.1rem; color: #ffb347; }
+.nogl span { max-width: 30ch; margin: 0 auto; color: #c9b9a6; font-size: .92rem; line-height: 1.45; }
