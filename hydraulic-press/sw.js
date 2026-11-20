@@ -1,7 +1,7 @@
 // Hydraulic Press & Foundry offline cache. Bump VERSION whenever you change game files.
 // This game shares its web address with the other arcade games, so it only ever touches its own
 // caches (names starting "hpf-") and never deletes another game's offline files.
-const VERSION = 'hpf-v2';
+const VERSION = 'hpf-v3';
 const FILES = ['./', './index.html', './style.css', './game.js', './data.js', './manifest.webmanifest',
   './vendor/three.module.min.js', './vendor/RoomEnvironment.js',
   './icons/icon-192.png', './icons/icon-512.png', './icons/maskable-512.png', './apple-touch-icon.png'];
