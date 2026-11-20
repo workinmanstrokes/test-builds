@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+  <meta name="theme-color" content="#0b0a09">
+  <meta name="description" content="Run a hydraulic press shop. Take custom orders, read the metal, and press to spec.">
+  <title>Hydraulic Press &amp; Foundry</title>
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="icon" href="icons/icon-192.png">
+  <link rel="apple-touch-icon" href="apple-touch-icon.png">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <link rel="stylesheet" href="style.css">
+  <script type="importmap">{ "imports": { "three": "./vendor/three.module.min.js" } }</script>
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand">
+      <div class="logo" aria-hidden="true"><span></span></div>
+      <div>
+        <h1>Hydraulic Press <em>&amp; Foundry</em></h1>
+        <div class="stars" id="stars" title="Shop reputation"></div>
+      </div>
+    </div>
+    <div class="stats">
+      <div class="chip cash"><small>Cash</small><b id="cash">$0</b></div>
+      <div class="chip scrap"><small>Scrap</small><b id="scrapKg">0 kg</b></div>
+      <div class="chip ingot"><small>Ingots</small><b id="ingots">0</b></div>
+      <button class="icon-btn" id="menuBtn" aria-label="Menu">☰</button>
+    </div>
+  </header>
+
+  <main class="layout">
+    <section class="stage-col">
+      <div class="stage" id="stage">
+        <canvas id="gl"></canvas>
+        <canvas id="fx"></canvas>
+        <div class="vignette"></div>
+
+        <div class="jobcard" id="jobCard">
+          <div class="jc-top"><span class="jc-type" id="jcType">IDLE</span><span class="jc-pay" id="jcPay"></span></div>
+          <div class="jc-title" id="jcTitle">No job on the press</div>
+          <div class="jc-goal" id="jcGoal">Take an order from the board to get started.</div>
+        </div>
+
+        <div class="gauge" id="gauge" aria-label="Flatten gauge">
+          <div class="g-label">FLAT</div>
+          <div class="g-track">
+            <div class="g-target" id="gTarget"></div>
+            <div class="g-fill" id="gFill"></div>
+            <div class="g-needle" id="gNeedle"></div>
+          </div>
+          <div class="g-val" id="gVal">0%</div>
+        </div>
+
+        <div class="stress" id="stressBox">
+          <div class="s-label">STRESS</div>
+          <div class="s-track"><div class="s-fill" id="sFill"></div></div>
+        </div>
+
+        <div class="psi-readout"><span id="psiNow">0</span><small> / <span id="psiMax">0</span> PSI</small></div>
+        <div class="banner" id="banner"></div>
+        <div class="pops" id="pops"></div>
+      </div>
+
+      <div class="controls">
+        <button class="ctl press" id="pressBtn"><span class="big">PRESS</span><small>hold · Space</small></button>
+        <button class="ctl fine" id="fineBtn"><span class="big">FINE</span><small>hold · Shift</small></button>
+        <button class="ctl deliver" id="deliverBtn" disabled><span class="big">DELIVER</span><small>Enter</small></button>
+      </div>
+    </section>
+
+    <section class="panel-col">
+      <nav class="tabs" role="tablist">
+        <button class="tab active" data-tab="orders">Orders <span class="badge" id="ordersBadge"></span></button>
+        <button class="tab" data-tab="furnace">Furnace</button>
+        <button class="tab" data-tab="shop">Upgrades</button>
+      </nav>
+
+      <div class="panel active" id="tab-orders">
+        <div class="panel-head">
+          <h2>Order Board</h2>
+          <span class="muted" id="repText"></span>
+        </div>
+        <div id="orderList" class="orders"></div>
+        <p class="hint">Grey orders need a stronger cylinder or a finer servo valve. Decline them — they come back after you upgrade.</p>
+      </div>
+
+      <div class="panel" id="tab-furnace">
+        <div class="panel-head"><h2>Induction Furnace</h2><span class="temp" id="furnaceTemp">1,450 °C</span></div>
+        <div class="crucible">
+          <div class="crucible-glow" id="crucibleGlow"></div>
+          <div class="crucible-bar"><div id="smeltFill"></div></div>
+          <div class="crucible-txt"><span>5 kg scrap → 1 ingot</span><b id="smeltPct">0%</b></div>
+        </div>
+        <div class="furnace-row">
+          <div><small>Market price</small><b id="ingotPrice">$0</b></div>
+          <button class="btn primary" id="sellBtn">Sell ingots</button>
+        </div>
+        <p class="hint">Every job leaves scrap behind — even the ones you wreck. The furnace smelts it automatically.</p>
+      </div>
+
+      <div class="panel" id="tab-shop">
+        <div class="panel-head"><h2>Upgrades</h2></div>
+        <div id="upgList" class="upgrades"></div>
+      </div>
+    </section>
+  </main>
+
+  <dialog id="menu">
+    <form method="dialog" class="menu-inner">
+      <h2>Shop Menu</h2>
+      <div class="menu-stats" id="menuStats"></div>
+      <label class="toggle"><input type="checkbox" id="sfxToggle" checked> Sound</label>
+      <label class="toggle"><input type="checkbox" id="hapticToggle" checked> Vibration</label>
+      <button class="btn" value="close">Back to work</button>
+      <button class="btn danger" id="resetBtn" value="reset" type="button">Reset save</button>
+    </form>
+  </dialog>
+
+  <div class="toast" id="toast"></div>
+
+  <script type="module" src="game.js"></script>
+  <script>
+    if ('serviceWorker' in navigator && location.protocol !== 'file:') {
+      window.addEventListener('load', () => navigator.serviceWorker.register('sw.js').catch(() => {}));
+    }
+  </script>
+</body>
+</html>
