@@ -1,0 +1,96 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#17100b">
+<meta name="description" content="Paydirt: Soil &amp; Gold Assay. Probe a 6x6 claim, dig the pay dirt, and hit the gold quota in 60 seconds — or the run is over.">
+<title>Paydirt: Soil &amp; Gold Assay</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%2317100b'/%3E%3Cpath d='M8 20l5-9 6 3 5 5-4 5-9-1z' fill='%23e8b83a'/%3E%3C/svg%3E">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<main class="app">
+  <header class="top">
+    <div>
+      <h1>Paydirt</h1>
+      <p class="sub">Soil &amp; Gold Assay</p>
+    </div>
+    <button id="mute" class="icon" type="button" aria-label="Mute sound" aria-pressed="false">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9v6h4l5 4V5L8 9H4z"/><path class="wave" d="M16 8.5a5 5 0 010 7M18.5 6a8.5 8.5 0 010 12" fill="none" stroke-width="1.8" stroke-linecap="round"/><path class="cross" d="M16 9l5 6M21 9l-5 6" fill="none" stroke-width="1.8" stroke-linecap="round"/></svg>
+    </button>
+  </header>
+
+  <section class="stats" aria-label="Ante status">
+    <div class="stat gold" id="goldStat"><span class="k">Gold</span><span class="v"><b id="gold">0.0</b> g</span><span class="s">Found <span id="found">0/3</span> · Quota <span id="quota">12.0</span> g</span><span class="bar" id="quotaBar"></span></div>
+    <div class="stat"><span class="k">Ante</span><span class="v"><b id="anteNo">1</b></span><span class="s">Next quota <span id="nextQuota">17.0</span> g</span></div>
+    <div class="stat"><span class="k">Time</span><span class="v"><b id="time">60</b> s</span><span class="bar" id="clock"></span></div>
+  </section>
+
+  <section class="board">
+    <div id="grid" class="grid" data-tool="probe" aria-label="Dirt claim, 6 by 6"></div>
+  </section>
+
+  <section class="tools" aria-label="Tools">
+    <button id="tool-probe" class="tool probe" type="button" aria-pressed="true">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2v13M8 6h8M9 15h6l-3 7z" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      <span><b>Soil Probe</b><small><span id="probeLeft">5</span> left · reads nearby pay dirt</small></span>
+    </button>
+    <button id="tool-dig" class="tool dig" type="button" aria-pressed="false">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14 3l7 7-3 1-5-5zM15 8L4 19l1 1 11-11M9 21c-3 0-5-2-5-5" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      <span><b>Assay Shovel</b><small><span id="digLeft">3</span> left · digs the tile</small></span>
+    </button>
+  </section>
+
+  <footer class="foot">
+    <span>Run <b id="purse">0.0</b> g</span>
+    <span>Best ante <b id="best">1</b> · <b id="bestGold">0.0</b> g</span>
+  </footer>
+
+  <div id="intro" class="sheet">
+    <div class="card">
+      <p class="eyebrow">Sixty seconds. One quota. Lose it and the run is over.</p>
+      <h2>Hit the quota or bust</h2>
+      <ul class="how">
+        <li><b class="t">Probe</b> a tile to read how many of its neighbours hold gold. You get 5 probes per ante — they break no ground.</li>
+        <li><b class="dig">Dig</b> where the readings point. You get 3 shovel digs per ante, and gold only counts once it is out of the ground.</li>
+        <li>Read the numbers: a probe that reads <b class="dig">2</b> with only 2 untouched neighbours means both hold gold — dig them.</li>
+        <li>Weigh in at <b class="dig">12.0 g</b> to clear Ante 1. Each ante raises the quota — miss it and the run ends on the spot.</li>
+        <li>You have 60 seconds per ante. The clock starts on your first move.</li>
+      </ul>
+      <button id="start" class="cta" type="button">Stake the claim</button>
+    </div>
+  </div>
+
+  <div id="advance" class="sheet" hidden>
+    <div class="card" role="dialog" aria-labelledby="a-title">
+      <p class="eyebrow">Quota hit</p>
+      <h2 id="a-title">Ante 1 cleared</h2>
+      <dl class="tally">
+        <div><dt>Gold this ante</dt><dd id="a-gold">0.0 g</dd></div>
+        <div><dt>Quota</dt><dd id="a-quota">12.0 g</dd></div>
+        <div><dt>Run total</dt><dd id="a-run">0.0 g</dd></div>
+        <div><dt>Next quota</dt><dd id="a-next">17.0 g</dd></div>
+      </dl>
+      <button id="advanceBtn" class="cta" type="button">Dig Ante 2</button>
+    </div>
+  </div>
+
+  <div id="report" class="sheet" hidden>
+    <div class="card" role="dialog" aria-labelledby="r-grade">
+      <p class="eyebrow" id="r-reason">Quota missed</p>
+      <h2 id="r-grade">Run over</h2>
+      <p class="record" id="r-record" hidden>New best ante</p>
+      <dl class="tally">
+        <div><dt>Gold this ante</dt><dd id="r-gold">0.0 g</dd></div>
+        <div><dt>Quota</dt><dd id="r-quota">12.0 g</dd></div>
+        <div><dt>Missed by</dt><dd id="r-left">0.0 g</dd></div>
+        <div><dt>Best ante</dt><dd id="r-found">Ante 1</dd></div>
+      </dl>
+      <button id="next" class="cta" type="button">Restart the run</button>
+    </div>
+  </div>
+</main>
+<script src="game.js"></script>
+</body>
+</html>

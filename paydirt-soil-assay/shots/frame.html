@@ -1,0 +1,8 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>Phone frame</title>
+<style>html,body{margin:0;background:#000}iframe{display:block;width:412px;height:891px;border:0}</style>
+<!-- Dev only: headless Chrome will not open a window narrower than ~500px, so the
+     game is framed in a Galaxy S25 Ultra sized iframe; the query string passes through. -->
+<iframe id="f"></iframe>
+<script>document.getElementById('f').src = '/index.html' + location.search;</script>

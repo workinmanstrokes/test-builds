@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<title>Brainrot: Tactical Aura Rush</title>
+<style>
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; background: #111; color: #fff; font-family: sans-serif; }
+  #wrap { max-width: 420px; margin: 0 auto; position: relative; }
+  canvas { display: block; width: 100%; height: auto; touch-action: none; background: #1d2b1a; }
+  .bar { display: flex; gap: 8px; padding: 10px; flex-wrap: wrap; }
+  button { flex: 1; padding: 12px; font-size: 15px; border: 0; border-radius: 10px; background: #8bc34a; color: #111; font-weight: bold; cursor: pointer; }
+  button.secondary { background: #37474f; color: #fff; }
+  .overlay { display: none; position: absolute; left: 8px; right: 8px; top: 70px; background: rgba(0,0,0,0.92); border: 1px solid #555; border-radius: 12px; padding: 14px; z-index: 5; }
+  .overlay.open { display: block; }
+  .overlay h2 { margin: 0 0 8px; font-size: 18px; }
+  .overlay p { font-size: 14px; line-height: 1.45; }
+  .overlay ul { font-size: 14px; line-height: 1.5; padding-left: 18px; }
+  .choice { display: block; width: 100%; margin-top: 8px; text-align: left; }
+  .choice:disabled { opacity: 0.4; }
+  label { font-size: 14px; display: block; margin: 8px 0; }
+</style>
+</head>
+<body>
+<div id="wrap">
+  <canvas id="game" width="360" height="640"></canvas>
+
+  <div class="bar">
+    <button id="btn-start">Start Run</button>
+    <button id="btn-collection" class="secondary">Collection</button>
+    <button id="btn-settings" class="secondary">Settings</button>
+  </div>
+
+  <div class="overlay" id="overlay-gate">
+    <h2>Gate cleared — spend your aura</h2>
+    <p id="gate-text">You earned aura at the gate. Spend it on exactly one squad choice:</p>
+    <div id="gate-choices"></div>
+  </div>
+
+  <div class="overlay" id="overlay-collection">
+    <h2>Collection Log</h2>
+    <p id="collection-summary"></p>
+    <ul id="collection-list"></ul>
+    <h2>Best Runs</h2>
+    <ul id="best-runs"></ul>
+    <button class="secondary" id="btn-close-collection">Close</button>
+  </div>
+
+  <div class="overlay" id="overlay-results">
+    <h2>Run over</h2>
+    <p id="results-text"></p>
+    <button id="btn-again">Run again</button>
+  </div>
+
+  <div class="overlay" id="overlay-settings">
+    <h2>Settings</h2>
+    <label><input type="checkbox" id="opt-ads" checked> Opt in to rewarded ads (consent required; ads are opt-in only)</label>
+    <p>Rewarded ads are opt-in only and never gate progress. Aura is never sold and never appears in ads.</p>
+    <p>Session metrics (steering, deaths, frame drops) are recorded on-device only, to fill in <code>docs/PLAYTEST.md</code> after a real-phone playtest.</p>
+    <button class="secondary" id="btn-close-settings">Close</button>
+  </div>
+</div>
+
+<script src="src/zones.js"></script>
+<script src="src/bosses.js"></script>
+<script src="src/aura.js"></script>
+<script src="src/collection.js"></script>
+<script src="src/game.js"></script>
+<script>
+(function () {
+  var game = new BrainrotGame(document.getElementById('game'));
+  game.render();
+
+  function show(id) { document.getElementById(id).classList.add('open'); }
+  function hide(id) { document.getElementById(id).classList.remove('open'); }
+
+  document.getElementById('btn-start').addEventListener('click', function () {
+    hide('overlay-results'); hide('overlay-collection'); hide('overlay-settings');
+    game.startRun();
+  });
+  document.getElementById('btn-again').addEventListener('click', function () {
+    hide('overlay-results'); game.startRun();
+  });
+  document.getElementById('btn-collection').addEventListener('click', function () {
+    var p = game.collection.progress(BrainrotBosses.BOSSES.length);
+    document.getElementById('collection-summary').textContent =
+      'Bosses beaten: ' + p.beaten + '/' + p.total + ' — Characters recruited: ' + p.characters;
+    var list = document.getElementById('collection-list');
+    list.innerHTML = '';
+    BrainrotBosses.BOSSES.forEach(function (b) {
+      var e = game.collection.bosses[b.id];
+      var li = document.createElement('li');
+      li.textContent = (e && e.beaten ? '✓ ' : '· ') + b.name + ' — ' + b.mechanic +
+        (e && e.beaten ? ' (beaten ' + e.timesBeaten + '×)' : ' (not beaten yet)');
+      list.appendChild(li);
+    });
+    var runs = document.getElementById('best-runs');
+    runs.innerHTML = '';
+    if (!game.collection.bestRuns.length) runs.innerHTML = '<li>No runs recorded yet.</li>';
+    game.collection.bestRuns.forEach(function (r, i) {
+      var li = document.createElement('li');
+      li.textContent = '#' + (i + 1) + ' — ' + r.score + ' pts, reached zone ' + r.zone + ' (' + r.date.slice(0, 10) + ')';
+      runs.appendChild(li);
+    });
+    show('overlay-collection');
+  });
+  document.getElementById('btn-close-collection').addEventListener('click', function () { hide('overlay-collection'); });
+  document.getElementById('btn-settings').addEventListener('click', function () { show('overlay-settings'); });
+  document.getElementById('btn-close-settings').addEventListener('click', function () { hide('overlay-settings'); });
+
+  document.addEventListener('brainrot:gate', function (ev) {
+    var d = ev.detail;
+    document.getElementById('gate-text').textContent =
+      'Zone: ' + d.zone.name + ' (' + d.zone.gateRuleText + ') Aura balance: ' + d.aura + '.';
+    var box = document.getElementById('gate-choices');
+    box.innerHTML = '';
+    var labels = {
+      ADD_MEMBER: 'Add a squad member (10 aura)',
+      UPGRADE_WEAPON: 'Upgrade a squad member weapon (15 aura)',
+      BANK: 'Bank aura for the boss (free)'
+    };
+    d.choices.forEach(function (c) {
+      var b = document.createElement('button');
+      b.className = 'choice';
+      b.textContent = labels[c.choice] || c.choice;
+      b.disabled = !c.affordable;
+      b.addEventListener('click', function () {
+        game.chooseAuraSpend(c.choice);
+        hide('overlay-gate');
+      });
+      box.appendChild(b);
+    });
+    show('overlay-gate');
+  });
+  document.addEventListener('brainrot:boss-start', function (ev) {
+    document.getElementById('results-text').textContent = '';
+  });
+  document.addEventListener('brainrot:run-over', function (ev) {
+    var d = ev.detail;
+    document.getElementById('results-text').textContent =
+      'Score ' + d.score + ' in ' + d.seconds + 's (' + d.reason + '). ' +
+      'Bosses beaten: ' + game.collection.bossesBeaten() + '/' + BrainrotBosses.BOSSES.length + '.';
+    show('overlay-results');
+  });
+})();
+</script>
+</body>
+</html>
