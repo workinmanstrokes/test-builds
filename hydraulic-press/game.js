@@ -10,6 +10,7 @@ const SAVE_KEY = 'hpf_save_v1';
 const STAR_REP = [0, 10, 32, 70, 130, 220];          // rep needed for 0..5 stars
 const PRECISION_TOL = [0.05, 0.035, 0.025, 0.015, 0.01]; // tolerance per servo level needed
 const MAX_SQUASH = 0.95;
+const CRACK_BITE = 0.4;                              // ram speed multiplier once a crack item splits
 
 const UPGRADES = [
   { id: 'psi',    icon: '🔩', name: 'Hydraulic Cylinder', base: 140, max: 10, desc: l => `${maxPsiAt(l)} PSI max force${l < 10 ? ` → ${maxPsiAt(l + 1)}` : ''}` },
@@ -204,8 +205,13 @@ function declineOrder(id) {
 function closeTime() { return 0.24 * Math.pow(0.74, S.lv.servo - 1); }
 function targetRate() {
   if (!job) return 0;
-  const ratio = clamp(maxPsi() / job.item.reqPsi, 0, 5);
-  return 0.2 * Math.sqrt(ratio) * (1 - 0.55 * job.s) * (fine ? 0.18 : 1);
+  // Extra force speeds the ram up, but the servo governs it past 2x so light items
+  // (soda cans) don't race past the target faster than anyone can react.
+  const ratio = clamp(maxPsi() / job.item.reqPsi, 0, 2);
+  // Once a crack item splits, the halves bind on the platen and the ram slows right down:
+  // a clear "stop now" moment that gives quick hands a fair chance.
+  const bite = job.cracked ? CRACK_BITE : 1;
+  return 0.2 * Math.sqrt(ratio) * (1 - 0.55 * job.s) * (fine ? 0.18 : 1) * bite;
 }
 
 function stepJob(dt) {
@@ -233,7 +239,7 @@ function stepJob(dt) {
   const it = job.item;
   if (it.kind === 'crack') {
     if (!job.cracked && job.s >= job.crackPt) {
-      job.cracked = true; SFX.crack(); buzz([20, 30, 60]); shake(); banner('CRACKED — STOP!', 'warn', 900);
+      job.cracked = true; curRate *= CRACK_BITE; SFX.crack(); buzz([20, 30, 60]); shake(); banner('CRACKED — STOP!', 'warn', 900);
       sparks(26, '#e8d5ff'); setCrackFx(true); record('crack', { s: job.s });
     }
     if (job.cracked && job.s >= job.shatterPt) return rupture();
@@ -486,6 +492,17 @@ function woodTexture() {
   const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; return t;
 }
 
+function screenTexture() {
+  // a tiny attract-mode screen: scanlines, a pixel press and a blinking prompt
+  const c = document.createElement('canvas'); c.width = 128; c.height = 96; const g = c.getContext('2d');
+  g.fillStyle = '#04161a'; g.fillRect(0, 0, 128, 96);
+  g.fillStyle = '#ffb02e'; g.fillRect(44, 14, 40, 8); g.fillRect(60, 22, 8, 22); g.fillRect(48, 44, 32, 6);
+  g.fillStyle = '#22d3ee'; g.fillRect(52, 60, 24, 6); g.fillRect(40, 66, 48, 4);
+  g.fillStyle = '#e11d48'; for (let i = 0; i < 6; i++) g.fillRect(12 + i * 18, 80, 10, 4);
+  g.fillStyle = 'rgba(0,0,0,.35)'; for (let y = 0; y < 96; y += 3) g.fillRect(0, y, 128, 1);
+  const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; t.magFilter = THREE.NearestFilter; return t;
+}
+
 function resize() {
   const w = stage.clientWidth, h = stage.clientHeight;
   if (!w || !h) return;
@@ -512,6 +529,8 @@ function spawnSpecimen(it) {
     const m = new THREE.Mesh(geo, mat); m.position.set(x, y, z); m.rotation.set(rx, ry, rz);
     m.castShadow = m.receiveShadow = true; specimen.add(m); specMeshes.push(m); return m;
   };
+  const mat = (opts, physical = false) => { const m = physical ? new THREE.MeshPhysicalMaterial(opts) : new THREE.MeshStandardMaterial(opts); specMats.push(m); return m; };
+  let seamR = 0.7, seamY = 0.66;   // where a crack item's glowing seam sits
   switch (it.shape) {
     case 'can': {
       add(new THREE.CylinderGeometry(0.42, 0.42, 1.2, 40, 24), main, 0, 0.65);
@@ -575,6 +594,94 @@ function spawnSpecimen(it) {
       add(new THREE.TorusGeometry(0.78, 0.06, 16, 64), trim, 0, 0.7, 0, -Math.PI / 2.6, -0.4);
       break;
     }
+    case 'trophy': {
+      // brass loving cup on a black plinth
+      const cup = new THREE.SplineCurve([[0, 0.66], [0.12, 0.67], [0.3, 0.74], [0.43, 0.9], [0.5, 1.1], [0.53, 1.3], [0.47, 1.31], [0.42, 1.18], [0.3, 1.0], [0, 0.94]].map(([x, y]) => new THREE.Vector2(x, y)));
+      add(new THREE.LatheGeometry(cup.getPoints(40), 48), main);
+      add(new THREE.CylinderGeometry(0.075, 0.13, 0.3, 24, 6), main, 0, 0.5);
+      add(new THREE.SphereGeometry(0.11, 24, 16), main, 0, 0.62);
+      add(new THREE.CylinderGeometry(0.2, 0.26, 0.06, 32), main, 0, 0.36);
+      const plinth = mat({ color: 0x1a1512, metalness: 0.1, roughness: 0.35 });
+      add(new THREE.BoxGeometry(0.66, 0.33, 0.66, 8, 6, 8), plinth, 0, 0.165);
+      add(new THREE.BoxGeometry(0.36, 0.12, 0.02), trim, 0, 0.17, 0.335);
+      for (const sx of [-1, 1]) add(new THREE.TorusGeometry(0.17, 0.035, 12, 32, Math.PI), main, sx * 0.5, 1.03, 0, 0, 0, -sx * Math.PI / 2);
+      break;
+    }
+    case 'coconut': {
+      const g = new THREE.IcosahedronGeometry(0.5, 5); const p = g.attributes.position;
+      for (let i = 0; i < p.count; i++) {
+        const v = new THREE.Vector3().fromBufferAttribute(p, i);
+        const n = 1 + 0.035 * Math.sin(v.y * 40 + v.x * 9) + 0.02 * Math.sin(v.z * 31 - v.y * 17) + 0.06 * Math.max(0, v.x / 0.5) ** 3;
+        v.multiplyScalar(n); v.x *= 1.12; p.setXYZ(i, v.x, v.y, v.z);
+      }
+      g.rotateY(-0.95);   // turn the "face" end toward the camera
+      g.computeVertexNormals();
+      add(g, main, 0, 0.52);
+      const eye = mat({ color: 0x1c120a, roughness: 0.95 }), up = new THREE.Vector3(0, 1, 0);
+      for (const [y, z] of [[0.1, 0.09], [0.1, -0.09], [-0.06, 0]]) {
+        const e = new THREE.Vector3(0.6, y, z).applyAxisAngle(up, -0.95);
+        add(new THREE.SphereGeometry(0.06, 16, 12), eye, e.x, 0.52 + e.y, e.z);
+      }
+      seamR = 0.55; seamY = 0.52;
+      break;
+    }
+    case 'extinguisher': {
+      add(new THREE.CylinderGeometry(0.34, 0.34, 1.0, 40, 20), main, 0, 0.52);
+      add(new THREE.SphereGeometry(0.34, 40, 16, 0, Math.PI * 2, 0, Math.PI / 2), main, 0, 1.02);
+      add(new THREE.CylinderGeometry(0.33, 0.34, 0.04, 40, 1), dark, 0, 0.02);
+      const label = mat({ color: 0xf2ead2, metalness: 0, roughness: 0.6 });
+      add(new THREE.CylinderGeometry(0.346, 0.346, 0.34, 40, 6, true, -0.9, 1.8), label, 0, 0.6);
+      add(new THREE.CylinderGeometry(0.11, 0.13, 0.14, 24), dark, 0, 1.4);
+      add(new THREE.BoxGeometry(0.2, 0.1, 0.16), trim, 0, 1.51);
+      add(new THREE.BoxGeometry(0.46, 0.035, 0.09, 8, 1, 1), trim, 0.1, 1.6, 0, 0, 0, 0.12);
+      add(new THREE.CylinderGeometry(0.075, 0.075, 0.04, 24), trim, 0, 1.47, 0.11, Math.PI / 2);
+      const hose = new THREE.CatmullRomCurve3([[-0.08, 1.48, 0], [-0.3, 1.44, 0.06], [-0.4, 1.1, 0.16], [-0.39, 0.7, 0.2]].map(a => new THREE.Vector3(...a)));
+      add(new THREE.TubeGeometry(hose, 40, 0.035, 10), dark);
+      add(new THREE.CylinderGeometry(0.03, 0.06, 0.16, 16), dark, -0.39, 0.58, 0.2);
+      break;
+    }
+    case 'cabinet': {
+      // arcade cabinet: kick plate, control deck, glowing screen and marquee
+      add(new THREE.BoxGeometry(0.82, 0.78, 0.72, 10, 10, 8), main, 0, 0.39);
+      add(new THREE.BoxGeometry(0.82, 0.62, 0.56, 10, 8, 8), main, 0, 1.08, -0.08);
+      add(new THREE.BoxGeometry(0.86, 0.1, 0.36, 10, 1, 4), dark, 0, 0.82, 0.24, -0.22);
+      add(new THREE.BoxGeometry(0.84, 0.12, 0.012), trim, 0, 0.06, 0.36);
+      const tex = screenTexture(), screen = mat({ color: 0x050505, map: tex, emissive: 0xffffff, emissiveMap: tex, emissiveIntensity: 0.95, roughness: 0.25 });
+      add(new THREE.BoxGeometry(0.62, 0.46, 0.02, 6, 6, 1), screen, 0, 1.1, 0.2, -0.18);
+      const marquee = mat({ color: 0x2a1600, emissive: 0xffb02e, emissiveIntensity: 1.1, roughness: 0.4 });
+      add(new THREE.BoxGeometry(0.84, 0.17, 0.26, 10, 2, 2), marquee, 0, 1.47, 0.04);
+      const red = mat({ color: 0xe11d48, roughness: 0.3 }), cyan = mat({ color: 0x22d3ee, roughness: 0.3 });
+      add(new THREE.CylinderGeometry(0.018, 0.018, 0.12, 10), dark, -0.2, 0.9, 0.27, -0.22);
+      add(new THREE.SphereGeometry(0.05, 16, 12), red, -0.2, 0.96, 0.29);
+      for (const [x, m] of [[0.05, red], [0.16, cyan], [0.27, cyan]]) add(new THREE.CylinderGeometry(0.035, 0.035, 0.03, 16), m, x, 0.88, 0.27, -0.22);
+      break;
+    }
+    case 'anvil': {
+      add(new THREE.BoxGeometry(0.86, 0.2, 0.56, 10, 2, 8), main, 0, 0.1);
+      add(new THREE.CylinderGeometry(0.2, 0.3, 0.3, 4, 4), main, 0, 0.35, 0, 0, Math.PI / 4).scale.set(1.25, 1, 0.9);
+      add(new THREE.BoxGeometry(0.96, 0.28, 0.46, 12, 4, 8), main, -0.05, 0.64);
+      add(new THREE.CylinderGeometry(0.03, 0.23, 0.62, 24, 6), main, 0.73, 0.68, 0, 0, 0, -Math.PI / 2).scale.set(1, 1, 0.8);
+      add(new THREE.BoxGeometry(0.22, 0.2, 0.34, 3, 3, 4), main, -0.62, 0.68);
+      add(new THREE.BoxGeometry(0.98, 0.02, 0.44, 12, 1, 6), trim, -0.05, 0.79);
+      add(new THREE.BoxGeometry(0.07, 0.022, 0.07), dark, -0.38, 0.795);
+      break;
+    }
+    case 'egg': {
+      const g = new THREE.SphereGeometry(0.46, 48, 36); g.scale(1, 1.32, 1);
+      add(g, main, 0, 0.72);
+      const gold = mat({ color: 0xf5c542, metalness: 1, roughness: 0.18 });
+      add(new THREE.TorusGeometry(0.465, 0.028, 12, 72), gold, 0, 0.72, 0, Math.PI / 2);
+      for (const ry of [0, Math.PI / 2]) { const b = new THREE.TorusGeometry(0.465, 0.02, 10, 96); b.scale(1, 1.32, 1); add(b, gold, 0, 0.72, 0, 0, ry); }
+      add(new THREE.CylinderGeometry(0.16, 0.24, 0.12, 32), gold, 0, 0.06);
+      add(new THREE.SphereGeometry(0.05, 16, 12), gold, 0, 1.33);
+      const gem = mat({ color: 0xff4fa3, emissive: 0xff4fa3, emissiveIntensity: 0.35, metalness: 0.1, roughness: 0.05 });
+      for (let k = 0; k < 8; k++) {
+        const a = (k + 0.5) * Math.PI / 4, y = k % 2 ? 0.95 : 0.49, r = 0.425;
+        add(new THREE.OctahedronGeometry(0.055, 0), gem, Math.cos(a) * r, y, Math.sin(a) * r);
+      }
+      seamR = 0.47; seamY = 0.72;
+      break;
+    }
   }
   // bake each mesh's local transform into deformation data (group space, y=0 at anvil)
   const box = new THREE.Box3().setFromObject(specimen); specH = box.max.y;
@@ -588,9 +695,9 @@ function spawnSpecimen(it) {
   scene.add(specimen);
   // geode inner glow
   if (it.kind === 'crack') {
-    seamMesh = new THREE.Mesh(new THREE.TorusGeometry(0.7, 0.06, 10, 72), new THREE.MeshBasicMaterial({ color: it.inner, transparent: true, opacity: 0 }));
-    seamMesh.rotation.x = Math.PI / 2; seamMesh.position.y = 0.66; specimen.add(seamMesh);
-    innerLight = new THREE.PointLight(it.inner, 0, 3, 1.5); innerLight.position.set(0, 0.7, 0.4); specimen.add(innerLight);
+    seamMesh = new THREE.Mesh(new THREE.TorusGeometry(seamR, 0.06, 10, 72), new THREE.MeshBasicMaterial({ color: it.inner, transparent: true, opacity: 0 }));
+    seamMesh.rotation.x = Math.PI / 2; seamMesh.position.y = seamY; seamMesh.userData.y = seamY; specimen.add(seamMesh);
+    innerLight = new THREE.PointLight(it.inner, 0, 3, 1.5); innerLight.position.set(0, seamY + 0.04, 0.4); specimen.add(innerLight);
   }
   ram.position.y = RAM_IDLE;
   deform(0);
@@ -623,7 +730,7 @@ function deform(s) {
     }
     pos.needsUpdate = true; m.geometry.computeVertexNormals();
   }
-  if (seamMesh) { seamMesh.position.y = 0.66 * sq; seamMesh.scale.set(1 + bulge * 1.15, 1 + bulge * 1.15, 1); }
+  if (seamMesh) { const k = 1 + bulge * 1.15; seamMesh.position.y = seamMesh.userData.y * sq; seamMesh.scale.set(k, k, 1); }
 }
 
 function explode(it) {
