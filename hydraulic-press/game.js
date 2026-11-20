@@ -34,7 +34,7 @@ const DEFAULT_SAVE = () => ({
   lv: { psi: 1, servo: 1, sensor: 1, dies: 1, coils: 1, sign: 1 },
   orders: [], nextOrderId: 1,
   stats: { jobs: 0, perfect: 0, failed: 0, crushed: 0, earned: 0, crates: 0 },
-  sfx: true, haptics: true, firstRun: true,
+  sfx: true, haptics: true, firstRun: true, news: 0,
 });
 let S = DEFAULT_SAVE();
 try { const raw = localStorage.getItem(SAVE_KEY); if (raw) S = deepMerge(DEFAULT_SAVE(), JSON.parse(raw)); } catch (e) {}
@@ -1055,7 +1055,12 @@ try { initScene(); } catch (e) {
 if (!S.orders.length) fillBoard(true); else fillBoard();
 renderAll();
 if (sceneOk) requestAnimationFrame(frame);
-if (S.firstRun) setTimeout(() => toast('Welcome! Take the soda can job, then hold PRESS. Use FINE to sneak up on the target.'), 600);
+if (S.firstRun) { S.news = 1; setTimeout(() => toast('Welcome! Take the soda can job, then hold PRESS. Use FINE to sneak up on the target.'), 600); }
+else if ((S.news || 0) < 1) {
+  // returning players: say what's new once (new customers bring the new jobs as orders come in)
+  S.news = 1; persist();
+  setTimeout(() => toast('New in town: coconuts, trophies, fire extinguishers and more. Watch the Order Board.'), 600);
+}
 
 // ============================================================
 // 12. PLAYTEST HOOK — used by tools/playtest.mjs and the tester bots
