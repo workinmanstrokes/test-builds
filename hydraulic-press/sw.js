@@ -1,7 +1,7 @@
 // Hydraulic Press & Foundry offline cache. Bump VERSION whenever you change game files.
 // This game shares its web address with the other arcade games, so it only ever touches its own
 // caches (names starting "hpf-") and never deletes another game's offline files.
-const VERSION = 'hpf-v3';
+const VERSION = 'hpf-v4';
 const FILES = ['./', './index.html', './style.css', './game.js', './data.js', './manifest.webmanifest',
   './vendor/three.module.min.js', './vendor/RoomEnvironment.js',
   './icons/icon-192.png', './icons/icon-512.png', './icons/maskable-512.png', './apple-touch-icon.png'];
@@ -12,7 +12,9 @@ self.addEventListener('activate', e => {
 self.addEventListener('fetch', e => {
   if (e.request.method !== 'GET' || new URL(e.request.url).origin !== location.origin) return;
   // Network first so updates show up; fall back to the cache when offline.
-  e.respondWith(fetch(e.request).then(r => {
+  // 'no-cache' makes the browser check with the server every time instead of reusing its own
+  // short-lived copy, so a new build shows up on the next open, not ten minutes later.
+  e.respondWith(fetch(e.request, { cache: 'no-cache' }).then(r => {
     if (r.ok) { const copy = r.clone(); caches.open(VERSION).then(c => c.put(e.request, copy)).catch(() => {}); }
     return r;
   }).catch(() => caches.match(e.request, { ignoreSearch: true }).then(hit => hit || caches.match('./index.html'))));
