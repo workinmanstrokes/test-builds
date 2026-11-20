@@ -1,6 +1,6 @@
 {
-  "generated": "2026-11-20T06:14-05:00",
-  "count": 26,
+  "generated": "2026-11-20T06:20-05:00",
+  "count": 28,
   "games": [
     {
       "id": "bronze-and-blood",
@@ -78,6 +78,38 @@
       "play": "../brainrot-tactical-aura-rush-tester-fix-update/",
       "apk": null,
       "repo": "https://github.com/workinmanstrokes/brainrot-tactical-aura-rush-tester-fix-update",
+      "added": "2026-11-20",
+      "updated": "2026-11-19",
+      "isNew": true
+    },
+    {
+      "id": "filterfit",
+      "title": "Filterfit",
+      "kind": "game",
+      "genre": "New",
+      "desc": "Fresh from the DowntownDiddlerrr workshop.",
+      "icon": "../arcade/brand-512.png",
+      "art": "../arcade/art/filterfit.jpg",
+      "artPos": null,
+      "play": "../filterfit/",
+      "apk": null,
+      "repo": "https://github.com/workinmanstrokes/filterfit",
+      "added": "2026-11-20",
+      "updated": "2026-11-19",
+      "isNew": true
+    },
+    {
+      "id": "final-cast-v0-2",
+      "title": "Final Cast V0 2",
+      "kind": "game",
+      "genre": "New",
+      "desc": "Fresh from the DowntownDiddlerrr workshop.",
+      "icon": "../arcade/brand-512.png",
+      "art": "../arcade/art/final-cast-v0-2.jpg",
+      "artPos": null,
+      "play": "../final-cast-v0-2/",
+      "apk": null,
+      "repo": "https://github.com/workinmanstrokes/final-cast-v0-2",
       "added": "2026-11-20",
       "updated": "2026-11-19",
       "isNew": true
