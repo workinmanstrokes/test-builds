@@ -2,7 +2,7 @@
 // index.html — that parse error pins a broken copy of the app. Only a
 // navigation falls back to the cached shell. caches from older builds
 // (including dirttrack-<sha>) are dropped on activate.
-const C = 'dirttrack-c4fc5d0390';
+const C = 'paydirt-v2';
 self.addEventListener('install', (e) => {
   self.skipWaiting();
   e.waitUntil(caches.open(C).then((c) => c.addAll(['./', './index.html', './icon.svg', './manifest.webmanifest'])));
