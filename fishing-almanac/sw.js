@@ -8,7 +8,7 @@
 //   tiles you've viewed load instantly and with no signal.
 // - Michigan DNR depth (ArcGIS) and USGS gauges: network-first with
 //   an opportunistic cache for offline fallback.
-const CACHE = 'fishing-almanac-d97fc2060b';
+const CACHE = 'fishing-almanac-d9846d3c46';
 const DATA = "fishing-almanac-data-v1";
 const SPOTS = "fishing-almanac-spots-v1"; // owned by src/lib/offlineSpots.js; never trimmed here
 const DATA_MAX = 1500; // entries; tiles are ~20-60 KB each

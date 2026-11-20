@@ -98,6 +98,36 @@ export function summarizeSessions(sessions) {
     overheatsPerMinute: totalMinutes > 0 ? Math.round((totalOverheats / totalMinutes) * 100) / 100 : 0,
     boredomPoints: done.map((s) => s.boredom).filter(Boolean),
     sessions: done.map(summarizeSession),
+    coreLoopProof: coreLoopProof(sessions),
+  };
+}
+
+// ---- Core-loop proof (VEX scope-risk red flag, 5.0/10 C) ----
+// The core loop (tap -> streak -> overheat -> tower climb) counts as proven
+// past tower one only when the 3-session real-phone log is complete AND every
+// finished session cleared all 9 floors. Until then the second act (Ascend
+// prestige, Speed Escape bonus, skins) stays scope-frozen: no new modes,
+// floors or skins, and streak decay / overheat warning / floor twists change
+// only from this log — never from balance tests alone.
+export function isCoreLoopProven(sessions) { return coreLoopProof(sessions).proven; }
+
+export function coreLoopProof(sessions) {
+  const done = (sessions || []).filter((s) => s && s.finishedAt);
+  const fullClears = done.filter((s) => summarizeSession(s).floorsCleared >= TOWER_FLOORS);
+  const missing = [];
+  if (done.length < PLAYTEST_SESSIONS_REQUIRED) {
+    missing.push(`${PLAYTEST_SESSIONS_REQUIRED - done.length} more finished session(s) needed (${done.length}/${PLAYTEST_SESSIONS_REQUIRED})`);
+  }
+  if (fullClears.length < done.length) {
+    missing.push(`${done.length - fullClears.length} finished session(s) did not clear all ${TOWER_FLOORS} floors`);
+  }
+  return {
+    proven: done.length >= PLAYTEST_SESSIONS_REQUIRED && fullClears.length === done.length,
+    sessionsCompleted: done.length,
+    sessionsRequired: PLAYTEST_SESSIONS_REQUIRED,
+    fullTowerClears: fullClears.length,
+    floorsRequired: TOWER_FLOORS,
+    missing,
   };
 }
 
