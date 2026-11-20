@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>FilterFit — Upload a photo, get its perfect filter</title>
+  <script type="module" crossorigin src="./assets/index-B6ydAvk7.js"></script>
+  <link rel="stylesheet" crossorigin href="./assets/index-wQA1LmAO.css">
+</head>
+<body class="bg-slate-950 text-slate-100 min-h-screen font-sans">
+  <div id="app" class="max-w-2xl mx-auto min-h-screen flex flex-col">
+    <header class="px-5 pt-6 pb-3 flex items-center justify-between">
+      <h1 class="text-2xl font-bold tracking-tight">Filter<span class="text-emerald-400">Fit</span></h1>
+      <button id="historyBtn" class="text-sm text-slate-400 hover:text-white">History</button>
+    </header>
+
+    <!-- Home / Import -->
+    <section id="screen-home" class="screen px-5 pb-8 flex-1">
+      <p class="text-slate-400 text-sm mb-5">Upload a photo, get its perfect filter.</p>
+      <div id="dropZone" class="border-2 border-dashed border-slate-700 rounded-2xl p-10 text-center cursor-pointer hover:border-emerald-400 transition">
+        <p class="text-4xl mb-3">📸</p>
+        <p class="font-medium">Tap to choose a photo</p>
+        <p class="text-xs text-slate-500 mt-1">Camera or photo library</p>
+        <input id="fileInput" type="file" accept="image/*" class="hidden">
+      </div>
+      <div class="grid grid-cols-2 gap-3 mt-4">
+        <button id="cameraBtn" class="btn-primary">Take a photo</button>
+        <button id="libraryBtn" class="btn-secondary">Choose from library</button>
+      </div>
+      <div id="historyList" class="mt-8"></div>
+    </section>
+
+    <!-- Analysing -->
+    <section id="screen-analysing" class="screen hidden px-5 pb-8 flex-1 text-center">
+      <p class="text-5xl my-10 animate-pulse">✨</p>
+      <p class="font-medium">Analysing your photo…</p>
+      <p class="text-xs text-slate-500 mt-2">Brightness · colour · warmth · subject</p>
+    </section>
+
+    <!-- Recommendations -->
+    <section id="screen-recommendations" class="screen hidden px-5 pb-8 flex-1">
+      <h2 class="text-lg font-semibold mb-1">Your perfect filter</h2>
+      <p class="text-xs text-slate-500 mb-4">Ranked for this photo, on-device.</p>
+      <canvas id="previewCanvas" class="w-full rounded-2xl border border-slate-800"></canvas>
+      <div id="top3" class="mt-4 space-y-3"></div>
+      <button id="openEditorBtn" class="btn-primary w-full mt-5">Open editor</button>
+    </section>
+
+    <!-- Editor -->
+    <section id="screen-editor" class="screen hidden px-5 pb-8 flex-1">
+      <h2 class="text-lg font-semibold mb-3">Editor</h2>
+      <canvas id="editorCanvas" class="w-full rounded-2xl border border-slate-800"></canvas>
+      <p class="text-xs text-slate-500 mt-2">Press and hold the photo to compare before / after.</p>
+      <label class="block mt-5 text-sm">Intensity <span id="intensityVal" class="text-emerald-400">100%</span></label>
+      <input id="intensity" type="range" min="0" max="100" value="100" class="w-full accent-emerald-400">
+      <div class="grid grid-cols-2 gap-3 mt-4">
+        <label class="text-xs">Brightness <input id="tuneBrightness" type="range" min="-50" max="50" value="0" class="w-full accent-emerald-400"></label>
+        <label class="text-xs">Contrast <input id="tuneContrast" type="range" min="-50" max="50" value="0" class="w-full accent-emerald-400"></label>
+        <label class="text-xs">Warmth <input id="tuneWarmth" type="range" min="-50" max="50" value="0" class="w-full accent-emerald-400"></label>
+        <label class="text-xs">Saturation <input id="tuneSaturation" type="range" min="-50" max="50" value="0" class="w-full accent-emerald-400"></label>
+      </div>
+      <div id="filterGrid" class="grid grid-cols-3 gap-2 mt-5"></div>
+      <div class="grid grid-cols-2 gap-3 mt-5">
+        <button id="exportBtn" class="btn-primary">Export &amp; share</button>
+        <button id="backHomeBtn" class="btn-secondary">New photo</button>
+      </div>
+    </section>
+  </div>
+</body>
+</html>

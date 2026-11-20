@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0e2a3a">
+<title>Final Cast v0.2 — Pixel-Art Idle Fishing</title>
+<style>
+  * { box-sizing: border-box; }
+  body { margin: 0; background: #0e2a3a; color: #eaf6ff; font-family: monospace; }
+  #app { max-width: 480px; margin: 0 auto; padding: 12px; }
+  header { display: flex; justify-content: space-between; align-items: baseline; }
+  h1 { font-size: 1.4rem; margin: 0; }
+  #game { width: 100%; background: linear-gradient(#2f7fb8, #0e2a3a); border: 3px solid #123; image-rendering: pixelated; }
+  #bite-cue { text-align: center; font-size: 1.4rem; background: #ffb703; color: #111; padding: 8px; margin-top: 6px; animation: pulse .4s infinite alternate; }
+  @keyframes pulse { from { opacity: .7; } to { opacity: 1; } }
+  #fight-bar { height: 18px; background: #123; margin-top: 6px; position: relative; }
+  #fight-fill { height: 100%; width: 50%; background: #43aa8b; }
+  #fight-text { position: absolute; inset: 0; text-align: center; line-height: 18px; }
+  #hud { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; margin: 10px 0; }
+  button { font-family: monospace; padding: 8px 12px; background: #ffb703; border: none; cursor: pointer; }
+  button:disabled { opacity: .4; cursor: default; }
+  #tabs { display: flex; gap: 4px; flex-wrap: wrap; }
+  #tabs button { background: #1d4e6b; color: #eaf6ff; }
+  .tab-panel { background: #123a4d; padding: 10px; margin-top: 6px; min-height: 80px; }
+  .hidden { display: none; }
+  #playtest-log { white-space: pre-wrap; font-size: .8rem; }
+</style>
+</head>
+<body>
+<div id="app" class="portrait">
+  <header>
+    <h1>🎣 Final Cast</h1>
+    <div id="water-label">Millpond — Dawn</div>
+  </header>
+
+  <main>
+    <section id="pond" aria-label="Fishing view">
+      <canvas id="game" width="360" height="360"></canvas>
+      <div id="bite-cue" class="hidden" role="alert" aria-live="assertive">❗ BITE! TAP TO HOOKSET</div>
+      <div id="fight-bar" class="hidden">
+        <div id="fight-fill"></div>
+        <span id="fight-text">Fight!</span>
+      </div>
+    </section>
+
+    <section id="hud">
+      <div>Coins: <strong id="coins">0</strong></div>
+      <div>Fish: <strong id="fish-count">0</strong></div>
+      <div>Quest: <strong id="quest-name">—</strong></div>
+      <button id="cast-btn">Cast Line</button>
+      <button id="hook-btn" disabled>Hookset</button>
+    </section>
+
+    <nav id="tabs">
+      <button data-tab="quests">Quests</button>
+      <button data-tab="tackle">Tackle</button>
+      <button data-tab="waters">Waters</button>
+      <button data-tab="collection">Collection</button>
+      <button data-tab="settings">Settings</button>
+    </nav>
+
+    <section id="panel">
+      <div id="panel-quests" class="tab-panel"></div>
+      <div id="panel-tackle" class="tab-panel hidden"></div>
+      <div id="panel-waters" class="tab-panel hidden"></div>
+      <div id="panel-collection" class="tab-panel hidden"></div>
+      <div id="panel-settings" class="tab-panel hidden">
+        <label><input type="checkbox" id="opt-haptics" checked> Haptics</label>
+        <label><input type="checkbox" id="opt-telemetry"> Telemetry (off on localhost / with Do Not Track)</label>
+        <p>Monetization: <strong>free, no ads</strong>.</p>
+        <button id="export-playtest">Export playtest log</button>
+        <pre id="playtest-log"></pre>
+      </div>
+    </section>
+  </main>
+</div>
+<script type="module" src="src/main.js"></script>
+<script>
+  // PWA offline cache: register only over http(s); file:// preview still plays.
+  if ('serviceWorker' in navigator && location.protocol.startsWith('http')) {
+    navigator.serviceWorker.register('sw.js').catch(function (e) { console.warn('SW failed', e); });
+  }
+</script>
+</body>
+</html>
