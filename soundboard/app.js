@@ -108,8 +108,8 @@ function makeStarter(def, overrides = {}) {
     kind: 'starter',
     soundId: def.id,
     duration: def.duration,
-    source: 'Original synthesis, generated for this app',
-    licenseName: 'Original',
+    source: def.source || 'Original synthesis, generated for this app',
+    licenseName: def.licenseName || 'Original',
   };
 }
 
@@ -465,7 +465,25 @@ async function bootPads() {
   const saved = readJson(PAD_KEY);
   if (Array.isArray(saved) && saved.length) {
     pads = saved.filter(keepPad);
-    if (pads.length !== saved.length) savePads();
+    let changed = pads.length !== saved.length;
+    // Refresh catalog facts on saved starters and add any starter-pack
+    // sounds that arrived since these pads were saved, so a pack update
+    // shows up for existing installs instead of only fresh ones.
+    for (const pad of pads) {
+      if (pad.kind !== 'starter') continue;
+      const def = catalog.find((s) => s.id === pad.soundId);
+      if (!def) continue;
+      if (def.source && pad.source !== def.source) { pad.source = def.source; changed = true; }
+      if (def.licenseName && pad.licenseName !== def.licenseName) { pad.licenseName = def.licenseName; changed = true; }
+      if (def.duration && pad.duration !== def.duration) { pad.duration = def.duration; changed = true; }
+    }
+    for (const def of catalog) {
+      if (!pads.some((p) => p.kind === 'starter' && p.soundId === def.id)) {
+        pads.push(makeStarter(def));
+        changed = true;
+      }
+    }
+    if (changed) savePads();
     return;
   }
   const legacy = readJson(LEGACY_PAD_KEY);
