@@ -42,6 +42,23 @@
   .mini .rl { font-size:12px; font-weight:700; }
   .mini .vl { color:var(--mut); font-size:12px; }
   .mini button { margin-top:6px; width:100%; }
+  /* ---- Real trading-card face (shared by pulls + collection) ---- */
+  .mini, .card { overflow:hidden; }
+  .tc-name { background:#0c0e13; color:var(--ink); font-weight:800; font-size:13px; padding:5px 6px; margin:-8px -8px 0; border-bottom:1px solid #333a49; text-align:left; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .card .tc-name { margin:-10px -10px 0; }
+  .tc-art { position:relative; height:92px; margin:6px 0 4px; border-radius:6px; overflow:hidden; display:flex; align-items:flex-end; justify-content:center; border:1px solid rgba(255,255,255,.18); }
+  .tc-art.stadium { background:linear-gradient(180deg,#1d4d2b 0%,#143d20 55%,#0f2f18 100%); }
+  .tc-art.stadium::before { content:''; position:absolute; inset:0; background:
+    repeating-linear-gradient(90deg, transparent 0 24px, rgba(255,255,255,.14) 24px 26px),
+    linear-gradient(180deg, transparent 62%, rgba(255,255,255,.10) 62% 64%, transparent 64%); }
+  .tc-art .emoji { font-size:44px; line-height:1; padding-bottom:8px; position:relative; z-index:1; align-self:center; }
+  .tc-art svg { position:relative; z-index:1; height:88px; width:auto; display:block; }
+  .tc-art.foil-ultra::after, .tc-art.foil-secret::after { content:''; position:absolute; inset:0; background:linear-gradient(115deg, transparent 30%, rgba(255,255,255,.35) 45%, rgba(255,255,255,.05) 55%, transparent 70%); pointer-events:none; }
+  .tc-art.foil-secret::after { background:linear-gradient(115deg, transparent 25%, rgba(242,183,5,.45) 45%, rgba(255,255,255,.35) 55%, transparent 75%); }
+  .tc-type { font-size:11px; color:var(--mut); font-weight:600; }
+  .tc-flavor { font-size:11px; font-style:italic; color:#c8cfdb; background:#0c0e13; border:1px solid #2b3140; border-radius:6px; padding:4px 6px; margin:5px 0; min-height:28px; line-height:1.3; }
+  .tc-foot { display:flex; justify-content:space-between; gap:4px; font-size:10px; color:var(--mut); border-top:1px solid #2b3140; padding-top:4px; }
+  .tc-foot .sym { font-weight:800; white-space:nowrap; }
   .desk-wrap { display:flex; gap:16px; flex-wrap:wrap; }
   #desk { background:#0c0e13; border:1px solid #333a49; border-radius:12px; touch-action:none; cursor:crosshair; }
   .desk-side { flex:1; min-width:260px; }
@@ -222,15 +239,15 @@ const SETS = {
   gridiron: {
     name: 'Gridiron Legends', packPrice: 30, color: '#1f6f3f', desc: 'Parody pigskin heroes from the fictional Metro League.',
     cards: [
-      { name: 'Brick Wallson', title: 'Lineman · Metro Mammoths', rarity: 'common', art: '🧱' },
-      { name: 'Sammy Slants', title: 'Wide Receiver · Bay Breakers', rarity: 'common', art: '💨' },
-      { name: 'Pete Punt', title: 'Punter · Desert Vipers', rarity: 'common', art: '🦶' },
-      { name: 'Dash Okafor', title: 'Running Back · Metro Mammoths', rarity: 'uncommon', art: '⚡' },
-      { name: 'Marty Blitz', title: 'Linebacker · Ironwood Bears', rarity: 'uncommon', art: '💥' },
-      { name: 'Tank Ramirez', title: 'Running Back · Bay Breakers', rarity: 'rare', art: '🚛' },
-      { name: 'Rocket Reeves', title: 'Quarterback · Desert Vipers', rarity: 'rare', art: '🚀' },
-      { name: 'Blitz McCoy', title: 'Quarterback · Metro Mammoths', rarity: 'ultra', art: '🌩️' },
-      { name: 'Gridiron Ghost', title: 'Legendary QB · Hall of Fame', rarity: 'secret', art: '👻' },
+      { name: 'Brick Wallson', title: 'Lineman · Metro Mammoths', rarity: 'common', art: '🧱', position: 'Lineman', team: 'Metro Mammoths', number: 77, flavor: "He doesn't block. He relocates defenders." },
+      { name: 'Sammy Slants', title: 'Wide Receiver · Bay Breakers', rarity: 'common', art: '💨', position: 'Wide Receiver', team: 'Bay Breakers', number: 12, flavor: 'Runs routes so sharp they need a warning label.' },
+      { name: 'Pete Punt', title: 'Punter · Desert Vipers', rarity: 'common', art: '🦶', position: 'Punter', team: 'Desert Vipers', number: 9, flavor: 'His kicks have their own frequent-flyer miles.' },
+      { name: 'Dash Okafor', title: 'Running Back · Metro Mammoths', rarity: 'uncommon', art: '⚡', position: 'Running Back', team: 'Metro Mammoths', number: 22, flavor: "Blink and he's already in the end zone." },
+      { name: 'Marty Blitz', title: 'Linebacker · Ironwood Bears', rarity: 'uncommon', art: '💥', position: 'Linebacker', team: 'Ironwood Bears', number: 55, flavor: 'Quarterbacks check under the bed for him.' },
+      { name: 'Tank Ramirez', title: 'Running Back · Bay Breakers', rarity: 'rare', art: '🚛', position: 'Running Back', team: 'Bay Breakers', number: 34, flavor: 'Tackling him is a group project.' },
+      { name: 'Rocket Reeves', title: 'Quarterback · Desert Vipers', rarity: 'rare', art: '🚀', position: 'Quarterback', team: 'Desert Vipers', number: 7, flavor: 'His arm has a launch countdown.' },
+      { name: 'Blitz McCoy', title: 'Quarterback · Metro Mammoths', rarity: 'ultra', art: '🌩️', position: 'Quarterback', team: 'Metro Mammoths', number: 1, flavor: 'Lightning called. It wants its nickname back.' },
+      { name: 'Gridiron Ghost', title: 'Legendary QB · Hall of Fame', rarity: 'secret', art: '👻', position: 'Legendary QB', team: 'Hall of Fame', number: 0, flavor: 'Retired in 1952. Still throws touchdowns.' },
     ],
   },
   kaiju: {
@@ -261,6 +278,157 @@ const SETS = {
     ],
   },
 };
+
+// ---------- Team colors & humanoid player figures (Gridiron Legends) ----------
+// All players are original parody characters. The figure is a flat-style
+// humanoid: helmet in team color, skin-tone face, jersey in team color
+// with the number on it, pants and cleats. Pose varies by position.
+const TEAM_COLORS = {
+  'Metro Mammoths': '#2e8b57',
+  'Bay Breakers': '#2b6cb0',
+  'Desert Vipers': '#e07b24',
+  'Ironwood Bears': '#7a4a2b',
+  'Hall of Fame': '#d4a017',
+};
+const SKIN_TONES = ['#e8b98a', '#c98d5f', '#8d5a3b', '#f0c8a0'];
+function skinFor(card) { return SKIN_TONES[(card.number || 0) % SKIN_TONES.length]; }
+const RARITY_SYMBOL = { common: '●', uncommon: '◆', rare: '★', ultra: '✦', secret: '♛' };
+function raritySymbol(r) { return RARITY_SYMBOL[r] || '●'; }
+function collectorLabel(card) { return '#' + card.collectorNo + '/' + SETS[card.set].cards.length; }
+// Pose parts in a 100x120 box: arms/legs are point lists, cleats are points,
+// ball is a point (or null). Shared by the SVG figure and the canvas figure.
+const POSE_PARTS = {
+  throw:  { arms: [[[36,44],[20,54]], [[64,44],[82,20]]], legs: [[[44,72],[40,104]], [[56,72],[60,104]]], cleats: [[36,106],[64,106]], ball: [84,16] },
+  run:    { arms: [[[36,44],[24,58]], [[64,44],[56,58]]], legs: [[[44,72],[30,88],[28,102]], [[56,72],[70,88],[72,100]]], cleats: [[26,104],[74,102]], ball: [54,56] },
+  catch:  { arms: [[[36,44],[26,18]], [[64,44],[74,18]]], legs: [[[44,72],[40,104]], [[56,72],[60,104]]], cleats: [[36,106],[64,106]], ball: null },
+  block:  { arms: [[[36,44],[16,50]], [[64,44],[84,50]]], legs: [[[44,72],[32,104]], [[56,72],[68,104]]], cleats: [[28,106],[72,106]], ball: null },
+  tackle: { arms: [[[36,44],[20,66]], [[64,44],[80,66]]], legs: [[[44,72],[36,88],[40,104]], [[56,72],[64,88],[60,104]]], cleats: [[38,106],[62,106]], ball: null },
+  kick:   { arms: [[[36,44],[20,46]], [[64,44],[78,26]]], legs: [[[44,72],[42,104]], [[56,72],[72,66],[84,52]]], cleats: [[40,106],[86,54]], ball: null },
+  ghost:  { arms: [[[36,44],[20,54]], [[64,44],[82,20]]], legs: [[[44,72],[40,104]], [[56,72],[60,104]]], cleats: [[36,106],[64,106]], ball: [84,16] },
+};
+function poseFor(card) {
+  if (card.name === 'Gridiron Ghost') return 'ghost';
+  switch (card.position) {
+    case 'Quarterback': case 'Legendary QB': return 'throw';
+    case 'Running Back': return 'run';
+    case 'Wide Receiver': return 'catch';
+    case 'Lineman': return 'block';
+    case 'Linebacker': return 'tackle';
+    case 'Punter': return 'kick';
+    default: return 'throw';
+  }
+}
+function playerFigureSVG(card) {
+  const pose = poseFor(card);
+  const ghost = pose === 'ghost';
+  const parts = POSE_PARTS[pose];
+  const team = TEAM_COLORS[card.team] || '#555';
+  const jersey = ghost ? '#e8d27a' : team;
+  const helmet = ghost ? '#f2d98c' : team;
+  const skin = ghost ? '#f5ecd0' : skinFor(card);
+  const pants = ghost ? '#efe6c8' : '#eef0f2';
+  const num = String(card.number).padStart(2, '0');
+  const path = pts => 'M' + pts.map(p => p.join(' ')).join(' L');
+  const legs = parts.legs.map(l => `<path d="${path(l)}" stroke="${pants}" stroke-width="9" stroke-linecap="round" stroke-linejoin="round" fill="none"/>`).join('');
+  const arms = parts.arms.map(a => `<path d="${path(a)}" stroke="${jersey}" stroke-width="7" stroke-linecap="round" fill="none"/>`).join('');
+  const cleats = parts.cleats.map(c => `<ellipse cx="${c[0]}" cy="${c[1]}" rx="5" ry="3" fill="#1c2433"/>`).join('');
+  const ball = parts.ball
+    ? `<ellipse cx="${parts.ball[0]}" cy="${parts.ball[1]}" rx="6" ry="4" fill="#7a4a2b" transform="rotate(-30 ${parts.ball[0]} ${parts.ball[1]})"/><path d="M${parts.ball[0] - 3} ${parts.ball[1]} L${parts.ball[0] + 3} ${parts.ball[1] - 1}" stroke="#fff" stroke-width="1"/>`
+    : '';
+  const glow = ghost ? `<ellipse cx="50" cy="60" rx="36" ry="50" fill="rgba(242,217,140,0.20)"/>` : '';
+  const op = ghost ? ' opacity="0.62"' : '';
+  return `<svg viewBox="0 0 100 120" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="${esc(card.name)}">${glow}<ellipse cx="50" cy="110" rx="26" ry="5" fill="rgba(0,0,0,0.35)"/><g${op}>${legs}${cleats}<path d="M34 40 Q34 36 40 36 L60 36 Q66 36 66 40 L66 70 Q66 74 62 74 L38 74 Q34 74 34 70 Z" fill="${jersey}"/><ellipse cx="36" cy="40" rx="7" ry="5" fill="${jersey}"/><ellipse cx="64" cy="40" rx="7" ry="5" fill="${jersey}"/>${arms}<text x="50" y="60" text-anchor="middle" font-size="15" font-weight="800" fill="#fff" font-family="system-ui, sans-serif">${num}</text><rect x="45" y="31" width="10" height="8" fill="${skin}"/><circle cx="50" cy="29" r="7.5" fill="${skin}"/><path d="M38 27 A12 12 0 0 1 62 27 Z" fill="${helmet}"/><rect x="48" y="14" width="4" height="10" fill="rgba(255,255,255,0.55)"/><circle cx="47" cy="30" r="1" fill="#1c2433"/><circle cx="53" cy="30" r="1" fill="#1c2433"/><path d="M60 29 L68 29 M60 33 L66 35" stroke="#dfe3ea" stroke-width="1.5" fill="none"/>${ball}</g></svg>`;
+}
+// Art window content for the HTML card face: humanoid figure for Gridiron,
+// emoji on the set color for the other sets.
+function cardArtHTML(card) {
+  const foil = card.rarity === 'ultra' ? ' foil-ultra' : card.rarity === 'secret' ? ' foil-secret' : '';
+  if (card.set === 'gridiron') {
+    return `<div class="tc-art stadium${foil}">${playerFigureSVG(card)}</div>`;
+  }
+  return `<div class="tc-art${foil}" style="background:${SETS[card.set].color}"><span class="emoji">${card.art}</span></div>`;
+}
+// Shared trading-card face used by pulls, collection and auction tiles.
+function cardFaceHTML(card) {
+  const rc = rarityColor(card.rarity);
+  const flavor = card.flavor ? `<div class="tc-flavor">${esc(card.flavor)}</div>` : '';
+  return `<div class="tc-name">${esc(card.name)}</div>
+  ${cardArtHTML(card)}
+  <div class="tc-type">${esc(card.title)}</div>
+  ${flavor}
+  <div class="tc-foot"><span>${esc(card.setName)}</span><span>${collectorLabel(card)}</span><span class="sym" style="color:${rc}">${raritySymbol(card.rarity)} ${rarityLabel(card.rarity)}</span></div>`;
+}
+// Wrap text to maxW, drawing lines starting at (x, y) with line height lh.
+function wrapText(ctx, text, x, y, maxW, lh) {
+  const words = String(text).split(' ');
+  let line = '';
+  for (const word of words) {
+    const test = line ? line + ' ' + word : word;
+    if (ctx.measureText(test).width > maxW && line) {
+      ctx.fillText(line, x, y); line = word; y += lh;
+    } else line = test;
+  }
+  if (line) ctx.fillText(line, x, y);
+}
+// Simplified humanoid player drawn with canvas paths, in the same 100x120
+// pose space as playerFigureSVG. Drawn inside the art window (ax, ay, aw, ah).
+function drawPlayerFigure(ctx, ax, ay, aw, ah, card) {
+  const pose = poseFor(card);
+  const ghost = pose === 'ghost';
+  const parts = POSE_PARTS[pose];
+  const team = TEAM_COLORS[card.team] || '#555';
+  const jersey = ghost ? '#e8d27a' : team;
+  const helmet = ghost ? '#f2d98c' : team;
+  const skin = ghost ? '#f5ecd0' : skinFor(card);
+  const pants = ghost ? '#efe6c8' : '#eef0f2';
+  const s = Math.min(aw / 100, ah / 122);
+  const ox = ax + aw / 2 - 50 * s, oy = ay + ah - 112 * s;
+  ctx.save();
+  if (ghost) ctx.globalAlpha = 0.62;
+  ctx.translate(ox, oy); ctx.scale(s, s);
+  ctx.fillStyle = 'rgba(0,0,0,0.35)';
+  ctx.beginPath(); ctx.ellipse(50, 110, 26, 5, 0, 0, Math.PI * 2); ctx.fill();
+  ctx.strokeStyle = pants; ctx.lineWidth = 9; ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+  for (const leg of parts.legs) {
+    ctx.beginPath(); ctx.moveTo(leg[0][0], leg[0][1]);
+    for (let i = 1; i < leg.length; i++) ctx.lineTo(leg[i][0], leg[i][1]);
+    ctx.stroke();
+  }
+  ctx.fillStyle = '#1c2433';
+  for (const c of parts.cleats) { ctx.beginPath(); ctx.ellipse(c[0], c[1], 5, 3, 0, 0, Math.PI * 2); ctx.fill(); }
+  ctx.fillStyle = jersey;
+  roundRect(ctx, 34, 36, 32, 38, 8); ctx.fill();
+  ctx.beginPath(); ctx.ellipse(36, 40, 7, 5, 0, 0, Math.PI * 2); ctx.fill();
+  ctx.beginPath(); ctx.ellipse(64, 40, 7, 5, 0, 0, Math.PI * 2); ctx.fill();
+  ctx.strokeStyle = jersey; ctx.lineWidth = 7;
+  for (const arm of parts.arms) {
+    ctx.beginPath(); ctx.moveTo(arm[0][0], arm[0][1]);
+    for (let i = 1; i < arm.length; i++) ctx.lineTo(arm[i][0], arm[i][1]);
+    ctx.stroke();
+  }
+  ctx.fillStyle = '#fff';
+  ctx.font = '800 15px system-ui, sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+  ctx.fillText(String(card.number).padStart(2, '0'), 50, 58);
+  ctx.fillStyle = skin;
+  ctx.fillRect(45, 31, 10, 8);
+  ctx.beginPath(); ctx.arc(50, 29, 7.5, 0, Math.PI * 2); ctx.fill();
+  ctx.fillStyle = helmet;
+  ctx.beginPath(); ctx.arc(50, 24, 12, Math.PI, 0); ctx.closePath(); ctx.fill();
+  ctx.fillStyle = 'rgba(255,255,255,0.55)';
+  ctx.fillRect(48, 12, 4, 10);
+  ctx.fillStyle = '#1c2433';
+  ctx.beginPath(); ctx.arc(47, 30, 1, 0, Math.PI * 2); ctx.fill();
+  ctx.beginPath(); ctx.arc(53, 30, 1, 0, Math.PI * 2); ctx.fill();
+  ctx.strokeStyle = '#dfe3ea'; ctx.lineWidth = 1.5;
+  ctx.beginPath(); ctx.moveTo(60, 29); ctx.lineTo(68, 29); ctx.moveTo(60, 33); ctx.lineTo(66, 35); ctx.stroke();
+  if (parts.ball) {
+    ctx.fillStyle = '#7a4a2b';
+    ctx.beginPath(); ctx.ellipse(parts.ball[0], parts.ball[1], 6, 4, -0.5, 0, Math.PI * 2); ctx.fill();
+    ctx.strokeStyle = '#fff'; ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(parts.ball[0] - 3, parts.ball[1]); ctx.lineTo(parts.ball[0] + 3, parts.ball[1] - 1); ctx.stroke();
+  }
+  ctx.restore();
+}
 
 // ---------- Hidden sub-grades ----------
 // Every pulled card gets hidden physical condition. The player can
@@ -324,6 +492,9 @@ function makeCard(setKey, rarity) {
     uid: nextUid++,
     set: setKey, setName: set.name,
     name: def.name, title: def.title, rarity: def.rarity, art: def.art,
+    position: def.position || null, team: def.team || null, number: def.number ?? null,
+    flavor: def.flavor || null,
+    collectorNo: set.cards.indexOf(def) + 1, // #n within its set, e.g. Brick Wallson is #1/9
     base: randInt(lo, hi),
     grades: { centering: rollCentering(), corners: rollCorners(), edges: rollEdges(), surface: rollSurface() },
     graded: null, // set by grading: { grade, subs, mult, value }
@@ -570,10 +741,7 @@ function renderShop() {
 }
 function miniCardHTML(card, withInspect) {
   return `<div class="mini" style="border-color:${rarityColor(card.rarity)}">
-    <div class="art">${card.art}</div>
-    <div class="nm">${esc(card.name)}</div>
-    <div class="rl" style="color:${rarityColor(card.rarity)}">${rarityLabel(card.rarity)}</div>
-    <div class="vl">${esc(card.title)}</div>
+    ${cardFaceHTML(card)}
     <div class="vl">Base ${fmt$(card.base)}</div>
     ${withInspect ? `<button class="small" data-inspect="${card.uid}">🔍 Inspect</button>` : ''}
   </div>`;
@@ -616,30 +784,72 @@ function drawCardFace(ctx, x, y, w, h, card, detail) {
   ctx.fillStyle = set.color; ctx.fillRect(x, y, w, h);
   ctx.fillStyle = '#f5f1e6';
   ctx.fillRect(x + 12 + lrOff, y + 12 + tbOff, w - 24, h - 24);
-  // art area
-  ctx.fillStyle = set.color;
-  ctx.fillRect(x + 22 + lrOff, y + 22 + tbOff, w - 44, h * 0.52);
-  ctx.fillStyle = '#fff';
-  ctx.font = Math.round(h * 0.22) + 'px serif';
-  ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-  ctx.fillText(card.art, x + w / 2 + lrOff, y + h * 0.28 + tbOff);
-  // name / title / rarity
-  ctx.fillStyle = '#14161c'; ctx.textAlign = 'left';
-  ctx.font = 'bold ' + Math.round(w * 0.075) + 'px system-ui, sans-serif';
-  ctx.fillText(card.name, x + 20, y + h * 0.62, w - 40);
-  ctx.font = Math.round(w * 0.055) + 'px system-ui, sans-serif';
+  // name bar
+  ctx.fillStyle = '#14161c';
+  ctx.fillRect(x + 12 + lrOff, y + 12 + tbOff, w - 24, 26);
+  ctx.fillStyle = '#f5f1e6';
+  ctx.font = 'bold ' + Math.round(w * 0.062) + 'px system-ui, sans-serif';
+  ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
+  ctx.fillText(card.name, x + 20 + lrOff, y + 25 + tbOff, w - 40);
+  // art window: stadium backdrop (dark green + yard lines)
+  const ax = x + 22 + lrOff, ay = y + 44 + tbOff, aw = w - 44, ah = h * 0.44;
+  const ag = ctx.createLinearGradient(ax, ay, ax, ay + ah);
+  ag.addColorStop(0, '#1d4d2b'); ag.addColorStop(1, '#0f2f18');
+  ctx.fillStyle = ag; ctx.fillRect(ax, ay, aw, ah);
+  ctx.strokeStyle = 'rgba(255,255,255,0.22)'; ctx.lineWidth = 1;
+  for (let i = 1; i <= 4; i++) {
+    ctx.beginPath(); ctx.moveTo(ax + aw * i / 5, ay); ctx.lineTo(ax + aw * i / 5, ay + ah); ctx.stroke();
+  }
+  ctx.beginPath(); ctx.moveTo(ax, ay + ah * 0.66); ctx.lineTo(ax + aw, ay + ah * 0.66); ctx.stroke();
+  if (card.set === 'gridiron') {
+    drawPlayerFigure(ctx, ax, ay, aw, ah, card);
+  } else {
+    ctx.fillStyle = '#fff';
+    ctx.font = Math.round(ah * 0.5) + 'px serif';
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.fillText(card.art, ax + aw / 2, ay + ah / 2);
+  }
+  // foil shimmer for Ultra Rare / Secret
+  if (card.rarity === 'ultra' || card.rarity === 'secret') {
+    const fg = ctx.createLinearGradient(ax, ay, ax + aw, ay + ah);
+    fg.addColorStop(0, 'rgba(255,255,255,0)');
+    fg.addColorStop(0.45, card.rarity === 'secret' ? 'rgba(242,183,5,0.30)' : 'rgba(255,255,255,0.22)');
+    fg.addColorStop(0.55, 'rgba(255,255,255,0.10)');
+    fg.addColorStop(1, 'rgba(255,255,255,0)');
+    ctx.fillStyle = fg; ctx.fillRect(ax, ay, aw, ah);
+  }
+  // type line
+  const ty = ay + ah + 18;
   ctx.fillStyle = '#444a56';
-  ctx.fillText(card.title, x + 20, y + h * 0.70, w - 40);
+  ctx.font = Math.round(w * 0.055) + 'px system-ui, sans-serif';
+  ctx.textAlign = 'left'; ctx.textBaseline = 'alphabetic';
+  ctx.fillText(card.title, x + 20 + lrOff, ty, w - 40);
+  // flavor box (Gridiron only)
+  if (card.flavor) {
+    const fy = ty + 8;
+    ctx.fillStyle = '#ece7d8';
+    roundRect(ctx, x + 20 + lrOff, fy, w - 40, 30, 5); ctx.fill();
+    ctx.fillStyle = '#3a3f4a';
+    ctx.font = 'italic ' + Math.round(w * 0.05) + 'px system-ui, sans-serif';
+    wrapText(ctx, card.flavor, x + 26 + lrOff, fy + 11, w - 52, 12);
+  }
+  // rarity line (left) + base value (right)
+  const ry = y + h - 58;
   ctx.fillStyle = rarityColor(card.rarity);
-  ctx.font = 'bold ' + Math.round(w * 0.06) + 'px system-ui, sans-serif';
-  ctx.fillText(rarityLabel(card.rarity).toUpperCase(), x + 20, y + h * 0.80);
+  ctx.font = 'bold ' + Math.round(w * 0.055) + 'px system-ui, sans-serif';
+  ctx.fillText(raritySymbol(card.rarity) + ' ' + rarityLabel(card.rarity).toUpperCase(), x + 20 + lrOff, ry);
   ctx.fillStyle = '#444a56';
   ctx.font = Math.round(w * 0.05) + 'px system-ui, sans-serif';
-  ctx.fillText(card.setName + '  ·  Base ' + fmt$(card.base), x + 20, y + h * 0.88);
+  ctx.textAlign = 'right';
+  ctx.fillText('Base ' + fmt$(card.base), x + w - 20 + lrOff, ry);
+  ctx.textAlign = 'left';
+  // footer: set + collector number
+  ctx.fillText(card.setName + '  ' + collectorLabel(card), x + 20 + lrOff, y + h - 38);
+  // slab label
   if (card.graded) {
     ctx.fillStyle = '#f2b705';
-    ctx.font = 'bold ' + Math.round(w * 0.09) + 'px system-ui, sans-serif';
-    ctx.fillText('★ ' + card.graded.grade + ' SLAB ★', x + 20, y + h * 0.95);
+    ctx.font = 'bold ' + Math.round(w * 0.075) + 'px system-ui, sans-serif';
+    ctx.fillText('★ ' + card.graded.grade + ' SLAB ★', x + 20 + lrOff, y + h - 20);
   }
   if (detail) {
     // Whitening specks on whitened corners (only visible under the loupe)
@@ -887,10 +1097,7 @@ function renderCollection() {
   }
   grid.innerHTML = state.inventory.map(card => `
     <div class="card ${card.graded ? 'slabbed' : ''}">
-      <div class="art">${card.art}</div>
-      <div class="nm">${esc(card.name)}</div>
-      <div class="rl" style="color:${rarityColor(card.rarity)}">${rarityLabel(card.rarity)}</div>
-      <div class="vl">${esc(card.setName)}</div>
+      ${cardFaceHTML(card)}
       ${card.graded ? `<div class="grade">★ ${card.graded.grade}</div><div class="vl">Slab value ${fmt$(card.graded.value)}</div>`
         : `<div class="vl">Base ${fmt$(card.base)}</div><div class="vl">Ungraded</div>`}
       <div class="row">
@@ -923,8 +1130,7 @@ function renderAuctionPicks() {
   }
   el.innerHTML = state.inventory.map(card => `
     <div class="card ${card.graded ? 'slabbed' : ''}">
-      <div class="art">${card.art}</div>
-      <div class="nm">${esc(card.name)}</div>
+      ${cardFaceHTML(card)}
       <div class="vl">${card.graded ? '★ ' + card.graded.grade + ' slab' : 'Raw'} · ${fmt$(cardValue(card))}</div>
       <div class="row"><button class="small" data-apick="${card.uid}">🔨 Auction this card</button></div>
     </div>`).join('');
@@ -939,11 +1145,7 @@ function startAuctionUI(uid) {
   $('auction-live').style.display = 'block';
   $('auc-chat').innerHTML = '';
   $('btn-hype').disabled = false; $('btn-gavel').disabled = false;
-  $('auc-card').innerHTML = `
-    <div class="art">${card.art}</div>
-    <div class="nm">${esc(card.name)}</div>
-    <div class="rl" style="color:${rarityColor(card.rarity)}">${rarityLabel(card.rarity)}</div>
-    <div class="vl">${esc(card.setName)}</div>
+  $('auc-card').innerHTML = cardFaceHTML(card) + `
     <div class="vl">${card.graded ? '★ Grade ' + card.graded.grade + ' slab' : 'Raw card'} · value ${fmt$(cardValue(card))}</div>`;
   showScreen('auction');
   renderAuctionFrame();
@@ -1061,6 +1263,28 @@ function selfTest() {
     const cashB = state.cash;
     const st = settleAuction(a4);
     ok('settle pays winner bid and removes card', st.ok && st.sold && state.cash === cashB + 999 && !state.inventory.find(c => c.uid === aucCard.uid));
+    // 12. Trading-card face: pun names unchanged, every Gridiron card has a figure + collector number
+    const gridNames = SETS.gridiron.cards.map(c => c.name);
+    ok('gridiron pun names unchanged', gridNames.join('|') === 'Brick Wallson|Sammy Slants|Pete Punt|Dash Okafor|Marty Blitz|Tank Ramirez|Rocket Reeves|Blitz McCoy|Gridiron Ghost');
+    ok('every gridiron card has position/team/number/flavor', SETS.gridiron.cards.every(d => d.position && d.team && Number.isInteger(d.number) && d.flavor));
+    ok('playerFigureSVG draws a person for every gridiron card', SETS.gridiron.cards.every(d => {
+      const svg = playerFigureSVG({ name: d.name, position: d.position, team: d.team, number: d.number });
+      return svg.indexOf('<svg') === 0 && svg.indexOf(String(d.number).padStart(2, '0')) !== -1 && svg.indexOf('circle') !== -1;
+    }));
+    ok('ghost figure is translucent', playerFigureSVG({ name: 'Gridiron Ghost', position: 'Legendary QB', team: 'Hall of Fame', number: 0 }).indexOf('opacity="0.62"') !== -1);
+    ok('Brick Wallson is #1/9', SETS.gridiron.cards.findIndex(c => c.name === 'Brick Wallson') === 0);
+    let collectorsOk = true;
+    for (let i = 0; i < 30; i++) {
+      const c = makeCard('gridiron', RARITY_ORDER[i % RARITY_ORDER.length]);
+      if (!(c.collectorNo >= 1 && c.collectorNo <= 9 && c.position && c.team && c.flavor)) collectorsOk = false;
+    }
+    ok('makeCard stores collector number + player fields', collectorsOk);
+    ok('miniCardHTML is a real trading-card face', (() => {
+      const c = makeCard('gridiron', 'common');
+      const html = miniCardHTML(c, false);
+      return html.indexOf('tc-name') !== -1 && html.indexOf('tc-art stadium') !== -1 && html.indexOf('<svg') !== -1 &&
+        html.indexOf('tc-flavor') !== -1 && html.indexOf('#' + c.collectorNo + '/9') !== -1;
+    })());
     // 11. Not enough cash blocks pack
     state.cash = 5;
     ok('insufficient cash blocks pack', buyPack('kaiju').ok === false);
@@ -1089,6 +1313,7 @@ window.SHT = {
   state, SETS, RARITY, buyPack, openPack, makeCard, gradeCard, rawSell, submitGrading, sellCard,
   createAuction, auctionTick, hypeChat, gavelSlam, settleAuction, finishAuction,
   inspectAt, resetInspection, deskCard, setSeed, selfTest, CARD, zoneAt,
+  playerFigureSVG, cardFaceHTML, miniCardHTML, poseFor, collectorLabel,
 };
 </script>
 </body>
