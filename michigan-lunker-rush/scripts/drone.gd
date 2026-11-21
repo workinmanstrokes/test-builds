@@ -1,5 +1,10 @@
 class_name ScoutDrone
 ## Scout Drone: reveals underwater fish silhouettes for 5s, 15s cooldown.
+## Tester update (VEX): the drone is now a fishing decision, not a viewer.
+## While it is up it marks each fish "revealed" with its species, size,
+## depth and cover (see Main._draw_fishing), and casting within 150 px of a
+## revealed fish bites 2.5x faster (see Casting._bite_rate). Casting blind
+## or at an unrevealed spot gets no bonus.
 extends RefCounted
 
 const REVEAL_SECONDS := 5.0
@@ -19,10 +24,22 @@ func use() -> bool:
 	return true
 
 
-func update(delta: float) -> void:
+## Mark every fish as revealed for as long as the drone is up.
+func mark(fish: Array) -> void:
+	for f in fish:
+		f["revealed"] = true
+
+
+func clear(fish: Array) -> void:
+	for f in fish:
+		f["revealed"] = false
+
+
+func update(delta: float, fish: Array = []) -> void:
 	if reveal_t > 0.0:
 		reveal_t -= delta
 		if reveal_t <= 0.0:
 			active = false
+			clear(fish)
 	if cool_t > 0.0:
 		cool_t -= delta

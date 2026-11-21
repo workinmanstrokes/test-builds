@@ -6,7 +6,7 @@ extends Node2D
 ## beyond this script (see main.tscn). Mouse drag works on desktop;
 ## emulate_touch_from_mouse is on in project.godot for mobile testing.
 
-enum Screen { TITLE, WORKBENCH, SURGERY, ICE, RAID, JOBDONE }
+enum Screen { TITLE, WORKBENCH, SURGERY, ICE, RAID, JOBDONE, SURGERYDONE, SHIFTEND }
 
 const W := 720.0
 const H := 1280.0
@@ -29,6 +29,17 @@ var job_done_title: String = ""
 var job_done_lines: Array[String] = []
 var show_howto: bool = false
 var selected_card: int = -1
+var surgery_breakdown: Array[String] = []
+var surgery_malfunction: bool = false
+# Shift / run skeleton: 5 clients per shift, quota + reputation decide it.
+var shift_active: bool = false
+var shift_done: int = 0
+var shift_earned: int = 0
+var shift_won: bool = false
+var shift_end_reason: String = ""
+# Hold-to-inspect: press time/pos of the current touch.
+var press_time_ms: int = 0
+var press_pos: Vector2 = Vector2.ZERO
 
 # drag state: {"kind": "implant"/"wire", "idx"/"color", "pos": Vector2}
 var drag: Dictionary = {}
@@ -50,7 +61,16 @@ func log_msg(msg: String) -> void:
 
 # ---------- flow ----------
 
+func start_shift() -> void:
+	shift_active = true
+	shift_done = 0
+	shift_earned = 0
+	log_msg(">> SHIFT STARTED: %d clients. Bank %dcr and keep Rep 40+ to win." % [GameState.SHIFT_SIZE, GameState.SHIFT_QUOTA])
+
+
 func start_job() -> void:
+	if not shift_active:
+		start_shift()
 	surgery = Surgery.new(state, state.jobs + 1)
 	surgery.failed.connect(_on_surgery_failed)
 	surgery.completed.connect(_on_surgery_completed)
@@ -70,11 +90,58 @@ func _on_surgery_failed(reason: String) -> void:
 
 func _on_surgery_completed(payout: int) -> void:
 	unbanked += payout
+	surgery_breakdown = surgery.last_breakdown.get("lines", [])
+	surgery_malfunction = surgery.last_malfunction
 	log_msg(">> SURGERY COMPLETE. Client pays %dcr." % payout)
+	# Heist is now OPTIONAL and frozen as a prototype: the player banks
+	# the surgery pay and moves on, or jacks in for the card heist.
+	screen = Screen.SURGERYDONE
+	queue_redraw()
+
+
+func bank_and_next_client() -> void:
+	var kept := unbanked
+	state.bank_credits(unbanked)
+	unbanked = 0
+	state.jobs += 1
+	state.save()
+	_advance_shift(kept)
+
+
+func jack_in_from_surgery() -> void:
 	ice = IceBattler.new(state)
 	ice.raid_triggered.connect(_on_ice_raid)
 	ice.hack_completed.connect(_on_hack_completed)
 	screen = Screen.ICE
+	queue_redraw()
+
+
+func _advance_shift(banked_amount: int) -> void:
+	shift_earned += banked_amount
+	shift_done += 1
+	if shift_done >= GameState.SHIFT_SIZE:
+		_end_shift(shift_earned >= GameState.SHIFT_QUOTA and state.reputation >= 40,
+			"Banked %dcr of the %dcr quota. Reputation %d." % [shift_earned, GameState.SHIFT_QUOTA, state.reputation])
+		return
+	job_done_title = "CLIENT %d / %d DONE" % [shift_done, GameState.SHIFT_SIZE]
+	job_done_lines = [
+		"Banked %dcr this client (%dcr this shift)." % [banked_amount, shift_earned],
+		"Shift quota: %dcr. Reputation: %d." % [GameState.SHIFT_QUOTA, state.reputation],
+	]
+	screen = Screen.JOBDONE
+	queue_redraw()
+
+
+func _end_shift(won: bool, reason: String) -> void:
+	shift_won = won
+	shift_end_reason = reason
+	if won:
+		state.shifts_won += 1
+	else:
+		state.shifts_lost += 1
+	state.save()
+	shift_active = false
+	screen = Screen.SHIFTEND
 	queue_redraw()
 
 
@@ -85,18 +152,13 @@ func _on_ice_raid(reason: String) -> void:
 func _on_hack_completed(stolen: int) -> void:
 	unbanked += 250
 	state.hacks += 1
+	var kept := unbanked
 	state.bank_credits(unbanked)
 	unbanked = 0
 	state.jobs += 1
 	state.save()
-	job_done_title = "HACK COMPLETE"
-	job_done_lines = [
-		"All 3 firewall nodes destroyed.",
-		"Stolen tech banked. Job #%d closed." % state.jobs,
-	]
 	ice = null
-	screen = Screen.JOBDONE
-	queue_redraw()
+	_advance_shift(kept)
 
 
 func jack_out() -> void:
@@ -107,20 +169,19 @@ func jack_out() -> void:
 	unbanked = 0
 	state.jobs += 1
 	state.save()
-	job_done_title = "JACKED OUT"
-	job_done_lines = [
-		"You slipped out before the Trace peaked.",
-		"Kept %dcr of unbanked earnings. Credits banked." % kept,
-		"Job #%d closed (partial)." % state.jobs,
-	]
 	ice = null
-	screen = Screen.JOBDONE
-	queue_redraw()
+	_advance_shift(kept)
 
 
 func _trigger_raid(reason: String) -> void:
 	raid = Raid.trigger(state, reason, unbanked,
 		surgery.implant_name if surgery else "")
+	if shift_active:
+		# A raid ends the shift as a loss — the roguelite spine.
+		state.shifts_lost += 1
+		state.add_reputation(-10)
+		state.save()
+		shift_active = false
 	unbanked = 0
 	surgery = null
 	ice = null
@@ -139,6 +200,8 @@ func buy_blueprint(id: String) -> void:
 func _input(event: InputEvent) -> void:
 	if event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_LEFT:
 		if event.pressed:
+			press_time_ms = Time.get_ticks_msec()
+			press_pos = event.position
 			_try_begin_drag(event.position)
 		else:
 			_end_drag_or_tap(event.position)
@@ -176,6 +239,19 @@ func _end_drag_or_tap(pos: Vector2) -> void:
 				log_msg(">> %s wire missed its node." % String(d["color"]).to_upper())
 		queue_redraw()
 		return
+	# Hold-to-inspect: a long press (0.6s+) on an implant chip names what
+	# it is and where it goes instead of starting a drag.
+	if Time.get_ticks_msec() - press_time_ms >= 600 and press_pos.distance_to(pos) <= 14.0 and screen == Screen.SURGERY and surgery:
+		for i in Surgery.IMPLANTS.size():
+			if _implant_rect(i).has_point(pos):
+				var imp: Dictionary = Surgery.IMPLANTS[i]
+				var slot_name := ""
+				for sl in Surgery.SLOTS:
+					if String(sl["id"]) == String(imp["slot"]):
+						slot_name = String(sl["name"])
+				log_msg(">> INSPECT: %s chip — fits the %s slot." % [String(imp["name"]), slot_name])
+				queue_redraw()
+				return
 	for i in range(clickables.size() - 1, -1, -1):
 		var c: Dictionary = clickables[i]
 		if bool(c["enabled"]) and Rect2(c["rect"]).has_point(pos):
@@ -298,6 +374,8 @@ func _draw() -> void:
 		Screen.ICE: _draw_ice()
 		Screen.RAID: _draw_raid()
 		Screen.JOBDONE: _draw_jobdone()
+		Screen.SURGERYDONE: _draw_surgerydone()
+		Screen.SHIFTEND: _draw_shiftend()
 
 
 func _draw_title() -> void:
@@ -307,9 +385,11 @@ func _draw_title() -> void:
 	_text("cyber-surgery - ice hacking - one wrong wire = raid", Vector2(360, 400), 19, DIM)
 	_text("BANKED  %dcr    -    JOBS %d    -    RAIDS %d" % [state.banked, state.jobs, state.raids],
 		Vector2(360, 470), 20, GOLD)
+	_text("REP %d    -    SHIFTS WON %d / LOST %d" % [state.reputation, state.shifts_won, state.shifts_lost],
+		Vector2(360, 505), 18, GREEN if state.reputation >= 40 else RED)
 	_text("3D-printer blueprints owned: %d / %d" % [state.blueprints.size(), GameState.BLUEPRINTS.size()],
-		Vector2(360, 505), 18, GREEN)
-	_button(Rect2(140, 570, 440, 88), "NEW JOB", start_job)
+		Vector2(360, 540), 18, GREEN)
+	_button(Rect2(140, 570, 440, 88), "START SHIFT - 5 CLIENTS" if not shift_active else "NEXT CLIENT (%d/5)" % shift_done, start_job)
 	_button(Rect2(140, 678, 440, 88), "WORKBENCH - 3D PRINTER", func(): screen = Screen.WORKBENCH; queue_redraw())
 	_button(Rect2(140, 786, 440, 88), "HOW TO PLAY", func(): show_howto = true; queue_redraw())
 	_text("Raid wipes unbanked credits + the active implant.", Vector2(360, 940), 16, DIM)
@@ -322,15 +402,20 @@ func _draw_howto() -> void:
 	_rr(Rect2(60, 180, 600, 880), 14, Color8(5, 8, 18, 247), CYAN)
 	_text("HOW TO PLAY", Vector2(360, 230), 30, CYAN)
 	var lines: Array[String] = [
+		"SHIFT: 5 clients. Bank 800cr + keep Rep 40+ to win.",
 		"PHASE 1 - SURGERY",
-		"1. DIAGNOSE: the log names the faulty slot.",
+		"1. DIAGNOSE: read the conflicting symptoms, then",
+		"   CALL the faulty slot. Wrong call: -25 Stability.",
 		"2. Drag the matching implant onto that slot.",
-		"   Wrong slot = +12 Heat and a rejection.",
+		"   Wrong slot = -25 Stability, +12 Heat, -5 Rep.",
 		"3. Drag each colored wire to its matching node.",
-		"4. OVERCLOCK: +50% payout, Heat gains x1.25.",
-		"5. COMPLETE SURGERY. Heat 100% = RAID.",
+		"4. OVERCLOCK: +50% payout, Heat gains x1.25,",
+		"   25% malfunction halves the payout.",
+		"5. COMPLETE SURGERY. Heat 100% or Stability 0 = RAID.",
+		"   UNDO removes your last seat/wire (Heat stays).",
+		"   Hold a chip to inspect it.",
 		"",
-		"PHASE 2 - ICE BATTLER",
+		"PHASE 2 - ICE BATTLER (OPTIONAL HEIST)",
 		"Draw 4 cards a turn (RAM +3/turn, max 10).",
 		"SPIKE 2RAM/3dmg - SPOOF 1RAM/2dmg, Trace-5",
 		"CLOAK 2RAM/Trace-15 - OVERCHARGE 3RAM/6dmg, Trace+10",
@@ -377,13 +462,24 @@ func _draw_surgery() -> void:
 	_text("JOB #%d  -  UNBANKED %dcr" % [surgery.job_num, unbanked], Vector2(40, 100), 19, GOLD, HORIZONTAL_ALIGNMENT_LEFT)
 	_text("HEAT %d%%" % surgery.heat, Vector2(700, 100), 19, RED if surgery.heat >= 70 else Color("fb923c"), HORIZONTAL_ALIGNMENT_RIGHT)
 	_bar(Rect2(40, 118, 640, 18), surgery.heat / 100.0, RED if surgery.heat >= 70 else Color("f97316"))
+	_text("STABILITY %d%%" % surgery.stability, Vector2(700, 150), 19, RED if surgery.stability < 30 else GREEN, HORIZONTAL_ALIGNMENT_RIGHT)
+	_bar(Rect2(40, 140, 640, 12), surgery.stability / 100.0, RED if surgery.stability < 30 else GREEN)
 	# log
-	_rr(Rect2(40, 150, 460, 112), 14, Color8(4, 8, 16, 242), Color("112233"))
+	_rr(Rect2(40, 160, 460, 104), 14, Color8(4, 8, 16, 242), Color("112233"))
 	for i in mini(5, log_lines.size()):
 		_text(log_lines[log_lines.size() - mini(5, log_lines.size()) + i],
-			Vector2(54, 168 + i * 20), 14, Color("7dd3fc"), HORIZONTAL_ALIGNMENT_LEFT)
-	_button(Rect2(520, 180, 140, 52), "DIAGNOSED" if surgery.diagnosed else "DIAGNOSE",
-		func(): _diagnose(), not surgery.diagnosed)
+			Vector2(54, 174 + i * 19), 16, Color("7dd3fc"), HORIZONTAL_ALIGNMENT_LEFT)
+	if surgery.diagnosed and not surgery.diagnosis_locked:
+		_text("CALL THE FAULTY SLOT:", Vector2(520, 172), 15, PINK, HORIZONTAL_ALIGNMENT_LEFT)
+		var dx := 520
+		for sl in Surgery.SLOTS:
+			var sid := String(sl["id"])
+			_button(Rect2(dx, 188, 52, 40), String(sl["name"]).substr(0, 3).to_upper(),
+				func(): _choose_diagnosis(sid), true)
+			dx += 58
+	else:
+		_button(Rect2(520, 188, 140, 52), "LOCKED" if surgery.diagnosis_locked else "DIAGNOSE",
+			func(): _diagnose(), not surgery.diagnosed)
 	# body
 	_rr(Rect2(40, 280, 640, 420), 14, Color8(10, 16, 32, 230), Color("1e3a5f"))
 	draw_arc(Vector2(360, 400), 74, 0, TAU, 48, Color("2dd4bf"), 3.0)
@@ -413,7 +509,7 @@ func _draw_surgery() -> void:
 		_text(String(imp["name"]), pos + Vector2(85, 32), 22, Color("666666") if dimmed else INK)
 		if surgery.diagnosed and surgery.seated == "":
 			draggables.append({ "kind": "implant", "idx": i,
-				"pos": r.get_center(), "r": 70.0,
+				"pos": r.get_center(), "r": 90.0,
 				"can": func(): return surgery.diagnosed and surgery.seated == "" })
 	# wire panel
 	if surgery.seated != "":
@@ -438,10 +534,15 @@ func _draw_surgery() -> void:
 				var dp: Vector2 = Vector2(drag["pos"]) if is_drag else sp
 				draw_circle(dp, 20, cols[c])
 				draw_arc(dp, 20, 0, TAU, 32, Color.WHITE, 2.0)
-				draggables.append({ "kind": "wire", "color": c, "pos": sp, "r": 30.0,
+				draggables.append({ "kind": "wire", "color": c, "pos": sp, "r": 44.0,
 					"can": func(): return surgery.seated != "" and not bool(surgery.wires.get(c, false)) })
 	else:
 		_text("Run diagnostics, then seat the matching implant.", Vector2(360, 930), 17, DIM)
+	# implant variant: Factory (safe) vs Street chip (+30% pay, +15 Heat, -10 Stability)
+	if surgery.diagnosed and surgery.diagnosis_locked and surgery.seated == "":
+		_text("CHIP: Factory (safe) or Street (+30% pay, +15 Heat, riskier)?", Vector2(360, 1030), 15, DIM)
+		_button(Rect2(40, 1040, 200, 40), "FACTORY", func(): surgery.variant = "factory"; queue_redraw(), true, surgery.variant == "factory")
+		_button(Rect2(260, 1040, 200, 40), "STREET +30%", func(): surgery.variant = "street"; queue_redraw(), true, surgery.variant == "street")
 	# bottom controls
 	var wires_done := true
 	for c in Surgery.WIRE_COLORS:
@@ -452,23 +553,70 @@ func _draw_surgery() -> void:
 		true, surgery.overclock)
 	_button(Rect2(380, 1050, 300, 76), "COMPLETE SURGERY",
 		func(): _complete_surgery(), surgery.seated != "" and wires_done)
+	_button(Rect2(40, 1140, 300, 48), "UNDO LAST MOVE",
+		func(): _undo_move(), not surgery.history.is_empty())
 	_text("Payout on completion: %dcr   -   Heat %d%% - 100%% fails" % [surgery.payout(), surgery.heat],
-		Vector2(360, 1160), 16, DIM)
+		Vector2(360, 1200), 16, DIM)
+
+
+func _client_symptoms() -> Array[String]:
+	# Two symptoms point at the true fault, one is a red herring.
+	var f := surgery.faulty_slot
+	var pool := {
+		"optics": ["Vision static in the left eye", "Optic feed flickers on boot"],
+		"neural": ["Memory gaps after every jack-in", "Neural link drops mid-thought"],
+		"reflex": ["Hand tremor under load", "Reflex lag on the trigger finger"],
+	}
+	var herring := {
+		"optics": "Reflex lag on the trigger finger",
+		"neural": "Vision static in the left eye",
+		"reflex": "Memory gaps after every jack-in",
+	}
+	var out: Array[String] = []
+	out.append_array(pool[f])
+	out.append(herring[f])
+	return out
 
 
 func _diagnose() -> void:
 	if surgery.diagnosed:
 		return
-	var name := surgery.diagnose()
-	log_msg(">> DIAGNOSTIC COMPLETE: %s is FAULTY." % name.to_upper())
-	log_msg(">> Seat the implant, then route all 3 circuits.")
+	surgery.diagnose()
+	log_msg(">> CLIENT SYMPTOMS (conflicting — read the logs):")
+	for sym in _client_symptoms():
+		log_msg(">>  - " + sym)
+	log_msg(">> System log corroborates TWO of them. Call the faulty slot.")
+
+
+func _choose_diagnosis(slot_id: String) -> void:
+	var res := surgery.choose_diagnosis(slot_id)
+	if res == "correct":
+		log_msg(">> DIAGNOSIS LOCKED: %s. Seat the implant." % slot_id.to_upper())
+	elif res == "wrong":
+		log_msg(">> WRONG CALL: client crashing! Stability -25, Rep -5. Re-check the logs.")
+	queue_redraw()
+
+
+func _undo_move() -> void:
+	var what := surgery.undo_last()
+	if what == "seat":
+		log_msg(">> UNDO: implant pulled back to the tray. Heat stays.")
+	elif what == "wire":
+		log_msg(">> UNDO: last wire disconnected. Heat stays.")
+	queue_redraw()
 
 
 func _complete_surgery() -> void:
 	var pay := surgery.complete()
 	if pay < 0:
+		if surgery.stability <= 0:
+			return  # client flatlined: the Raid screen already took over
 		log_msg(">> Circuits incomplete.")
 		return
+	for line in surgery.last_breakdown.get("lines", []):
+		log_msg(">> " + String(line))
+	if surgery.last_malfunction:
+		log_msg(">> OVERCLOCK MALFUNCTION — the chip cooked. Payout halved.")
 	log_msg(">> SURGERY COMPLETE. Client pays %dcr." % pay)
 
 
@@ -544,4 +692,34 @@ func _draw_jobdone() -> void:
 	_text("Banked: %dcr   -   Jobs done: %d" % [state.banked, state.jobs], Vector2(360, 620), 20, GOLD)
 	_button(Rect2(160, 700, 400, 84), "BACK TO SHOP",
 		func(): screen = Screen.TITLE; queue_redraw())
-	_button(Rect2(160, 810, 400, 84), "NEXT JOB", start_job)
+	_button(Rect2(160, 810, 400, 84), "NEXT CLIENT (%d/5)" % (shift_done + 1), start_job)
+
+
+func _draw_surgerydone() -> void:
+	draw_rect(Rect2(0, 0, W, H), Color8(4, 20, 10))
+	_text("SURGERY COMPLETE", Vector2(360, 220), 56, GREEN)
+	if surgery_malfunction:
+		_text("OVERCLOCK MALFUNCTION — payout halved", Vector2(360, 290), 20, RED)
+	_text("SCORE BREAKDOWN", Vector2(360, 340), 24, GOLD)
+	for i in surgery_breakdown.size():
+		_text(surgery_breakdown[i], Vector2(360, 390 + i * 34), 19, Color("cbd5e1"))
+	_text("Client pays %dcr (unbanked). Stability %d%%. Rep %d." % [unbanked, surgery.stability if surgery else 100, state.reputation],
+		Vector2(360, 420 + surgery_breakdown.size() * 34), 19, GOLD)
+	_text("The heist is OPTIONAL — surgery is the game.", Vector2(360, 500 + surgery_breakdown.size() * 34), 17, DIM)
+	_button(Rect2(160, 620, 400, 84), "BANK & NEXT CLIENT",
+		func(): bank_and_next_client())
+	_button(Rect2(160, 730, 400, 84), "JACK IN - OPTIONAL HEIST",
+		func(): jack_in_from_surgery())
+
+
+func _draw_shiftend() -> void:
+	draw_rect(Rect2(0, 0, W, H), Color8(4, 20, 10) if shift_won else Color8(22, 4, 4))
+	_text("SHIFT COMPLETE" if shift_won else "SHIFT FAILED", Vector2(360, 260), 64, GREEN if shift_won else RED)
+	_text(shift_end_reason, Vector2(360, 360), 20, Color("cbd5e1"))
+	_text("Clients done: %d / %d    -    Banked this shift: %dcr" % [shift_done, GameState.SHIFT_SIZE, shift_earned],
+		Vector2(360, 440), 20, GOLD)
+	_text("Reputation: %d    -    Shifts won %d / lost %d" % [state.reputation, state.shifts_won, state.shifts_lost],
+		Vector2(360, 490), 20, Color("cbd5e1"))
+	_button(Rect2(160, 600, 400, 84), "START NEXT SHIFT", start_job)
+	_button(Rect2(160, 710, 400, 84), "BACK TO SHOP",
+		func(): screen = Screen.TITLE; queue_redraw())

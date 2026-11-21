@@ -1,5 +1,8 @@
 class_name SaveManager
 ## Persistent local save (user://). JSON, with an in-code default on first run.
+## Tester update (VEX): goldCaught counts rare gold fish landed, daily is
+## the day's target (LakesData.daily_target) with its done flag. Old saves
+## pick both up automatically — load_save merges stored keys over defaults.
 extends RefCounted
 
 const SAVE_PATH := "user://lunker_rush_save.json"
@@ -15,6 +18,8 @@ static func default_save() -> Dictionary:
 		"caught": {},
 		"totalCaught": 0,
 		"best": {},
+		"goldCaught": 0,
+		"daily": {},
 	}
 
 

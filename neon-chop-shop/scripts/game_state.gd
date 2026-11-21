@@ -3,9 +3,13 @@ extends RefCounted
 ## Persistent shop state. Banked credits + unlocked 3D-printer blueprints
 ## SURVIVE raids. Unbanked credits and the active implant live in memory
 ## only (see main.gd / raid.gd) and are wiped by a Raid.
+## Reputation and shift results also persist: a shift is 5 clients, and
+## its win/loss record is the roguelite meta-progression.
 ## Saved as JSON to user://neon_chop_shop_save.json
 
 const SAVE_PATH := "user://neon_chop_shop_save.json"
+const SHIFT_SIZE := 5
+const SHIFT_QUOTA := 800
 
 const BLUEPRINTS := [
 	{ "id": "optics2",  "name": "Optics Mk II",         "cost": 200, "desc": "+25% surgery payout" },
@@ -22,6 +26,9 @@ var jobs: int = 0
 var raids: int = 0
 var hacks: int = 0
 var best: int = 0
+var reputation: int = 50
+var shifts_won: int = 0
+var shifts_lost: int = 0
 
 
 func has_blueprint(id: String) -> bool:
@@ -48,6 +55,11 @@ func bank_credits(amount: int) -> void:
 	save()
 
 
+func add_reputation(n: int) -> void:
+	reputation = clampi(reputation + n, 0, 100)
+	save()
+
+
 func to_dict() -> Dictionary:
 	return {
 		"banked": banked,
@@ -56,6 +68,9 @@ func to_dict() -> Dictionary:
 		"raids": raids,
 		"hacks": hacks,
 		"best": best,
+		"reputation": reputation,
+		"shifts_won": shifts_won,
+		"shifts_lost": shifts_lost,
 	}
 
 
@@ -82,4 +97,7 @@ static func load() -> GameState:
 		state.raids = int(data.get("raids", 0))
 		state.hacks = int(data.get("hacks", 0))
 		state.best = int(data.get("best", 0))
+		state.reputation = int(data.get("reputation", 50))
+		state.shifts_won = int(data.get("shifts_won", 0))
+		state.shifts_lost = int(data.get("shifts_lost", 0))
 	return state
