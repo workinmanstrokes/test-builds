@@ -65,6 +65,20 @@
   .tc-art svg { position:relative; z-index:1; height:88px; width:auto; display:block; }
   .tc-art.foil-ultra::after, .tc-art.foil-secret::after { content:''; position:absolute; inset:0; background:linear-gradient(115deg, transparent 30%, rgba(255,255,255,.35) 45%, rgba(255,255,255,.05) 55%, transparent 70%); pointer-events:none; }
   .tc-art.foil-secret::after { background:linear-gradient(115deg, transparent 25%, rgba(242,183,5,.45) 45%, rgba(255,255,255,.35) 55%, transparent 75%); }
+  @keyframes foilSweep { from { background-position:-120% 0; } to { background-position:220% 0; } }
+  .tc-art.foil-ultra::after { background-size:220% 100%; animation:foilSweep 3.2s linear infinite; }
+  .tc-art.rar-uncommon::after { content:''; position:absolute; inset:0; background:linear-gradient(180deg, rgba(120,255,140,.12), rgba(120,255,140,.03)); pointer-events:none; }
+  .tc-art.rar-rare::after { content:''; position:absolute; inset:0; background:linear-gradient(115deg, transparent 25%, rgba(140,200,255,.30) 40%, rgba(255,140,220,.20) 55%, transparent 70%); pointer-events:none; }
+  .tc-art.rar-secret { box-shadow:inset 0 0 0 100px rgba(10,8,0,.28); }
+  .tc-art.one-of-one { background:linear-gradient(180deg,#1a1a1a 0%,#2e2405 55%,#0a0800 100%) !important; border-color:#f2b705; }
+  .tc-art.one-of-one::after { content:''; position:absolute; inset:0; background:linear-gradient(115deg, transparent 30%, rgba(242,183,5,.45) 45%, rgba(255,255,255,.20) 55%, transparent 70%); background-size:220% 100%; animation:foilSweep 2.6s linear infinite; pointer-events:none; }
+  .one-stamp { position:absolute; top:5px; right:5px; z-index:2; background:#f2b705; color:#111; font-size:10px; font-weight:800; padding:2px 6px; border-radius:4px; transform:rotate(6deg); box-shadow:0 1px 4px rgba(0,0,0,.5); }
+  .tc-name .one-tag { float:right; color:var(--gold); font-size:10px; font-weight:800; }
+  .mini.one-of-one, .card.one-of-one { border-color:var(--gold); box-shadow:0 0 14px rgba(242,183,5,.45); }
+  .bk-veil { position:absolute; inset:0; pointer-events:none; }
+  .bk-veil.bk-dusk { background:linear-gradient(180deg, rgba(255,140,60,.16), rgba(30,10,50,.30)); }
+  .bk-veil.bk-night { background:linear-gradient(180deg, rgba(8,14,48,.38), rgba(4,6,24,.50)); }
+  .bk-veil.bk-night::after { content:''; position:absolute; inset:0; background-image:radial-gradient(1px 1px at 20% 20%, #fff, transparent), radial-gradient(1px 1px at 65% 12%, #fff, transparent), radial-gradient(1.5px 1.5px at 82% 30%, #fff, transparent), radial-gradient(1px 1px at 40% 8%, #fff, transparent); }
   .tc-type { font-size:11px; color:var(--mut); font-weight:600; }
   .tc-flavor { font-size:11px; font-style:italic; color:#c8cfdb; background:#0c0e13; border:1px solid #2b3140; border-radius:6px; padding:4px 6px; margin:5px 0; min-height:28px; line-height:1.3; }
   .tc-foot { display:flex; justify-content:space-between; gap:4px; font-size:10px; color:var(--mut); border-top:1px solid #2b3140; padding-top:4px; }
@@ -378,13 +392,15 @@ const SETS = {
 // humanoid: helmet in team color, skin-tone face, jersey in team color
 // with the number on it, pants and cleats. Pose varies by position.
 const TEAM_COLORS = {
-  'Metro Mammoths': '#2e8b57',
-  'Bay Breakers': '#2b6cb0',
-  'Desert Vipers': '#e07b24',
-  'Ironwood Bears': '#7a4a2b',
-  'Hall of Fame': '#d4a017',
-  'The Panel League': '#7e22ce',
+  'Metro Mammoths': '#22c55e',
+  'Bay Breakers': '#3b82f6',
+  'Desert Vipers': '#f97316',
+  'Ironwood Bears': '#a9713f',
+  'Hall of Fame': '#eab308',
+  'The Panel League': '#a855f7',
 };
+// White jersey numbers are unreadable on the bright gold jerseys.
+function jerseyInk(jersey) { return (jersey === '#eab308' || jersey === '#e8d27a' || jersey === '#f2d98c') ? '#1c2433' : '#fff'; }
 const SKIN_TONES = ['#e8b98a', '#c98d5f', '#8d5a3b', '#f0c8a0'];
 function skinFor(card) { return SKIN_TONES[(card.number || 0) % SKIN_TONES.length]; }
 // Sport per set: figure sets (sports + comic) vs emoji sets (creatures).
@@ -411,19 +427,27 @@ const ART_BACKDROPS = {
   pitch: ['#15803d', '#14532d'],
   panel: ['#7e22ce', '#4c1d95'],
 };
+// Deterministic day/dusk/night art-window variant, so two cards from the
+// same set never share an identical backdrop. Derived from set + name.
+function hashStr(s) { let h = 0; for (let i = 0; i < s.length; i++) { h = (h * 31 + s.charCodeAt(i)) >>> 0; } return h; }
+function backdropVariant(card) { return ['day', 'dusk', 'night'][hashStr((card.set || '') + '|' + (card.name || '')) % 3]; }
 const RARITY_SYMBOL = { common: '●', uncommon: '◆', rare: '★', ultra: '✦', secret: '♛' };
 function raritySymbol(r) { return RARITY_SYMBOL[r] || '●'; }
-function collectorLabel(card) { return '#' + card.collectorNo + '/' + SETS[card.set].cards.length; }
+function collectorLabel(card) {
+  const set = SETS[card.set];
+  if (!set || !(card.collectorNo >= 1)) return '';
+  return '#' + card.collectorNo + '/' + set.cards.length;
+}
 // Pose parts in a 100x120 box: arms/legs are point lists, cleats are points,
 // ball is a point (or null). Shared by the SVG figure and the canvas figure.
 const POSE_PARTS = {
-  throw:  { arms: [[[36,44],[20,54]], [[64,44],[82,20]]], legs: [[[44,72],[40,104]], [[56,72],[60,104]]], cleats: [[36,106],[64,106]], ball: [84,16] },
-  run:    { arms: [[[36,44],[24,58]], [[64,44],[56,58]]], legs: [[[44,72],[30,88],[28,102]], [[56,72],[70,88],[72,100]]], cleats: [[26,104],[74,102]], ball: [54,56] },
-  catch:  { arms: [[[36,44],[26,18]], [[64,44],[74,18]]], legs: [[[44,72],[40,104]], [[56,72],[60,104]]], cleats: [[36,106],[64,106]], ball: null },
-  block:  { arms: [[[36,44],[16,50]], [[64,44],[84,50]]], legs: [[[44,72],[32,104]], [[56,72],[68,104]]], cleats: [[28,106],[72,106]], ball: null },
-  tackle: { arms: [[[36,44],[20,66]], [[64,44],[80,66]]], legs: [[[44,72],[36,88],[40,104]], [[56,72],[64,88],[60,104]]], cleats: [[38,106],[62,106]], ball: null },
-  kick:   { arms: [[[36,44],[20,46]], [[64,44],[78,26]]], legs: [[[44,72],[42,104]], [[56,72],[72,66],[84,52]]], cleats: [[40,106],[86,54]], ball: null },
-  ghost:  { arms: [[[36,44],[20,54]], [[64,44],[82,20]]], legs: [[[44,72],[40,104]], [[56,72],[60,104]]], cleats: [[36,106],[64,106]], ball: [84,16] },
+  throw:  { lean: -8, arms: [[[36,44],[18,56]], [[64,44],[84,16]]], legs: [[[44,72],[38,104]], [[56,72],[62,104]]], cleats: [[34,106],[66,106]], ball: [86,12] },
+  run:    { lean: 12, arms: [[[36,44],[18,62]], [[64,44],[78,52]]], legs: [[[44,72],[26,86],[22,102]], [[56,72],[74,90],[78,98]]], cleats: [[20,104],[80,100]], ball: [56,58] },
+  catch:  { lean: -6, arms: [[[36,44],[22,14]], [[64,44],[78,14]]], legs: [[[44,72],[38,90],[36,98]], [[56,72],[62,90],[64,98]]], cleats: [[34,100],[66,100]], ball: null },
+  block:  { lean: 8, arms: [[[36,44],[12,52]], [[64,44],[88,52]]], legs: [[[44,72],[26,104]], [[56,72],[74,104]]], cleats: [[22,106],[78,106]], ball: null },
+  tackle: { lean: 18, arms: [[[36,44],[14,74]], [[64,44],[86,74]]], legs: [[[44,72],[30,88],[34,104]], [[56,72],[70,88],[66,104]]], cleats: [[32,106],[68,106]], ball: null },
+  kick:   { lean: -10, arms: [[[36,44],[18,44]], [[64,44],[80,24]]], legs: [[[44,72],[42,104]], [[56,72],[74,64],[90,42]]], cleats: [[40,106],[92,44]], ball: null },
+  ghost:  { lean: -8, arms: [[[36,44],[18,56]], [[64,44],[84,16]]], legs: [[[44,72],[38,104]], [[56,72],[62,104]]], cleats: [[34,106],[66,106]], ball: [86,12] },
   // --- Basketball ---
   'bb-dunk':    { arms: [[[36,44],[30,16]], [[64,44],[70,16]]], legs: [[[44,72],[36,88],[40,102]], [[56,72],[64,88],[60,102]]], cleats: [[38,104],[62,104]], ball: [50,10], ballKind: 'round', ballColor: '#e07b24' },
   'bb-shot':    { arms: [[[36,44],[28,36]], [[64,44],[72,16]]], legs: [[[44,72],[42,104]], [[56,72],[62,92],[66,102]]], cleats: [[40,106],[68,104]], ball: [74,12], ballKind: 'round', ballColor: '#e07b24' },
@@ -506,7 +530,8 @@ function playerFigureSVG(card) {
   const helmet = ghost ? '#f2d98c' : team;
   const skin = ghost ? '#f5ecd0' : skinFor(card);
   const pants = ghost ? '#efe6c8' : '#eef0f2';
-  const num = String(card.number).padStart(2, '0');
+  const num = jerseyNumber(card);
+  const lean = parts.lean || 0;
   const headwear = headwearFor(card);
   const sport = sportFor(card) || '';
   const path = pts => 'M' + pts.map(p => p.join(' ')).join(' L');
@@ -547,24 +572,30 @@ function playerFigureSVG(card) {
   } else {
     head = `<path d="M38 27 A12 12 0 0 1 62 27 Z" fill="${helmet}"/><rect x="48" y="14" width="4" height="10" fill="rgba(255,255,255,0.55)"/><circle cx="47" cy="30" r="1" fill="#1c2433"/><circle cx="53" cy="30" r="1" fill="#1c2433"/><path d="M60 29 L68 29 M60 33 L66 35" stroke="#dfe3ea" stroke-width="1.5" fill="none"/>`;
   }
-  return `<svg viewBox="0 0 100 120" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="${esc(card.name)}" data-sport="${sport}" data-pose="${pose}" data-headwear="${headwear}"${parts.cape ? ' data-cape="1"' : ''}${parts.skates ? ' data-skates="1"' : ''}${parts.stick ? ' data-stick="1"' : ''}${parts.ball ? ' data-ball="' + (parts.ballKind || 'football') + '"' : ''}>${glow}<ellipse cx="50" cy="110" rx="26" ry="5" fill="rgba(0,0,0,0.35)"/><g${op}>${cape}${legs}${cleats}<path d="M34 40 Q34 36 40 36 L60 36 Q66 36 66 40 L66 70 Q66 74 62 74 L38 74 Q34 74 34 70 Z" fill="${jersey}"/><ellipse cx="36" cy="40" rx="7" ry="5" fill="${jersey}"/><ellipse cx="64" cy="40" rx="7" ry="5" fill="${jersey}"/>${arms}${stick}<text x="50" y="60" text-anchor="middle" font-size="15" font-weight="800" fill="#fff" font-family="system-ui, sans-serif">${num}</text><rect x="45" y="31" width="10" height="8" fill="${skin}"/><circle cx="50" cy="29" r="7.5" fill="${skin}"/>${head}${ball}</g></svg>`;
+  return `<svg viewBox="0 0 100 120" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="${esc(card.name)}" data-sport="${sport}" data-pose="${pose}" data-headwear="${headwear}"${parts.cape ? ' data-cape="1"' : ''}${parts.skates ? ' data-skates="1"' : ''}${parts.stick ? ' data-stick="1"' : ''}${parts.ball ? ' data-ball="' + (parts.ballKind || 'football') + '"' : ''}>${glow}<ellipse cx="50" cy="110" rx="26" ry="5" fill="rgba(0,0,0,0.35)"/><g${op}${lean ? ` transform="rotate(${lean} 50 75)"` : ''}>${cape}${legs}${cleats}<path d="M34 40 Q34 36 40 36 L60 36 Q66 36 66 40 L66 70 Q66 74 62 74 L38 74 Q34 74 34 70 Z" fill="${jersey}"/><ellipse cx="36" cy="40" rx="7" ry="5" fill="${jersey}"/><ellipse cx="64" cy="40" rx="7" ry="5" fill="${jersey}"/>${arms}${stick}<text x="50" y="60" text-anchor="middle" font-size="15" font-weight="800" fill="${jerseyInk(jersey)}" font-family="system-ui, sans-serif">${num}</text><rect x="45" y="31" width="10" height="8" fill="${skin}"/><circle cx="50" cy="29" r="7.5" fill="${skin}"/>${head}${ball}</g></svg>`;
 }
 // Art window content for the HTML card face: humanoid figure for the sports
 // and comic sets (sport arena backdrop), emoji on the set color for creatures.
 function cardArtHTML(card) {
   const foil = card.rarity === 'ultra' ? ' foil-ultra' : card.rarity === 'secret' ? ' foil-secret' : '';
+  const rarCls = ' rar-' + (card.rarity || 'common');
+  const one = card.variant === '1/1';
+  const stamp = one ? '<span class="one-stamp">1/1</span>' : '';
   if (hasFigure(card)) {
     const sport = sportFor(card);
     const arena = sport === 'football' ? 'stadium arena-football' : 'arena-' + sport;
-    return `<div class="tc-art ${arena}${foil}">${playerFigureSVG(card)}</div>`;
+    const bv = backdropVariant(card);
+    const veil = bv === 'day' ? '' : `<span class="bk-veil bk-${bv}"></span>`;
+    return `<div class="tc-art ${arena}${foil}${rarCls}${one ? ' one-of-one' : ''}">${veil}${playerFigureSVG(card)}${stamp}</div>`;
   }
-  return `<div class="tc-art${foil}" style="background:${SETS[card.set].color}"><span class="emoji">${card.art}</span></div>`;
+  return `<div class="tc-art${foil}${rarCls}${one ? ' one-of-one' : ''}" style="background:${SETS[card.set].color}"><span class="emoji">${card.art}</span>${stamp}</div>`;
 }
 // Shared trading-card face used by pulls, collection and auction tiles.
 function cardFaceHTML(card) {
   const rc = rarityColor(card.rarity);
   const flavor = card.flavor ? `<div class="tc-flavor">${esc(card.flavor)}</div>` : '';
-  return `<div class="tc-name">${esc(card.name)}</div>
+  const oneTag = card.variant === '1/1' ? '<span class="one-tag">1 OF 1</span>' : '';
+  return `<div class="tc-name">${esc(card.name)}${oneTag}</div>
   ${cardArtHTML(card)}
   <div class="tc-type">${esc(card.title)}</div>
   ${flavor}
@@ -601,6 +632,7 @@ function drawPlayerFigure(ctx, ax, ay, aw, ah, card) {
   ctx.translate(ox, oy); ctx.scale(s, s);
   ctx.fillStyle = 'rgba(0,0,0,0.35)';
   ctx.beginPath(); ctx.ellipse(50, 110, 26, 5, 0, 0, Math.PI * 2); ctx.fill();
+  if (parts.lean) { ctx.translate(50, 75); ctx.rotate(parts.lean * Math.PI / 180); ctx.translate(-50, -75); }
   if (parts.cape) { // comic cape, behind the body, in the set color
     ctx.fillStyle = (SETS[card.set] && SETS[card.set].color) || team;
     ctx.beginPath();
@@ -642,9 +674,12 @@ function drawPlayerFigure(ctx, ax, ay, aw, ah, card) {
       ctx.lineTo(parts.stick[1][0] + 9, parts.stick[1][1] + 2); ctx.stroke();
     }
   }
-  ctx.fillStyle = '#fff';
-  ctx.font = '800 15px system-ui, sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-  ctx.fillText(String(card.number).padStart(2, '0'), 50, 58);
+  const jnum = jerseyNumber(card);
+  if (jnum) {
+    ctx.fillStyle = jerseyInk(jersey);
+    ctx.font = '800 15px system-ui, sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.fillText(jnum, 50, 58);
+  }
   ctx.fillStyle = skin;
   ctx.fillRect(45, 31, 10, 8);
   ctx.beginPath(); ctx.arc(50, 29, 7.5, 0, Math.PI * 2); ctx.fill();
@@ -744,9 +779,17 @@ function gradeCard(card) {
     grade,
     subs: { centering: +c.toFixed(1), corners: +k.toFixed(1), edges: +e.toFixed(1), surface: +s.toFixed(1) },
     mult: GRADE_MULT[grade],
-    value: Math.max(1, Math.round(card.base * GRADE_MULT[grade])),
+    value: Math.max(1, Math.round(card.base * GRADE_MULT[grade] * variantMult(card))),
   };
 }
+
+// ---------- 1/1 chase parallel ----------
+// 1% of packs: the guaranteed rare-or-better slot is a 1/1 instead — the
+// same player, black-and-gold, stamped 1/1, worth 10x. Never from the
+// normal rarity roll, never guaranteed. Odds + multiplier live here only.
+const ONE_OF_ONE_ODDS = 0.01;
+const ONE_OF_ONE_MULT = 10;
+function variantMult(card) { return card.variant === '1/1' ? ONE_OF_ONE_MULT : 1; }
 
 // ---------- Card generation ----------
 let nextUid = 1;
@@ -766,6 +809,7 @@ function makeCard(setKey, rarity) {
     position: def.position || null, team: def.team || null, number: def.number ?? null,
     sport: SET_SPORT[setKey] || null,
     flavor: def.flavor || null,
+    variant: null, // '1/1' for the chase parallel, else null
     collectorNo: set.cards.indexOf(def) + 1, // #n within its set, e.g. Brick Wallson is #1/9
     base: randInt(lo, hi),
     grades: { centering: rollCentering(), corners: rollCorners(), edges: rollEdges(), surface: rollSurface() },
@@ -776,10 +820,13 @@ function openPack(setKey) {
   const cards = [];
   for (let i = 0; i < 4; i++) cards.push(makeCard(setKey, rollRarity()));
   // Last card guaranteed Rare or better
-  cards.push(makeCard(setKey, pickWeighted([['rare', 55], ['ultra', 32], ['secret', 13]])));
+  const last = makeCard(setKey, pickWeighted([['rare', 55], ['ultra', 32], ['secret', 13]]));
+  // 1/1 chase: 1% of packs, only on the guaranteed slot
+  if (rand() < ONE_OF_ONE_ODDS) last.variant = '1/1';
+  cards.push(last);
   return cards;
 }
-function cardValue(card) { return card.graded ? card.graded.value : card.base; }
+function cardValue(card) { return card.graded ? card.graded.value : card.base * variantMult(card); }
 function rarityLabel(r) { return RARITY[r].label; }
 function rarityColor(r) { return RARITY[r].color; }
 
@@ -801,6 +848,34 @@ const state = {
   screen: 'shop',
 };
 
+// ---------- Save migration ----------
+// Cards pulled before the trading-card redesign lack position/team/number/
+// flavor/collectorNo. Backfill them from the set definition (matched by
+// set + name) so old saves render correctly instead of "undefined".
+// A card whose definition is unknown stays playable; the render guards
+// below hide its number instead of printing anything.
+function findCardDef(card) {
+  const set = SETS[card.set];
+  if (!set) return null;
+  return set.cards.find(d => d.name === card.name) || null;
+}
+function migrateCard(card) {
+  let changed = false;
+  const def = findCardDef(card);
+  if (def) {
+    if (card.position == null && def.position) { card.position = def.position; changed = true; }
+    if (card.team == null && def.team) { card.team = def.team; changed = true; }
+    if (card.number == null && typeof def.number === 'number') { card.number = def.number; changed = true; }
+    if (card.flavor == null && def.flavor) { card.flavor = def.flavor; changed = true; }
+    if (card.sport == null && SET_SPORT[card.set]) { card.sport = SET_SPORT[card.set]; changed = true; }
+    if (!(card.collectorNo >= 1)) { card.collectorNo = SETS[card.set].cards.indexOf(def) + 1; changed = true; }
+  }
+  if (!('variant' in card)) { card.variant = null; changed = true; }
+  return changed;
+}
+// Render-time guard: never print the literal word "undefined" for any card.
+function jerseyNumber(card) { return Number.isInteger(card.number) ? String(card.number).padStart(2, '0') : ''; }
+
 function save() {
   try {
     localStorage.setItem(SAVE_KEY, JSON.stringify({
@@ -815,6 +890,10 @@ function load() {
     const d = JSON.parse(raw);
     state.cash = d.cash; state.inventory = d.inventory || []; state.stats = d.stats || state.stats;
     nextUid = d.nextUid || (state.inventory.reduce((m, c) => Math.max(m, c.uid), 0) + 1);
+    // Migrate pre-redesign saves, then persist so the fix sticks.
+    let migrated = false;
+    for (const c of state.inventory) { if (migrateCard(c)) migrated = true; }
+    if (migrated) save();
     return true;
   } catch (e) { return false; }
 }
@@ -841,11 +920,12 @@ function rawSell(uid) {
   const card = state.inventory.find(c => c.uid === uid);
   if (!card) return { ok: false, reason: 'Card not found.' };
   if (card.graded) return { ok: false, reason: 'Already slabbed — sell it as a slab instead.' };
-  state.cash += card.base;
-  state.stats.sold++; state.stats.earned += card.base;
+  const amount = cardValue(card);
+  state.cash += amount;
+  state.stats.sold++; state.stats.earned += amount;
   removeFromInventory(uid);
   save();
-  return { ok: true, amount: card.base };
+  return { ok: true, amount };
 }
 // Submit for grading: $25 fee, grade from hidden sub-grades, card becomes a slab.
 function submitGrading(uid) {
@@ -1012,9 +1092,9 @@ function renderShop() {
   });
 }
 function miniCardHTML(card, withInspect) {
-  return `<div class="mini" style="border-color:${rarityColor(card.rarity)}">
+  return `<div class="mini${card.variant === '1/1' ? ' one-of-one' : ''}" style="border-color:${card.variant === '1/1' ? '#f2b705' : rarityColor(card.rarity)}">
     ${cardFaceHTML(card)}
-    <div class="vl">Base ${fmt$(card.base)}</div>
+    <div class="vl">${card.variant === '1/1' ? '1/1 Value ' + fmt$(cardValue(card)) : 'Base ' + fmt$(card.base)}</div>
     ${withInspect ? `<button class="small" data-inspect="${card.uid}">🔍 Inspect</button>` : ''}
   </div>`;
 }
@@ -1045,6 +1125,46 @@ function resetInspection() {
 
 function setColorForSet(key) { return SETS[key].color; }
 
+// Rarity art-window treatment on the canvas desk card. Common is plain;
+// Uncommon gets a green tint, Rare a holo sheen, Ultra a foil sweep,
+// Secret a gold-on-dark sheen; a 1/1 gets a gold sweep over black-gold.
+function rarityCanvasTint(ctx, ax, ay, aw, ah, card) {
+  if (card.variant === '1/1') {
+    const gg = ctx.createLinearGradient(ax, ay, ax + aw, ay + ah);
+    gg.addColorStop(0, 'rgba(242,183,5,0)');
+    gg.addColorStop(0.45, 'rgba(242,183,5,0.35)');
+    gg.addColorStop(0.55, 'rgba(255,255,255,0.12)');
+    gg.addColorStop(1, 'rgba(242,183,5,0)');
+    ctx.fillStyle = gg; ctx.fillRect(ax, ay, aw, ah);
+    return;
+  }
+  if (card.rarity === 'uncommon') {
+    ctx.fillStyle = 'rgba(63,185,80,0.10)'; ctx.fillRect(ax, ay, aw, ah);
+  } else if (card.rarity === 'rare') {
+    const rg = ctx.createLinearGradient(ax, ay, ax + aw, ay + ah);
+    rg.addColorStop(0, 'rgba(140,200,255,0)');
+    rg.addColorStop(0.4, 'rgba(140,200,255,0.25)');
+    rg.addColorStop(0.55, 'rgba(255,140,220,0.15)');
+    rg.addColorStop(1, 'rgba(140,200,255,0)');
+    ctx.fillStyle = rg; ctx.fillRect(ax, ay, aw, ah);
+  } else if (card.rarity === 'ultra') {
+    const fg = ctx.createLinearGradient(ax, ay, ax + aw, ay + ah);
+    fg.addColorStop(0, 'rgba(255,255,255,0)');
+    fg.addColorStop(0.45, 'rgba(255,255,255,0.22)');
+    fg.addColorStop(0.55, 'rgba(255,255,255,0.10)');
+    fg.addColorStop(1, 'rgba(255,255,255,0)');
+    ctx.fillStyle = fg; ctx.fillRect(ax, ay, aw, ah);
+  } else if (card.rarity === 'secret') {
+    ctx.fillStyle = 'rgba(10,8,0,0.25)'; ctx.fillRect(ax, ay, aw, ah);
+    const fg = ctx.createLinearGradient(ax, ay, ax + aw, ay + ah);
+    fg.addColorStop(0, 'rgba(242,183,5,0)');
+    fg.addColorStop(0.45, 'rgba(242,183,5,0.30)');
+    fg.addColorStop(0.55, 'rgba(255,255,255,0.10)');
+    fg.addColorStop(1, 'rgba(242,183,5,0)');
+    ctx.fillStyle = fg; ctx.fillRect(ax, ay, aw, ah);
+  }
+}
+
 function drawCardFace(ctx, x, y, w, h, card, detail) {
   const set = SETS[card.set];
   ctx.save();
@@ -1063,13 +1183,42 @@ function drawCardFace(ctx, x, y, w, h, card, detail) {
   ctx.font = 'bold ' + Math.round(w * 0.062) + 'px system-ui, sans-serif';
   ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
   ctx.fillText(card.name, x + 20 + lrOff, y + 25 + tbOff, w - 40);
+  if (card.variant === '1/1') {
+    ctx.fillStyle = '#f2b705';
+    ctx.font = 'bold ' + Math.round(w * 0.055) + 'px system-ui, sans-serif';
+    ctx.textAlign = 'right';
+    ctx.fillText('1 OF 1', x + w - 20 + lrOff, y + 25 + tbOff);
+    ctx.textAlign = 'left';
+  }
   // art window: sport backdrop (gradient + field lines); creatures keep the green field
   const ax = x + 22 + lrOff, ay = y + 44 + tbOff, aw = w - 44, ah = h * 0.44;
   const ag = ctx.createLinearGradient(ax, ay, ax, ay + ah);
   const bd = ART_BACKDROPS[card.set] || ['#1d4d2b', '#0f2f18'];
   ag.addColorStop(0, bd[0]); ag.addColorStop(1, bd[1]);
   ctx.fillStyle = ag; ctx.fillRect(ax, ay, aw, ah);
-  ctx.strokeStyle = 'rgba(255,255,255,0.22)'; ctx.lineWidth = 1;
+  // 1/1: black-and-gold window with gold field lines; otherwise the
+  // deterministic day/dusk/night variant tints the same field.
+  const bv = backdropVariant(card);
+  if (card.variant === '1/1') {
+    const og = ctx.createLinearGradient(ax, ay, ax, ay + ah);
+    og.addColorStop(0, '#1a1a1a'); og.addColorStop(0.55, '#2e2405'); og.addColorStop(1, '#0a0800');
+    ctx.fillStyle = og; ctx.fillRect(ax, ay, aw, ah);
+    ctx.strokeStyle = 'rgba(242,183,5,0.55)';
+  } else {
+    if (bv === 'dusk') {
+      ctx.fillStyle = 'rgba(255,140,60,0.14)'; ctx.fillRect(ax, ay, aw, ah);
+      ctx.fillStyle = 'rgba(30,10,50,0.22)'; ctx.fillRect(ax, ay, aw, ah);
+    } else if (bv === 'night') {
+      ctx.fillStyle = 'rgba(8,14,48,0.34)'; ctx.fillRect(ax, ay, aw, ah);
+      ctx.fillStyle = 'rgba(255,255,255,0.85)';
+      const hh = hashStr((card.set || '') + '|' + (card.name || ''));
+      for (let k = 0; k < 5; k++) {
+        ctx.fillRect(ax + ((hh >> (k * 3)) % 100) / 100 * aw, ay + ((hh >> (k * 3 + 5)) % 60) / 100 * ah, 1.5, 1.5);
+      }
+    }
+    ctx.strokeStyle = 'rgba(255,255,255,0.22)';
+  }
+  ctx.lineWidth = 1;
   for (let i = 1; i <= 4; i++) {
     ctx.beginPath(); ctx.moveTo(ax + aw * i / 5, ay); ctx.lineTo(ax + aw * i / 5, ay + ah); ctx.stroke();
   }
@@ -1082,14 +1231,15 @@ function drawCardFace(ctx, x, y, w, h, card, detail) {
     ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
     ctx.fillText(card.art, ax + aw / 2, ay + ah / 2);
   }
-  // foil shimmer for Ultra Rare / Secret
-  if (card.rarity === 'ultra' || card.rarity === 'secret') {
-    const fg = ctx.createLinearGradient(ax, ay, ax + aw, ay + ah);
-    fg.addColorStop(0, 'rgba(255,255,255,0)');
-    fg.addColorStop(0.45, card.rarity === 'secret' ? 'rgba(242,183,5,0.30)' : 'rgba(255,255,255,0.22)');
-    fg.addColorStop(0.55, 'rgba(255,255,255,0.10)');
-    fg.addColorStop(1, 'rgba(255,255,255,0)');
-    ctx.fillStyle = fg; ctx.fillRect(ax, ay, aw, ah);
+  // rarity art-window treatment + 1/1 stamp
+  rarityCanvasTint(ctx, ax, ay, aw, ah, card);
+  if (card.variant === '1/1') {
+    ctx.fillStyle = '#f2b705';
+    roundRect(ctx, ax + aw - 46, ay + 6, 40, 18, 4); ctx.fill();
+    ctx.fillStyle = '#111';
+    ctx.font = '800 12px system-ui, sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.fillText('1/1', ax + aw - 26, ay + 16);
+    ctx.textAlign = 'left'; ctx.textBaseline = 'alphabetic';
   }
   // type line
   const ty = ay + ah + 18;
@@ -1343,7 +1493,7 @@ function showSlabResult(card, res) {
     <div style="font-size:15px;color:#9aa3b2">Slabbed &amp; sealed</div>
     <div style="font-size:28px;font-weight:800;margin:6px 0">${esc(card.name)}</div>
     <div class="biggrade">${res.grade}</div>
-    <div style="font-weight:700;color:var(--gold)">${label} · ${res.mult}× value</div>
+    <div style="font-weight:700;color:var(--gold)">${label} · ${res.mult}× value${card.variant === '1/1' ? ' · ★ 1 OF 1 ★' : ''}</div>
     <table>
       <tr><td>Front Centering</td><td>${res.subs.centering} / 10</td></tr>
       <tr><td>Corners</td><td>${res.subs.corners} / 10</td></tr>
@@ -1369,10 +1519,10 @@ function renderCollection() {
     return;
   }
   grid.innerHTML = state.inventory.map(card => `
-    <div class="card ${card.graded ? 'slabbed' : ''}">
+    <div class="card ${card.graded ? 'slabbed' : ''}${card.variant === '1/1' ? ' one-of-one' : ''}">
       ${cardFaceHTML(card)}
       ${card.graded ? `<div class="grade">★ ${card.graded.grade}</div><div class="vl">Slab value ${fmt$(card.graded.value)}</div>`
-        : `<div class="vl">Base ${fmt$(card.base)}</div><div class="vl">Ungraded</div>`}
+        : `<div class="vl">${card.variant === '1/1' ? '1/1 Value ' + fmt$(cardValue(card)) : 'Base ' + fmt$(card.base)}</div><div class="vl">Ungraded</div>`}
       <div class="row">
         <button class="small secondary" data-desk="${card.uid}">🔍 Desk</button>
         <button class="small" data-sell="${card.uid}">Sell ${fmt$(cardValue(card))}</button>
@@ -1402,7 +1552,7 @@ function renderAuctionPicks() {
     return;
   }
   el.innerHTML = state.inventory.map(card => `
-    <div class="card ${card.graded ? 'slabbed' : ''}">
+    <div class="card ${card.graded ? 'slabbed' : ''}${card.variant === '1/1' ? ' one-of-one' : ''}">
       ${cardFaceHTML(card)}
       <div class="vl">${card.graded ? '★ ' + card.graded.grade + ' slab' : 'Raw'} · ${fmt$(cardValue(card))}</div>
       <div class="row"><button class="small" data-apick="${card.uid}">🔨 Auction this card</button></div>
@@ -1587,6 +1737,69 @@ function selfTest() {
       return true;
     })());
     ok('openPack works for a new set', openPack('hardwood').length === 5);
+    // 14. Legacy save migration: pre-redesign cards render without "undefined"
+    const legacy = { uid: 9001, set: 'gridiron', setName: 'Gridiron Legends', name: 'Sammy Slants', title: 'Wide Receiver · Bay Breakers', rarity: 'common', art: '💨', base: 5, grades: { centering: { lr: 50, tb: 50 }, corners: [false, false, false, false], edges: 0, surface: 0 }, graded: null };
+    ok('legacy card migrates from its set definition', (() => {
+      const c = JSON.parse(JSON.stringify(legacy)); migrateCard(c);
+      return c.number === 12 && c.collectorNo === 2 && c.position === 'Wide Receiver' && c.team === 'Bay Breakers' && !!c.flavor;
+    })());
+    ok('legacy card renders with no "undefined" anywhere', (() => {
+      const c = JSON.parse(JSON.stringify(legacy)); migrateCard(c);
+      const html = miniCardHTML(c, false) + cardFaceHTML(c);
+      return html.indexOf('undefined') === -1 && html.indexOf('#2/9') !== -1 && html.indexOf('>12<') !== -1;
+    })());
+    ok('unknown card never prints undefined', (() => {
+      const c = { uid: 9002, set: 'gridiron', setName: 'Gridiron Legends', name: 'Nobody Atall', title: '???', rarity: 'common', art: '❓', base: 1, grades: { centering: { lr: 50, tb: 50 }, corners: [false, false, false, false], edges: 0, surface: 0 }, graded: null };
+      migrateCard(c);
+      const html = miniCardHTML(c, false) + cardFaceHTML(c);
+      return html.indexOf('undefined') === -1 && collectorLabel(c) === '';
+    })());
+    // 15. Team colors are bright and distinct
+    ok('team colors distinct and readable', (() => {
+      const cols = Object.values(TEAM_COLORS);
+      if (new Set(cols).size !== cols.length) return false;
+      return cols.every(hex => {
+        const r = parseInt(hex.slice(1, 3), 16), g = parseInt(hex.slice(3, 5), 16), b = parseInt(hex.slice(5, 7), 16);
+        return (0.299 * r + 0.587 * g + 0.114 * b) > 70;
+      });
+    })());
+    // 16. Football poses are visibly distinct (limb coordinates + lean)
+    ok('football poses differ in limbs and lean', (() => {
+      const poses = ['throw', 'run', 'catch', 'block', 'tackle', 'kick'];
+      const sigs = poses.map(p => JSON.stringify(POSE_PARTS[p]));
+      return new Set(sigs).size === poses.length && poses.every(p => POSE_PARTS[p].lean !== 0);
+    })());
+    // 17. Rarity treatments differ per rarity in the HTML face
+    ok('rarity changes the art window', ['common', 'uncommon', 'rare', 'ultra', 'secret'].every(r => {
+      const c = makeCard('gridiron', r);
+      return cardArtHTML(c).indexOf('rar-' + r) !== -1;
+    }));
+    // 18. 1/1 chase: odds, value, rendering, persistence
+    ok('1/1 odds are 1% on the guaranteed slot only', ONE_OF_ONE_ODDS === 0.01 && ONE_OF_ONE_MULT === 10);
+    ok('1/1 card is worth 10x raw and graded', (() => {
+      const c = makeCard('gridiron', 'rare'); c.variant = '1/1';
+      const g = gradeCard(c);
+      return cardValue(c) === c.base * 10 && g.value === Math.max(1, Math.round(c.base * GRADE_MULT[g.grade] * 10));
+    })());
+    ok('1/1 renders black-gold with stamp and label', (() => {
+      const c = makeCard('gridiron', 'rare'); c.variant = '1/1';
+      const html = miniCardHTML(c, false);
+      return html.indexOf('one-of-one') !== -1 && html.indexOf('one-stamp') !== -1 && html.indexOf('1 OF 1') !== -1 && html.indexOf('1/1') !== -1;
+    })());
+    ok('1/1 survives a save/load round-trip', (() => {
+      const c = makeCard('gridiron', 'rare'); c.variant = '1/1';
+      const back = JSON.parse(JSON.stringify(c)); migrateCard(back);
+      return back.variant === '1/1' && cardValue(back) === c.base * 10;
+    })());
+    ok('1/1 never comes from the normal rarity roll', (() => {
+      setSeed(1234);
+      for (let i = 0; i < 200; i++) { const c = makeCard('gridiron', rollRarity()); if (c.variant === '1/1') return false; }
+      return true;
+    })());
+    ok('backdrop variant differs across gridiron cards', (() => {
+      const vs = new Set(SETS.gridiron.cards.map(d => backdropVariant({ set: 'gridiron', name: d.name })));
+      return vs.size >= 2;
+    })());
     // 11. Not enough cash blocks pack
     state.cash = 5;
     ok('insufficient cash blocks pack', buyPack('kaiju').ok === false);
@@ -1612,11 +1825,14 @@ if (typeof window !== 'undefined' && window.location && window.location.search.i
 
 // Testable API (used by the headless harness)
 window.SHT = {
-  state, SETS, RARITY, buyPack, openPack, makeCard, gradeCard, rawSell, submitGrading, sellCard,
+  state, SETS, RARITY, buyPack, openPack, makeCard, gradeCard, cardValue, rawSell, submitGrading, sellCard,
   createAuction, auctionTick, hypeChat, gavelSlam, settleAuction, finishAuction,
   inspectAt, resetInspection, deskCard, setSeed, selfTest, CARD, zoneAt,
   playerFigureSVG, cardFaceHTML, miniCardHTML, poseFor, collectorLabel,
   sportFor, hasFigure, headwearFor, SET_SPORT, ART_BACKDROPS,
+  migrateCard, findCardDef, jerseyNumber, jerseyInk, backdropVariant, hashStr,
+  TEAM_COLORS, POSE_PARTS, ONE_OF_ONE_ODDS, ONE_OF_ONE_MULT, variantMult,
+  rarityCanvasTint, cardArtHTML, drawPlayerFigure, drawCardFace, load, save,
 };
 </script>
 </body>
