@@ -12,8 +12,10 @@ real athletes, teams, or copyrighted characters.
 Open `index.html` in any browser (double-click it, or serve the folder).
 It is a complete, self-contained HTML5 canvas game:
 
-- **Pack Shop** — 3 parody sets (Gridiron Legends $30, Pocket Kaiju $25,
-  Mythic Marvels $35). Each pack pulls 5 cards, last card guaranteed
+- **Pack Shop** — 9 parody sets (Gridiron Legends $30, Hardwood Heroes $30,
+  Diamond Kings $30, Frozen Fury $30, Pitch Legends $25, Pocket Kaiju $25,
+  Critter Clash $25, Mythic Marvels $35, Panel Punchers $35). Each pack pulls
+  5 cards, last card guaranteed
   Rare or better. No F2P wait timers.
 - **Inspection Desk** — drag the loupe over the card to reveal the 4
   real grading metrics: Front Centering (e.g. 55/45), 4 Corners

@@ -51,6 +51,16 @@
   .tc-art.stadium::before { content:''; position:absolute; inset:0; background:
     repeating-linear-gradient(90deg, transparent 0 24px, rgba(255,255,255,.14) 24px 26px),
     linear-gradient(180deg, transparent 62%, rgba(255,255,255,.10) 62% 64%, transparent 64%); }
+  .tc-art.arena-basketball { background:linear-gradient(180deg,#b45309 0%,#92400e 55%,#7c2d12 100%); }
+  .tc-art.arena-basketball::before { content:''; position:absolute; inset:0; background:repeating-linear-gradient(0deg, transparent 0 14px, rgba(255,255,255,.10) 14px 15px); }
+  .tc-art.arena-baseball { background:linear-gradient(180deg,#166534 0%,#14532d 100%); }
+  .tc-art.arena-baseball::before { content:''; position:absolute; inset:0; background:linear-gradient(45deg, transparent 48%, rgba(255,255,255,.14) 48% 50%, transparent 50%), linear-gradient(-45deg, transparent 48%, rgba(255,255,255,.14) 48% 50%, transparent 50%); }
+  .tc-art.arena-hockey { background:linear-gradient(180deg,#bae6fd 0%,#7dd3fc 100%); }
+  .tc-art.arena-hockey::before { content:''; position:absolute; inset:0; background:linear-gradient(90deg, transparent 46%, rgba(239,68,68,.45) 46% 50%, transparent 50%), linear-gradient(90deg, transparent 78%, rgba(37,99,235,.45) 78% 82%, transparent 82%); }
+  .tc-art.arena-soccer { background:linear-gradient(180deg,#15803d 0%,#14532d 100%); }
+  .tc-art.arena-soccer::before { content:''; position:absolute; inset:0; background:radial-gradient(circle at 50% 50%, transparent 0 18px, rgba(255,255,255,.16) 18px 20px, transparent 20px), linear-gradient(180deg, transparent 48%, rgba(255,255,255,.12) 48% 50%, transparent 50%); }
+  .tc-art.arena-comic { background:linear-gradient(180deg,#7e22ce 0%,#4c1d95 100%); }
+  .tc-art.arena-comic::before { content:''; position:absolute; inset:0; background:repeating-linear-gradient(115deg, transparent 0 18px, rgba(255,255,255,.08) 18px 20px); }
   .tc-art .emoji { font-size:44px; line-height:1; padding-bottom:8px; position:relative; z-index:1; align-self:center; }
   .tc-art svg { position:relative; z-index:1; height:88px; width:auto; display:block; }
   .tc-art.foil-ultra::after, .tc-art.foil-secret::after { content:''; position:absolute; inset:0; background:linear-gradient(115deg, transparent 30%, rgba(255,255,255,.35) 45%, rgba(255,255,255,.05) 55%, transparent 70%); pointer-events:none; }
@@ -277,6 +287,90 @@ const SETS = {
       { name: 'The Silver Streak', title: 'Speedster · Fastest Alive', rarity: 'secret', art: '💫' },
     ],
   },
+  hardwood: {
+    name: 'Hardwood Heroes', packPrice: 30, color: '#b91c1c', desc: 'Parody hardwood heroes from the fictional Metro League.',
+    cards: [
+      { name: 'Dunk Donnelly', title: 'Center · Metro Mammoths', rarity: 'common', art: '🏀', position: 'Center', team: 'Metro Mammoths', number: 23, flavor: "He dunks so hard the rim files a complaint." },
+      { name: 'Swish Stevens', title: 'Shooting Guard · Bay Breakers', rarity: 'common', art: '🎯', position: 'Shooting Guard', team: 'Bay Breakers', number: 3, flavor: "Nothing but net. Every single time." },
+      { name: 'Jumper Jones', title: 'Small Forward · Desert Vipers', rarity: 'common', art: '🦘', position: 'Small Forward', team: 'Desert Vipers', number: 11, flavor: "His jump shot has its own altitude." },
+      { name: 'Rebound Ronnie', title: 'Power Forward · Ironwood Bears', rarity: 'uncommon', art: '🧲', position: 'Power Forward', team: 'Ironwood Bears', number: 45, flavor: "The ball comes back to him. It has no choice." },
+      { name: 'Crossover Cole', title: 'Point Guard · Metro Mammoths', rarity: 'uncommon', art: '🔀', position: 'Point Guard', team: 'Metro Mammoths', number: 1, flavor: "Defenders need a map to find him." },
+      { name: 'Blockbuster Ben', title: 'Power Forward · Bay Breakers', rarity: 'rare', art: '🧱', position: 'Power Forward', team: 'Bay Breakers', number: 34, flavor: "Shots go in. Shots do not come out." },
+      { name: 'Fadeaway Fred', title: 'Shooting Guard · Desert Vipers', rarity: 'rare', art: '🌅', position: 'Shooting Guard', team: 'Desert Vipers', number: 21, flavor: "He shoots falling away. It still drops." },
+      { name: 'Triple-Double D', title: 'Point Guard · Ironwood Bears', rarity: 'ultra', art: '👑', position: 'Point Guard', team: 'Ironwood Bears', number: 0, flavor: "Points, boards, dimes — pick three, he has them." },
+      { name: 'Free-Throw Flo', title: 'Legendary Guard · Hall of Fame', rarity: 'secret', art: '✨', position: 'Legendary Guard', team: 'Hall of Fame', number: 10, flavor: "Never missed. Not once. Ask anyone." },
+    ],
+  },
+  diamond: {
+    name: 'Diamond Kings', packPrice: 30, color: '#1e3a5f', desc: 'Parody diamond kings from the fictional Metro League.',
+    cards: [
+      { name: 'Slider Sam', title: 'Pitcher · Metro Mammoths', rarity: 'common', art: '🌀', position: 'Pitcher', team: 'Metro Mammoths', number: 27, flavor: "His slider breaks hearts and bats." },
+      { name: 'Slugger Sullivan', title: 'Designated Hitter · Bay Breakers', rarity: 'common', art: '💥', position: 'Designated Hitter', team: 'Bay Breakers', number: 44, flavor: "The fences fear him." },
+      { name: 'Curveball Carl', title: 'Pitcher · Desert Vipers', rarity: 'common', art: '🌪️', position: 'Pitcher', team: 'Desert Vipers', number: 18, flavor: "His curve has its own weather system." },
+      { name: 'Fastball Phil', title: 'Pitcher · Ironwood Bears', rarity: 'uncommon', art: '🚀', position: 'Pitcher', team: 'Ironwood Bears', number: 99, flavor: "The radar gun asked for a raise." },
+      { name: 'Grand Slam Gary', title: 'First Base · Metro Mammoths', rarity: 'uncommon', art: '🎆', position: 'First Base', team: 'Metro Mammoths', number: 25, flavor: "Bases loaded? His favorite weather." },
+      { name: 'Changeup Chuck', title: 'Catcher · Bay Breakers', rarity: 'rare', art: '🎭', position: 'Catcher', team: 'Bay Breakers', number: 8, flavor: "He calls the game. The game listens." },
+      { name: 'Bunt Baxter', title: 'Shortstop · Desert Vipers', rarity: 'rare', art: '🥷', position: 'Shortstop', team: 'Desert Vipers', number: 6, flavor: "Small ball, big headaches for the other side." },
+      { name: 'Strikeout Stu', title: 'Outfielder · Ironwood Bears', rarity: 'ultra', art: '⚡', position: 'Outfielder', team: 'Ironwood Bears', number: 55, flavor: "He covers center field like a rumor." },
+      { name: 'Diamond Dave', title: 'Legendary Slugger · Hall of Fame', rarity: 'secret', art: '💎', position: 'Legendary Slugger', team: 'Hall of Fame', number: 9, flavor: "The diamond is named after him. Obviously." },
+    ],
+  },
+  frozen: {
+    name: 'Frozen Fury', packPrice: 30, color: '#5aa9c9', desc: 'Parody puck heroes from the fictional Metro League.',
+    cards: [
+      { name: 'Slapshot Sam', title: 'Defenseman · Metro Mammoths', rarity: 'common', art: '🏒', position: 'Defenseman', team: 'Metro Mammoths', number: 19, flavor: "His slap shot has been clocked in three time zones." },
+      { name: 'Hat Trick Hank', title: 'Center · Bay Breakers', rarity: 'common', art: '🎩', position: 'Center', team: 'Bay Breakers', number: 91, flavor: "One goal is a rumor. Three is a Hank." },
+      { name: 'Zamboni Zeke', title: 'Goalie · Desert Vipers', rarity: 'common', art: '🧊', position: 'Goalie', team: 'Desert Vipers', number: 30, flavor: "He smooths the ice. Then he owns it." },
+      { name: 'Offside Ollie', title: 'Defenseman · Ironwood Bears', rarity: 'uncommon', art: '🚩', position: 'Defenseman', team: 'Ironwood Bears', number: 4, flavor: "He lives on the blue line. Pays rent there." },
+      { name: 'Puck Norris', title: 'Winger · Metro Mammoths', rarity: 'uncommon', art: '🥊', position: 'Winger', team: 'Metro Mammoths', number: 68, flavor: "The puck fears him. So do the boards." },
+      { name: 'Blue Line Lou', title: 'Defenseman · Bay Breakers', rarity: 'rare', art: '🔵', position: 'Defenseman', team: 'Bay Breakers', number: 2, flavor: "Nothing crosses his line. Nothing." },
+      { name: 'Power Play Paul', title: 'Center · Desert Vipers', rarity: 'rare', art: '⚡', position: 'Center', team: 'Desert Vipers', number: 81, flavor: "Give him a man advantage and take cover." },
+      { name: 'Goalie Gabe', title: 'Goalie · Ironwood Bears', rarity: 'ultra', art: '🧤', position: 'Goalie', team: 'Ironwood Bears', number: 1, flavor: "The net is his. The shooters are guests." },
+      { name: 'Stick Handler Stan', title: 'Legendary Winger · Hall of Fame', rarity: 'secret', art: '✨', position: 'Legendary Winger', team: 'Hall of Fame', number: 87, flavor: "His stick has its own highlight reel." },
+    ],
+  },
+  pitch: {
+    name: 'Pitch Legends', packPrice: 25, color: '#65a30d', desc: 'Parody pitch legends from the fictional Metro League.',
+    cards: [
+      { name: 'Header Harry', title: 'Defender · Metro Mammoths', rarity: 'common', art: '🧠', position: 'Defender', team: 'Metro Mammoths', number: 9, flavor: "He scores with his head. Literally." },
+      { name: 'Volley Vance', title: 'Striker · Bay Breakers', rarity: 'common', art: '🦶', position: 'Striker', team: 'Bay Breakers', number: 8, flavor: "The ball never touches the ground around him." },
+      { name: 'Penalty Pete', title: 'Striker · Desert Vipers', rarity: 'common', art: '🎯', position: 'Striker', team: 'Desert Vipers', number: 10, flavor: "Twelve yards out? Already in." },
+      { name: 'Nutmeg Ned', title: 'Midfielder · Ironwood Bears', rarity: 'uncommon', art: '🥜', position: 'Midfielder', team: 'Ironwood Bears', number: 7, flavor: "Defenders check their legs after he passes." },
+      { name: 'Keeper Kline', title: 'Goalkeeper · Metro Mammoths', rarity: 'uncommon', art: '🧤', position: 'Goalkeeper', team: 'Metro Mammoths', number: 1, flavor: "The goal is a fortress. He is the wall." },
+      { name: 'Striker Steve', title: 'Striker · Bay Breakers', rarity: 'rare', art: '⚽', position: 'Striker', team: 'Bay Breakers', number: 11, flavor: "Right place, right time, every time." },
+      { name: 'Corner Kick Carl', title: 'Defender · Desert Vipers', rarity: 'rare', art: '📐', position: 'Defender', team: 'Desert Vipers', number: 4, flavor: "His corners bend like rumors." },
+      { name: 'Bicycle Kick Bill', title: 'Striker · Ironwood Bears', rarity: 'ultra', art: '🚲', position: 'Striker', team: 'Ironwood Bears', number: 14, flavor: "He scores upside down. On purpose." },
+      { name: 'Offside Oscar', title: 'Legendary Striker · Hall of Fame', rarity: 'secret', art: '✨', position: 'Legendary Striker', team: 'Hall of Fame', number: 99, flavor: "He was never offside. The linesman was wrong." },
+    ],
+  },
+  panel: {
+    name: 'Panel Punchers', packPrice: 35, color: '#a21caf', desc: 'Original caped crusaders from the Panelverse. POW! BAM! (In card form.)',
+    cards: [
+      { name: 'Captain Comeback', title: 'Hero · The Panel League', rarity: 'common', art: '🦸', position: 'Hero', team: 'The Panel League', number: 1, flavor: "Down is just the start of his comeback." },
+      { name: 'The Eraser', title: 'Bruiser · The Panel League', rarity: 'common', art: '🧽', position: 'Bruiser', team: 'The Panel League', number: 2, flavor: "Villains vanish. He keeps the receipt." },
+      { name: 'Miss Match', title: 'Speedster · The Panel League', rarity: 'common', art: '🔥', position: 'Speedster', team: 'The Panel League', number: 3, flavor: "She never matches. She always wins." },
+      { name: 'Doctor Do-Over', title: 'Mystic · The Panel League', rarity: 'uncommon', art: '⏰', position: 'Mystic', team: 'The Panel League', number: 4, flavor: "Made a mistake? He already fixed it yesterday." },
+      { name: 'The Human Highlight', title: 'Speedster · The Panel League', rarity: 'uncommon', art: '⚡', position: 'Speedster', team: 'The Panel League', number: 5, flavor: "Every move he makes is the poster." },
+      { name: 'Sock It Sam', title: 'Bruiser · The Panel League', rarity: 'rare', art: '🥊', position: 'Bruiser', team: 'The Panel League', number: 6, flavor: "One punch. That's the whole plan." },
+      { name: 'The Plot Twist', title: 'Trickster · The Panel League', rarity: 'rare', art: '🌀', position: 'Trickster', team: 'The Panel League', number: 7, flavor: "Just when you think you know — you don't." },
+      { name: 'Granite Gran', title: 'Bruiser · The Panel League', rarity: 'ultra', art: '🗿', position: 'Bruiser', team: 'The Panel League', number: 8, flavor: "Nan's cookies. Nan's right hook. Both legendary." },
+      { name: 'The Silver Lining', title: 'Speedster · Hall of Fame', rarity: 'secret', art: '✨', position: 'Speedster', team: 'Hall of Fame', number: 9, flavor: "Every cloud has one. She is it." },
+    ],
+  },
+  critter: {
+    name: 'Critter Clash', packPrice: 25, color: '#0d9488', desc: 'Tiny creatures, huge attitudes. Catch them all (in card form).',
+    cards: [
+      { name: 'Cinder Cub', title: 'Fire · Ember Pounce', rarity: 'common', art: '🐻', position: 'Fire', team: null, number: 4, flavor: "Warm hugs. Literally warm." },
+      { name: 'Bubble Bat', title: 'Water · Sonic Splash', rarity: 'common', art: '🦇', position: 'Water', team: null, number: 12, flavor: "Pops in. Pops out. Leaves bubbles." },
+      { name: 'Moss Mole', title: 'Grass · Dig Dash', rarity: 'common', art: '🦔', position: 'Grass', team: null, number: 21, flavor: "Digs first, asks questions never." },
+      { name: 'Spark Squirrel', title: 'Electric · Static Tail', rarity: 'uncommon', art: '🐿️', position: 'Electric', team: null, number: 25, flavor: "Stores nuts. And static." },
+      { name: 'Frost Fox', title: 'Ice · Snow Sneak', rarity: 'uncommon', art: '🦊', position: 'Ice', team: null, number: 37, flavor: "Cold nose, colder stare." },
+      { name: 'Ink Octopus', title: 'Water · Ink Cloud', rarity: 'rare', art: '🐙', position: 'Water', team: null, number: 62, flavor: "Eight arms, zero apologies." },
+      { name: 'Storm Wolf', title: 'Electric · Thunder Howl', rarity: 'rare', art: '🐺', position: 'Electric', team: null, number: 71, flavor: "Howls and the sky answers." },
+      { name: 'Dream Unicorn', title: 'Psychic · Star Horn', rarity: 'ultra', art: '🦄', position: 'Psychic', team: null, number: 88, flavor: "Naps in rainbows. Wakes in stars." },
+      { name: 'Magma Dragonet', title: 'Dragon · Magma Roar', rarity: 'secret', art: '🐲', position: 'Dragon', team: null, number: 99, flavor: "Small dragon. Big lava." },
+    ],
+  },
 };
 
 // ---------- Team colors & humanoid player figures (Gridiron Legends) ----------
@@ -289,9 +383,34 @@ const TEAM_COLORS = {
   'Desert Vipers': '#e07b24',
   'Ironwood Bears': '#7a4a2b',
   'Hall of Fame': '#d4a017',
+  'The Panel League': '#7e22ce',
 };
 const SKIN_TONES = ['#e8b98a', '#c98d5f', '#8d5a3b', '#f0c8a0'];
 function skinFor(card) { return SKIN_TONES[(card.number || 0) % SKIN_TONES.length]; }
+// Sport per set: figure sets (sports + comic) vs emoji sets (creatures).
+const SET_SPORT = { gridiron: 'football', hardwood: 'basketball', diamond: 'baseball', frozen: 'hockey', pitch: 'soccer', panel: 'comic' };
+function sportFor(card) { return card.sport || SET_SPORT[card.set] || null; }
+function hasFigure(card) { return !!sportFor(card); }
+// Headwear by sport: helmet (football/hockey), headband (basketball),
+// cap (baseball), hair (soccer), mask (comic).
+function headwearFor(card) {
+  switch (sportFor(card)) {
+    case 'basketball': return 'headband';
+    case 'baseball': return 'cap';
+    case 'soccer': return 'hair';
+    case 'comic': return 'mask';
+    default: return 'helmet';
+  }
+}
+// Canvas art-window backdrop gradient per figure set (top, bottom).
+const ART_BACKDROPS = {
+  gridiron: ['#1d4d2b', '#0f2f18'],
+  hardwood: ['#b45309', '#7c2d12'],
+  diamond: ['#166534', '#14532d'],
+  frozen: ['#bae6fd', '#7dd3fc'],
+  pitch: ['#15803d', '#14532d'],
+  panel: ['#7e22ce', '#4c1d95'],
+};
 const RARITY_SYMBOL = { common: '●', uncommon: '◆', rare: '★', ultra: '✦', secret: '♛' };
 function raritySymbol(r) { return RARITY_SYMBOL[r] || '●'; }
 function collectorLabel(card) { return '#' + card.collectorNo + '/' + SETS[card.set].cards.length; }
@@ -305,17 +424,77 @@ const POSE_PARTS = {
   tackle: { arms: [[[36,44],[20,66]], [[64,44],[80,66]]], legs: [[[44,72],[36,88],[40,104]], [[56,72],[64,88],[60,104]]], cleats: [[38,106],[62,106]], ball: null },
   kick:   { arms: [[[36,44],[20,46]], [[64,44],[78,26]]], legs: [[[44,72],[42,104]], [[56,72],[72,66],[84,52]]], cleats: [[40,106],[86,54]], ball: null },
   ghost:  { arms: [[[36,44],[20,54]], [[64,44],[82,20]]], legs: [[[44,72],[40,104]], [[56,72],[60,104]]], cleats: [[36,106],[64,106]], ball: [84,16] },
+  // --- Basketball ---
+  'bb-dunk':    { arms: [[[36,44],[30,16]], [[64,44],[70,16]]], legs: [[[44,72],[36,88],[40,102]], [[56,72],[64,88],[60,102]]], cleats: [[38,104],[62,104]], ball: [50,10], ballKind: 'round', ballColor: '#e07b24' },
+  'bb-shot':    { arms: [[[36,44],[28,36]], [[64,44],[72,16]]], legs: [[[44,72],[42,104]], [[56,72],[62,92],[66,102]]], cleats: [[40,106],[68,104]], ball: [74,12], ballKind: 'round', ballColor: '#e07b24' },
+  'bb-dribble': { arms: [[[36,44],[24,66]], [[64,44],[78,52]]], legs: [[[44,72],[32,88],[30,102]], [[56,72],[68,88],[70,100]]], cleats: [[28,104],[72,102]], ball: [22,70], ballKind: 'round', ballColor: '#e07b24' },
+  'bb-block':   { arms: [[[36,44],[30,12]], [[64,44],[70,12]]], legs: [[[44,72],[36,104]], [[56,72],[64,104]]], cleats: [[32,106],[68,106]], ball: null },
+  // --- Baseball ---
+  'base-pitch': { arms: [[[36,44],[24,52]], [[64,44],[80,18]]], legs: [[[44,72],[40,104]], [[56,72],[68,84],[64,96]]], cleats: [[40,106],[66,98]], ball: [82,14], ballKind: 'round', ballColor: '#f5f5f5' },
+  'base-bat':   { arms: [[[36,44],[58,52]], [[64,44],[58,52]]], legs: [[[44,72],[34,104]], [[56,72],[66,104]]], cleats: [[30,106],[70,106]], ball: null, stick: [[56,50],[88,26]], stickKind: 'bat' },
+  'base-catch': { arms: [[[36,44],[24,62]], [[64,44],[76,62]]], legs: [[[44,72],[32,90],[36,104]], [[56,72],[68,90],[64,104]]], cleats: [[34,106],[66,106]], ball: null },
+  'base-throw': { arms: [[[36,44],[20,54]], [[64,44],[82,20]]], legs: [[[44,72],[40,104]], [[56,72],[60,104]]], cleats: [[36,106],[64,106]], ball: [84,16], ballKind: 'round', ballColor: '#f5f5f5' },
+  // --- Hockey (skates + stick + puck) ---
+  'hk-slap':    { arms: [[[36,44],[56,58]], [[64,44],[56,58]]], legs: [[[44,72],[30,90],[32,104]], [[56,72],[68,88],[66,102]]], cleats: [[30,106],[68,104]], ball: [88,100], ballKind: 'puck', stick: [[54,56],[84,94]], stickKind: 'hockey', skates: true },
+  'hk-skate':   { arms: [[[36,44],[22,56]], [[64,44],[58,56]]], legs: [[[44,72],[28,86],[26,102]], [[56,72],[70,90],[74,100]]], cleats: [[24,104],[76,102]], ball: [82,96], ballKind: 'puck', stick: [[56,54],[78,90]], stickKind: 'hockey', skates: true },
+  'hk-goalie':  { arms: [[[36,44],[22,62]], [[64,44],[78,62]]], legs: [[[44,72],[30,104]], [[56,72],[70,104]]], cleats: [[26,106],[74,106]], ball: null, stick: [[76,60],[76,104]], stickKind: 'hockey', skates: true },
+  // --- Soccer ---
+  'sc-kick':    { arms: [[[36,44],[18,48]], [[64,44],[80,40]]], legs: [[[44,72],[42,104]], [[56,72],[74,80],[86,74]]], cleats: [[40,106],[88,76]], ball: [91,72], ballKind: 'soccer' },
+  'sc-header':  { arms: [[[36,44],[20,50]], [[64,44],[80,50]]], legs: [[[44,72],[40,104]], [[56,72],[60,104]]], cleats: [[36,106],[64,106]], ball: [50,8], ballKind: 'soccer' },
+  'sc-dive':    { arms: [[[36,44],[14,30]], [[64,44],[18,22]]], legs: [[[44,72],[58,88],[64,102]], [[56,72],[68,90],[72,100]]], cleats: [[62,104],[74,102]], ball: [12,24], ballKind: 'soccer' },
+  'sc-dribble': { arms: [[[36,44],[22,52]], [[64,44],[78,52]]], legs: [[[44,72],[32,88],[30,102]], [[56,72],[68,88],[70,100]]], cleats: [[28,104],[72,102]], ball: [76,106], ballKind: 'soccer' },
+  // --- Comic (cape + mask) ---
+  'cm-hero':    { arms: [[[36,44],[44,58]], [[64,44],[56,58]]], legs: [[[44,72],[40,104]], [[56,72],[60,104]]], cleats: [[36,106],[64,106]], ball: null, cape: true },
+  'cm-fly':     { arms: [[[36,44],[24,56]], [[64,44],[88,34]]], legs: [[[44,72],[34,88],[30,102]], [[56,72],[66,90],[70,102]]], cleats: [[28,104],[72,104]], ball: null, cape: true },
+  'cm-punch':   { arms: [[[36,44],[26,60]], [[64,44],[86,44]]], legs: [[[44,72],[30,90],[32,104]], [[56,72],[68,88],[66,102]]], cleats: [[30,106],[68,104]], ball: null, cape: true },
 };
 function poseFor(card) {
   if (card.name === 'Gridiron Ghost') return 'ghost';
-  switch (card.position) {
-    case 'Quarterback': case 'Legendary QB': return 'throw';
-    case 'Running Back': return 'run';
-    case 'Wide Receiver': return 'catch';
-    case 'Lineman': return 'block';
-    case 'Linebacker': return 'tackle';
-    case 'Punter': return 'kick';
-    default: return 'throw';
+  const sport = card.sport || SET_SPORT[card.set] || 'football';
+  switch (sport) {
+    case 'basketball':
+      switch (card.position) {
+        case 'Center': return 'bb-dunk';
+        case 'Power Forward': return 'bb-block';
+        case 'Point Guard': return 'bb-dribble';
+        default: return 'bb-shot'; // Shooting Guard, Small Forward, Legendary Guard
+      }
+    case 'baseball':
+      switch (card.position) {
+        case 'Pitcher': return 'base-pitch';
+        case 'Catcher': return 'base-catch';
+        case 'Designated Hitter': case 'First Base': return 'base-bat';
+        default: return 'base-throw'; // Shortstop, Outfielder, Legendary Slugger
+      }
+    case 'hockey':
+      switch (card.position) {
+        case 'Goalie': return 'hk-goalie';
+        case 'Defenseman': return 'hk-slap';
+        default: return 'hk-skate'; // Winger, Center, Legendary Winger
+      }
+    case 'soccer':
+      switch (card.position) {
+        case 'Goalkeeper': return 'sc-dive';
+        case 'Defender': return 'sc-header';
+        case 'Midfielder': return 'sc-dribble';
+        default: return 'sc-kick'; // Striker, Legendary Striker
+      }
+    case 'comic':
+      switch (card.position) {
+        case 'Speedster': return 'cm-fly';
+        case 'Bruiser': return 'cm-punch';
+        default: return 'cm-hero'; // Hero, Mystic, Trickster
+      }
+    default: // football
+      switch (card.position) {
+        case 'Quarterback': case 'Legendary QB': return 'throw';
+        case 'Running Back': return 'run';
+        case 'Wide Receiver': return 'catch';
+        case 'Lineman': return 'block';
+        case 'Linebacker': return 'tackle';
+        case 'Punter': return 'kick';
+        default: return 'throw';
+      }
   }
 }
 function playerFigureSVG(card) {
@@ -328,23 +507,56 @@ function playerFigureSVG(card) {
   const skin = ghost ? '#f5ecd0' : skinFor(card);
   const pants = ghost ? '#efe6c8' : '#eef0f2';
   const num = String(card.number).padStart(2, '0');
+  const headwear = headwearFor(card);
+  const sport = sportFor(card) || '';
   const path = pts => 'M' + pts.map(p => p.join(' ')).join(' L');
+  const capeColor = (SETS[card.set] && SETS[card.set].color) || team;
+  const cape = parts.cape
+    ? `<path d="M38 38 Q16 62 24 108 L44 108 Q36 70 44 42 Z" fill="${capeColor}"/>`
+    : '';
   const legs = parts.legs.map(l => `<path d="${path(l)}" stroke="${pants}" stroke-width="9" stroke-linecap="round" stroke-linejoin="round" fill="none"/>`).join('');
   const arms = parts.arms.map(a => `<path d="${path(a)}" stroke="${jersey}" stroke-width="7" stroke-linecap="round" fill="none"/>`).join('');
-  const cleats = parts.cleats.map(c => `<ellipse cx="${c[0]}" cy="${c[1]}" rx="5" ry="3" fill="#1c2433"/>`).join('');
-  const ball = parts.ball
-    ? `<ellipse cx="${parts.ball[0]}" cy="${parts.ball[1]}" rx="6" ry="4" fill="#7a4a2b" transform="rotate(-30 ${parts.ball[0]} ${parts.ball[1]})"/><path d="M${parts.ball[0] - 3} ${parts.ball[1]} L${parts.ball[0] + 3} ${parts.ball[1] - 1}" stroke="#fff" stroke-width="1"/>`
+  const cleats = parts.cleats.map(c => parts.skates
+    ? `<ellipse cx="${c[0]}" cy="${c[1]}" rx="5" ry="3" fill="#1c2433"/><rect x="${c[0] - 6}" y="${c[1] + 2}" width="12" height="3" rx="1" fill="#cbd5e1"/>`
+    : `<ellipse cx="${c[0]}" cy="${c[1]}" rx="5" ry="3" fill="#1c2433"/>`).join('');
+  const stick = parts.stick
+    ? `<path d="M${parts.stick[0][0]} ${parts.stick[0][1]} L${parts.stick[1][0]} ${parts.stick[1][1]}" stroke="${parts.stickKind === 'bat' ? '#d9b380' : '#c9a06a'}" stroke-width="${parts.stickKind === 'bat' ? 5 : 3.5}" stroke-linecap="round" fill="none"/>` +
+      (parts.stickKind === 'hockey' ? `<path d="M${parts.stick[1][0]} ${parts.stick[1][1]} L${parts.stick[1][0] + 9} ${parts.stick[1][1] + 2}" stroke="#c9a06a" stroke-width="4" stroke-linecap="round" fill="none"/>` : '')
     : '';
+  const ball = (() => {
+    if (!parts.ball) return '';
+    const [bx, by] = parts.ball;
+    if (parts.ballKind === 'round') return `<circle cx="${bx}" cy="${by}" r="5.5" fill="${parts.ballColor || '#e07b24'}"/>`;
+    if (parts.ballKind === 'puck') return `<ellipse cx="${bx}" cy="${by}" rx="6" ry="3.5" fill="#111827"/>`;
+    if (parts.ballKind === 'soccer') return `<circle cx="${bx}" cy="${by}" r="5.5" fill="#f5f5f5"/><circle cx="${bx}" cy="${by}" r="2" fill="#111827"/>`;
+    return `<ellipse cx="${bx}" cy="${by}" rx="6" ry="4" fill="#7a4a2b" transform="rotate(-30 ${bx} ${by})"/><path d="M${bx - 3} ${by} L${bx + 3} ${by - 1}" stroke="#fff" stroke-width="1"/>`;
+  })();
   const glow = ghost ? `<ellipse cx="50" cy="60" rx="36" ry="50" fill="rgba(242,217,140,0.20)"/>` : '';
   const op = ghost ? ' opacity="0.62"' : '';
-  return `<svg viewBox="0 0 100 120" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="${esc(card.name)}">${glow}<ellipse cx="50" cy="110" rx="26" ry="5" fill="rgba(0,0,0,0.35)"/><g${op}>${legs}${cleats}<path d="M34 40 Q34 36 40 36 L60 36 Q66 36 66 40 L66 70 Q66 74 62 74 L38 74 Q34 74 34 70 Z" fill="${jersey}"/><ellipse cx="36" cy="40" rx="7" ry="5" fill="${jersey}"/><ellipse cx="64" cy="40" rx="7" ry="5" fill="${jersey}"/>${arms}<text x="50" y="60" text-anchor="middle" font-size="15" font-weight="800" fill="#fff" font-family="system-ui, sans-serif">${num}</text><rect x="45" y="31" width="10" height="8" fill="${skin}"/><circle cx="50" cy="29" r="7.5" fill="${skin}"/><path d="M38 27 A12 12 0 0 1 62 27 Z" fill="${helmet}"/><rect x="48" y="14" width="4" height="10" fill="rgba(255,255,255,0.55)"/><circle cx="47" cy="30" r="1" fill="#1c2433"/><circle cx="53" cy="30" r="1" fill="#1c2433"/><path d="M60 29 L68 29 M60 33 L66 35" stroke="#dfe3ea" stroke-width="1.5" fill="none"/>${ball}</g></svg>`;
+  // Headwear by sport: helmet (football/hockey), headband (basketball),
+  // cap (baseball), hair (soccer), mask (comic). Face + eyes in every case.
+  let head = '';
+  if (headwear === 'headband') {
+    head = `<path d="M42 24 A8 8 0 0 1 58 24 Z" fill="#1c2433"/><rect x="42" y="24" width="16" height="3" fill="${team}"/><circle cx="47" cy="30" r="1" fill="#1c2433"/><circle cx="53" cy="30" r="1" fill="#1c2433"/>`;
+  } else if (headwear === 'cap') {
+    head = `<path d="M38 27 A12 12 0 0 1 62 27 Z" fill="${team}"/><rect x="56" y="26" width="13" height="3" rx="1" fill="${team}"/><circle cx="47" cy="30" r="1" fill="#1c2433"/><circle cx="53" cy="30" r="1" fill="#1c2433"/>`;
+  } else if (headwear === 'hair') {
+    head = `<path d="M42 24 A8 8 0 0 1 58 24 Z" fill="#1c2433"/><circle cx="47" cy="30" r="1" fill="#1c2433"/><circle cx="53" cy="30" r="1" fill="#1c2433"/>`;
+  } else if (headwear === 'mask') {
+    head = `<path d="M42 24 A8 8 0 0 1 58 24 Z" fill="#1c2433"/><rect x="41" y="27" width="18" height="4" rx="2" fill="${team}"/><circle cx="47" cy="29" r="1.2" fill="#fff"/><circle cx="53" cy="29" r="1.2" fill="#fff"/>`;
+  } else {
+    head = `<path d="M38 27 A12 12 0 0 1 62 27 Z" fill="${helmet}"/><rect x="48" y="14" width="4" height="10" fill="rgba(255,255,255,0.55)"/><circle cx="47" cy="30" r="1" fill="#1c2433"/><circle cx="53" cy="30" r="1" fill="#1c2433"/><path d="M60 29 L68 29 M60 33 L66 35" stroke="#dfe3ea" stroke-width="1.5" fill="none"/>`;
+  }
+  return `<svg viewBox="0 0 100 120" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="${esc(card.name)}" data-sport="${sport}" data-pose="${pose}" data-headwear="${headwear}"${parts.cape ? ' data-cape="1"' : ''}${parts.skates ? ' data-skates="1"' : ''}${parts.stick ? ' data-stick="1"' : ''}${parts.ball ? ' data-ball="' + (parts.ballKind || 'football') + '"' : ''}>${glow}<ellipse cx="50" cy="110" rx="26" ry="5" fill="rgba(0,0,0,0.35)"/><g${op}>${cape}${legs}${cleats}<path d="M34 40 Q34 36 40 36 L60 36 Q66 36 66 40 L66 70 Q66 74 62 74 L38 74 Q34 74 34 70 Z" fill="${jersey}"/><ellipse cx="36" cy="40" rx="7" ry="5" fill="${jersey}"/><ellipse cx="64" cy="40" rx="7" ry="5" fill="${jersey}"/>${arms}${stick}<text x="50" y="60" text-anchor="middle" font-size="15" font-weight="800" fill="#fff" font-family="system-ui, sans-serif">${num}</text><rect x="45" y="31" width="10" height="8" fill="${skin}"/><circle cx="50" cy="29" r="7.5" fill="${skin}"/>${head}${ball}</g></svg>`;
 }
-// Art window content for the HTML card face: humanoid figure for Gridiron,
-// emoji on the set color for the other sets.
+// Art window content for the HTML card face: humanoid figure for the sports
+// and comic sets (sport arena backdrop), emoji on the set color for creatures.
 function cardArtHTML(card) {
   const foil = card.rarity === 'ultra' ? ' foil-ultra' : card.rarity === 'secret' ? ' foil-secret' : '';
-  if (card.set === 'gridiron') {
-    return `<div class="tc-art stadium${foil}">${playerFigureSVG(card)}</div>`;
+  if (hasFigure(card)) {
+    const sport = sportFor(card);
+    const arena = sport === 'football' ? 'stadium arena-football' : 'arena-' + sport;
+    return `<div class="tc-art ${arena}${foil}">${playerFigureSVG(card)}</div>`;
   }
   return `<div class="tc-art${foil}" style="background:${SETS[card.set].color}"><span class="emoji">${card.art}</span></div>`;
 }
@@ -381,6 +593,7 @@ function drawPlayerFigure(ctx, ax, ay, aw, ah, card) {
   const helmet = ghost ? '#f2d98c' : team;
   const skin = ghost ? '#f5ecd0' : skinFor(card);
   const pants = ghost ? '#efe6c8' : '#eef0f2';
+  const headwear = headwearFor(card);
   const s = Math.min(aw / 100, ah / 122);
   const ox = ax + aw / 2 - 50 * s, oy = ay + ah - 112 * s;
   ctx.save();
@@ -388,14 +601,26 @@ function drawPlayerFigure(ctx, ax, ay, aw, ah, card) {
   ctx.translate(ox, oy); ctx.scale(s, s);
   ctx.fillStyle = 'rgba(0,0,0,0.35)';
   ctx.beginPath(); ctx.ellipse(50, 110, 26, 5, 0, 0, Math.PI * 2); ctx.fill();
+  if (parts.cape) { // comic cape, behind the body, in the set color
+    ctx.fillStyle = (SETS[card.set] && SETS[card.set].color) || team;
+    ctx.beginPath();
+    ctx.moveTo(38, 38); ctx.quadraticCurveTo(16, 62, 24, 108); ctx.lineTo(44, 108);
+    ctx.quadraticCurveTo(36, 70, 44, 42); ctx.closePath(); ctx.fill();
+  }
   ctx.strokeStyle = pants; ctx.lineWidth = 9; ctx.lineCap = 'round'; ctx.lineJoin = 'round';
   for (const leg of parts.legs) {
     ctx.beginPath(); ctx.moveTo(leg[0][0], leg[0][1]);
     for (let i = 1; i < leg.length; i++) ctx.lineTo(leg[i][0], leg[i][1]);
     ctx.stroke();
   }
-  ctx.fillStyle = '#1c2433';
-  for (const c of parts.cleats) { ctx.beginPath(); ctx.ellipse(c[0], c[1], 5, 3, 0, 0, Math.PI * 2); ctx.fill(); }
+  for (const c of parts.cleats) {
+    ctx.fillStyle = '#1c2433';
+    ctx.beginPath(); ctx.ellipse(c[0], c[1], 5, 3, 0, 0, Math.PI * 2); ctx.fill();
+    if (parts.skates) { // hockey skate blade under the boot
+      ctx.fillStyle = '#cbd5e1';
+      ctx.fillRect(c[0] - 6, c[1] + 2, 12, 3);
+    }
+  }
   ctx.fillStyle = jersey;
   roundRect(ctx, 34, 36, 32, 38, 8); ctx.fill();
   ctx.beginPath(); ctx.ellipse(36, 40, 7, 5, 0, 0, Math.PI * 2); ctx.fill();
@@ -406,26 +631,72 @@ function drawPlayerFigure(ctx, ax, ay, aw, ah, card) {
     for (let i = 1; i < arm.length; i++) ctx.lineTo(arm[i][0], arm[i][1]);
     ctx.stroke();
   }
+  if (parts.stick) { // bat (baseball) or stick + blade (hockey)
+    ctx.strokeStyle = parts.stickKind === 'bat' ? '#d9b380' : '#c9a06a';
+    ctx.lineWidth = parts.stickKind === 'bat' ? 5 : 3.5;
+    ctx.beginPath(); ctx.moveTo(parts.stick[0][0], parts.stick[0][1]);
+    ctx.lineTo(parts.stick[1][0], parts.stick[1][1]); ctx.stroke();
+    if (parts.stickKind === 'hockey') {
+      ctx.lineWidth = 4;
+      ctx.beginPath(); ctx.moveTo(parts.stick[1][0], parts.stick[1][1]);
+      ctx.lineTo(parts.stick[1][0] + 9, parts.stick[1][1] + 2); ctx.stroke();
+    }
+  }
   ctx.fillStyle = '#fff';
   ctx.font = '800 15px system-ui, sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
   ctx.fillText(String(card.number).padStart(2, '0'), 50, 58);
   ctx.fillStyle = skin;
   ctx.fillRect(45, 31, 10, 8);
   ctx.beginPath(); ctx.arc(50, 29, 7.5, 0, Math.PI * 2); ctx.fill();
-  ctx.fillStyle = helmet;
-  ctx.beginPath(); ctx.arc(50, 24, 12, Math.PI, 0); ctx.closePath(); ctx.fill();
-  ctx.fillStyle = 'rgba(255,255,255,0.55)';
-  ctx.fillRect(48, 12, 4, 10);
+  // Headwear by sport (see playerFigureSVG for the SVG twin).
   ctx.fillStyle = '#1c2433';
-  ctx.beginPath(); ctx.arc(47, 30, 1, 0, Math.PI * 2); ctx.fill();
-  ctx.beginPath(); ctx.arc(53, 30, 1, 0, Math.PI * 2); ctx.fill();
-  ctx.strokeStyle = '#dfe3ea'; ctx.lineWidth = 1.5;
-  ctx.beginPath(); ctx.moveTo(60, 29); ctx.lineTo(68, 29); ctx.moveTo(60, 33); ctx.lineTo(66, 35); ctx.stroke();
+  if (headwear === 'headband') {
+    ctx.beginPath(); ctx.arc(50, 24, 8, Math.PI, 0); ctx.closePath(); ctx.fill();
+    ctx.fillStyle = team; ctx.fillRect(42, 24, 16, 3);
+  } else if (headwear === 'cap') {
+    ctx.fillStyle = team;
+    ctx.beginPath(); ctx.arc(50, 24, 12, Math.PI, 0); ctx.closePath(); ctx.fill();
+    ctx.fillRect(56, 26, 13, 3);
+  } else if (headwear === 'hair') {
+    ctx.beginPath(); ctx.arc(50, 24, 8, Math.PI, 0); ctx.closePath(); ctx.fill();
+  } else if (headwear === 'mask') {
+    ctx.beginPath(); ctx.arc(50, 24, 8, Math.PI, 0); ctx.closePath(); ctx.fill();
+    ctx.fillStyle = team; ctx.fillRect(41, 27, 18, 4);
+    ctx.fillStyle = '#fff';
+    ctx.beginPath(); ctx.arc(47, 29, 1.2, 0, Math.PI * 2); ctx.fill();
+    ctx.beginPath(); ctx.arc(53, 29, 1.2, 0, Math.PI * 2); ctx.fill();
+  } else { // helmet
+    ctx.fillStyle = helmet;
+    ctx.beginPath(); ctx.arc(50, 24, 12, Math.PI, 0); ctx.closePath(); ctx.fill();
+    ctx.fillStyle = 'rgba(255,255,255,0.55)';
+    ctx.fillRect(48, 12, 4, 10);
+    ctx.strokeStyle = '#dfe3ea'; ctx.lineWidth = 1.5;
+    ctx.beginPath(); ctx.moveTo(60, 29); ctx.lineTo(68, 29); ctx.moveTo(60, 33); ctx.lineTo(66, 35); ctx.stroke();
+  }
+  if (headwear !== 'mask') {
+    ctx.fillStyle = '#1c2433';
+    ctx.beginPath(); ctx.arc(47, 30, 1, 0, Math.PI * 2); ctx.fill();
+    ctx.beginPath(); ctx.arc(53, 30, 1, 0, Math.PI * 2); ctx.fill();
+  }
   if (parts.ball) {
-    ctx.fillStyle = '#7a4a2b';
-    ctx.beginPath(); ctx.ellipse(parts.ball[0], parts.ball[1], 6, 4, -0.5, 0, Math.PI * 2); ctx.fill();
-    ctx.strokeStyle = '#fff'; ctx.lineWidth = 1;
-    ctx.beginPath(); ctx.moveTo(parts.ball[0] - 3, parts.ball[1]); ctx.lineTo(parts.ball[0] + 3, parts.ball[1] - 1); ctx.stroke();
+    const [bx, by] = parts.ball;
+    if (parts.ballKind === 'round') {
+      ctx.fillStyle = parts.ballColor || '#e07b24';
+      ctx.beginPath(); ctx.arc(bx, by, 5.5, 0, Math.PI * 2); ctx.fill();
+    } else if (parts.ballKind === 'puck') {
+      ctx.fillStyle = '#111827';
+      ctx.beginPath(); ctx.ellipse(bx, by, 6, 3.5, 0, 0, Math.PI * 2); ctx.fill();
+    } else if (parts.ballKind === 'soccer') {
+      ctx.fillStyle = '#f5f5f5';
+      ctx.beginPath(); ctx.arc(bx, by, 5.5, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = '#111827';
+      ctx.beginPath(); ctx.arc(bx, by, 2, 0, Math.PI * 2); ctx.fill();
+    } else {
+      ctx.fillStyle = '#7a4a2b';
+      ctx.beginPath(); ctx.ellipse(bx, by, 6, 4, -0.5, 0, Math.PI * 2); ctx.fill();
+      ctx.strokeStyle = '#fff'; ctx.lineWidth = 1;
+      ctx.beginPath(); ctx.moveTo(bx - 3, by); ctx.lineTo(bx + 3, by - 1); ctx.stroke();
+    }
   }
   ctx.restore();
 }
@@ -493,6 +764,7 @@ function makeCard(setKey, rarity) {
     set: setKey, setName: set.name,
     name: def.name, title: def.title, rarity: def.rarity, art: def.art,
     position: def.position || null, team: def.team || null, number: def.number ?? null,
+    sport: SET_SPORT[setKey] || null,
     flavor: def.flavor || null,
     collectorNo: set.cards.indexOf(def) + 1, // #n within its set, e.g. Brick Wallson is #1/9
     base: randInt(lo, hi),
@@ -791,17 +1063,18 @@ function drawCardFace(ctx, x, y, w, h, card, detail) {
   ctx.font = 'bold ' + Math.round(w * 0.062) + 'px system-ui, sans-serif';
   ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
   ctx.fillText(card.name, x + 20 + lrOff, y + 25 + tbOff, w - 40);
-  // art window: stadium backdrop (dark green + yard lines)
+  // art window: sport backdrop (gradient + field lines); creatures keep the green field
   const ax = x + 22 + lrOff, ay = y + 44 + tbOff, aw = w - 44, ah = h * 0.44;
   const ag = ctx.createLinearGradient(ax, ay, ax, ay + ah);
-  ag.addColorStop(0, '#1d4d2b'); ag.addColorStop(1, '#0f2f18');
+  const bd = ART_BACKDROPS[card.set] || ['#1d4d2b', '#0f2f18'];
+  ag.addColorStop(0, bd[0]); ag.addColorStop(1, bd[1]);
   ctx.fillStyle = ag; ctx.fillRect(ax, ay, aw, ah);
   ctx.strokeStyle = 'rgba(255,255,255,0.22)'; ctx.lineWidth = 1;
   for (let i = 1; i <= 4; i++) {
     ctx.beginPath(); ctx.moveTo(ax + aw * i / 5, ay); ctx.lineTo(ax + aw * i / 5, ay + ah); ctx.stroke();
   }
   ctx.beginPath(); ctx.moveTo(ax, ay + ah * 0.66); ctx.lineTo(ax + aw, ay + ah * 0.66); ctx.stroke();
-  if (card.set === 'gridiron') {
+  if (hasFigure(card)) {
     drawPlayerFigure(ctx, ax, ay, aw, ah, card);
   } else {
     ctx.fillStyle = '#fff';
@@ -824,7 +1097,7 @@ function drawCardFace(ctx, x, y, w, h, card, detail) {
   ctx.font = Math.round(w * 0.055) + 'px system-ui, sans-serif';
   ctx.textAlign = 'left'; ctx.textBaseline = 'alphabetic';
   ctx.fillText(card.title, x + 20 + lrOff, ty, w - 40);
-  // flavor box (Gridiron only)
+  // flavor box (any card with flavor text)
   if (card.flavor) {
     const fy = ty + 8;
     ctx.fillStyle = '#ece7d8';
@@ -1285,6 +1558,35 @@ function selfTest() {
       return html.indexOf('tc-name') !== -1 && html.indexOf('tc-art stadium') !== -1 && html.indexOf('<svg') !== -1 &&
         html.indexOf('tc-flavor') !== -1 && html.indexOf('#' + c.collectorNo + '/9') !== -1;
     })());
+    // 13. New sets: 9 sets, 9 cards each, 3/2/2/1/1 rarity split
+    ok('nine sets present', Object.keys(SETS).length === 9);
+    ok('every set has 9 cards except mythic (8)', Object.values(SETS).every(s => s.cards.length === 9) || (SETS.mythic.cards.length === 8 && Object.values(SETS).filter(s => s.cards.length === 9).length === 8));
+    ok('new sets follow the 3/2/2/1/1 rarity split', ['hardwood', 'diamond', 'frozen', 'pitch', 'panel', 'critter'].every(k => {
+      const counts = {};
+      for (const c of SETS[k].cards) counts[c.rarity] = (counts[c.rarity] || 0) + 1;
+      return counts.common === 3 && counts.uncommon === 2 && counts.rare === 2 && counts.ultra === 1 && counts.secret === 1;
+    }));
+    ok('existing sets unchanged (kaiju 9, mythic 8, gridiron 9)', SETS.kaiju.cards.length === 9 && SETS.mythic.cards.length === 8 && SETS.gridiron.cards.length === 9);
+    ok('new sports/comic cards have figures with headwear + number', ['hardwood', 'diamond', 'frozen', 'pitch', 'panel'].every(k => SETS[k].cards.every(d => {
+      const svg = playerFigureSVG({ name: d.name, position: d.position, team: d.team, number: d.number, set: k, sport: SET_SPORT[k] });
+      return svg.indexOf('<svg') === 0 && svg.indexOf(String(d.number).padStart(2, '0')) !== -1 && svg.indexOf('data-headwear=') !== -1;
+    })));
+    ok('each sport has at least 3 distinct poses', ['hardwood', 'diamond', 'frozen', 'pitch', 'panel'].every(k => {
+      const poses = new Set(SETS[k].cards.map(d => poseFor({ name: d.name, position: d.position, set: k, sport: SET_SPORT[k] })));
+      return poses.size >= 3;
+    }));
+    ok('no real names in new sets', ['hardwood', 'diamond', 'frozen', 'pitch', 'panel', 'critter'].every(k => SETS[k].cards.every(d => !/(lebron|jordan|curry|kobe|messi|ronaldo|ohtani|pikachu|charizard|batman|superman|yankees|lakers)/i.test(d.name + ' ' + d.title + ' ' + (d.team || '')))));
+    ok('critter clash keeps emoji art', SETS.critter.cards.every(d => !cardFaceHTML(makeCard('critter', d.rarity)).includes('<svg')));
+    ok('makeCard collector numbers valid for new sets', (() => {
+      for (const k of ['hardwood', 'diamond', 'frozen', 'pitch', 'panel', 'critter']) {
+        for (let i = 0; i < 10; i++) {
+          const c = makeCard(k, RARITY_ORDER[i % RARITY_ORDER.length]);
+          if (!(c.collectorNo >= 1 && c.collectorNo <= 9)) return false;
+        }
+      }
+      return true;
+    })());
+    ok('openPack works for a new set', openPack('hardwood').length === 5);
     // 11. Not enough cash blocks pack
     state.cash = 5;
     ok('insufficient cash blocks pack', buyPack('kaiju').ok === false);
@@ -1314,6 +1616,7 @@ window.SHT = {
   createAuction, auctionTick, hypeChat, gavelSlam, settleAuction, finishAuction,
   inspectAt, resetInspection, deskCard, setSeed, selfTest, CARD, zoneAt,
   playerFigureSVG, cardFaceHTML, miniCardHTML, poseFor, collectorLabel,
+  sportFor, hasFigure, headwearFor, SET_SPORT, ART_BACKDROPS,
 };
 </script>
 </body>
