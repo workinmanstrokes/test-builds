@@ -173,10 +173,14 @@
   }
   function detectInsert(flat) { return INSERTS.filter(c => new RegExp('\\b' + c.replace(' ', '\\s+') + '\\b', 'i').test(flat)).join(' '); }
   const ATH = /player|football|basketball|baseball|hockey|quarterback|running back|wide receiver|tight end|pitcher|shortstop|outfielder|infielder|catcher|guard|forward|linebacker|cornerback|safety|defensive|athlete/i;
-  // Wikipedia search hit -> verified athlete name, or null
+  // Wikipedia search hit -> verified athlete name, or null. The title must be
+  // close to what the camera actually read (sim >= 0.85: one-letter OCR noise
+  // on a real name still passes, a different player does not). A loose bar
+  // here is how a wrong player gets "verified": camera test 2026-11-20, a
+  // Patrick Mahomes II card was identified as "Caleb williams".
   function pickAthlete(cand, hits) { let best = null;
     for (const h of hits || []) { const title = h.title.replace(/ \(.*\)$/, ''); if (title.split(' ').length < 2) continue;
-      const sc = sim(title, cand), ath = ATH.test(h.snippet + ' ' + h.title); if ((ath && sc >= 0.75 || sc >= 0.92 && ath) && (!best || sc > best.sc)) best = { name: title, sc, ath }; }
+      const sc = sim(title, cand), ath = ATH.test(h.snippet + ' ' + h.title); if (ath && sc >= 0.85 && (!best || sc > best.sc)) best = { name: title, sc, ath }; }
     return best; }
 
   // ---------- eBay sold search (link only) ----------
@@ -255,6 +259,7 @@
       if (card.variation) out.push('This print has art variations — check the art against the picture');
       if (card.promo) out.push('Promo print — check the promo stamp');
     } else if (game === 'sports') {
+      if (card.nameUnreadable) out.push('Name could not be read confidently — search by name to identify it');
       if (!card.verified) out.push('Player not verified against Wikipedia — check the name');
       if (!card.number) out.push('Card number not read — check the back of the card');
       if (!card.year) out.push('Year not read from the card');
@@ -265,13 +270,24 @@
   }
 
   // ---------- match confidence, 0..100 (kept next to the high/medium/low label) ----------
+  // A sports name is only shown to the user when Wikipedia verified it AND
+  // the match score is at least 70 — the same bar Submit-or-Skip uses before
+  // it will price a card. Anything else is "couldn't read the card name",
+  // never a guess at a player. (Camera test 2026-11-20: a Mahomes card was
+  // shown as "Caleb williams" — a confident wrong name prices the wrong card.)
+  function namePresentable(card, score) { return !!(card && card.name && card.verified && score >= 70); }
   function scoreConf(game, m) {
     if (!m) return 0;
     if (game === 'pokemon') return Math.round(100 * Math.max(0, Math.min(1, (m.nm || 0) * 0.55 + (m.num ? 0.3 : 0) + (m.tot ? 0.15 : 0))));
     if (game === 'magic') { const s = m.score || 0; return s >= 2 ? 95 : s >= 1.6 ? 85 : s >= 1.4 ? 75 : s >= 1 ? 65 : 55; }
     if (game === 'sports') {
       if (!m.name) return (m.team || m.brand || m.number) ? 34 : 0;
-      let s = m.verified ? (m.year && m.brand && m.number ? 92 : 82) : 55;
+      // A verified name only earns the high score when it is close to what the
+      // camera actually read. nameSim is the OCR-to-athlete similarity from
+      // pickAthlete; a verified-but-distant name is a wrong-player guess and
+      // scores like an unverified name, so the fallback below blanks it.
+      const trusted = m.verified && (m.nameSim == null || m.nameSim >= 0.85);
+      let s = trusted ? (m.year && m.brand && m.number ? 92 : 82) : 55;
       if (m.team) s += 2;
       if (m.parallel) s += 3;
       if (!m.number) s -= 4;
@@ -447,7 +463,7 @@
   const headline = prices => (prices || []).find(p => p.currency === 'USD' && p.kind === 'Market') || (prices || [])[0] || null;
   function money(v, cur) { const s = cur === 'EUR' ? '€' : cur === 'USD' ? '$' : ''; return s + (v >= 100 ? Math.round(v).toLocaleString('en-US') : v.toFixed(2)) + (s ? '' : ' ' + cur); }
 
-  const api = { norm, sim, lev, guessGame, parsePokemon, parseMagic, parseSports, pickAthlete, salesQuery, ebaySoldUrl, tcgdexPrices, scryfallPrices, headline, money,
+  const api = { norm, sim, lev, guessGame, parsePokemon, parseMagic, parseSports, pickAthlete, namePresentable, salesQuery, ebaySoldUrl, tcgdexPrices, scryfallPrices, headline, money,
     pokemonVariants, pokemonFullId, magicFullId, unsureFor, scoreConf, salesSummary, salesMatch, compReport, priceLinks, normalizeParallel, median, looksSports: lines => SPORTS.test(text(lines)) };
   if (typeof module !== 'undefined' && module.exports) module.exports = api; else root.IdParse = api;
 })(typeof self !== 'undefined' ? self : this);

@@ -29,6 +29,14 @@ const Identify = (() => {
     } catch { /* canvas may be tainted in a test page; the plain read still stands */ }
     return c;
   }
+  // Foil and gold nameplates are often light text on a dark band, which OCR
+  // reads far worse than dark text on light. Flip the strip so the text is
+  // dark on light before the read. Same second-chance pattern as enhance().
+  function invert(canvas) {
+    const c = document.createElement('canvas'); c.width = canvas.width; c.height = canvas.height;
+    const g = c.getContext('2d'); g.filter = 'grayscale(1) invert(1) contrast(1.3)'; g.drawImage(canvas, 0, 0);
+    return c;
+  }
   async function readCard(card, step) {
     step('Reading the card text');
     const full = await OCR.read(card);
@@ -44,6 +52,12 @@ const Identify = (() => {
       const s = await OCR.read(enhance(strip(card, 0.48, 0.92, 2)));
       extra.push(...s.lines.map(l => ({ ...l, y: 0.48 + l.y * 0.44, h: l.h * 0.44, strip: true })));
     } catch { /* enhancement is a second chance, not a requirement */ }
+    try {
+      // Gold/foil nameplates ("Tapps Sandas" for Barry Sanders, "Ge. Pli"
+      // for Chimere Dike, camera test 2026-11-20): light text on a dark band.
+      const s = await OCR.read(invert(strip(card, 0.48, 0.92, 2)));
+      extra.push(...s.lines.map(l => ({ ...l, y: 0.48 + l.y * 0.44, h: l.h * 0.44, strip: true })));
+    } catch { /* inverted read is a second chance, not a requirement */ }
     return { engine: full.engine, lines: full.lines.concat(extra) };
   }
 
@@ -96,7 +110,10 @@ const Identify = (() => {
   }
   async function sports(lines) {
     const s = P.parseSports(lines), ath = await wikiAthlete(s.names);
-    return { game: 'sports', id: 'sp-' + Date.now(), name: ath ? ath.name : s.names[0] || '', verified: !!ath, year: s.year, brand: s.brand, number: s.number, parallel: [s.parallel, s.rc ? 'RC' : ''].filter(Boolean).join(' '), insert: s.insert, serial: s.serial, team: s.team, prices: [], db: ath ? 'Wikipedia' : '' };
+    // nameSim is how close the verified athlete name is to what the camera
+    // actually read (pickAthlete's similarity, 0..1). scoreConf uses it: a
+    // verified name that is far from the OCR text is a wrong-player guess.
+    return { game: 'sports', id: 'sp-' + Date.now(), name: ath ? ath.name : s.names[0] || '', verified: !!ath, nameSim: ath ? ath.sc : 0, year: s.year, brand: s.brand, number: s.number, parallel: [s.parallel, s.rc ? 'RC' : ''].filter(Boolean).join(' '), insert: s.insert, serial: s.serial, team: s.team, prices: [], db: ath ? 'Wikipedia' : '' };
   }
 
   // ---------- main ----------
@@ -111,10 +128,18 @@ const Identify = (() => {
     const text = lines.map(l => l.text).join('\n'), read = { engine: rd.engine, text: text.slice(0, 900) };
     let g = game === 'auto' ? P.guessGame(lines) : game;
     if (!g) return { status: 'none', read };
-    if (g === 'sports') { step('Checking the player'); const c = await sports(lines); c.unsure = P.unsureFor('sports', c, {});
-      const partial = !c.name && !!(c.team || c.brand || c.number);
+    if (g === 'sports') { step('Checking the player'); const c = await sports(lines);
+      // Never present a player name we are not confident about. A name only
+      // stands when Wikipedia verified it AND the match score is at least 70.
+      // Anything else is blanked here, so the result screen shows "Couldn't
+      // read the card name" with a manual search instead of a guess at a
+      // player. (Camera test 2026-11-20: a Mahomes card was shown as
+      // "Caleb williams" — a confident wrong name prices the wrong card.)
+      const nameOk = P.namePresentable(c, P.scoreConf('sports', c));
+      if (!nameOk && c.name) { c.name = ''; c.nameUnreadable = true; c.verified = false; c.db = ''; }
+      c.unsure = P.unsureFor('sports', c, {});
       const score = P.scoreConf('sports', c);
-      return { status: c.name ? 'ok' : partial ? 'partial' : 'none', game: g, card: c, alts: [], read, conf: c.verified ? 'high' : 'low', score }; }
+      return { status: nameOk ? 'ok' : 'none', game: g, card: c, alts: [], read, conf: nameOk ? 'high' : 'low', score }; }
     step(g === 'pokemon' ? 'Searching TCGdex' : 'Searching Scryfall');
     const p = g === 'pokemon' ? P.parsePokemon(rd.lines) : P.parseMagic(rd.lines);
     if (!p.names.length && !p.number) return { status: 'none', game: g, read };
