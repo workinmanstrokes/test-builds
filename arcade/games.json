@@ -1,7 +1,23 @@
 {
-  "generated": "2026-11-21T06:18-05:00",
+  "generated": "2026-11-22T06:20-05:00",
   "count": 31,
   "games": [
+    {
+      "id": "filterfit",
+      "title": "Filterfit",
+      "kind": "game",
+      "genre": "New",
+      "desc": "Fresh from the DowntownDiddlerrr workshop.",
+      "icon": "../arcade/brand-512.png",
+      "art": "../arcade/art/filterfit.jpg",
+      "artPos": null,
+      "play": "../filterfit/",
+      "apk": null,
+      "repo": "https://github.com/workinmanstrokes/filterfit",
+      "added": "2026-11-20",
+      "updated": "2026-11-22",
+      "isNew": true
+    },
     {
       "id": "soundboard",
       "title": "Soundboard",
@@ -15,6 +31,22 @@
       "apk": "https://github.com/workinmanstrokes/test-builds/releases/download/apks/Soundboard.apk?v=20261121",
       "repo": "https://github.com/workinmanstrokes/soundboard",
       "added": "2026-11-20",
+      "updated": "2026-11-21",
+      "isNew": true
+    },
+    {
+      "id": "slab-house-tycoon",
+      "title": "Slab House Tycoon",
+      "kind": "game",
+      "genre": "Godot",
+      "desc": "Fresh from the DowntownDiddlerrr workshop.",
+      "icon": "../arcade/brand-512.png",
+      "art": "../arcade/art/slab-house-tycoon.jpg",
+      "artPos": null,
+      "play": "../slab-house-tycoon/",
+      "apk": null,
+      "repo": "https://github.com/workinmanstrokes/slab-house-tycoon",
+      "added": "2026-11-21",
       "updated": "2026-11-21",
       "isNew": true
     },
@@ -99,22 +131,6 @@
       "isNew": true
     },
     {
-      "id": "slab-house-tycoon",
-      "title": "Slab House Tycoon",
-      "kind": "game",
-      "genre": "Godot",
-      "desc": "Fresh from the DowntownDiddlerrr workshop.",
-      "icon": "../arcade/brand-512.png",
-      "art": "../arcade/art/slab-house-tycoon.jpg",
-      "artPos": null,
-      "play": "../slab-house-tycoon/",
-      "apk": null,
-      "repo": "https://github.com/workinmanstrokes/slab-house-tycoon",
-      "added": "2026-11-21",
-      "updated": "2026-11-20",
-      "isNew": true
-    },
-    {
       "id": "bronze-and-blood",
       "title": "Bronze & Blood",
       "kind": "game",
@@ -142,22 +158,6 @@
       "play": "../brainrot-tactical-aura-rush-tester-fix-update/",
       "apk": null,
       "repo": "https://github.com/workinmanstrokes/brainrot-tactical-aura-rush-tester-fix-update",
-      "added": "2026-11-20",
-      "updated": "2026-11-19",
-      "isNew": true
-    },
-    {
-      "id": "filterfit",
-      "title": "Filterfit",
-      "kind": "game",
-      "genre": "New",
-      "desc": "Fresh from the DowntownDiddlerrr workshop.",
-      "icon": "../arcade/brand-512.png",
-      "art": "../arcade/art/filterfit.jpg",
-      "artPos": null,
-      "play": "../filterfit/",
-      "apk": null,
-      "repo": "https://github.com/workinmanstrokes/filterfit",
       "added": "2026-11-20",
       "updated": "2026-11-19",
       "isNew": true
@@ -209,6 +209,22 @@
       "added": "2026-11-11",
       "updated": "2026-11-11",
       "isNew": true
+    },
+    {
+      "id": "whos-the-brainrot",
+      "title": "Who's the Brainrot?",
+      "kind": "game",
+      "genre": "Party",
+      "desc": "Pass-and-play imposter party game. Find the brainrot before they fool you.",
+      "icon": "../whos-the-brainrot/icon.png",
+      "art": "../arcade/art/whos-the-brainrot.jpg",
+      "artPos": null,
+      "play": "../whos-the-brainrot/",
+      "apk": "https://github.com/workinmanstrokes/test-builds/releases/download/apks/WhosTheBrainrot.apk?v=20261111",
+      "repo": "https://github.com/workinmanstrokes/whos-the-brainrot",
+      "added": "2026-10-16",
+      "updated": "2026-11-22",
+      "isNew": false
     },
     {
       "id": "plus-one-aura",
@@ -371,22 +387,6 @@
       "isNew": false
     },
     {
-      "id": "whos-the-brainrot",
-      "title": "Who's the Brainrot?",
-      "kind": "game",
-      "genre": "Party",
-      "desc": "Pass-and-play imposter party game. Find the brainrot before they fool you.",
-      "icon": "../whos-the-brainrot/icon.png",
-      "art": "../arcade/art/whos-the-brainrot.jpg",
-      "artPos": null,
-      "play": "../whos-the-brainrot/",
-      "apk": "https://github.com/workinmanstrokes/test-builds/releases/download/apks/WhosTheBrainrot.apk?v=20261111",
-      "repo": "https://github.com/workinmanstrokes/whos-the-brainrot",
-      "added": "2026-10-16",
-      "updated": "2026-11-15",
-      "isNew": false
-    },
-    {
       "id": "nhl94-remake",
       "title": "94 Ice Legends",
       "kind": "game",
@@ -431,7 +431,7 @@
       "apk": "https://github.com/workinmanstrokes/test-builds/releases/download/apks/CardScanner.apk?v=20261115",
       "repo": "https://github.com/workinmanstrokes/card-scanner",
       "added": "2026-10-13",
-      "updated": "2026-11-21",
+      "updated": "2026-11-22",
       "isNew": false
     },
     {
