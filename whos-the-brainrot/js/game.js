@@ -24,12 +24,14 @@ export const modeAllowed = (mode, n) => n >= (MODES[mode]?.min ?? 99);
  * players: names; packs: [{id, chars}] already filtered to the packs in play; mode; hint: 'none'|'hint'|'decoy'
  * recent: char ids to avoid repeating. Returns a round object.
  */
-export function newRound({ players, packs, mode = 'classic', hint = 'none', recent = [], rnd = Math.random }) {
+export function newRound({ players, packs, mode = 'classic', hint = 'none', recent = [], used = [], rnd = Math.random }) {
   const n = players.length;
   if (!modeAllowed(mode, n)) throw new Error(`${MODES[mode]?.name || mode} needs ${MODES[mode]?.min}+ players`);
-  const pack = pick(packs, rnd);
-  const fresh = pack.chars.filter(c => !recent.includes(c.id));
-  const secret = pick(fresh.length ? fresh : pack.chars, rnd);
+  // used = secrets already drawn tonight (never repeated while any are left); recent = earlier nights (avoided when possible)
+  const tiers = [c => !used.includes(c.id) && !recent.includes(c.id), c => !used.includes(c.id), () => true];
+  const ok = tiers.find(f => packs.some(p => p.chars.some(f)));
+  const pack = pick(packs.filter(p => p.chars.some(ok)), rnd);
+  const secret = pick(pack.chars.filter(ok), rnd);
   const decoy = pick(pack.chars.filter(c => c.id !== secret.id), rnd);
   const idx = shuffle([...Array(n).keys()], rnd);
   const hidden = mode === 'two' ? idx.slice(0, 2) : idx.slice(0, 1);
@@ -45,7 +47,7 @@ export function newRound({ players, packs, mode = 'classic', hint = 'none', rece
   if (mode !== 'reverse' && hidden.includes(start)) start = (start + 1) % n;
   if (mode !== 'reverse' && hidden.includes(start)) start = (start + 1) % n;
   const order = [...Array(n).keys()].map(k => (start + k) % n);
-  return { mode, hint, packId: pack.id, secretId: secret.id, decoyId: hint === 'decoy' ? decoy.id : null, roles, hidden, order, votes: {}, guess: null };
+  return { mode, hint, packId: pack.id, secretId: secret.id, decoyId: hint === 'decoy' ? decoy.id : null, roles, hidden, order, votes: {}, guess: null, tied: null, firstVotes: null, accused: null };
 }
 
 export const hiddenRole = round => (round.mode === 'reverse' ? 'knower' : 'brainrot');
@@ -53,6 +55,7 @@ export const hiddenRole = round => (round.mode === 'reverse' ? 'knower' : 'brain
 export function castVote(round, voter, target) {
   if (voter === target) throw new Error('no self votes');
   if (target < 0 || target >= round.roles.length) throw new Error('bad target');
+  if (round.tied && !round.tied.includes(target)) throw new Error('revote is only between the tied players');
   round.votes[voter] = target;
 }
 
@@ -61,8 +64,51 @@ export function tally(round) {
   for (const t of Object.values(round.votes)) counts[t]++;
   const max = Math.max(...counts);
   const top = counts.map((c, i) => (c === max ? i : -1)).filter(i => i >= 0);
+  if (round.accused != null) return { counts, top, tie: false, voted: round.accused };
   const tie = top.length !== 1 || max === 0;
   return { counts, top, tie, voted: tie ? -1 : top[0] };
+}
+
+/* ---- Tie-break (playtest fix): the rule is shown on screen whenever a vote ties. */
+export const TIE_BREAK_RULE = 'Everyone revotes, choosing only between the tied players. Still tied? The tied player with the fewest points tonight is accused. Tied on points too? The hidden player escapes.';
+/** Who can be voted for in this vote (everyone but the voter; only the tied players during a revote). */
+export const voteTargets = (round, voter) => round.roles.map((_, j) => j).filter(j => j !== voter && (!round.tied || round.tied.includes(j)));
+/** First vote tied: keep it for the record and start a revote between the tied players. */
+export function startRevote(round) {
+  const t = tally(round);
+  if (!t.tie || round.tied) throw new Error('no revote needed');
+  round.firstVotes = { ...round.votes }; round.tied = t.top; round.votes = {};
+  return round.tied;
+}
+/**
+ * After the revote. Still tied: the tied player with the fewest points tonight (scores keyed by name) is accused.
+ * Returns { step: 'decided'|'points'|'escaped', accused }.
+ */
+export function settleTie(round, scores = {}) {
+  const t = tally(round);
+  if (!t.tie) return { step: 'decided', accused: t.voted };
+  const pts = i => scores[round.roles[i].name] || 0;
+  const low = Math.min(...t.top.map(pts)), lowest = t.top.filter(i => pts(i) === low);
+  if (lowest.length === 1) { round.accused = lowest[0]; return { step: 'points', accused: lowest[0] }; }
+  return { step: 'escaped', accused: -1 };
+}
+
+/* ---- Per-night no-repeat pool (playtest fix). night = { used: [charId], rounds, streak, mode } */
+export const ROTATE_EVERY = 3;
+export const newNight = () => ({ used: [], rounds: 0, streak: 0, mode: null, started: Date.now() });
+/** Characters in these packs that haven't been the secret yet tonight. */
+export const freshLeft = (packs, used) => packs.reduce((k, p) => k + p.chars.filter(c => !used.includes(c.id)).length, 0);
+/** Record a finished round on the night. */
+export function noteRound(night, round) {
+  if (!night.used.includes(round.secretId)) night.used.push(round.secretId);
+  night.streak = night.mode === round.mode ? night.streak + 1 : 1; night.mode = round.mode; night.rounds++;
+}
+/** After every few rounds of the same mode, suggest the next mode this group can play. */
+export const shouldRotate = night => night.streak > 0 && night.streak % ROTATE_EVERY === 0;
+export function nextMode(current, players) {
+  const keys = Object.keys(MODES);
+  for (let k = 1; k <= keys.length; k++) { const m = keys[(keys.indexOf(current) + k) % keys.length]; if (modeAllowed(m, players)) return m; }
+  return current;
 }
 
 /** Was a hidden player voted out? (then the guess phase runs) */

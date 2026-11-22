@@ -1,8 +1,9 @@
 // Local save (localStorage only; nothing leaves the device).
 import { PACKS, packById } from './packs.js';
+import { newNight } from './game.js';
 const KEY = 'wtb.save.v1';
-const DEF = () => ({ v: 1, players: [], scores: {}, rounds: 0, unlocks: {}, noAds: false, recent: [],
-  settings: { sound: true, vibe: true, clip: false, mode: 'classic', hint: 'none', timer: 90, clueRounds: 1, packs: ['starter'] } });
+const DEF = () => ({ v: 1, players: [], scores: {}, rounds: 0, unlocks: {}, noAds: false, recent: [], night: newNight(),
+  settings: { sound: true, vibe: true, clip: false, playtest: false, mode: 'classic', hint: 'none', timer: 90, clueRounds: 1, packs: ['starter'] } });
 export function load() {
   try { const d = JSON.parse(localStorage.getItem(KEY)); if (d && d.v === 1) { const b = DEF(); return { ...b, ...d, settings: { ...b.settings, ...d.settings } }; } } catch {}
   return DEF();

@@ -17,6 +17,11 @@ It is a complete, self-contained HTML5 canvas game:
   Critter Clash $25, Mythic Marvels $35, Panel Punchers $35). Each pack pulls
   5 cards, last card guaranteed
   Rare or better. No F2P wait timers.
+  **1/1 chase:** 1% of packs — the guaranteed card is a black-and-gold
+  1/1 instead, stamped 1/1 and worth 10×. Same player, one of one.
+  Old saves migrate automatically on load: cards pulled before the
+  trading-card redesign get their jersey number, team, position, and
+  collector number backfilled from their set.
 - **Inspection Desk** — drag the loupe over the card to reveal the 4
   real grading metrics: Front Centering (e.g. 55/45), 4 Corners
   (whitening), 4 Edges (wear), Surface print lines (tilt the light

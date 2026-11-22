@@ -117,3 +117,15 @@ a { color: var(--cyan); }
 @keyframes castBob { 50% { transform: translateY(-5px); } }
 @media (prefers-reduced-motion: reduce) { .cast span { animation: none; } }
 .settings .toggle { min-height: 56px; font-size: 17px; } .settings .small { font-size: 14px; line-height: 1.5; } .settings .chip { min-height: 44px; min-width: 64px; }
+/* playtest fixes: hold-to-reveal, tie-break, night summary, playtest log */
+.card3d { touch-action: none; -webkit-touch-callout: none; outline: none; }
+.card3d:not(.flip) .in { transition-duration: .18s; transition-timing-function: ease-out; }
+.card3d:focus-visible .face.front { box-shadow: 0 0 0 4px var(--yel), 0 14px 40px #0008; }
+.holdbar { width: 70%; height: 10px; margin-top: 16px; border-radius: 999px; background: #0005; box-shadow: inset 0 0 0 2px #ffffff22; overflow: hidden; }
+.holdbar i { display: block; height: 100%; width: 0; border-radius: inherit; background: linear-gradient(90deg, var(--pink), var(--yel)); }
+.tierule { margin-top: 14px; text-align: left; line-height: 1.45; border-color: var(--yel); }
+.usedchars { display: grid; grid-template-columns: repeat(auto-fill, minmax(76px, 1fr)); gap: 8px; }
+.usedchars span { display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 6px 4px; border-radius: 14px; background: #0003; border: 2px solid var(--line); text-align: center; }
+.usedchars small { font-size: 11px; line-height: 1.15; color: var(--dim); }
+.ptlog { width: 100%; height: 50vh; margin: 8px 0 12px; border-radius: 12px; border: 2px solid var(--line); background: #0005; color: var(--ink); font: 12px ui-monospace, monospace; user-select: text; -webkit-user-select: text; }
+#toast { pointer-events: none; }

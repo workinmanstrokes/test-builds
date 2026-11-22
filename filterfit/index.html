@@ -4,8 +4,8 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
   <title>FilterFit — Upload a photo, get its perfect filter</title>
-  <script type="module" crossorigin src="./assets/index-B6ydAvk7.js"></script>
-  <link rel="stylesheet" crossorigin href="./assets/index-wQA1LmAO.css">
+  <script type="module" crossorigin src="./assets/index-_EhqJRzu.js"></script>
+  <link rel="stylesheet" crossorigin href="./assets/index-BkTJxynZ.css">
 </head>
 <body class="bg-slate-950 text-slate-100 min-h-screen font-sans">
   <div id="app" class="max-w-2xl mx-auto min-h-screen flex flex-col">
@@ -28,6 +28,22 @@
         <button id="libraryBtn" class="btn-secondary">Choose from library</button>
       </div>
       <div id="historyList" class="mt-8"></div>
+      <div class="mt-8">
+        <h2 class="text-sm font-semibold text-slate-300 mb-2">Your presets</h2>
+        <div id="presetList" class="flex flex-wrap gap-2"></div>
+        <p class="text-xs text-slate-500 mt-2">Tap a preset, then pick a photo — it applies in one tap.</p>
+      </div>
+      <details class="mt-8">
+        <summary class="text-sm font-semibold text-slate-300 cursor-pointer">Filter library — what each filter is for</summary>
+        <div id="filterLibraryList" class="mt-2"></div>
+      </details>
+      <div id="diagnostics" class="mt-8 hidden">
+        <h2 class="text-sm font-semibold text-slate-300 mb-2">Diagnostics (?perf=1)</h2>
+        <p class="text-xs text-slate-500 mb-3">Runs the real pipeline on this device and reports analysis time, preview render time, and full-resolution export time + memory. Uses the loaded photo, or a synthetic test image if none is loaded.</p>
+        <button id="runDiagBtn" class="btn-secondary">Run diagnostics</button>
+        <button id="copyDiagBtn" class="btn-secondary hidden ml-2">Copy results JSON</button>
+        <pre id="diagResults" class="text-[11px] text-slate-300 bg-slate-900 rounded-xl p-3 mt-3 overflow-x-auto whitespace-pre-wrap"></pre>
+      </div>
     </section>
 
     <!-- Analysing -->
@@ -42,6 +58,9 @@
       <h2 class="text-lg font-semibold mb-1">Your perfect filter</h2>
       <p class="text-xs text-slate-500 mb-4">Ranked for this photo, on-device.</p>
       <canvas id="previewCanvas" class="w-full rounded-2xl border border-slate-800"></canvas>
+      <p class="text-xs text-slate-500 mt-2">Press and hold the photo to compare before / after.</p>
+      <p id="reopenedNote" class="text-xs text-amber-400 mt-2 hidden">Reopened from a saved copy — export will be at the saved size, not the original full resolution.</p>
+      <p id="whyPick" class="text-sm text-emerald-300 mt-3"></p>
       <div id="top3" class="mt-4 space-y-3"></div>
       <button id="openEditorBtn" class="btn-primary w-full mt-5">Open editor</button>
     </section>
@@ -60,6 +79,15 @@
         <label class="text-xs">Saturation <input id="tuneSaturation" type="range" min="-50" max="50" value="0" class="w-full accent-emerald-400"></label>
       </div>
       <div id="filterGrid" class="grid grid-cols-3 gap-2 mt-5"></div>
+      <div class="mt-5">
+        <h3 class="text-sm font-semibold text-slate-300 mb-2">Presets</h3>
+        <div id="presetChipsEditor" class="flex flex-wrap gap-2"></div>
+        <div class="flex gap-2 mt-3">
+          <input id="presetName" type="text" placeholder="Preset name, e.g. Golden porch" class="flex-1 bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-sm min-w-0">
+          <button id="savePresetBtn" class="btn-secondary shrink-0">Save as preset</button>
+        </div>
+        <p id="presetSavedMsg" class="text-xs text-emerald-400 mt-2"></p>
+      </div>
       <div class="grid grid-cols-2 gap-3 mt-5">
         <button id="exportBtn" class="btn-primary">Export &amp; share</button>
         <button id="backHomeBtn" class="btn-secondary">New photo</button>
@@ -68,3 +96,4 @@
   </div>
 </body>
 </html>
+

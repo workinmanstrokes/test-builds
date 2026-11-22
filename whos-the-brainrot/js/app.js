@@ -1,6 +1,6 @@
 // Who's the Brainrot? UI flow: home -> setup -> pass & reveal -> clues -> discuss -> pass & vote -> reveal -> guess -> results.
 import * as G from './game.js';
-import { PACKS, packById, charById } from './packs.js';
+import { PACKS, packById, charById, allChars } from './packs.js';
 import { charSVG, brainrotSVG } from './art.js';
 import { sfx, unlockAudio, setSound } from './audio.js';
 import { buzz, setVibe } from './haptics.js';
@@ -12,6 +12,7 @@ import { initAds, adAvailable, showRewarded, adsInfo, showPrivacyOptions } from 
 import { initBilling, billingAvailable, buyRemoveAds, restoreRemoveAds, removeAdsPrice } from './billing.js';
 import { initPortal, isPortal, gameplayStart, gameplayStop } from './portal.js';
 import { track } from './track.js';
+import { loadLog, saveLog, logRound, addLaugh, markBored, summary as ptSummary, exportLog, emptyLog } from './playtest.js';
 
 const $ = s => document.querySelector(s);
 const app = $('#app'), stage = $('#stage');
@@ -23,6 +24,10 @@ const persist = () => store(save);
 const render = html => { stopTimer(); app.innerHTML = html; app.scrollTop = 0; };
 const quitBtn = '<button class="iconbtn" data-act="quit" aria-label="Quit round">✕</button>';
 const S = save.settings;
+let ptLog = loadLog();
+const HOLD_MS = 450, NIGHT_IDLE = 8 * 3600e3;
+const sideSlot = () => (S.playtest ? '<button class="iconbtn" data-act="laugh" id="btnLaugh" aria-label="Log a laugh">😂</button>' : '<span style="width:42px"></span>');
+const hiddenName = () => (round?.mode === 'reverse' ? 'player who knew' : round?.hidden.length > 1 ? 'Brainrots' : 'Brainrot');
 
 /* ---------------------------------------------------------------- home */
 function home() {
@@ -84,8 +89,11 @@ function startRound() {
   if (!v.ok) return toast(v.why);
   if (!G.modeAllowed(S.mode, v.names.length)) return toast(`${G.MODES[S.mode].name} needs ${G.MODES[S.mode].min}+ players`);
   if (save.players.join('|') !== v.names.join('|')) { for (const k of Object.keys(save.scores)) if (!v.names.includes(k)) delete save.scores[k]; }
-  save.players = v.names; draft = v.names.slice(); persist();
-  round = G.newRound({ players: save.players, packs: activePacks(save), mode: S.mode, hint: S.hint, recent: save.recent });
+  save.players = v.names; draft = v.names.slice();
+  if (!save.night || (save.night.last && Date.now() - save.night.last > NIGHT_IDLE)) save.night = G.newNight();
+  persist();
+  if (!G.freshLeft(activePacks(save), save.night.used)) return nightOut();
+  round = G.newRound({ players: save.players, packs: activePacks(save), mode: S.mode, hint: S.hint, recent: save.recent, used: save.night.used });
   round.step = 0; result = null; guessOpts = null;
   track('round_start', { mode: S.mode, players: save.players.length, pack: round.packId });
   gameplayStart(); sfx.whoosh(); passTo(0);
@@ -109,13 +117,28 @@ function cardScreen(i) {
     back = `<div class="face back">${head}${charSVG(c, { size: 160 })}<div class="nm">${esc(c.name)}</div><div class="tg">${esc(c.tag)}</div><div class="tg"><b>${tip}</b></div></div>`;
   }
   render(`<div class="top">${quitBtn}<span class="small dim">${esc(r.name)}</span><span style="width:42px"></span></div>
-  <div class="pass"><div class="card3d" id="card" data-act="flip"><div class="in"><div class="face front"><div class="q">?</div><b>Tap to reveal</b><span class="small dim">Only ${esc(r.name)} looks!</span></div>${back}</div></div></div>
-  <button class="btn big" data-act="hidecard" data-i="${i}" id="btnHide" style="visibility:hidden">Got it, hide it</button>`);
+  <div class="pass"><div class="card3d" id="card" role="button" tabindex="0" aria-label="Press and hold to see your card"><div class="in"><div class="face front"><div class="q">?</div><b>Press &amp; hold to peek</b><span class="small dim">Only ${esc(r.name)} looks! Let go to hide it.</span><div class="holdbar" aria-hidden="true"><i id="holdFill"></i></div></div>${back}</div></div></div>
+  <button class="btn big" data-act="hidecard" data-i="${i}" id="btnHide" style="visibility:hidden">Seen it. Pass the phone ▶</button>`);
+  armHold($('#card'));
 }
-function flipCard() {
-  const c = $('#card'); if (!c || c.classList.contains('flip')) return;
-  c.classList.add('flip'); sfx.secret(); buzz('tap'); // identical sound/vibration for every role, so nobody can hear who's the Brainrot
-  setTimeout(() => { const b = $('#btnHide'); if (b) b.style.visibility = 'visible'; }, 450);
+// Hold-to-reveal: the card only shows while it's held, so a glance from the next player can't leak it.
+function armHold(card) {
+  let t0 = 0, raf = 0, holding = false, seen = false;
+  const fill = $('#holdFill');
+  const loop = () => {
+    if (!holding) return;
+    const k = Math.min(1, (performance.now() - t0) / HOLD_MS); fill.style.width = k * 100 + '%';
+    if (k < 1) { raf = requestAnimationFrame(loop); return; }
+    card.classList.add('flip'); sfx.secret(); buzz('tap'); // identical sound/vibration for every role, so nobody can hear who's the Brainrot
+    if (!seen) { seen = true; setTimeout(() => { const b = $('#btnHide'); if (b) b.style.visibility = 'visible'; }, 350); }
+  };
+  const down = e => { e.preventDefault?.(); if (holding) return; holding = true; t0 = performance.now(); if (e.pointerId != null) card.setPointerCapture?.(e.pointerId); loop(); };
+  const up = () => { if (!holding) return; holding = false; cancelAnimationFrame(raf); fill.style.width = '0'; card.classList.remove('flip'); };
+  card.addEventListener('pointerdown', down);
+  for (const ev of ['pointerup', 'pointercancel', 'lostpointercapture', 'blur']) card.addEventListener(ev, up);
+  card.addEventListener('contextmenu', e => e.preventDefault());
+  card.addEventListener('keydown', e => { if ((e.key === ' ' || e.key === 'Enter') && !e.repeat) down(e); });
+  card.addEventListener('keyup', e => { if (e.key === ' ' || e.key === 'Enter') up(); });
 }
 function afterCard(i) { sfx.back(); if (i + 1 < round.roles.length) passTo(i + 1); else { round.step = 0; clues(); } }
 
@@ -124,7 +147,7 @@ function clues() {
   const n = round.roles.length, total = n * S.clueRounds, k = round.step;
   if (k >= total) return discuss();
   const who = round.order[k % n], silent = round.mode === 'silent', pack = packById(round.packId);
-  render(`<div class="top">${quitBtn}<span class="small dim">${silent ? '🤫 Silent round' : 'Clue time'} · ${S.clueRounds > 1 ? `round ${Math.floor(k / n) + 1}/${S.clueRounds} · ` : ''}${pack.emoji} ${pack.name}</span><span style="width:42px"></span></div>
+  render(`<div class="top">${quitBtn}<span class="small dim">${silent ? '🤫 Silent round' : 'Clue time'} · ${S.clueRounds > 1 ? `round ${Math.floor(k / n) + 1}/${S.clueRounds} · ` : ''}${pack.emoji} ${pack.name}</span>${sideSlot()}</div>
   <div class="order">${round.order.map((p, j) => `<span class="${j === k % n ? 'now' : j < k % n ? 'done' : ''}">${esc(round.roles[p].name)}</span>`).join('')}</div>
   <div class="turn"><p class="dim">Your turn</p><div class="who">${esc(round.roles[who].name)}</div>
   <h2>${silent ? 'Act out ONE clue.<br>No talking! 🤫' : 'Say ONE word<br>about the secret'}</h2>
@@ -137,7 +160,7 @@ function clues() {
 function discuss() {
   const silent = round.mode === 'silent';
   let end = Date.now() + S.timer * 1000, lastSec = -1;
-  render(`<div class="top">${quitBtn}<span class="small dim">${silent ? '🤫 Silent discussion' : 'Discussion'}</span><span style="width:42px"></span></div>
+  render(`<div class="top">${quitBtn}<span class="small dim">${silent ? '🤫 Silent discussion' : 'Discussion'}</span>${sideSlot()}</div>
   <div class="center"><h2>${round.mode === 'reverse' ? 'Who knows the secret?' : "Who's the Brainrot?"}</h2>
   <p class="dim">${silent ? 'Point, gesture, make faces. Still NO words!' : 'Argue! Accuse! Defend yourself!'}</p></div>
   <div class="timer" id="timer"><svg viewBox="0 0 100 100"><circle cx="50" cy="50" r="44" fill="none" stroke="#ffffff18" stroke-width="8"/><circle id="arc" cx="50" cy="50" r="44" fill="none" stroke="#ff2e88" stroke-width="8" stroke-linecap="round" stroke-dasharray="276.5" stroke-dashoffset="0"/></svg><div class="num" id="tnum">${S.timer}</div></div>
@@ -157,16 +180,35 @@ function stopTimer() { if (timer) clearInterval(timer); timer = null; }
 
 /* ---------------------------------------------------------------- voting */
 function votePass(i) {
-  if (i >= round.roles.length) return voteDone();
+  if (i >= round.roles.length) return votesIn();
   const name = round.roles[i].name;
-  render(`<div class="top">${quitBtn}<span class="small dim">Secret vote ${i + 1} of ${round.roles.length}</span><span style="width:42px"></span></div>
+  render(`<div class="top">${quitBtn}<span class="small dim">Secret ${round.tied ? 'revote' : 'vote'} ${i + 1} of ${round.roles.length}</span><span style="width:42px"></span></div>
   <div class="pass"><div class="phone">🗳</div><p class="dim">Pass the phone to</p><div class="who">${esc(name)}</div><p class="dim small">Vote in secret. No peeking!</p></div>
   <button class="btn big primary" data-act="voteme" data-i="${i}" id="btnVoteMe">I'm ${esc(name)}, let me vote</button>`);
 }
 function voteGrid(i) {
   render(`<div class="top">${quitBtn}<span class="small dim">${esc(round.roles[i].name)} is voting</span><span style="width:42px"></span></div>
-  <h2 class="center">${round.mode === 'reverse' ? 'Who knows the secret?' : "Who's the Brainrot?"}</h2><p class="center dim">Tap your suspect</p>
-  <div class="votes">${round.roles.map((r, j) => j === i ? '' : `<button class="btn" data-act="vote" data-i="${i}" data-t="${j}">${esc(r.name)}</button>`).join('')}</div>`);
+  <h2 class="center">${round.tied ? 'Revote! 🔁' : round.mode === 'reverse' ? 'Who knows the secret?' : "Who's the Brainrot?"}</h2><p class="center dim">${round.tied ? 'Only the tied players are on the ballot' : 'Tap your suspect'}</p>
+  <div class="votes">${G.voteTargets(round, i).map(j => `<button class="btn" data-act="vote" data-i="${i}" data-t="${j}">${esc(round.roles[j].name)}</button>`).join('')}</div>`);
+}
+// Stated tie-break rule (playtest fix): a tied vote goes to a revote between the tied players, then to tonight's points.
+function votesIn() {
+  const t = G.tally(round);
+  if (!t.tie) return voteDone();
+  if (!round.tied) {
+    sfx.boing(); buzz('heavy');
+    return render(`<div class="pass"><div class="phone">⚖️</div><h1>It's a tie!</h1>
+    <p class="dim">${t.top.map(j => `<b>${esc(round.roles[j].name)}</b>`).join(' · ')} got ${t.counts[t.top[0]]} ${t.counts[t.top[0]] === 1 ? 'vote' : 'votes'} each.</p>
+    <div class="panel small tierule" id="tieRule"><b>Tie-break rule:</b> ${esc(G.TIE_BREAK_RULE)}</div></div>
+    <button class="btn big primary" data-act="revote" id="btnRevote">Revote between them 🔁</button>`);
+  }
+  const s = G.settleTie(round, save.scores);
+  const msg = s.step === 'points'
+    ? `Still tied! <b>${esc(round.roles[s.accused].name)}</b> has the fewest points tonight, so they're accused.`
+    : `Still tied, and level on points too. The ${hiddenName()} ${round.hidden.length > 1 && round.mode !== 'reverse' ? 'escape' : 'escapes'}!`;
+  render(`<div class="pass"><div class="phone">⚖️</div><h1>Tie-break</h1><p>${msg}</p>
+  <div class="panel small tierule"><b>Tie-break rule:</b> ${esc(G.TIE_BREAK_RULE)}</div></div>
+  <button class="btn big primary" data-act="tiedone" id="btnTieDone">Continue</button>`);
 }
 function voteDone() {
   render(`<div class="pass"><div class="phone">🥁</div><h1>All votes are in!</h1><p class="dim">Gather round for the big reveal.</p>
@@ -197,7 +239,13 @@ function guessScreen() {
 function finish(guessId) {
   result = G.resolve(round, guessId);
   save.scores = G.applyScores(save.scores, save.players, result.points); save.rounds++;
-  save.recent = [round.secretId, ...save.recent].slice(0, 24); persist();
+  save.recent = [round.secretId, ...save.recent].slice(0, 24);
+  G.noteRound(save.night, round); save.night.last = Date.now(); persist();
+  if (S.playtest) {
+    logRound(ptLog, save.night.started, { secretId: round.secretId, pack: round.packId, mode: round.mode, players: round.roles.length, hidden: round.hidden.length,
+      tie: result.tie, revote: !!round.tied, accusedOnPoints: round.accused != null, caught: result.caught, guessed: result.guessed, winner: result.winner, laughs: round.laughs || 0 });
+    saveLog(ptLog);
+  }
   track('round_end', { winner: result.winner, reason: result.reason, mode: round.mode });
   gameplayStop(); results();
 }
@@ -219,9 +267,43 @@ function results() {
   <div class="board" id="board">${lb.map(({ name, score }) => { const i = save.players.indexOf(name), p = result.points[i]; return `<div class="r ${round.hidden.includes(i) ? 'rot' : ''}"><b>${esc(name)}</b>${p ? `<span class="plus">+${p}</span>` : ''}<span class="pts">${score}</span></div>`; }).join('')}</div>
   <div class="grow" style="min-height:14px"></div>
   <div class="col"><button class="btn big primary" data-act="next" id="btnNext">Next round ▶</button>
-  <div class="row"><button class="btn grow" data-act="setup">Setup</button><button class="btn grow ghost" data-act="endgame">End game</button></div></div>`);
+  <div class="row"><button class="btn grow" data-act="setup">Setup</button><button class="btn grow ghost" data-act="endgame">End game</button></div>
+  ${S.playtest ? '<button class="btn sm ghost" data-act="bored" id="btnBored">🧪 Playtest: we\'re bored</button>' : ''}</div>`);
   setTimeout(() => sfx.voice(sec.name, sec.voice), 150);
   if (crewWon) { sfx.fanfare(); confetti(120); } else setTimeout(() => sfx.brainrot(), 700);
+}
+
+/* ---------------------------------------------------------------- night: no repeats, mode rotation, summary */
+function nightOut() {
+  sfx.fanfare();
+  modal(`<h2>Every character used! 🎉</h2><p class="dim">You've had all ${activePacks(save).reduce((k, p) => k + p.chars.length, 0)} characters in your packs tonight, so nobody sees a repeat. Add a pack, end the night, or start reusing them.</p>
+  <div class="col"><button class="btn big primary" data-act="packs">Packs</button><button class="btn big" data-act="endgame">End the night</button><button class="btn big ghost" data-act="reuse" id="btnReuse">Reuse characters</button></div>`);
+}
+function rotatePrompt(next) {
+  const cur = G.MODES[S.mode], m = G.MODES[next];
+  save.night.askedAt = save.night.rounds; persist();
+  modal(`<h2>Mix it up?</h2><p class="dim">That's ${save.night.streak} ${cur.name} rounds in a row. Try ${m.emoji} <b>${m.name}</b>: ${m.desc}</p>
+  <div class="col"><button class="btn big primary" data-act="rotate" data-v="${next}" id="btnRotate">Switch to ${m.name}</button><button class="btn big ghost" data-act="keepmode" id="btnKeepMode">Keep ${cur.name}</button></div>`);
+}
+function nextRound() {
+  draft = save.players.slice();
+  const nt = save.night;
+  if (nt && G.shouldRotate(nt) && nt.mode === S.mode && nt.askedAt !== nt.rounds) { const nx = G.nextMode(S.mode, save.players.length); if (nx !== S.mode) return rotatePrompt(nx); }
+  startRound();
+}
+function endNight() {
+  const snap = { rounds: save.rounds, lb: G.leaderboard(save.scores, save.players), used: (save.night?.used || []).slice() };
+  save.scores = {}; save.rounds = 0; save.night = G.newNight(); persist(); closeModal(); closeStage(stage);
+  if (!snap.rounds) return home();
+  render(`<div class="top"><span style="width:42px"></span><h2>Night summary</h2><span style="width:42px"></span></div>
+  <p class="center dim">${snap.rounds} ${snap.rounds === 1 ? 'round' : 'rounds'} · ${snap.used.length} different ${snap.used.length === 1 ? 'character' : 'characters'} · no repeats</p>
+  <div class="label">Final scores</div>
+  <div class="board" id="nightBoard">${snap.lb.map(({ name, score }, k) => `<div class="r"><b>${k === 0 && score > 0 ? '👑 ' : ''}${esc(name)}</b><span class="pts">${score}</span></div>`).join('')}</div>
+  <div class="label">Characters played tonight</div>
+  <div class="usedchars">${snap.used.map(id => charById(id)).filter(Boolean).map(c => `<span>${charSVG(c, { size: 54, bg: false })}<small>${esc(c.name)}</small></span>`).join('')}</div>
+  <div class="grow" style="min-height:14px"></div>
+  <button class="btn big primary" data-act="home" id="btnNightDone">Done</button>`);
+  if (snap.lb[0]?.score > 0) { sfx.fanfare(); confetti(100); }
 }
 
 /* ---------------------------------------------------------------- modals */
@@ -232,11 +314,13 @@ let toastT = 0;
 function toast(msg) { const t = $('#toast'); t.textContent = msg; t.hidden = false; clearTimeout(toastT); toastT = setTimeout(() => (t.hidden = true), 2200); }
 function how() {
   modal(`<h2>How to play</h2><ol class="how">
-  <li><b>Pass the phone.</b> Each player taps to see the secret character, except the <b>Brainrot</b>, who sees "You're the Brainrot!"</li>
+  <li><b>Pass the phone.</b> Each player presses and holds the card to peek at the secret character (let go and it hides), except the <b>Brainrot</b>, who sees "You're the Brainrot!"</li>
   <li><b>Clues.</b> Going around, everyone says ONE word about the secret. The Brainrot has to fake it.</li>
   <li><b>Discuss.</b> Argue until the timer runs out.</li>
   <li><b>Vote</b> in secret, passing the phone around. Then watch the big reveal.</li>
   <li>The <b>Brainrot wins</b> by surviving the vote, or by guessing the secret after getting caught.</li></ol>
+  <p><b>Tie votes:</b> ${esc(G.TIE_BREAK_RULE)}</p>
+  <p><b>No repeats:</b> a secret character never comes up twice in one night.</p>
   <p><b>Scoring:</b> Brainrot win +2 each. Crew win +1 each, +1 more if you voted for a Brainrot.</p>
   <p><b>Modes:</b> 👯 Two Imposters (5+), 🤫 Silent Round (gesture clues, no talking), 🔄 Reverse (only one player knows; everyone else hunts them).</p>
   <button class="btn big primary" data-act="close">Got it</button>`);
@@ -265,12 +349,24 @@ function settings() {
   <div class="toggle">Sound <button class="chip ${S.sound ? 'on' : ''}" data-act="set" data-k="sound">${S.sound ? 'On' : 'Off'}</button></div>
   <div class="toggle">Vibration <button class="chip ${S.vibe ? 'on' : ''}" data-act="set" data-k="vibe">${S.vibe ? 'On' : 'Off'}</button></div>
   <div class="toggle"><span>🎬 Clip mode<br><span class="small dim">3-2-1 countdown, captions and a watermark on the reveal, made for screen recording Shorts/TikTok.</span></span><button class="chip ${S.clip ? 'on' : ''}" data-act="set" data-k="clip" id="clipToggle">${S.clip ? 'On' : 'Off'}</button></div>
+  <div class="toggle"><span>🧪 Playtest log<br><span class="small dim">For test nights: adds a 😂 laugh counter and logs each round on this phone only (no names). Copy it out to see which characters flop.</span></span><button class="chip ${S.playtest ? 'on' : ''}" data-act="set" data-k="playtest" id="playtestToggle">${S.playtest ? 'On' : 'Off'}</button></div>
+  ${S.playtest ? playtestPanel() : ''}
   ${billingAvailable() ? '<div class="toggle">Purchases <button class="chip" data-act="restore">Restore</button></div>' : ''}
   ${ai.native && ai.privacyRequired ? '<div class="toggle">Ad privacy <button class="chip" data-act="privopts">Privacy options</button></div>' : ''}
   <p class="small dim">No account. Crash reports and play counts are anonymous: no names, no screen recordings. Optional rewarded ads may share device info with the ad provider. Ages ${AGE_RATING}.</p>
   ${isPortal ? '' : `<p class="small"><a href="${PRIVACY_URL}" target="_blank" rel="noopener">Privacy policy</a></p>`}
   <p class="small dim">Who's the Brainrot? v0.1.0 · Diddlerrr</p>
   <button class="btn big ghost" data-act="close">Close</button></div>`);
+}
+function playtestPanel() {
+  const s = ptSummary(ptLog), pct = x => (x == null ? '-' : Math.round(x * 100) + '%');
+  return `<div class="panel small" id="ptPanel">${s.rounds} rounds over ${s.nights} ${s.nights === 1 ? 'night' : 'nights'} · ${s.laughs} laughs · hidden side wins ${pct(s.imposterWinRate)} · guess-backs ${pct(s.guessBackSuccess)}${s.boredAfter.length ? ` · bored after ${s.boredAfter.join(', ')} rounds` : ''}
+  <div class="row" style="margin-top:8px"><button class="chip" data-act="ptcopy" id="ptCopy">Copy log</button><button class="chip" data-act="ptclear">Clear log</button></div></div>`;
+}
+async function copyLog() {
+  const txt = exportLog(ptLog, allChars());
+  try { await navigator.clipboard.writeText(txt); toast('Playtest log copied'); }
+  catch { modal(`<h2>Playtest log</h2><textarea class="ptlog" readonly>${esc(txt)}</textarea><button class="btn big ghost" data-act="close">Close</button>`); }
 }
 function refresh() { if (app.querySelector('#btnStart')) setup(); else if (app.querySelector('#btnPlay')) home(); }
 
@@ -283,8 +379,16 @@ const act = {
   hint: b => { S.hint = b.dataset.v; persist(); sfx.ui(); setup(); }, clues: b => { S.clueRounds = +b.dataset.v; persist(); sfx.ui(); setup(); },
   pack: b => { const id = b.dataset.id; if (!isUnlocked(save, id)) return packsModal();
     const i = S.packs.indexOf(id); if (i >= 0) { if (S.packs.filter(p => isUnlocked(save, p)).length > 1) S.packs.splice(i, 1); else return toast('Pick at least one pack'); } else S.packs.push(id); persist(); sfx.ui(); setup(); },
-  start: () => { sfx.ui(); startRound(); }, next: () => { draft = save.players.slice(); startRound(); },
-  showcard: b => { sfx.ui(); cardScreen(+b.dataset.i); }, flip: () => flipCard(), hidecard: b => afterCard(+b.dataset.i),
+  start: () => { sfx.ui(); startRound(); }, next: () => nextRound(),
+  showcard: b => { sfx.ui(); cardScreen(+b.dataset.i); }, hidecard: b => afterCard(+b.dataset.i),
+  revote: () => { G.startRevote(round); sfx.whoosh(); votePass(0); }, tiedone: () => { sfx.ui(); voteDone(); },
+  rotate: b => { S.mode = b.dataset.v; persist(); closeModal(); sfx.ui(); startRound(); }, keepmode: () => { closeModal(); sfx.ui(); startRound(); },
+  reuse: () => { save.night.used = []; persist(); closeModal(); startRound(); },
+  laugh: () => { if (!round) return; const k = addLaugh(round); sfx.boing(); toast(`😂 ${k} ${k === 1 ? 'laugh' : 'laughs'} this round`); },
+  bored: () => { const k = markBored(ptLog, save.night.started); saveLog(ptLog); toast(`Logged: bored after ${k} ${k === 1 ? 'round' : 'rounds'}`); },
+  ptcopy: () => copyLog(),
+  ptclear: () => modal(`<h2>Clear the playtest log?</h2><p class="dim">This deletes every logged round on this phone.</p><div class="row"><button class="btn grow ghost" data-act="settings">Cancel</button><button class="btn grow primary" data-act="ptclearyes">Clear</button></div>`),
+  ptclearyes: () => { ptLog = emptyLog(); saveLog(ptLog); toast('Playtest log cleared'); settings(); },
   nextclue: () => { round.step++; clues(); }, addtime: () => round.addTime?.(), tovote: () => { sfx.ui(); votePass(0); },
   voteme: b => { sfx.ui(); voteGrid(+b.dataset.i); },
   vote: b => { const i = +b.dataset.i; G.castVote(round, i, +b.dataset.t); sfx.ui(); buzz('tap'); votePass(i + 1); },
@@ -292,8 +396,8 @@ const act = {
   guess: b => { sfx.ui(); finish(b.dataset.id); },
   quit: () => modal(`<h2>Quit this round?</h2><p class="dim">Scores from finished rounds are kept.</p><div class="row"><button class="btn grow ghost" data-act="close">Keep playing</button><button class="btn grow primary" data-act="quityes">Quit</button></div>`),
   quityes: () => { closeModal(); closeStage(stage); home(); },
-  endgame: () => modal(`<h2>End game?</h2><p class="dim">This resets everyone's score.</p><div class="row"><button class="btn grow ghost" data-act="close">Cancel</button><button class="btn grow primary" data-act="endyes">End game</button></div>`),
-  endyes: () => { save.scores = {}; save.rounds = 0; persist(); closeModal(); home(); },
+  endgame: () => modal(`<h2>End the night?</h2><p class="dim">You'll see tonight's summary, then everyone's score resets and characters can come up again.</p><div class="row"><button class="btn grow ghost" data-act="close">Cancel</button><button class="btn grow primary" data-act="endyes">End night</button></div>`),
+  endyes: () => endNight(),
   unlock: b => unlock(b.dataset.id),
   buy: async () => { closeModal(); if (await buyRemoveAds(save)) { persist(); toast('All packs unlocked forever!'); confetti(); } refresh(); },
   restore: async () => { await restoreRemoveAds(save); persist(); toast(save.noAds ? 'Purchase restored' : 'Nothing to restore'); closeModal(); refresh(); },
@@ -307,7 +411,7 @@ document.addEventListener('click', e => {
 });
 
 /* ---------------------------------------------------------------- boot */
-window.__wtb = { save, get round() { return round; }, get result() { return result; }, G };
+window.__wtb = { save, get round() { return round; }, get result() { return result; }, get playtest() { return ptLog; }, G };
 track('app_open', { platform: window.Capacitor?.isNativePlatform?.() ? 'android' : 'web', app_version: '0.1.0' });
 home();
 initPortal(); initAds(); initBilling(save, () => { persist(); refresh(); });
