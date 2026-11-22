@@ -5,8 +5,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <meta name="theme-color" content="#020617">
   <title>FilterFit — Upload a photo, get its perfect filter</title>
-  <script type="module" crossorigin src="./assets/index-C6SLQ3wN.js"></script>
-  <link rel="stylesheet" crossorigin href="./assets/index-CJDPFUWE.css">
+  <script type="module" crossorigin src="./assets/index-BiYxHf-G.js"></script>
+  <link rel="stylesheet" crossorigin href="./assets/index-BnhZdr25.css">
 </head>
 <body class="bg-slate-950 text-slate-100 min-h-screen font-sans">
   <div id="app" class="w-full max-w-2xl phone-land:max-w-5xl mx-auto min-h-screen flex flex-col">
@@ -23,6 +23,7 @@
         <p class="font-medium">Tap to choose a photo</p>
         <p class="text-xs text-slate-500 mt-1">Camera or photo library</p>
         <input id="fileInput" type="file" accept="image/*" class="hidden">
+        <input id="cameraInput" type="file" accept="image/*" capture="environment" class="hidden">
       </div>
       <div class="grid grid-cols-2 gap-3 mt-4">
         <button id="cameraBtn" class="btn-primary">Take a photo</button>
@@ -51,10 +52,15 @@
     </section>
 
     <!-- Analysing -->
-    <section id="screen-analysing" class="screen hidden px-4 sm:px-5 pb-8 flex-1 text-center">
-      <p class="text-5xl my-10 phone-land:my-6 animate-pulse">✨</p>
-      <p class="font-medium">Analysing your photo…</p>
-      <p class="text-xs text-slate-500 mt-2">Brightness · colour · warmth · subject</p>
+    <section id="screen-analysing" class="screen hidden px-4 sm:px-5 pb-8 flex-1">
+      <div class="analyse-wrap">
+        <div class="analyse-card" role="status" aria-live="polite">
+          <div class="analyse-spinner" aria-hidden="true"></div>
+          <p id="analyseTitle" class="font-semibold text-lg">Opening your photo…</p>
+          <p id="analyseStatus" class="text-sm text-slate-400 mt-2">Preparing a smaller copy so the phone stays responsive.</p>
+          <div class="analyse-meter" aria-hidden="true"><span></span></div>
+        </div>
+      </div>
     </section>
 
     <!-- Recommendations -->
