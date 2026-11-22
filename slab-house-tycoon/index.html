@@ -5,38 +5,57 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Slab House Tycoon — Milestone 1-5 Vertical Slice</title>
 <style>
-  :root { --bg:#14161c; --panel:#1e222c; --panel2:#262b38; --ink:#eef1f6; --mut:#9aa3b2;
+  :root { --bg:#17120d; --panel:#221a12; --panel2:#2e2318; --ink:#f5efe4; --mut:#b8a98c;
     --gold:#f2b705; --green:#3fb950; --blue:#4a90e2; --purple:#a371f7; --red:#e5484d; --orange:#f0883e; }
   * { box-sizing:border-box; }
-  body { margin:0; background:var(--bg); color:var(--ink); font-family:system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif; }
+  body { margin:0; background:radial-gradient(1200px 480px at 50% -12%, #3d2c16 0%, var(--bg) 58%), var(--bg); color:var(--ink); font-family:system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif; }
   #app { max-width:1060px; margin:0 auto; padding:14px 14px 40px; }
   header { display:flex; flex-wrap:wrap; gap:10px; align-items:center; justify-content:space-between; }
-  h1 { font-size:22px; margin:0; letter-spacing:.5px; }
-  h1 span { color:var(--gold); }
+  h1 { font-size:24px; margin:0; letter-spacing:.5px; background:linear-gradient(180deg,#ffe9a8,#f2b705 55%,#c78d00); -webkit-background-clip:text; background-clip:text; color:transparent; text-shadow:0 2px 14px rgba(242,183,5,.25); }
+  h1 span { color:var(--gold); -webkit-text-fill-color:var(--gold); }
   .stats { display:flex; gap:8px; flex-wrap:wrap; }
-  .stat { background:var(--panel); border:1px solid #333a49; border-radius:10px; padding:8px 12px; font-size:14px; }
+  .stat { background:linear-gradient(180deg,#322515,#241b10); border:1px solid #4a3a24; border-radius:10px; padding:8px 12px; font-size:14px; box-shadow:0 2px 8px rgba(0,0,0,.35); }
   .stat b { color:var(--gold); }
   nav { display:flex; gap:8px; margin:14px 0; flex-wrap:wrap; }
-  nav button { background:var(--panel2); color:var(--ink); border:1px solid #39415a; border-radius:10px; padding:10px 16px; font-size:15px; cursor:pointer; }
-  nav button.active { background:var(--gold); color:#111; border-color:var(--gold); font-weight:700; }
-  section.screen { display:none; background:var(--panel); border:1px solid #333a49; border-radius:14px; padding:16px; }
+  nav button { background:linear-gradient(180deg,#3a2c1b,#2a2013); color:var(--ink); border:1px solid #54401f; border-radius:10px; padding:10px 16px; font-size:15px; cursor:pointer; transition:transform .12s ease, box-shadow .12s ease; }
+  nav button:hover { transform:translateY(-1px); box-shadow:0 4px 12px rgba(0,0,0,.4); }
+  nav button.active { background:linear-gradient(180deg,#ffd94a,#e69e00); color:#1a1206; border-color:#ffd94a; font-weight:700; box-shadow:0 4px 16px rgba(242,183,5,.35); }
+  section.screen { display:none; background:linear-gradient(180deg,#261d13,#1e160d); border:1px solid #4a3a24; border-radius:16px; padding:16px; box-shadow:0 10px 30px rgba(0,0,0,.45); }
   section.screen.active { display:block; }
   h2 { margin:0 0 4px; font-size:19px; }
   .sub { color:var(--mut); font-size:13px; margin:0 0 14px; }
   .packs { display:grid; grid-template-columns:repeat(auto-fit,minmax(240px,1fr)); gap:12px; }
-  .pack { background:var(--panel2); border:2px solid #39415a; border-radius:12px; padding:14px; }
+  .pack { background:linear-gradient(180deg,#31241a,#241a10); border:2px solid #54401f; border-radius:12px; padding:14px; box-shadow:0 6px 18px rgba(0,0,0,.4); transition:transform .15s ease, box-shadow .15s ease; }
+  .pack:hover { transform:translateY(-3px); box-shadow:0 12px 26px rgba(0,0,0,.5); }
   .pack h3 { margin:0 0 6px; }
   .pack p { margin:4px 0; color:var(--mut); font-size:13px; min-height:34px; }
-  .pack .price { font-size:20px; font-weight:700; color:var(--gold); margin:8px 0; }
-  button { background:var(--gold); color:#111; border:0; border-radius:9px; padding:10px 14px; font-size:15px; font-weight:700; cursor:pointer; }
-  button:disabled { background:#3a4152; color:#8a93a5; cursor:not-allowed; }
-  button.secondary { background:#2d3342; color:var(--ink); border:1px solid #454e63; font-weight:600; }
-  button.danger { background:var(--red); color:#fff; }
+  .pack .price { font-size:20px; font-weight:700; color:var(--gold); margin:8px 0; text-shadow:0 1px 8px rgba(242,183,5,.3); }
+  .pack-back { height:76px; border-radius:8px; margin:8px 0 4px; display:flex; align-items:center; justify-content:center; text-align:center;
+    background:linear-gradient(135deg, var(--pc, #8a6d2f) 0%, #14100a 55%, var(--pc, #8a6d2f) 100%);
+    box-shadow:inset 0 0 0 2px rgba(242,183,5,.85), inset 0 0 0 6px rgba(20,16,10,.9), inset 0 0 0 8px rgba(242,183,5,.45), 0 4px 12px rgba(0,0,0,.45); }
+  .pack-back span { font-weight:800; letter-spacing:2px; font-size:13px; color:#ffe9a8; text-shadow:0 1px 3px rgba(0,0,0,.8); line-height:1.4; }
+  button { background:linear-gradient(180deg,#ffd94a,#e69e00); color:#1a1206; border:0; border-radius:9px; padding:10px 14px; font-size:15px; font-weight:700; cursor:pointer; box-shadow:0 3px 10px rgba(0,0,0,.4); transition:transform .1s ease, box-shadow .1s ease, filter .1s ease; }
+  button:hover:not(:disabled) { filter:brightness(1.07); }
+  button:active:not(:disabled) { transform:translateY(1px); box-shadow:0 1px 4px rgba(0,0,0,.4); }
+  button:disabled { background:#3a3226; color:#8a7d63; cursor:not-allowed; box-shadow:none; }
+  button.secondary { background:linear-gradient(180deg,#3a2e1e,#2a2113); color:var(--ink); border:1px solid #54401f; font-weight:600; box-shadow:0 2px 8px rgba(0,0,0,.35); }
+  button.danger { background:linear-gradient(180deg,#f0616a,#c62f38); color:#fff; }
   button.small { padding:6px 10px; font-size:13px; }
   .msg { margin:10px 0; min-height:20px; font-size:14px; color:var(--mut); }
   .msg b { color:var(--gold); }
   .pulls { display:flex; flex-wrap:wrap; gap:10px; margin-top:12px; }
-  .mini { width:150px; background:#10131a; border:2px solid #39415a; border-radius:10px; padding:8px; text-align:center; }
+  @keyframes pullIn { from { opacity:0; transform:translateY(12px) scale(.92); } to { opacity:1; transform:none; } }
+  @keyframes hitGlow { 0%,100% { box-shadow:0 0 10px rgba(242,183,5,.35); } 50% { box-shadow:0 0 26px rgba(242,183,5,.75); } }
+  #pulls .mini { animation:pullIn .45s ease both; }
+  #pulls .mini:nth-child(2) { animation-delay:.06s; }
+  #pulls .mini:nth-child(3) { animation-delay:.12s; }
+  #pulls .mini:nth-child(4) { animation-delay:.18s; }
+  #pulls .mini:nth-child(5) { animation-delay:.24s; }
+  #pulls .mini:nth-child(6) { animation-delay:.30s; }
+  .mini { width:150px; background:linear-gradient(180deg,#1d150c,#120d07); border:2px solid #54401f; border-radius:10px; padding:8px; text-align:center; box-shadow:0 4px 12px rgba(0,0,0,.45); transition:transform .15s ease, box-shadow .15s ease; }
+  .mini:hover { transform:translateY(-3px); box-shadow:0 10px 22px rgba(0,0,0,.55); }
+  .mini.hit { animation:hitGlow 2.2s ease-in-out infinite; border-color:var(--gold); }
+  .mini .art { font-size:38px; line-height:1.1; }
   .mini .art { font-size:38px; line-height:1.1; }
   .mini .nm { font-weight:700; font-size:13px; margin:4px 0 2px; }
   .mini .rl { font-size:12px; font-weight:700; }
@@ -44,7 +63,7 @@
   .mini button { margin-top:6px; width:100%; }
   /* ---- Real trading-card face (shared by pulls + collection) ---- */
   .mini, .card { overflow:hidden; }
-  .tc-name { background:#0c0e13; color:var(--ink); font-weight:800; font-size:13px; padding:5px 6px; margin:-8px -8px 0; border-bottom:1px solid #333a49; text-align:left; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .tc-name { background:#171008; color:var(--ink); font-weight:800; font-size:13px; padding:5px 6px; margin:-8px -8px 0; border-bottom:1px solid #4a3a24; text-align:left; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
   .card .tc-name { margin:-10px -10px 0; }
   .tc-art { position:relative; height:92px; margin:6px 0 4px; border-radius:6px; overflow:hidden; display:flex; align-items:flex-end; justify-content:center; border:1px solid rgba(255,255,255,.18); }
   .tc-art.stadium { background:linear-gradient(180deg,#1d4d2b 0%,#143d20 55%,#0f2f18 100%); }
@@ -63,13 +82,25 @@
   .tc-art.arena-comic::before { content:''; position:absolute; inset:0; background:repeating-linear-gradient(115deg, transparent 0 18px, rgba(255,255,255,.08) 18px 20px); }
   .tc-art .emoji { font-size:44px; line-height:1; padding-bottom:8px; position:relative; z-index:1; align-self:center; }
   .tc-art svg { position:relative; z-index:1; height:88px; width:auto; display:block; }
-  .tc-art.foil-ultra::after, .tc-art.foil-secret::after { content:''; position:absolute; inset:0; background:linear-gradient(115deg, transparent 30%, rgba(255,255,255,.35) 45%, rgba(255,255,255,.05) 55%, transparent 70%); pointer-events:none; }
-  .tc-art.foil-secret::after { background:linear-gradient(115deg, transparent 25%, rgba(242,183,5,.45) 45%, rgba(255,255,255,.35) 55%, transparent 75%); }
+  .tc-art svg.hab-svg { position:absolute; inset:0; width:100%; height:100%; }
+  /* ---- Parallels: rarity changes the WHOLE art window ---- */
   @keyframes foilSweep { from { background-position:-120% 0; } to { background-position:220% 0; } }
-  .tc-art.foil-ultra::after { background-size:220% 100%; animation:foilSweep 3.2s linear infinite; }
-  .tc-art.rar-uncommon::after { content:''; position:absolute; inset:0; background:linear-gradient(180deg, rgba(120,255,140,.12), rgba(120,255,140,.03)); pointer-events:none; }
-  .tc-art.rar-rare::after { content:''; position:absolute; inset:0; background:linear-gradient(115deg, transparent 25%, rgba(140,200,255,.30) 40%, rgba(255,140,220,.20) 55%, transparent 70%); pointer-events:none; }
-  .tc-art.rar-secret { box-shadow:inset 0 0 0 100px rgba(10,8,0,.28); }
+  .tc-art.par-uncommon::after { content:''; position:absolute; inset:0; background:linear-gradient(115deg, transparent 30%, rgba(230,235,245,.45) 45%, rgba(255,255,255,.25) 55%, transparent 70%); box-shadow:inset 0 0 0 1px rgba(220,225,235,.7); pointer-events:none; }
+  .tc-art.par-rare::after { content:''; position:absolute; inset:0; background:
+    repeating-linear-gradient(45deg, rgba(140,200,255,.18) 0 6px, transparent 6px 12px),
+    repeating-linear-gradient(-45deg, rgba(255,140,220,.14) 0 6px, transparent 6px 12px),
+    linear-gradient(115deg, transparent 25%, rgba(140,200,255,.28) 40%, rgba(255,140,220,.18) 55%, transparent 70%); pointer-events:none; }
+  .tc-art.par-ultra::after { content:''; position:absolute; inset:0; background:linear-gradient(115deg, rgba(255,0,80,.28), rgba(255,160,0,.24), rgba(255,235,0,.24), rgba(0,200,120,.24), rgba(0,120,255,.28), rgba(160,60,255,.28)); background-size:220% 100%; animation:foilSweep 3.2s linear infinite; pointer-events:none; }
+  .tc-art.par-secret::after { content:''; position:absolute; inset:0; background:linear-gradient(115deg, transparent 25%, rgba(242,183,5,.45) 45%, rgba(255,255,255,.35) 55%, transparent 75%); pointer-events:none; }
+  .tc-art.par-secret { box-shadow:inset 0 0 0 100px rgba(10,8,0,.28); }
+  /* ---- Per-set frames: a Frozen Fury card never looks like a Pitch Legends card ---- */
+  .mini.frame-gridiron, .card.frame-gridiron { border-style:double; border-width:3px; }
+  .mini.frame-hardwood, .card.frame-hardwood { border-radius:16px; }
+  .mini.frame-diamond, .card.frame-diamond { box-shadow:inset 0 0 0 2px rgba(255,255,255,.22); }
+  .mini.frame-frozen, .card.frame-frozen { border-radius:6px; box-shadow:inset 0 0 0 2px rgba(255,255,255,.28); }
+  .mini.frame-pitch, .card.frame-pitch { outline:1px dashed rgba(255,255,255,.35); outline-offset:-5px; }
+  .mini.frame-panel, .card.frame-panel { box-shadow:4px 4px 0 rgba(0,0,0,.5); }
+  .mini.frame-kaiju, .card.frame-kaiju, .mini.frame-mythic, .card.frame-mythic, .mini.frame-critter, .card.frame-critter { border-width:3px; }
   .tc-art.one-of-one { background:linear-gradient(180deg,#1a1a1a 0%,#2e2405 55%,#0a0800 100%) !important; border-color:#f2b705; }
   .tc-art.one-of-one::after { content:''; position:absolute; inset:0; background:linear-gradient(115deg, transparent 30%, rgba(242,183,5,.45) 45%, rgba(255,255,255,.20) 55%, transparent 70%); background-size:220% 100%; animation:foilSweep 2.6s linear infinite; pointer-events:none; }
   .one-stamp { position:absolute; top:5px; right:5px; z-index:2; background:#f2b705; color:#111; font-size:10px; font-weight:800; padding:2px 6px; border-radius:4px; transform:rotate(6deg); box-shadow:0 1px 4px rgba(0,0,0,.5); }
@@ -80,23 +111,24 @@
   .bk-veil.bk-night { background:linear-gradient(180deg, rgba(8,14,48,.38), rgba(4,6,24,.50)); }
   .bk-veil.bk-night::after { content:''; position:absolute; inset:0; background-image:radial-gradient(1px 1px at 20% 20%, #fff, transparent), radial-gradient(1px 1px at 65% 12%, #fff, transparent), radial-gradient(1.5px 1.5px at 82% 30%, #fff, transparent), radial-gradient(1px 1px at 40% 8%, #fff, transparent); }
   .tc-type { font-size:11px; color:var(--mut); font-weight:600; }
-  .tc-flavor { font-size:11px; font-style:italic; color:#c8cfdb; background:#0c0e13; border:1px solid #2b3140; border-radius:6px; padding:4px 6px; margin:5px 0; min-height:28px; line-height:1.3; }
-  .tc-foot { display:flex; justify-content:space-between; gap:4px; font-size:10px; color:var(--mut); border-top:1px solid #2b3140; padding-top:4px; }
+  .tc-flavor { font-size:11px; font-style:italic; color:#e6dcc4; background:#171008; border:1px solid #3a2d18; border-radius:6px; padding:4px 6px; margin:5px 0; min-height:28px; line-height:1.3; }
+  .tc-foot { display:flex; justify-content:space-between; gap:4px; font-size:10px; color:var(--mut); border-top:1px solid #3a2d18; padding-top:4px; }
   .tc-foot .sym { font-weight:800; white-space:nowrap; }
   .desk-wrap { display:flex; gap:16px; flex-wrap:wrap; }
-  #desk { background:#0c0e13; border:1px solid #333a49; border-radius:12px; touch-action:none; cursor:crosshair; max-width:100%; height:auto; }
+  #desk { background:#14100a; border:1px solid #4a3a24; border-radius:12px; touch-action:none; cursor:crosshair; max-width:100%; height:auto; box-shadow:0 12px 32px rgba(0,0,0,.55), 0 0 0 1px rgba(242,183,5,.12); }
   .desk-side { flex:1; min-width:260px; }
-  .metric { background:var(--panel2); border:1px solid #39415a; border-radius:10px; padding:10px 12px; margin-bottom:8px; font-size:14px; }
+  .metric { background:linear-gradient(180deg,#2e2318,#241a10); border:1px solid #54401f; border-radius:10px; padding:10px 12px; margin-bottom:8px; font-size:14px; box-shadow:0 2px 8px rgba(0,0,0,.3); }
   .metric b { display:block; font-size:13px; color:var(--mut); text-transform:uppercase; letter-spacing:.5px; }
   .metric .val { font-size:16px; font-weight:700; }
-  .metric.done { border-color:var(--green); }
+  .metric.done { border-color:var(--green); box-shadow:0 0 12px rgba(63,185,80,.3); }
   .metric.done .val { color:var(--green); }
   .desk-actions { display:flex; gap:10px; flex-wrap:wrap; margin-top:12px; }
   .desk-actions button { flex:1; min-width:200px; padding:14px; }
-  input[type=range] { width:100%; }
+  input[type=range] { width:100%; accent-color:var(--gold); }
   .grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(170px,1fr)); gap:10px; }
-  .card { background:#10131a; border:2px solid #39415a; border-radius:10px; padding:10px; text-align:center; }
-  .card.slabbed { border-color:var(--gold); }
+  .card { background:linear-gradient(180deg,#1d150c,#120d07); border:2px solid #54401f; border-radius:10px; padding:10px; text-align:center; box-shadow:0 4px 12px rgba(0,0,0,.45); transition:transform .15s ease, box-shadow .15s ease; }
+  .card:hover { transform:translateY(-3px); box-shadow:0 10px 22px rgba(0,0,0,.55); }
+  .card.slabbed { border-color:var(--gold); box-shadow:0 0 16px rgba(242,183,5,.35); }
   .card .art { font-size:40px; }
   .card .nm { font-weight:700; font-size:13px; margin:4px 0 2px; }
   .card .rl { font-size:12px; font-weight:700; }
@@ -107,15 +139,15 @@
   .auc { display:flex; gap:16px; flex-wrap:wrap; }
   .auc-left { flex:1; min-width:280px; }
   .auc-right { flex:1; min-width:280px; }
-  .timer { font-size:44px; font-weight:800; color:var(--gold); }
+  .timer { font-size:44px; font-weight:800; color:var(--gold); text-shadow:0 2px 16px rgba(242,183,5,.4); }
   .bid { font-size:28px; font-weight:800; }
-  .chat { background:#0c0e13; border:1px solid #333a49; border-radius:10px; height:220px; overflow-y:auto; padding:10px; font-size:13px; }
+  .chat { background:#171008; border:1px solid #4a3a24; border-radius:10px; height:220px; overflow-y:auto; padding:10px; font-size:13px; box-shadow:inset 0 2px 10px rgba(0,0,0,.5); }
   .chat div { margin-bottom:6px; }
   .chat .who { font-weight:700; }
-  .overlay { position:fixed; inset:0; background:rgba(0,0,0,.72); display:none; align-items:center; justify-content:center; z-index:50; padding:16px; }
+  .overlay { position:fixed; inset:0; background:rgba(20,12,4,.78); display:none; align-items:center; justify-content:center; z-index:50; padding:16px; }
   .overlay.show { display:flex; }
-  .slabbox { background:var(--panel); border:2px solid var(--gold); border-radius:16px; padding:24px; max-width:460px; width:100%; text-align:center; }
-  .slabbox .biggrade { font-size:64px; font-weight:800; color:var(--gold); line-height:1; }
+  .slabbox { background:linear-gradient(180deg,#2c2114,#1d150b); border:2px solid var(--gold); border-radius:16px; padding:24px; max-width:460px; width:100%; text-align:center; box-shadow:0 0 40px rgba(242,183,5,.25), 0 20px 50px rgba(0,0,0,.6); }
+  .slabbox .biggrade { font-size:64px; font-weight:800; line-height:1; background:linear-gradient(180deg,#ffe9a8,#f2b705 60%,#c78d00); -webkit-background-clip:text; background-clip:text; color:transparent; }
   .slabbox table { margin:14px auto; border-collapse:collapse; font-size:14px; }
   .slabbox td { padding:4px 12px; text-align:left; }
   .slabbox td:last-child { text-align:right; font-weight:700; }
@@ -152,7 +184,7 @@
 
   <section id="screen-desk" class="screen">
     <h2>Inspection Desk</h2>
-    <p class="sub">Drag the loupe over the card. Corners show whitening, edges show wear, the border shows centering, and tilting the light reveals surface print lines. Inspect all 4 metrics to unlock grading.</p>
+    <p class="sub">Drag the loupe over the card — it floats above your finger so you can always see what you're magnifying. Corners show whitening, edges show wear, the border shows centering, and tilting the light reveals surface print lines. Inspect all 4 metrics to unlock grading.</p>
     <div class="desk-wrap">
       <div>
         <canvas id="desk" width="720" height="500"></canvas>
@@ -431,6 +463,104 @@ const ART_BACKDROPS = {
 // same set never share an identical backdrop. Derived from set + name.
 function hashStr(s) { let h = 0; for (let i = 0; i < s.length; i++) { h = (h * 31 + s.charCodeAt(i)) >>> 0; } return h; }
 function backdropVariant(card) { return ['day', 'dusk', 'night'][hashStr((card.set || '') + '|' + (card.name || '')) % 3]; }
+// Deterministic pseudo-random 0..1 from a string + index. Rendering must
+// never consume the seeded RNG, so scenes use this instead of rand().
+// The murmur-style finalizer avalanches the input: hashRand(seed, 1) and
+// hashRand(seed, 2) must be unrelated, or profile fields drawn from
+// successive indices would be correlated and two cards could collide.
+function hashRand(seedStr, i) {
+  let h = hashStr(seedStr + '#' + i);
+  h = Math.imul(h ^ (h >>> 16), 2246822519);
+  h = Math.imul(h ^ (h >>> 13), 3266489917);
+  h = (h ^ (h >>> 16)) >>> 0;
+  return h / 4294967296;
+}
+// Luminance-based ink for a hex color: dark ink on light colors, white on dark.
+function inkFor(hex) {
+  const m = /^#([0-9a-f]{6})$/i.exec(hex || '');
+  if (!m) return '#fff';
+  const r = parseInt(m[1].slice(0, 2), 16), g = parseInt(m[1].slice(2, 4), 16), b = parseInt(m[1].slice(4, 6), 16);
+  return (0.299 * r + 0.587 * g + 0.114 * b) > 130 ? '#1c2433' : '#fff';
+}
+// Frame/name-bar color: the card's team color for figure sets, the set
+// color for creature sets (no team). This is what makes a card read as
+// "a Breakers card" at a glance, not just a jersey.
+function frameColor(card) {
+  if (hasFigure(card)) return TEAM_COLORS[card.team] || '#555';
+  return (SETS[card.set] && SETS[card.set].color) || '#555';
+}
+// ---------- Per-card art identity ----------
+// A card's art is a composition, not a pose: pose (from position) + a
+// deterministic figure scale, horizontal anchor, hair variant, and scene
+// variant, all hashed from set + name. Two cards in one set never share
+// the full composition, even when they share a position.
+const HAIR_STYLES = ['buzz', 'afro', 'mohawk', 'ponytail'];
+const HAIR_COLORS = ['#1c2433', '#3b2416', '#5a3a1e', '#111111'];
+const ART_SCALES = [0.8, 0.95, 1.1, 1.28];
+function artProfile(card) {
+  // Independent hashRand draws per field (a single hash's low bits are
+  // correlated and too few combos — that let two cards in a set collide).
+  const seed = (card.set || '') + '|' + (card.name || '');
+  return {
+    pose: poseFor(card),
+    scale: ART_SCALES[Math.floor(hashRand(seed, 1) * ART_SCALES.length) % ART_SCALES.length],
+    anchor: ['left', 'center', 'right'][Math.floor(hashRand(seed, 2) * 3) % 3],
+    hair: HAIR_STYLES[Math.floor(hashRand(seed, 3) * HAIR_STYLES.length) % HAIR_STYLES.length],
+    hairColor: HAIR_COLORS[Math.floor(hashRand(seed, 4) * HAIR_COLORS.length) % HAIR_COLORS.length],
+    skin: skinFor(card),
+    scene: backdropVariant(card),
+  };
+}
+function artSignature(card) {
+  const p = artProfile(card);
+  return [p.pose, p.scale, p.anchor, p.hair, p.hairColor, p.skin, p.scene].join('|');
+}
+// Rotate a point around a center (degrees). Used for torso-anchored limbs.
+function rotPt(x, y, cx, cy, deg) {
+  const r = deg * Math.PI / 180, c = Math.cos(r), s = Math.sin(r);
+  return [cx + (x - cx) * c - (y - cy) * s, cy + (x - cx) * s + (y - cy) * c];
+}
+// Shoulder/hip anchor points for a torso spec: limbs attach here, so a
+// rotated torso (three-point stance, dive, flight) carries its limbs with it.
+function torsoAnchors(t) {
+  return {
+    shL: rotPt(t.cx - t.w / 2 + 2, t.cy - t.h / 2 + 4, t.cx, t.cy, t.rot),
+    shR: rotPt(t.cx + t.w / 2 - 2, t.cy - t.h / 2 + 4, t.cx, t.cy, t.rot),
+    hipL: rotPt(t.cx - t.w / 2 + 10, t.cy + t.h / 2 - 2, t.cx, t.cy, t.rot),
+    hipR: rotPt(t.cx + t.w / 2 - 10, t.cy + t.h / 2 - 2, t.cx, t.cy, t.rot),
+  };
+}
+// Standard torso/head (upright figure) — poses override as needed.
+const TORSO_STD = { cx: 50, cy: 55, w: 32, h: 38, rot: 0 };
+const HEAD_STD = { x: 50, y: 29, r: 7.5 };
+// Resolve a card to its full figure spec. Shared by the SVG figure and
+// the canvas figure so the two renderers can never drift apart.
+function figureSpec(card) {
+  const p = artProfile(card);
+  const parts = POSE_PARTS[p.pose] || POSE_PARTS.throw;
+  const ghost = p.pose === 'ghost';
+  const team = TEAM_COLORS[card.team] || '#555';
+  const hd = parts.head || HEAD_STD;
+  // Never crop the head: cap the combined scale so the top of the head
+  // stays inside the 120-tall scene even with the pose's lift. (A dunk at
+  // 1.47x put the head 40 units above the window — only legs showed.)
+  const sMax = 117 / Math.max(1, 112 + (parts.lift || 0) - (hd.y - hd.r));
+  const scale = Math.min(p.scale * (parts.scale || 1), sMax);
+  return {
+    pose: p.pose, parts, ghost,
+    team, jersey: ghost ? '#e8d27a' : team, helmet: ghost ? '#f2d98c' : team,
+    skin: ghost ? '#f5ecd0' : skinFor(card),
+    pants: ghost ? '#efe6c8' : '#eef0f2',
+    num: jerseyNumber(card),
+    headwear: headwearFor(card),
+    hair: p.hair, hairColor: p.hairColor,
+    scale,
+    anchor: p.anchor, scene: p.scene,
+    torso: parts.torso || TORSO_STD, head: parts.head || HEAD_STD,
+    lift: parts.lift || 0, motion: parts.motion || [],
+    capeFlip: !!parts.capeFlip,
+  };
+}
 const RARITY_SYMBOL = { common: '●', uncommon: '◆', rare: '★', ultra: '✦', secret: '♛' };
 function raritySymbol(r) { return RARITY_SYMBOL[r] || '●'; }
 function collectorLabel(card) {
@@ -438,40 +568,171 @@ function collectorLabel(card) {
   if (!set || !(card.collectorNo >= 1)) return '';
   return '#' + card.collectorNo + '/' + set.cards.length;
 }
-// Pose parts in a 100x120 box: arms/legs are point lists, cleats are points,
-// ball is a point (or null). Shared by the SVG figure and the canvas figure.
+// Pose spec in a 100x120 figure space. Limbs are polylines whose first
+// point is replaced by the torso's shoulder/hip anchor at render time, so
+// a rotated torso carries its limbs with it. torso = rotated rect,
+// head = circle center/radius, scale = base figure size, ax = horizontal
+// anchor in the scene (0..1), lift = float above the ground (jumps, dives,
+// flight), motion = speed lines in figure space. lean is kept exactly as
+// before for the football poses (tests assert it).
 const POSE_PARTS = {
-  throw:  { lean: -8, arms: [[[36,44],[18,56]], [[64,44],[84,16]]], legs: [[[44,72],[38,104]], [[56,72],[62,104]]], cleats: [[34,106],[66,106]], ball: [86,12] },
-  run:    { lean: 12, arms: [[[36,44],[18,62]], [[64,44],[78,52]]], legs: [[[44,72],[26,86],[22,102]], [[56,72],[74,90],[78,98]]], cleats: [[20,104],[80,100]], ball: [56,58] },
-  catch:  { lean: -6, arms: [[[36,44],[22,14]], [[64,44],[78,14]]], legs: [[[44,72],[38,90],[36,98]], [[56,72],[62,90],[64,98]]], cleats: [[34,100],[66,100]], ball: null },
-  block:  { lean: 8, arms: [[[36,44],[12,52]], [[64,44],[88,52]]], legs: [[[44,72],[26,104]], [[56,72],[74,104]]], cleats: [[22,106],[78,106]], ball: null },
-  tackle: { lean: 18, arms: [[[36,44],[14,74]], [[64,44],[86,74]]], legs: [[[44,72],[30,88],[34,104]], [[56,72],[70,88],[66,104]]], cleats: [[32,106],[68,106]], ball: null },
-  kick:   { lean: -10, arms: [[[36,44],[18,44]], [[64,44],[80,24]]], legs: [[[44,72],[42,104]], [[56,72],[74,64],[90,42]]], cleats: [[40,106],[92,44]], ball: null },
-  ghost:  { lean: -8, arms: [[[36,44],[18,56]], [[64,44],[84,16]]], legs: [[[44,72],[38,104]], [[56,72],[62,104]]], cleats: [[34,106],[66,106]], ball: [86,12] },
+  throw:  { lean: -8, torso: { cx: 50, cy: 55, w: 32, h: 38, rot: -6 }, head: { x: 48, y: 28, r: 7.5 }, scale: 1, ax: 0.5, lift: 0, motion: [[88, 12, 96, 6]], arms: [[[36,44],[18,56]], [[64,44],[84,16]]], legs: [[[44,72],[38,104]], [[56,72],[62,104]]], cleats: [[34,106],[66,106]], ball: [86,12] },
+  run:    { lean: 12, torso: { cx: 52, cy: 56, w: 32, h: 38, rot: 14 }, head: { x: 54, y: 30, r: 7.5 }, scale: 1.05, ax: 0.5, lift: 0, motion: [[18, 58, 6, 58], [22, 82, 8, 82]], arms: [[[36,44],[18,62]], [[64,44],[78,52]]], legs: [[[44,72],[26,86],[22,102]], [[56,72],[74,90],[78,98]]], cleats: [[20,104],[80,100]], ball: [56,58] },
+  catch:  { lean: -6, torso: { cx: 50, cy: 54, w: 32, h: 38, rot: -8 }, head: { x: 50, y: 26, r: 7.5 }, scale: 1.05, ax: 0.5, lift: 6, motion: [], arms: [[[36,44],[22,14]], [[64,44],[78,14]]], legs: [[[44,72],[38,90],[36,98]], [[56,72],[62,90],[64,98]]], cleats: [[34,100],[66,100]], ball: null },
+  block:  { lean: 8, torso: { cx: 52, cy: 62, w: 38, h: 30, rot: 55 }, head: { x: 70, y: 58, r: 7.5 }, scale: 1.1, ax: 0.5, lift: 0, motion: [], arms: [[[36,44],[30,78],[28,102]], [[64,44],[84,64],[88,58]]], legs: [[[44,72],[34,88],[30,104]], [[56,72],[68,88],[72,104]]], cleats: [[28,106],[74,106]], ball: null },
+  tackle: { lean: 18, torso: { cx: 52, cy: 56, w: 34, h: 36, rot: 18 }, head: { x: 56, y: 32, r: 7.5 }, scale: 1.1, ax: 0.5, lift: 0, motion: [[16, 72, 6, 72]], arms: [[[36,44],[14,74]], [[64,44],[86,74]]], legs: [[[44,72],[30,88],[34,104]], [[56,72],[70,88],[66,104]]], cleats: [[32,106],[68,106]], ball: null },
+  kick:   { lean: -10, torso: { cx: 48, cy: 55, w: 32, h: 38, rot: -12 }, head: { x: 46, y: 29, r: 7.5 }, scale: 1.05, ax: 0.5, lift: 0, motion: [[90, 44, 98, 40]], arms: [[[36,44],[18,44]], [[64,44],[80,24]]], legs: [[[44,72],[42,104]], [[56,72],[74,64],[90,42]]], cleats: [[40,106],[92,44]], ball: null },
+  ghost:  { lean: -8, torso: { cx: 50, cy: 55, w: 32, h: 38, rot: -6 }, head: { x: 48, y: 28, r: 7.5 }, scale: 1, ax: 0.5, lift: 0, motion: [[88, 12, 96, 6]], arms: [[[36,44],[18,56]], [[64,44],[84,16]]], legs: [[[44,72],[38,104]], [[56,72],[62,104]]], cleats: [[34,106],[66,106]], ball: [86,12] },
   // --- Basketball ---
-  'bb-dunk':    { arms: [[[36,44],[30,16]], [[64,44],[70,16]]], legs: [[[44,72],[36,88],[40,102]], [[56,72],[64,88],[60,102]]], cleats: [[38,104],[62,104]], ball: [50,10], ballKind: 'round', ballColor: '#e07b24' },
-  'bb-shot':    { arms: [[[36,44],[28,36]], [[64,44],[72,16]]], legs: [[[44,72],[42,104]], [[56,72],[62,92],[66,102]]], cleats: [[40,106],[68,104]], ball: [74,12], ballKind: 'round', ballColor: '#e07b24' },
-  'bb-dribble': { arms: [[[36,44],[24,66]], [[64,44],[78,52]]], legs: [[[44,72],[32,88],[30,102]], [[56,72],[68,88],[70,100]]], cleats: [[28,104],[72,102]], ball: [22,70], ballKind: 'round', ballColor: '#e07b24' },
-  'bb-block':   { arms: [[[36,44],[30,12]], [[64,44],[70,12]]], legs: [[[44,72],[36,104]], [[56,72],[64,104]]], cleats: [[32,106],[68,106]], ball: null },
+  'bb-dunk':    { torso: { cx: 50, cy: 52, w: 32, h: 38, rot: -10 }, head: { x: 48, y: 26, r: 7.5 }, scale: 1.15, ax: 0.5, lift: 22, motion: [[28, 38, 16, 34], [72, 38, 84, 34]], arms: [[[36,44],[30,16]], [[64,44],[70,16]]], legs: [[[44,72],[36,88],[40,102]], [[56,72],[64,88],[60,102]]], cleats: [[38,104],[62,104]], ball: [50,10], ballKind: 'round', ballColor: '#e07b24' },
+  'bb-shot':    { torso: { cx: 50, cy: 54, w: 32, h: 38, rot: -6 }, head: { x: 50, y: 27, r: 7.5 }, scale: 1.05, ax: 0.5, lift: 8, motion: [], arms: [[[36,44],[28,36]], [[64,44],[72,16]]], legs: [[[44,72],[42,104]], [[56,72],[62,92],[66,102]]], cleats: [[40,106],[68,104]], ball: [74,12], ballKind: 'round', ballColor: '#e07b24' },
+  'bb-dribble': { torso: { cx: 52, cy: 60, w: 32, h: 36, rot: 12 }, head: { x: 54, y: 34, r: 7.5 }, scale: 1, ax: 0.5, lift: 0, motion: [[24, 70, 14, 70]], arms: [[[36,44],[24,66]], [[64,44],[78,52]]], legs: [[[44,72],[32,88],[30,102]], [[56,72],[68,88],[70,100]]], cleats: [[28,104],[72,102]], ball: [22,70], ballKind: 'round', ballColor: '#e07b24' },
+  'bb-block':   { torso: { cx: 50, cy: 54, w: 34, h: 38, rot: 0 }, head: { x: 50, y: 27, r: 7.5 }, scale: 1.1, ax: 0.5, lift: 4, motion: [], arms: [[[36,44],[30,12]], [[64,44],[70,12]]], legs: [[[44,72],[36,104]], [[56,72],[64,104]]], cleats: [[32,106],[68,106]], ball: null },
   // --- Baseball ---
-  'base-pitch': { arms: [[[36,44],[24,52]], [[64,44],[80,18]]], legs: [[[44,72],[40,104]], [[56,72],[68,84],[64,96]]], cleats: [[40,106],[66,98]], ball: [82,14], ballKind: 'round', ballColor: '#f5f5f5' },
-  'base-bat':   { arms: [[[36,44],[58,52]], [[64,44],[58,52]]], legs: [[[44,72],[34,104]], [[56,72],[66,104]]], cleats: [[30,106],[70,106]], ball: null, stick: [[56,50],[88,26]], stickKind: 'bat' },
-  'base-catch': { arms: [[[36,44],[24,62]], [[64,44],[76,62]]], legs: [[[44,72],[32,90],[36,104]], [[56,72],[68,90],[64,104]]], cleats: [[34,106],[66,106]], ball: null },
-  'base-throw': { arms: [[[36,44],[20,54]], [[64,44],[82,20]]], legs: [[[44,72],[40,104]], [[56,72],[60,104]]], cleats: [[36,106],[64,106]], ball: [84,16], ballKind: 'round', ballColor: '#f5f5f5' },
+  'base-pitch': { torso: { cx: 50, cy: 54, w: 32, h: 38, rot: -15 }, head: { x: 46, y: 27, r: 7.5 }, scale: 1.05, ax: 0.5, lift: 4, motion: [[82, 16, 90, 10]], arms: [[[36,44],[24,52]], [[64,44],[80,18]]], legs: [[[44,72],[40,104]], [[56,72],[68,84],[64,96]]], cleats: [[40,106],[66,98]], ball: [82,14], ballKind: 'round', ballColor: '#f5f5f5' },
+  'base-bat':   { torso: { cx: 50, cy: 55, w: 34, h: 38, rot: 25 }, head: { x: 54, y: 30, r: 7.5 }, scale: 1.1, ax: 0.5, lift: 0, motion: [[88, 26, 96, 20]], arms: [[[36,44],[58,52]], [[64,44],[58,52]]], legs: [[[44,72],[34,104]], [[56,72],[66,104]]], cleats: [[30,106],[70,106]], ball: null, stick: [[56,50],[88,26]], stickKind: 'bat' },
+  'base-catch': { torso: { cx: 52, cy: 64, w: 34, h: 30, rot: 30 }, head: { x: 56, y: 44, r: 7.5 }, scale: 1, ax: 0.5, lift: 0, motion: [], arms: [[[36,44],[24,62]], [[64,44],[76,62]]], legs: [[[44,72],[32,92],[30,104]], [[56,72],[68,92],[70,104]]], cleats: [[28,106],[72,106]], ball: null },
+  'base-throw': { torso: { cx: 50, cy: 54, w: 32, h: 38, rot: -12 }, head: { x: 48, y: 27, r: 7.5 }, scale: 1.05, ax: 0.5, lift: 0, motion: [[84, 18, 92, 12]], arms: [[[36,44],[20,54]], [[64,44],[82,20]]], legs: [[[44,72],[40,104]], [[56,72],[60,104]]], cleats: [[36,106],[64,106]], ball: [84,16], ballKind: 'round', ballColor: '#f5f5f5' },
   // --- Hockey (skates + stick + puck) ---
-  'hk-slap':    { arms: [[[36,44],[56,58]], [[64,44],[56,58]]], legs: [[[44,72],[30,90],[32,104]], [[56,72],[68,88],[66,102]]], cleats: [[30,106],[68,104]], ball: [88,100], ballKind: 'puck', stick: [[54,56],[84,94]], stickKind: 'hockey', skates: true },
-  'hk-skate':   { arms: [[[36,44],[22,56]], [[64,44],[58,56]]], legs: [[[44,72],[28,86],[26,102]], [[56,72],[70,90],[74,100]]], cleats: [[24,104],[76,102]], ball: [82,96], ballKind: 'puck', stick: [[56,54],[78,90]], stickKind: 'hockey', skates: true },
-  'hk-goalie':  { arms: [[[36,44],[22,62]], [[64,44],[78,62]]], legs: [[[44,72],[30,104]], [[56,72],[70,104]]], cleats: [[26,106],[74,106]], ball: null, stick: [[76,60],[76,104]], stickKind: 'hockey', skates: true },
+  'hk-slap':    { torso: { cx: 50, cy: 56, w: 34, h: 38, rot: 20 }, head: { x: 54, y: 31, r: 7.5 }, scale: 1.05, ax: 0.5, lift: 0, motion: [[84, 94, 92, 98]], arms: [[[36,44],[56,58]], [[64,44],[56,58]]], legs: [[[44,72],[30,90],[32,104]], [[56,72],[68,88],[66,102]]], cleats: [[30,106],[68,104]], ball: [88,100], ballKind: 'puck', stick: [[54,56],[84,94]], stickKind: 'hockey', skates: true },
+  'hk-skate':   { torso: { cx: 52, cy: 58, w: 32, h: 36, rot: 18 }, head: { x: 55, y: 33, r: 7.5 }, scale: 1.05, ax: 0.5, lift: 0, motion: [[16, 70, 4, 70], [20, 90, 8, 90]], arms: [[[36,44],[22,56]], [[64,44],[58,56]]], legs: [[[44,72],[28,86],[26,102]], [[56,72],[70,90],[74,100]]], cleats: [[24,104],[76,102]], ball: [82,96], ballKind: 'puck', stick: [[56,54],[78,90]], stickKind: 'hockey', skates: true },
+  'hk-goalie':  { torso: { cx: 50, cy: 64, w: 42, h: 30, rot: 5 }, head: { x: 50, y: 46, r: 7.5 }, scale: 1.1, ax: 0.5, lift: 0, motion: [], arms: [[[36,44],[22,62]], [[64,44],[78,62]]], legs: [[[44,72],[30,104]], [[56,72],[70,104]]], cleats: [[26,106],[74,106]], ball: null, stick: [[76,60],[76,104]], stickKind: 'hockey', skates: true },
   // --- Soccer ---
-  'sc-kick':    { arms: [[[36,44],[18,48]], [[64,44],[80,40]]], legs: [[[44,72],[42,104]], [[56,72],[74,80],[86,74]]], cleats: [[40,106],[88,76]], ball: [91,72], ballKind: 'soccer' },
-  'sc-header':  { arms: [[[36,44],[20,50]], [[64,44],[80,50]]], legs: [[[44,72],[40,104]], [[56,72],[60,104]]], cleats: [[36,106],[64,106]], ball: [50,8], ballKind: 'soccer' },
-  'sc-dive':    { arms: [[[36,44],[14,30]], [[64,44],[18,22]]], legs: [[[44,72],[58,88],[64,102]], [[56,72],[68,90],[72,100]]], cleats: [[62,104],[74,102]], ball: [12,24], ballKind: 'soccer' },
-  'sc-dribble': { arms: [[[36,44],[22,52]], [[64,44],[78,52]]], legs: [[[44,72],[32,88],[30,102]], [[56,72],[68,88],[70,100]]], cleats: [[28,104],[72,102]], ball: [76,106], ballKind: 'soccer' },
+  'sc-kick':    { torso: { cx: 48, cy: 55, w: 32, h: 38, rot: -14 }, head: { x: 46, y: 28, r: 7.5 }, scale: 1.1, ax: 0.5, lift: 0, motion: [[90, 72, 98, 68]], arms: [[[36,44],[18,48]], [[64,44],[80,40]]], legs: [[[44,72],[42,104]], [[56,72],[74,80],[86,74]]], cleats: [[40,106],[88,76]], ball: [91,72], ballKind: 'soccer' },
+  'sc-header':  { torso: { cx: 50, cy: 52, w: 32, h: 38, rot: -8 }, head: { x: 50, y: 24, r: 7.5 }, scale: 1.05, ax: 0.5, lift: 10, motion: [], arms: [[[36,44],[20,50]], [[64,44],[80,50]]], legs: [[[44,72],[40,104]], [[56,72],[60,104]]], cleats: [[36,106],[64,106]], ball: [50,8], ballKind: 'soccer' },
+  'sc-dive':    { torso: { cx: 50, cy: 56, w: 34, h: 36, rot: 70 }, head: { x: 28, y: 50, r: 7.5 }, scale: 1.1, ax: 0.45, lift: 12, motion: [[12, 46, 2, 44], [16, 60, 6, 62]], arms: [[[36,44],[14,42]], [[64,44],[18,58]]], legs: [[[44,72],[74,60],[88,52]], [[56,72],[72,72],[86,66]]], cleats: [[90,54],[88,68]], ball: [8,42], ballKind: 'soccer' },
+  'sc-dribble': { torso: { cx: 52, cy: 60, w: 32, h: 36, rot: 14 }, head: { x: 54, y: 34, r: 7.5 }, scale: 1, ax: 0.5, lift: 0, motion: [[24, 70, 14, 70]], arms: [[[36,44],[22,52]], [[64,44],[78,52]]], legs: [[[44,72],[32,88],[30,102]], [[56,72],[68,88],[70,100]]], cleats: [[28,104],[72,102]], ball: [76,106], ballKind: 'soccer' },
   // --- Comic (cape + mask) ---
-  'cm-hero':    { arms: [[[36,44],[44,58]], [[64,44],[56,58]]], legs: [[[44,72],[40,104]], [[56,72],[60,104]]], cleats: [[36,106],[64,106]], ball: null, cape: true },
-  'cm-fly':     { arms: [[[36,44],[24,56]], [[64,44],[88,34]]], legs: [[[44,72],[34,88],[30,102]], [[56,72],[66,90],[70,102]]], cleats: [[28,104],[72,104]], ball: null, cape: true },
-  'cm-punch':   { arms: [[[36,44],[26,60]], [[64,44],[86,44]]], legs: [[[44,72],[30,90],[32,104]], [[56,72],[68,88],[66,102]]], cleats: [[30,106],[68,104]], ball: null, cape: true },
+  'cm-hero':    { torso: { cx: 50, cy: 54, w: 34, h: 38, rot: 0 }, head: { x: 50, y: 27, r: 7.5 }, scale: 1.1, ax: 0.5, lift: 0, motion: [], arms: [[[36,44],[28,58],[40,66]], [[64,44],[72,58],[60,66]]], legs: [[[44,72],[40,104]], [[56,72],[60,104]]], cleats: [[36,106],[64,106]], ball: null, cape: true },
+  'cm-fly':     { torso: { cx: 52, cy: 52, w: 34, h: 36, rot: 65 }, head: { x: 30, y: 44, r: 7.5 }, scale: 1.15, ax: 0.5, lift: 14, capeFlip: true, motion: [[80, 40, 96, 36], [78, 58, 94, 56]], arms: [[[36,44],[16,40]], [[64,44],[72,58]]], legs: [[[44,72],[74,58],[88,50]], [[56,72],[72,68],[86,64]]], cleats: [[90,52],[88,66]], ball: null, cape: true },
+  'cm-punch':   { torso: { cx: 50, cy: 55, w: 34, h: 38, rot: 20 }, head: { x: 54, y: 29, r: 7.5 }, scale: 1.1, ax: 0.5, lift: 0, motion: [[86, 44, 94, 42]], arms: [[[36,44],[26,60]], [[64,44],[86,44]]], legs: [[[44,72],[30,90],[32,104]], [[56,72],[68,88],[66,102]]], cleats: [[30,106],[68,104]], ball: null, cape: true },
 };
+// ---------- Drawn scenes (200x120 scene space, shared by SVG + canvas) ----------
+// A real trading card is a photo: a dominant action shot in a real place.
+// Each sport gets a drawn scene — stadium, court, diamond, rink, pitch,
+// comic city — with a day/dusk/night palette, so the art window is a
+// scene, not a flat gradient with a tint on top.
+const SCENE_COLORS = {
+  football:   { sky: { day: '#7ec8e3', dusk: '#e07a4a', night: '#0b1030' }, ground: { day: '#2e8b47', dusk: '#2a7a3e', night: '#1d5c2e' }, crowd: '#141a26' },
+  basketball: { sky: { day: '#c98a4b', dusk: '#8a4a3a', night: '#241a2e' }, ground: { day: '#c97b2e', dusk: '#a35a20', night: '#7a3f16' }, crowd: '#1c2433' },
+  baseball:   { sky: { day: '#7ec8e3', dusk: '#e07a4a', night: '#0b1030' }, ground: { day: '#3a9e4f', dusk: '#2f7d40', night: '#235c2f' }, crowd: '#141a26' },
+  hockey:     { sky: { day: '#9fc8e8', dusk: '#c98a7a', night: '#141a30' }, ground: { day: '#cfe8f5', dusk: '#a8c8d8', night: '#7a9ab0' }, crowd: '#1c2433' },
+  soccer:     { sky: { day: '#7ec8e3', dusk: '#e07a4a', night: '#0b1030' }, ground: { day: '#2e8b47', dusk: '#2a7a3e', night: '#1d5c2e' }, crowd: '#141a26' },
+  comic:      { sky: { day: '#8a3fd1', dusk: '#c93a6b', night: '#1a0b2e' }, ground: { day: '#241a33', dusk: '#1c1226', night: '#0d0817' }, crowd: null },
+};
+const CROWD_COLORS = ['#f5f5f5', '#f2b705', '#e5484d', '#4a90e2', '#3fb950', '#f0883e'];
+function svgDots(seed, n, x0, y0, x1, y1, r, colors) {
+  let s = '';
+  for (let i = 0; i < n; i++) {
+    const x = (x0 + hashRand(seed, i * 2) * (x1 - x0)).toFixed(1);
+    const y = (y0 + hashRand(seed, i * 2 + 1) * (y1 - y0)).toFixed(1);
+    const c = colors[Math.floor(hashRand(seed, i * 3) * colors.length) % colors.length];
+    s += `<circle cx="${x}" cy="${y}" r="${r}" fill="${c}" opacity="0.85"/>`;
+  }
+  return s;
+}
+function starBurst(cx, cy, r1, r2, n) {
+  let pts = [];
+  for (let i = 0; i < n * 2; i++) {
+    const a = (i / (n * 2)) * Math.PI * 2 - Math.PI / 2;
+    const r = i % 2 === 0 ? r1 : r2;
+    pts.push((cx + r * Math.cos(a)).toFixed(1) + ',' + (cy + r * Math.sin(a)).toFixed(1));
+  }
+  return `<polygon points="${pts.join(' ')}" fill="#f2b705" opacity="0.9"/>`;
+}
+// SVG scene for a figure card, in 200x120 space. Key elements carry
+// data-el so tests can tell a stadium from a rink at a glance.
+function sceneSVG(card) {
+  const sport = sportFor(card) || 'football';
+  const v = backdropVariant(card);
+  const pal = SCENE_COLORS[sport] || SCENE_COLORS.football;
+  const seed = (card.set || '') + '|' + (card.name || '');
+  const sky = pal.sky[v], ground = pal.ground[v];
+  const night = v === 'night';
+  const stars = night ? svgDots(seed + 'stars', 14, 4, 2, 196, 30, 1.1, ['#ffffff']) : '';
+  const crowd = pal.crowd ? `<rect x="0" y="40" width="200" height="16" fill="${pal.crowd}"/>` + svgDots(seed + 'crowd', 26, 2, 42, 198, 54, 1.6, CROWD_COLORS) : '';
+  const lights = `<g data-el="floodlight"><rect x="12" y="6" width="3" height="34" fill="#2b3140"/><rect x="7" y="2" width="13" height="7" rx="1" fill="#f5f1e6"/><circle cx="13" cy="5" r="9" fill="#fff8d0" opacity="0.22"/></g><g data-el="floodlight"><rect x="185" y="6" width="3" height="34" fill="#2b3140"/><rect x="180" y="2" width="13" height="7" rx="1" fill="#f5f1e6"/><circle cx="186" cy="5" r="9" fill="#fff8d0" opacity="0.22"/></g>`;
+  switch (sport) {
+    case 'football':
+      return `<rect x="0" y="0" width="200" height="56" fill="${sky}"/>${stars}${lights}${crowd}<rect x="0" y="56" width="200" height="64" fill="${ground}"/>` +
+        [25, 50, 75, 100, 125, 150, 175].map(x => `<line x1="${x}" y1="56" x2="${x}" y2="120" stroke="rgba(255,255,255,0.20)" stroke-width="1"/>`).join('') +
+        `<line x1="0" y1="92" x2="200" y2="92" stroke="rgba(255,255,255,0.16)" stroke-width="1"/><g data-el="goalpost"><rect x="184" y="66" width="2" height="18" fill="#f5f1e6" opacity="0.8"/><rect x="192" y="66" width="2" height="18" fill="#f5f1e6" opacity="0.8"/><rect x="184" y="66" width="10" height="2" fill="#f5f1e6" opacity="0.8"/></g>`;
+    case 'basketball': {
+      const planks = [66, 74, 82, 90, 98, 106, 114].map(y => `<line x1="0" y1="${y}" x2="200" y2="${y}" stroke="rgba(0,0,0,0.12)" stroke-width="1"/>`).join('');
+      return `<rect x="0" y="0" width="200" height="58" fill="${sky}"/>${stars}<rect x="0" y="16" width="200" height="24" fill="${pal.crowd}"/>` + svgDots(seed + 'crowd', 24, 2, 18, 198, 38, 1.6, CROWD_COLORS) +
+        `<rect x="0" y="58" width="200" height="62" fill="${ground}"/>${planks}<ellipse cx="100" cy="104" rx="26" ry="8" fill="none" stroke="rgba(255,255,255,0.5)" stroke-width="1.5"/><path d="M58 120 A46 30 0 0 1 142 120" fill="none" stroke="rgba(255,255,255,0.5)" stroke-width="1.5"/><g data-el="hoop"><rect x="168" y="8" width="3" height="36" fill="#2b3140"/><rect x="158" y="10" width="20" height="24" fill="none" stroke="#f5f1e6" stroke-width="2"/><ellipse cx="168" cy="36" rx="7" ry="2.5" fill="none" stroke="#e07b24" stroke-width="2"/><path d="M163 38 L165 46 M168 38 L168 46 M173 38 L171 46" stroke="#f5f1e6" stroke-width="1"/></g>`;
+    }
+    case 'baseball': {
+      const stripes = [20, 60, 100, 140, 180].map(x => `<rect x="${x}" y="66" width="20" height="54" fill="rgba(255,255,255,0.06)"/>`).join('');
+      return `<rect x="0" y="0" width="200" height="46" fill="${sky}"/>${stars}${lights}<rect x="0" y="44" width="200" height="22" fill="#14532d"/><rect x="0" y="44" width="200" height="2" fill="#f2b705"/><rect x="0" y="66" width="200" height="54" fill="${ground}"/>${stripes}<g data-el="diamond"><path d="M100 114 L68 92 L100 72 L132 92 Z" fill="none" stroke="rgba(255,255,255,0.55)" stroke-width="1.5"/><circle cx="100" cy="92" r="4" fill="#d9b380"/><rect x="66" y="90" width="4" height="4" fill="#fff"/><rect x="98" y="70" width="4" height="4" fill="#fff"/><rect x="130" y="90" width="4" height="4" fill="#fff"/></g>`;
+    }
+    case 'hockey': {
+      const marks = [0, 1, 2, 3, 4, 5].map(i => {
+        const x = (20 + hashRand(seed + 'marks', i * 2) * 160).toFixed(1);
+        const y = (76 + hashRand(seed + 'marks', i * 2 + 1) * 34).toFixed(1);
+        return `<line x1="${x}" y1="${y}" x2="${(+x + 8).toFixed(1)}" y2="${(+y + 2).toFixed(1)}" stroke="rgba(255,255,255,0.5)" stroke-width="1"/>`;
+      }).join('');
+      return `<rect x="0" y="0" width="200" height="52" fill="${sky}"/>${stars}<rect x="0" y="16" width="200" height="22" fill="${pal.crowd}"/>` + svgDots(seed + 'crowd', 22, 2, 18, 198, 36, 1.6, CROWD_COLORS) +
+        `<rect x="0" y="50" width="200" height="16" fill="#f5f1e6"/><rect x="0" y="58" width="200" height="3" fill="#e5484d"/><rect x="0" y="66" width="200" height="54" fill="${ground}"/>${marks}<rect x="98" y="66" width="3" height="54" fill="#e5484d" opacity="0.5"/><rect x="54" y="66" width="3" height="54" fill="#2563eb" opacity="0.5"/><rect x="143" y="66" width="3" height="54" fill="#2563eb" opacity="0.5"/><g data-el="goal"><rect x="170" y="76" width="22" height="18" fill="none" stroke="#e5484d" stroke-width="2"/><path d="M170 82 L192 82 M170 88 L192 88 M177 76 L177 94 M184 76 L184 94" stroke="#e5484d" stroke-width="0.8" opacity="0.7"/></g>`;
+    }
+    case 'soccer': {
+      const stripes = [20, 60, 100, 140, 180].map(x => `<rect x="${x}" y="46" width="20" height="74" fill="rgba(255,255,255,0.07)"/>`).join('');
+      return `<rect x="0" y="0" width="200" height="46" fill="${sky}"/>${stars}${lights}<rect x="0" y="16" width="200" height="26" fill="${pal.crowd}"/>` + svgDots(seed + 'crowd', 24, 2, 18, 198, 40, 1.6, CROWD_COLORS) +
+        `<rect x="0" y="46" width="200" height="74" fill="${ground}"/>${stripes}<circle cx="100" cy="96" r="14" fill="none" stroke="rgba(255,255,255,0.5)" stroke-width="1.5"/><circle cx="100" cy="96" r="1.5" fill="rgba(255,255,255,0.6)"/><g data-el="goal"><rect x="170" y="56" width="26" height="26" fill="none" stroke="#f5f1e6" stroke-width="2"/><path d="M170 63 L196 63 M170 70 L196 70 M170 77 L196 77 M178 56 L178 82 M187 56 L187 82" stroke="#f5f1e6" stroke-width="0.8" opacity="0.6"/></g><g data-el="flag"><rect x="6" y="48" width="2" height="14" fill="#f5f1e6"/><path d="M8 48 L16 51 L8 54 Z" fill="#f2b705"/></g>`;
+    }
+    case 'comic': {
+      const burst = [];
+      for (let i = 0; i < 12; i++) {
+        const a = (i / 12) * Math.PI * 2;
+        burst.push(`<line x1="100" y1="58" x2="${(100 + 110 * Math.cos(a)).toFixed(0)}" y2="${(58 + 110 * Math.sin(a)).toFixed(0)}" stroke="rgba(255,255,255,0.10)" stroke-width="3"/>`);
+      }
+      let dots = '';
+      for (let gy = 6; gy < 50; gy += 13) for (let gx = 8; gx < 196; gx += 13) dots += `<circle cx="${gx}" cy="${gy}" r="2.2" fill="rgba(255,255,255,0.09)"/>`;
+      const buildings = [0, 1, 2, 3, 4, 5].map(i => {
+        const w = 22 + Math.floor(hashRand(seed + 'bld', i * 2) * 16);
+        const h = 14 + Math.floor(hashRand(seed + 'bld', i * 2 + 1) * 22);
+        const x = 6 + i * 33;
+        let win = '';
+        for (let k = 0; k < 3; k++) win += `<rect x="${x + 5 + k * 8}" y="${120 - h + 5}" width="3" height="4" fill="#f2b705" opacity="0.85"/>`;
+        return `<rect x="${x}" y="${120 - h}" width="${w}" height="${h}" fill="#14101f"/>${win}`;
+      }).join('');
+      return `<rect x="0" y="0" width="200" height="120" fill="${sky}"/>${burst.join('')}${dots}<g data-el="skyline">${buildings}</g>${starBurst(100, 58, 52, 30, 8)}`;
+    }
+    default:
+      return `<rect x="0" y="0" width="200" height="120" fill="${sky}"/>${stars}`;
+  }
+}
+// ---------- Creature habitats ----------
+// Kaiju / critter cards keep their big emoji, but the window behind it is
+// a real habitat drawn from the card's element (title or position).
+function habitatFor(card) {
+  if (card.set === 'critter') return (card.position || 'arcane').toLowerCase();
+  const el = (card.title || '').split(' · ')[0].toLowerCase();
+  return ['fire', 'water', 'grass', 'electric', 'ice', 'psychic', 'dragon'].includes(el) ? el : 'arcane';
+}
+function habitatSVG(card) {
+  const hab = habitatFor(card);
+  const seed = (card.set || '') + '|' + (card.name || '');
+  const stars = svgDots(seed + 'stars', 12, 4, 2, 196, 40, 1.1, ['#ffffff']);
+  switch (hab) {
+    case 'fire':
+      return `<svg class="hab-svg" viewBox="0 0 200 120" xmlns="http://www.w3.org/2000/svg" data-habitat="fire"><rect x="0" y="0" width="200" height="120" fill="#2a0f0f"/><circle cx="40" cy="18" r="10" fill="#ff6b35" opacity="0.8"/><circle cx="160" cy="26" r="7" fill="#ff6b35" opacity="0.6"/><path d="M50 120 L100 42 L150 120 Z" fill="#3a1a1a"/><path d="M88 62 L100 42 L112 62 L104 62 L100 54 L96 62 Z" fill="#ff6b35"/><circle cx="100" cy="108" r="4" fill="#ffb35c"/><circle cx="76" cy="112" r="3" fill="#ff6b35"/><circle cx="126" cy="110" r="3" fill="#ffb35c"/></svg>`;
+    case 'water':
+      return `<svg class="hab-svg" viewBox="0 0 200 120" xmlns="http://www.w3.org/2000/svg" data-habitat="water"><rect x="0" y="0" width="200" height="60" fill="#1e6fb8"/><rect x="0" y="60" width="200" height="60" fill="#155a8a"/><path d="M0 62 Q25 54 50 62 T100 62 T150 62 T200 62" fill="none" stroke="rgba(255,255,255,0.35)" stroke-width="2"/><path d="M0 78 Q25 70 50 78 T100 78 T150 78 T200 78" fill="none" stroke="rgba(255,255,255,0.25)" stroke-width="2"/><path d="M0 96 Q25 88 50 96 T100 96 T150 96 T200 96" fill="none" stroke="rgba(255,255,255,0.18)" stroke-width="2"/><circle cx="40" cy="30" r="3" fill="rgba(255,255,255,0.5)"/><circle cx="150" cy="20" r="2" fill="rgba(255,255,255,0.5)"/><circle cx="120" cy="44" r="2.5" fill="rgba(255,255,255,0.4)"/></svg>`;
+    case 'grass':
+      return `<svg class="hab-svg" viewBox="0 0 200 120" xmlns="http://www.w3.org/2000/svg" data-habitat="grass"><rect x="0" y="0" width="200" height="120" fill="#2e6b34"/><rect x="0" y="70" width="200" height="50" fill="#3a8b42"/><path d="M20 70 L34 34 L48 70 Z" fill="#1d4d2b"/><path d="M160 70 L174 30 L188 70 Z" fill="#1d4d2b"/><path d="M90 74 L102 44 L114 74 Z" fill="#245c31"/><circle cx="30" cy="100" r="10" fill="#2e7d32"/><circle cx="170" cy="102" r="12" fill="#2e7d32"/><circle cx="100" cy="108" r="8" fill="#2e7d32"/></svg>`;
+    case 'electric':
+      return `<svg class="hab-svg" viewBox="0 0 200 120" xmlns="http://www.w3.org/2000/svg" data-habitat="electric"><rect x="0" y="0" width="200" height="120" fill="#3a2a6b"/><path d="M120 8 L104 52 L116 52 L98 96 L130 44 L116 44 Z" fill="#f2b705"/><path d="M40 20 L34 44 L42 44 L30 70" fill="none" stroke="rgba(242,183,5,0.5)" stroke-width="2"/>${[16, 36, 56, 76, 96].map(x => `<line x1="${x}" y1="90" x2="${x - 4}" y2="112" stroke="rgba(255,255,255,0.25)" stroke-width="1"/>`).join('')}</svg>`;
+    case 'ice':
+      return `<svg class="hab-svg" viewBox="0 0 200 120" xmlns="http://www.w3.org/2000/svg" data-habitat="ice"><rect x="0" y="0" width="200" height="120" fill="#a8d8ea"/><rect x="0" y="84" width="200" height="36" fill="#e8f4f8"/><path d="M30 84 L42 52 L54 84 Z" fill="#7ab8d0"/><path d="M150 84 L164 46 L178 84 Z" fill="#7ab8d0"/><path d="M100 84 L110 60 L120 84 Z" fill="#8fc8de"/><g stroke="#ffffff" stroke-width="1.2"><path d="M60 24 L66 30 M63 21 L63 33 M57 27 L69 27"/><path d="M140 18 L146 24 M143 15 L143 27 M137 21 L149 21"/></g></svg>`;
+    case 'psychic':
+      return `<svg class="hab-svg" viewBox="0 0 200 120" xmlns="http://www.w3.org/2000/svg" data-habitat="psychic"><rect x="0" y="0" width="200" height="120" fill="#2a1150"/>${stars}<circle cx="160" cy="26" r="12" fill="#f5f1e6"/><circle cx="166" cy="22" r="10" fill="#2a1150"/><circle cx="60" cy="80" r="3" fill="#a371f7"/><circle cx="90" cy="66" r="2" fill="#f2b705"/><circle cx="130" cy="88" r="2.5" fill="#a371f7"/></svg>`;
+    case 'dragon':
+      return `<svg class="hab-svg" viewBox="0 0 200 120" xmlns="http://www.w3.org/2000/svg" data-habitat="dragon"><rect x="0" y="0" width="200" height="120" fill="#e07a4a"/><ellipse cx="50" cy="26" rx="22" ry="7" fill="rgba(255,255,255,0.5)"/><ellipse cx="150" cy="18" rx="26" ry="8" fill="rgba(255,255,255,0.45)"/><path d="M0 120 L50 52 L100 120 Z" fill="#5a3a5e"/><path d="M70 120 L130 40 L190 120 Z" fill="#3a2a4a"/><path d="M150 120 L185 66 L200 84 L200 120 Z" fill="#5a3a5e"/></svg>`;
+    default: // arcane (mythic heroes without an element)
+      return `<svg class="hab-svg" viewBox="0 0 200 120" xmlns="http://www.w3.org/2000/svg" data-habitat="arcane"><rect x="0" y="0" width="200" height="120" fill="#3a1f6b"/>${stars}<path d="M100 30 A28 28 0 1 1 72 58 A22 22 0 1 0 100 30" fill="none" stroke="#a371f7" stroke-width="2" opacity="0.7"/><circle cx="150" cy="84" r="4" fill="#f2b705"/><circle cx="52" cy="90" r="3" fill="#a371f7"/></svg>`;
+  }
+}
 function poseFor(card) {
   if (card.name === 'Gridiron Ghost') return 'ghost';
   const sport = card.sport || SET_SPORT[card.set] || 'football';
@@ -522,28 +783,30 @@ function poseFor(card) {
   }
 }
 function playerFigureSVG(card) {
-  const pose = poseFor(card);
-  const ghost = pose === 'ghost';
-  const parts = POSE_PARTS[pose];
-  const team = TEAM_COLORS[card.team] || '#555';
-  const jersey = ghost ? '#e8d27a' : team;
-  const helmet = ghost ? '#f2d98c' : team;
-  const skin = ghost ? '#f5ecd0' : skinFor(card);
-  const pants = ghost ? '#efe6c8' : '#eef0f2';
-  const num = jerseyNumber(card);
-  const lean = parts.lean || 0;
-  const headwear = headwearFor(card);
+  const spec = figureSpec(card);
+  const parts = spec.parts;
+  const t = spec.torso, hd = spec.head;
+  const anchors = torsoAnchors(t);
   const sport = sportFor(card) || '';
-  const path = pts => 'M' + pts.map(p => p.join(' ')).join(' L');
-  const capeColor = (SETS[card.set] && SETS[card.set].color) || team;
+  const headwear = spec.headwear;
+  const s = spec.scale;
+  const axFrac = { left: 0.32, center: 0.5, right: 0.68 }[spec.anchor] || 0.5;
+  const tx = axFrac * 200 - 50 * s;
+  const ty = 118 - 112 * s - spec.lift * s;
+  const lean = parts.lean || 0;
+  const r1 = n => Math.round(n * 10) / 10;
+  const path = (pts, anchor) => 'M' + [anchor, ...pts.slice(1)].map(p => p.map(r1).join(' ')).join(' L');
+  const capeColor = (SETS[card.set] && SETS[card.set].color) || spec.team;
   const cape = parts.cape
-    ? `<path d="M38 38 Q16 62 24 108 L44 108 Q36 70 44 42 Z" fill="${capeColor}"/>`
+    ? `<path d="M38 38 Q16 62 24 108 L44 108 Q36 70 44 42 Z" fill="${capeColor}"${spec.capeFlip ? ' transform="translate(100 0) scale(-1 1)"' : ''}/>`
     : '';
-  const legs = parts.legs.map(l => `<path d="${path(l)}" stroke="${pants}" stroke-width="9" stroke-linecap="round" stroke-linejoin="round" fill="none"/>`).join('');
-  const arms = parts.arms.map(a => `<path d="${path(a)}" stroke="${jersey}" stroke-width="7" stroke-linecap="round" fill="none"/>`).join('');
+  const motion = spec.motion.map(m => `<path d="M${m[0]} ${m[1]} L${m[2]} ${m[3]}" stroke="rgba(255,255,255,0.55)" stroke-width="2" stroke-linecap="round"/>`).join('');
+  const legs = [[parts.legs[0], anchors.hipL], [parts.legs[1], anchors.hipR]].map(([l, a]) => `<path d="${path(l, a)}" stroke="${spec.pants}" stroke-width="9" stroke-linecap="round" stroke-linejoin="round" fill="none"/>`).join('');
+  const arms = [[parts.arms[0], anchors.shL], [parts.arms[1], anchors.shR]].map(([a, anchor]) => `<path d="${path(a, anchor)}" stroke="${spec.jersey}" stroke-width="7" stroke-linecap="round" fill="none"/>`).join('');
   const cleats = parts.cleats.map(c => parts.skates
     ? `<ellipse cx="${c[0]}" cy="${c[1]}" rx="5" ry="3" fill="#1c2433"/><rect x="${c[0] - 6}" y="${c[1] + 2}" width="12" height="3" rx="1" fill="#cbd5e1"/>`
     : `<ellipse cx="${c[0]}" cy="${c[1]}" rx="5" ry="3" fill="#1c2433"/>`).join('');
+  const torso = `<g transform="rotate(${t.rot} ${t.cx} ${t.cy})"><rect x="${t.cx - t.w / 2}" y="${t.cy - t.h / 2}" width="${t.w}" height="${t.h}" rx="8" fill="${spec.jersey}"/><ellipse cx="${t.cx - t.w / 2 + 2}" cy="${t.cy - t.h / 2 + 4}" rx="7" ry="5" fill="${spec.jersey}"/><ellipse cx="${t.cx + t.w / 2 - 2}" cy="${t.cy - t.h / 2 + 4}" rx="7" ry="5" fill="${spec.jersey}"/></g>`;
   const stick = parts.stick
     ? `<path d="M${parts.stick[0][0]} ${parts.stick[0][1]} L${parts.stick[1][0]} ${parts.stick[1][1]}" stroke="${parts.stickKind === 'bat' ? '#d9b380' : '#c9a06a'}" stroke-width="${parts.stickKind === 'bat' ? 5 : 3.5}" stroke-linecap="round" fill="none"/>` +
       (parts.stickKind === 'hockey' ? `<path d="M${parts.stick[1][0]} ${parts.stick[1][1]} L${parts.stick[1][0] + 9} ${parts.stick[1][1] + 2}" stroke="#c9a06a" stroke-width="4" stroke-linecap="round" fill="none"/>` : '')
@@ -556,46 +819,71 @@ function playerFigureSVG(card) {
     if (parts.ballKind === 'soccer') return `<circle cx="${bx}" cy="${by}" r="5.5" fill="#f5f5f5"/><circle cx="${bx}" cy="${by}" r="2" fill="#111827"/>`;
     return `<ellipse cx="${bx}" cy="${by}" rx="6" ry="4" fill="#7a4a2b" transform="rotate(-30 ${bx} ${by})"/><path d="M${bx - 3} ${by} L${bx + 3} ${by - 1}" stroke="#fff" stroke-width="1"/>`;
   })();
-  const glow = ghost ? `<ellipse cx="50" cy="60" rx="36" ry="50" fill="rgba(242,217,140,0.20)"/>` : '';
-  const op = ghost ? ' opacity="0.62"' : '';
-  // Headwear by sport: helmet (football/hockey), headband (basketball),
-  // cap (baseball), hair (soccer), mask (comic). Face + eyes in every case.
+  const glow = spec.ghost ? `<ellipse cx="50" cy="60" rx="36" ry="50" fill="rgba(242,217,140,0.20)"/>` : '';
+  const op = spec.ghost ? ' opacity="0.62"' : '';
+  // Neck from head down to the torso top.
+  const neckTop = hd.y + hd.r - 2, neckBot = t.cy - t.h / 2 + 2;
+  const neck = neckBot > neckTop ? `<rect x="${hd.x - 5}" y="${neckTop}" width="10" height="${(neckBot - neckTop).toFixed(1)}" fill="${spec.skin}"/>` : '';
+  const hx = hd.x, hy = hd.y, hr = hd.r;
+  const eyes = `<circle cx="${hx - 3}" cy="${hy + 1}" r="1" fill="#1c2433"/><circle cx="${hx + 3}" cy="${hy + 1}" r="1" fill="#1c2433"/>`;
   let head = '';
   if (headwear === 'headband') {
-    head = `<path d="M42 24 A8 8 0 0 1 58 24 Z" fill="#1c2433"/><rect x="42" y="24" width="16" height="3" fill="${team}"/><circle cx="47" cy="30" r="1" fill="#1c2433"/><circle cx="53" cy="30" r="1" fill="#1c2433"/>`;
+    const bandColor = spec.hair === 'ponytail' ? '#fff' : spec.team;
+    head = `<path d="M${hx - 8} ${hy - 5} A8 8 0 0 1 ${hx + 8} ${hy - 5} Z" fill="${spec.hairColor}"/><rect x="${hx - 8}" y="${hy - 5}" width="16" height="3" fill="${bandColor}"/>${eyes}`;
   } else if (headwear === 'cap') {
-    head = `<path d="M38 27 A12 12 0 0 1 62 27 Z" fill="${team}"/><rect x="56" y="26" width="13" height="3" rx="1" fill="${team}"/><circle cx="47" cy="30" r="1" fill="#1c2433"/><circle cx="53" cy="30" r="1" fill="#1c2433"/>`;
+    const brim = spec.hair === 'ponytail'
+      ? `<rect x="${hx - 19}" y="${hy - 3}" width="13" height="3" rx="1" fill="${spec.team}"/>`
+      : `<rect x="${hx + 6}" y="${hy - 3}" width="13" height="3" rx="1" fill="${spec.team}"/>`;
+    head = `<path d="M${hx - 12} ${hy - 2} A12 12 0 0 1 ${hx + 12} ${hy - 2} Z" fill="${spec.team}"/>${brim}${eyes}`;
   } else if (headwear === 'hair') {
-    head = `<path d="M42 24 A8 8 0 0 1 58 24 Z" fill="#1c2433"/><circle cx="47" cy="30" r="1" fill="#1c2433"/><circle cx="53" cy="30" r="1" fill="#1c2433"/>`;
+    if (spec.hair === 'afro') head = ''; // afro is drawn behind the face (afroBack below)
+    else if (spec.hair === 'mohawk') head = `<path d="M${hx - 2} ${hy - 15} L${hx + 2} ${hy - 15} L${hx} ${hy - 6} Z" fill="${spec.hairColor}"/>`;
+    else if (spec.hair === 'ponytail') head = `<path d="M${hx - 8} ${hy - 5} A8 8 0 0 1 ${hx + 8} ${hy - 5} Z" fill="${spec.hairColor}"/><circle cx="${hx + 10}" cy="${hy + 2}" r="3" fill="${spec.hairColor}"/>`;
+    else head = `<path d="M${hx - 8} ${hy - 5} A8 8 0 0 1 ${hx + 8} ${hy - 5} Z" fill="${spec.hairColor}"/>`;
+    head += eyes;
   } else if (headwear === 'mask') {
-    head = `<path d="M42 24 A8 8 0 0 1 58 24 Z" fill="#1c2433"/><rect x="41" y="27" width="18" height="4" rx="2" fill="${team}"/><circle cx="47" cy="29" r="1.2" fill="#fff"/><circle cx="53" cy="29" r="1.2" fill="#fff"/>`;
-  } else {
-    head = `<path d="M38 27 A12 12 0 0 1 62 27 Z" fill="${helmet}"/><rect x="48" y="14" width="4" height="10" fill="rgba(255,255,255,0.55)"/><circle cx="47" cy="30" r="1" fill="#1c2433"/><circle cx="53" cy="30" r="1" fill="#1c2433"/><path d="M60 29 L68 29 M60 33 L66 35" stroke="#dfe3ea" stroke-width="1.5" fill="none"/>`;
+    head = `<path d="M${hx - 8} ${hy - 5} A8 8 0 0 1 ${hx + 8} ${hy - 5} Z" fill="${spec.hairColor}"/><rect x="${hx - 9}" y="${hy - 2}" width="18" height="4" rx="2" fill="${spec.team}"/><circle cx="${hx - 3}" cy="${hy}" r="1.2" fill="#fff"/><circle cx="${hx + 3}" cy="${hy}" r="1.2" fill="#fff"/>`;
+  } else { // helmet
+    const stripe = (spec.hair === 'buzz' || spec.hair === 'mohawk') ? `<rect x="${hx - 2}" y="${hy - hr - 7}" width="4" height="10" fill="rgba(255,255,255,0.55)"/>` : '';
+    const mask = (spec.hair === 'afro' || spec.hair === 'mohawk') ? `<path d="M${hx + 10} ${hy} L${hx + 18} ${hy} M${hx + 10} ${hy + 4} L${hx + 16} ${hy + 6}" stroke="#dfe3ea" stroke-width="1.5" fill="none"/>` : '';
+    head = `<path d="M${hx - hr - 4} ${hy - 2} A${hr + 4} ${hr + 4} 0 0 1 ${hx + hr + 4} ${hy - 2} Z" fill="${spec.helmet}"/>${stripe}${eyes}${mask}`;
   }
-  return `<svg viewBox="0 0 100 120" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="${esc(card.name)}" data-sport="${sport}" data-pose="${pose}" data-headwear="${headwear}"${parts.cape ? ' data-cape="1"' : ''}${parts.skates ? ' data-skates="1"' : ''}${parts.stick ? ' data-stick="1"' : ''}${parts.ball ? ' data-ball="' + (parts.ballKind || 'football') + '"' : ''}>${glow}<ellipse cx="50" cy="110" rx="26" ry="5" fill="rgba(0,0,0,0.35)"/><g${op}${lean ? ` transform="rotate(${lean} 50 75)"` : ''}>${cape}${legs}${cleats}<path d="M34 40 Q34 36 40 36 L60 36 Q66 36 66 40 L66 70 Q66 74 62 74 L38 74 Q34 74 34 70 Z" fill="${jersey}"/><ellipse cx="36" cy="40" rx="7" ry="5" fill="${jersey}"/><ellipse cx="64" cy="40" rx="7" ry="5" fill="${jersey}"/>${arms}${stick}<text x="50" y="60" text-anchor="middle" font-size="15" font-weight="800" fill="${jerseyInk(jersey)}" font-family="system-ui, sans-serif">${num}</text><rect x="45" y="31" width="10" height="8" fill="${skin}"/><circle cx="50" cy="29" r="7.5" fill="${skin}"/>${head}${ball}</g></svg>`;
+  const shadow = `<ellipse cx="${(axFrac * 200).toFixed(1)}" cy="116" rx="${(26 * s).toFixed(1)}" ry="4" fill="rgba(0,0,0,0.35)"/>`;
+  const afroBack = (headwear === 'hair' && spec.hair === 'afro') ? `<circle cx="${hx}" cy="${hy - 4}" r="12" fill="${spec.hairColor}"/>` : '';
+  return `<svg viewBox="0 0 200 120" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="${esc(card.name)}" data-sport="${sport}" data-pose="${spec.pose}" data-headwear="${headwear}" data-scene="${sport}" data-variant="${spec.scene}" data-anchor="${spec.anchor}" data-hair="${spec.hair}"${parts.cape ? ' data-cape="1"' : ''}${parts.skates ? ' data-skates="1"' : ''}${parts.stick ? ' data-stick="1"' : ''}${parts.ball ? ' data-ball="' + (parts.ballKind || 'football') + '"' : ''}>${sceneSVG(card)}${shadow}<g transform="translate(${tx.toFixed(1)} ${ty.toFixed(1)}) scale(${s})"><g${op}${lean ? ` transform="rotate(${lean} 50 75)"` : ''}>${glow}${motion}${cape}${legs}${cleats}${torso}${arms}${stick}<text x="${t.cx}" y="${t.cy + 5}" text-anchor="middle" font-size="15" font-weight="800" fill="${jerseyInk(spec.jersey)}" font-family="system-ui, sans-serif">${spec.num}</text>${neck}${afroBack}<circle cx="${hx}" cy="${hy}" r="${hr}" fill="${spec.skin}"/>${head}${ball}</g></g></svg>`;
 }
-// Art window content for the HTML card face: humanoid figure for the sports
-// and comic sets (sport arena backdrop), emoji on the set color for creatures.
+// Art window content for the HTML card face. Figure cards get the full
+// drawn scene (playerFigureSVG carries scene + figure in one SVG); creature
+// cards get a habitat scene behind their emoji. Parallels: the art window
+// carries a par-<rarity> class AND a data-parallel kind (plain / silver /
+// refractor / rainbow / black-gold / prizm) so a parallel is recognizable
+// at a glance and testable. The day/dusk/night variant is baked into the
+// scene palette — no more flat tint veil on top.
 function cardArtHTML(card) {
   const foil = card.rarity === 'ultra' ? ' foil-ultra' : card.rarity === 'secret' ? ' foil-secret' : '';
   const rarCls = ' rar-' + (card.rarity || 'common');
+  const parCls = ' par-' + (card.rarity || 'common');
   const one = card.variant === '1/1';
   const stamp = one ? '<span class="one-stamp">1/1</span>' : '';
+  const parKind = one ? 'prizm' : ({ common: 'plain', uncommon: 'silver', rare: 'refractor', ultra: 'rainbow', secret: 'black-gold' })[card.rarity] || 'plain';
   if (hasFigure(card)) {
     const sport = sportFor(card);
     const arena = sport === 'football' ? 'stadium arena-football' : 'arena-' + sport;
-    const bv = backdropVariant(card);
-    const veil = bv === 'day' ? '' : `<span class="bk-veil bk-${bv}"></span>`;
-    return `<div class="tc-art ${arena}${foil}${rarCls}${one ? ' one-of-one' : ''}">${veil}${playerFigureSVG(card)}${stamp}</div>`;
+    return `<div class="tc-art ${arena}${foil}${rarCls}${parCls}${one ? ' one-of-one' : ''}" data-parallel="${parKind}">${playerFigureSVG(card)}${stamp}</div>`;
   }
-  return `<div class="tc-art${foil}${rarCls}${one ? ' one-of-one' : ''}" style="background:${SETS[card.set].color}"><span class="emoji">${card.art}</span>${stamp}</div>`;
+  const hab = habitatFor(card);
+  return `<div class="tc-art${foil}${rarCls}${parCls}${one ? ' one-of-one' : ''} hab-${hab}" data-parallel="${parKind}" style="background:${SETS[card.set].color}">${habitatSVG(card)}<span class="emoji">${card.art}</span>${stamp}</div>`;
 }
 // Shared trading-card face used by pulls, collection and auction tiles.
+// The name bar carries the team color (figure sets) or set color
+// (creature sets) — the whole card reads as a team card, not just the jersey.
 function cardFaceHTML(card) {
   const rc = rarityColor(card.rarity);
   const flavor = card.flavor ? `<div class="tc-flavor">${esc(card.flavor)}</div>` : '';
   const oneTag = card.variant === '1/1' ? '<span class="one-tag">1 OF 1</span>' : '';
-  return `<div class="tc-name">${esc(card.name)}${oneTag}</div>
+  const fc = frameColor(card);
+  const nameStyle = card.variant === '1/1' ? ' style="background:#14161c;color:#f5f1e6"' : ` style="background:${fc};color:${inkFor(fc)}"`;
+  return `<div class="tc-name"${nameStyle}>${esc(card.name)}${oneTag}</div>
   ${cardArtHTML(card)}
   <div class="tc-type">${esc(card.title)}</div>
   ${flavor}
@@ -615,34 +903,299 @@ function wrapText(ctx, text, x, y, maxW, lh) {
 }
 // Simplified humanoid player drawn with canvas paths, in the same 100x120
 // pose space as playerFigureSVG. Drawn inside the art window (ax, ay, aw, ah).
-function drawPlayerFigure(ctx, ax, ay, aw, ah, card) {
-  const pose = poseFor(card);
-  const ghost = pose === 'ghost';
-  const parts = POSE_PARTS[pose];
-  const team = TEAM_COLORS[card.team] || '#555';
-  const jersey = ghost ? '#e8d27a' : team;
-  const helmet = ghost ? '#f2d98c' : team;
-  const skin = ghost ? '#f5ecd0' : skinFor(card);
-  const pants = ghost ? '#efe6c8' : '#eef0f2';
-  const headwear = headwearFor(card);
-  const s = Math.min(aw / 100, ah / 122);
-  const ox = ax + aw / 2 - 50 * s, oy = ay + ah - 112 * s;
+// ---------- Canvas scenes (desk card twin of sceneSVG / habitatSVG) ----------
+// Map the 200x120 scene space onto the art window with a cover fit, so the
+// canvas figure lands in the same place as the SVG figure.
+function sceneCover(ctx, ax, ay, aw, ah) {
+  const ss = Math.max(aw / 200, ah / 120);
+  const sox = ax + (aw - 200 * ss) / 2, soy = ay + (ah - 120 * ss) / 2;
   ctx.save();
-  if (ghost) ctx.globalAlpha = 0.62;
-  ctx.translate(ox, oy); ctx.scale(s, s);
+  ctx.beginPath(); ctx.rect(ax, ay, aw, ah); ctx.clip();
+  ctx.translate(sox, soy); ctx.scale(ss, ss);
+}
+function canvasDots(ctx, seed, n, x0, y0, x1, y1, r, colors) {
+  for (let i = 0; i < n; i++) {
+    ctx.fillStyle = colors[Math.floor(hashRand(seed, i * 3) * colors.length) % colors.length];
+    ctx.globalAlpha = 0.85;
+    ctx.beginPath();
+    ctx.arc(x0 + hashRand(seed, i * 2) * (x1 - x0), y0 + hashRand(seed, i * 2 + 1) * (y1 - y0), r, 0, Math.PI * 2);
+    ctx.fill();
+  }
+  ctx.globalAlpha = 1;
+}
+// Drawn sport scene in the art window (200x120 scene space).
+function drawScene(ctx, ax, ay, aw, ah, card) {
+  const sport = sportFor(card) || 'football';
+  const v = backdropVariant(card);
+  const pal = SCENE_COLORS[sport] || SCENE_COLORS.football;
+  const seed = (card.set || '') + '|' + (card.name || '');
+  const sky = pal.sky[v], ground = pal.ground[v];
+  sceneCover(ctx, ax, ay, aw, ah);
+  ctx.fillStyle = sky; ctx.fillRect(0, 0, 200, 120);
+  if (v === 'night') {
+    ctx.fillStyle = '#ffffff';
+    for (let i = 0; i < 14; i++) ctx.fillRect(4 + hashRand(seed + 'stars', i * 2) * 192, 2 + hashRand(seed + 'stars', i * 2 + 1) * 28, 1.5, 1.5);
+  }
+  const floodlight = (x) => {
+    ctx.fillStyle = '#2b3140'; ctx.fillRect(x, 6, 3, 34);
+    ctx.fillStyle = '#f5f1e6'; ctx.fillRect(x - 5, 2, 13, 7);
+    ctx.fillStyle = 'rgba(255,248,208,0.22)';
+    ctx.beginPath(); ctx.arc(x + 1, 5, 9, 0, Math.PI * 2); ctx.fill();
+  };
+  const crowdBand = (y0, y1) => {
+    ctx.fillStyle = pal.crowd; ctx.fillRect(0, y0, 200, y1 - y0);
+    canvasDots(ctx, seed + 'crowd', 24, 2, y0 + 2, 198, y1 - 2, 1.6, CROWD_COLORS);
+  };
+  if (sport === 'football') {
+    floodlight(12); floodlight(185);
+    crowdBand(40, 56);
+    ctx.fillStyle = ground; ctx.fillRect(0, 56, 200, 64);
+    ctx.strokeStyle = 'rgba(255,255,255,0.20)'; ctx.lineWidth = 1;
+    for (const x of [25, 50, 75, 100, 125, 150, 175]) { ctx.beginPath(); ctx.moveTo(x, 56); ctx.lineTo(x, 120); ctx.stroke(); }
+    ctx.strokeStyle = 'rgba(255,255,255,0.16)';
+    ctx.beginPath(); ctx.moveTo(0, 92); ctx.lineTo(200, 92); ctx.stroke();
+    ctx.fillStyle = 'rgba(245,241,230,0.8)';
+    ctx.fillRect(184, 66, 2, 18); ctx.fillRect(192, 66, 2, 18); ctx.fillRect(184, 66, 10, 2);
+  } else if (sport === 'basketball') {
+    crowdBand(16, 40);
+    ctx.fillStyle = ground; ctx.fillRect(0, 58, 200, 62);
+    ctx.strokeStyle = 'rgba(0,0,0,0.12)'; ctx.lineWidth = 1;
+    for (const y of [66, 74, 82, 90, 98, 106, 114]) { ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(200, y); ctx.stroke(); }
+    ctx.strokeStyle = 'rgba(255,255,255,0.5)'; ctx.lineWidth = 1.5;
+    ctx.beginPath(); ctx.ellipse(100, 104, 26, 8, 0, 0, Math.PI * 2); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(58, 120); ctx.ellipse(100, 120, 42, 30, 0, Math.PI, 0); ctx.stroke();
+    ctx.fillStyle = '#2b3140'; ctx.fillRect(168, 8, 3, 36);
+    ctx.strokeStyle = '#f5f1e6'; ctx.lineWidth = 2;
+    ctx.strokeRect(158, 10, 20, 24);
+    ctx.strokeStyle = '#e07b24';
+    ctx.beginPath(); ctx.ellipse(168, 36, 7, 2.5, 0, 0, Math.PI * 2); ctx.stroke();
+    ctx.strokeStyle = '#f5f1e6'; ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(163, 38); ctx.lineTo(165, 46); ctx.moveTo(168, 38); ctx.lineTo(168, 46); ctx.moveTo(173, 38); ctx.lineTo(171, 46); ctx.stroke();
+  } else if (sport === 'baseball') {
+    floodlight(12); floodlight(185);
+    ctx.fillStyle = '#14532d'; ctx.fillRect(0, 44, 200, 22);
+    ctx.fillStyle = '#f2b705'; ctx.fillRect(0, 44, 200, 2);
+    ctx.fillStyle = ground; ctx.fillRect(0, 66, 200, 54);
+    ctx.fillStyle = 'rgba(255,255,255,0.06)';
+    for (const x of [20, 60, 100, 140, 180]) ctx.fillRect(x, 66, 20, 54);
+    ctx.strokeStyle = 'rgba(255,255,255,0.55)'; ctx.lineWidth = 1.5;
+    ctx.beginPath(); ctx.moveTo(100, 114); ctx.lineTo(68, 92); ctx.lineTo(100, 72); ctx.lineTo(132, 92); ctx.closePath(); ctx.stroke();
+    ctx.fillStyle = '#d9b380';
+    ctx.beginPath(); ctx.arc(100, 92, 4, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = '#fff';
+    ctx.fillRect(66, 90, 4, 4); ctx.fillRect(98, 70, 4, 4); ctx.fillRect(130, 90, 4, 4);
+  } else if (sport === 'hockey') {
+    crowdBand(16, 38);
+    ctx.fillStyle = '#f5f1e6'; ctx.fillRect(0, 50, 200, 16);
+    ctx.fillStyle = '#e5484d'; ctx.fillRect(0, 58, 200, 3);
+    ctx.fillStyle = ground; ctx.fillRect(0, 66, 200, 54);
+    ctx.strokeStyle = 'rgba(255,255,255,0.5)'; ctx.lineWidth = 1;
+    for (let i = 0; i < 6; i++) {
+      const x = 20 + hashRand(seed + 'marks', i * 2) * 160, y = 76 + hashRand(seed + 'marks', i * 2 + 1) * 34;
+      ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(x + 8, y + 2); ctx.stroke();
+    }
+    ctx.fillStyle = 'rgba(229,72,77,0.5)'; ctx.fillRect(98, 66, 3, 54);
+    ctx.fillStyle = 'rgba(37,99,235,0.5)'; ctx.fillRect(54, 66, 3, 54); ctx.fillRect(143, 66, 3, 54);
+    ctx.strokeStyle = '#e5484d'; ctx.lineWidth = 2;
+    ctx.strokeRect(170, 76, 22, 18);
+    ctx.lineWidth = 0.8; ctx.globalAlpha = 0.7;
+    ctx.beginPath(); ctx.moveTo(170, 82); ctx.lineTo(192, 82); ctx.moveTo(170, 88); ctx.lineTo(192, 88);
+    ctx.moveTo(177, 76); ctx.lineTo(177, 94); ctx.moveTo(184, 76); ctx.lineTo(184, 94); ctx.stroke();
+    ctx.globalAlpha = 1;
+  } else if (sport === 'soccer') {
+    floodlight(12); floodlight(185);
+    crowdBand(16, 42);
+    ctx.fillStyle = ground; ctx.fillRect(0, 46, 200, 74);
+    ctx.fillStyle = 'rgba(255,255,255,0.07)';
+    for (const x of [20, 60, 100, 140, 180]) ctx.fillRect(x, 46, 20, 74);
+    ctx.strokeStyle = 'rgba(255,255,255,0.5)'; ctx.lineWidth = 1.5;
+    ctx.beginPath(); ctx.arc(100, 96, 14, 0, Math.PI * 2); ctx.stroke();
+    ctx.fillStyle = 'rgba(255,255,255,0.6)';
+    ctx.beginPath(); ctx.arc(100, 96, 1.5, 0, Math.PI * 2); ctx.fill();
+    ctx.strokeStyle = '#f5f1e6'; ctx.lineWidth = 2;
+    ctx.strokeRect(170, 56, 26, 26);
+    ctx.lineWidth = 0.8; ctx.globalAlpha = 0.6;
+    ctx.beginPath(); ctx.moveTo(170, 63); ctx.lineTo(196, 63); ctx.moveTo(170, 70); ctx.lineTo(196, 70); ctx.moveTo(170, 77); ctx.lineTo(196, 77);
+    ctx.moveTo(178, 56); ctx.lineTo(178, 82); ctx.moveTo(187, 56); ctx.lineTo(187, 82); ctx.stroke();
+    ctx.globalAlpha = 1;
+    ctx.fillStyle = '#f5f1e6'; ctx.fillRect(6, 48, 2, 14);
+    ctx.fillStyle = '#f2b705';
+    ctx.beginPath(); ctx.moveTo(8, 48); ctx.lineTo(16, 51); ctx.lineTo(8, 54); ctx.closePath(); ctx.fill();
+  } else if (sport === 'comic') {
+    ctx.strokeStyle = 'rgba(255,255,255,0.10)'; ctx.lineWidth = 3;
+    for (let i = 0; i < 12; i++) {
+      const a = (i / 12) * Math.PI * 2;
+      ctx.beginPath(); ctx.moveTo(100, 58); ctx.lineTo(100 + 110 * Math.cos(a), 58 + 110 * Math.sin(a)); ctx.stroke();
+    }
+    ctx.fillStyle = 'rgba(255,255,255,0.09)';
+    for (let gy = 6; gy < 50; gy += 13) for (let gx = 8; gx < 196; gx += 13) { ctx.beginPath(); ctx.arc(gx, gy, 2.2, 0, Math.PI * 2); ctx.fill(); }
+    for (let i = 0; i < 6; i++) {
+      const w = 22 + Math.floor(hashRand(seed + 'bld', i * 2) * 16);
+      const h = 14 + Math.floor(hashRand(seed + 'bld', i * 2 + 1) * 22);
+      const x = 6 + i * 33;
+      ctx.fillStyle = '#14101f'; ctx.fillRect(x, 120 - h, w, h);
+      ctx.fillStyle = 'rgba(242,183,5,0.85)';
+      for (let k = 0; k < 3; k++) ctx.fillRect(x + 5 + k * 8, 120 - h + 5, 3, 4);
+    }
+    ctx.fillStyle = 'rgba(242,183,5,0.9)';
+    ctx.beginPath();
+    for (let i = 0; i < 16; i++) {
+      const a = (i / 16) * Math.PI * 2 - Math.PI / 2;
+      const r = i % 2 === 0 ? 52 : 30;
+      const px = 100 + r * Math.cos(a), py = 58 + r * Math.sin(a);
+      if (i === 0) ctx.moveTo(px, py); else ctx.lineTo(px, py);
+    }
+    ctx.closePath(); ctx.fill();
+  }
+  ctx.restore();
+}
+// Creature habitat on the canvas desk card (twin of habitatSVG).
+function drawHabitat(ctx, ax, ay, aw, ah, card) {
+  const hab = habitatFor(card);
+  const seed = (card.set || '') + '|' + (card.name || '');
+  sceneCover(ctx, ax, ay, aw, ah);
+  if (hab === 'fire') {
+    ctx.fillStyle = '#2a0f0f'; ctx.fillRect(0, 0, 200, 120);
+    ctx.fillStyle = 'rgba(255,107,53,0.8)';
+    ctx.beginPath(); ctx.arc(40, 18, 10, 0, Math.PI * 2); ctx.fill();
+    ctx.beginPath(); ctx.arc(160, 26, 7, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = '#3a1a1a';
+    ctx.beginPath(); ctx.moveTo(50, 120); ctx.lineTo(100, 42); ctx.lineTo(150, 120); ctx.closePath(); ctx.fill();
+    ctx.fillStyle = '#ff6b35';
+    ctx.beginPath(); ctx.moveTo(88, 62); ctx.lineTo(100, 42); ctx.lineTo(112, 62); ctx.lineTo(104, 62); ctx.lineTo(100, 54); ctx.lineTo(96, 62); ctx.closePath(); ctx.fill();
+    ctx.fillStyle = '#ffb35c';
+    ctx.beginPath(); ctx.arc(100, 108, 4, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = '#ff6b35';
+    ctx.beginPath(); ctx.arc(76, 112, 3, 0, Math.PI * 2); ctx.fill();
+    ctx.beginPath(); ctx.arc(126, 110, 3, 0, Math.PI * 2); ctx.fill();
+  } else if (hab === 'water') {
+    ctx.fillStyle = '#1e6fb8'; ctx.fillRect(0, 0, 200, 60);
+    ctx.fillStyle = '#155a8a'; ctx.fillRect(0, 60, 200, 60);
+    ctx.strokeStyle = 'rgba(255,255,255,0.3)'; ctx.lineWidth = 2;
+    for (const y of [62, 78, 96]) {
+      ctx.beginPath(); ctx.moveTo(0, y);
+      for (let x = 0; x <= 200; x += 25) ctx.quadraticCurveTo(x + 12, y - 8, x + 25, y);
+      ctx.stroke();
+    }
+    ctx.fillStyle = 'rgba(255,255,255,0.5)';
+    ctx.beginPath(); ctx.arc(40, 30, 3, 0, Math.PI * 2); ctx.fill();
+    ctx.beginPath(); ctx.arc(150, 20, 2, 0, Math.PI * 2); ctx.fill();
+    ctx.beginPath(); ctx.arc(120, 44, 2.5, 0, Math.PI * 2); ctx.fill();
+  } else if (hab === 'grass') {
+    ctx.fillStyle = '#2e6b34'; ctx.fillRect(0, 0, 200, 120);
+    ctx.fillStyle = '#3a8b42'; ctx.fillRect(0, 70, 200, 50);
+    ctx.fillStyle = '#1d4d2b';
+    ctx.beginPath(); ctx.moveTo(20, 70); ctx.lineTo(34, 34); ctx.lineTo(48, 70); ctx.closePath(); ctx.fill();
+    ctx.beginPath(); ctx.moveTo(160, 70); ctx.lineTo(174, 30); ctx.lineTo(188, 70); ctx.closePath(); ctx.fill();
+    ctx.fillStyle = '#245c31';
+    ctx.beginPath(); ctx.moveTo(90, 74); ctx.lineTo(102, 44); ctx.lineTo(114, 74); ctx.closePath(); ctx.fill();
+    ctx.fillStyle = '#2e7d32';
+    ctx.beginPath(); ctx.arc(30, 100, 10, 0, Math.PI * 2); ctx.fill();
+    ctx.beginPath(); ctx.arc(170, 102, 12, 0, Math.PI * 2); ctx.fill();
+    ctx.beginPath(); ctx.arc(100, 108, 8, 0, Math.PI * 2); ctx.fill();
+  } else if (hab === 'electric') {
+    ctx.fillStyle = '#3a2a6b'; ctx.fillRect(0, 0, 200, 120);
+    ctx.fillStyle = '#f2b705';
+    ctx.beginPath(); ctx.moveTo(120, 8); ctx.lineTo(104, 52); ctx.lineTo(116, 52); ctx.lineTo(98, 96); ctx.lineTo(130, 44); ctx.lineTo(116, 44); ctx.closePath(); ctx.fill();
+    ctx.strokeStyle = 'rgba(242,183,5,0.5)'; ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.moveTo(40, 20); ctx.lineTo(34, 44); ctx.lineTo(42, 44); ctx.lineTo(30, 70); ctx.stroke();
+    ctx.strokeStyle = 'rgba(255,255,255,0.25)'; ctx.lineWidth = 1;
+    for (const x of [16, 36, 56, 76, 96]) { ctx.beginPath(); ctx.moveTo(x, 90); ctx.lineTo(x - 4, 112); ctx.stroke(); }
+  } else if (hab === 'ice') {
+    ctx.fillStyle = '#a8d8ea'; ctx.fillRect(0, 0, 200, 120);
+    ctx.fillStyle = '#e8f4f8'; ctx.fillRect(0, 84, 200, 36);
+    ctx.fillStyle = '#7ab8d0';
+    ctx.beginPath(); ctx.moveTo(30, 84); ctx.lineTo(42, 52); ctx.lineTo(54, 84); ctx.closePath(); ctx.fill();
+    ctx.beginPath(); ctx.moveTo(150, 84); ctx.lineTo(164, 46); ctx.lineTo(178, 84); ctx.closePath(); ctx.fill();
+    ctx.fillStyle = '#8fc8de';
+    ctx.beginPath(); ctx.moveTo(100, 84); ctx.lineTo(110, 60); ctx.lineTo(120, 84); ctx.closePath(); ctx.fill();
+    ctx.strokeStyle = '#ffffff'; ctx.lineWidth = 1.2;
+    for (const [cx, cy] of [[63, 27], [143, 21]]) {
+      ctx.beginPath(); ctx.moveTo(cx - 6, cy - 3); ctx.lineTo(cx + 6, cy + 3); ctx.moveTo(cx, cy - 6); ctx.lineTo(cx, cy + 6); ctx.moveTo(cx - 6, cy + 3); ctx.lineTo(cx + 6, cy - 3); ctx.stroke();
+    }
+  } else if (hab === 'psychic') {
+    ctx.fillStyle = '#2a1150'; ctx.fillRect(0, 0, 200, 120);
+    canvasDots(ctx, seed + 'stars', 12, 4, 2, 196, 40, 1.1, ['#ffffff']);
+    ctx.fillStyle = '#f5f1e6';
+    ctx.beginPath(); ctx.arc(160, 26, 12, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = '#2a1150';
+    ctx.beginPath(); ctx.arc(166, 22, 10, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = '#a371f7';
+    ctx.beginPath(); ctx.arc(60, 80, 3, 0, Math.PI * 2); ctx.fill();
+    ctx.beginPath(); ctx.arc(130, 88, 2.5, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = '#f2b705';
+    ctx.beginPath(); ctx.arc(90, 66, 2, 0, Math.PI * 2); ctx.fill();
+  } else if (hab === 'dragon') {
+    ctx.fillStyle = '#e07a4a'; ctx.fillRect(0, 0, 200, 120);
+    ctx.fillStyle = 'rgba(255,255,255,0.5)';
+    ctx.beginPath(); ctx.ellipse(50, 26, 22, 7, 0, 0, Math.PI * 2); ctx.fill();
+    ctx.beginPath(); ctx.ellipse(150, 18, 26, 8, 0, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = '#5a3a5e';
+    ctx.beginPath(); ctx.moveTo(0, 120); ctx.lineTo(50, 52); ctx.lineTo(100, 120); ctx.closePath(); ctx.fill();
+    ctx.fillStyle = '#3a2a4a';
+    ctx.beginPath(); ctx.moveTo(70, 120); ctx.lineTo(130, 40); ctx.lineTo(190, 120); ctx.closePath(); ctx.fill();
+    ctx.fillStyle = '#5a3a5e';
+    ctx.beginPath(); ctx.moveTo(150, 120); ctx.lineTo(185, 66); ctx.lineTo(200, 84); ctx.lineTo(200, 120); ctx.closePath(); ctx.fill();
+  } else { // arcane
+    ctx.fillStyle = '#3a1f6b'; ctx.fillRect(0, 0, 200, 120);
+    canvasDots(ctx, seed + 'stars', 12, 4, 2, 196, 40, 1.1, ['#ffffff']);
+    ctx.strokeStyle = 'rgba(163,113,247,0.7)'; ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.arc(100, 44, 28, 0.6, Math.PI * 1.4); ctx.stroke();
+    ctx.beginPath(); ctx.arc(100, 44, 20, Math.PI * 0.9, Math.PI * 1.8); ctx.stroke();
+    ctx.fillStyle = '#f2b705';
+    ctx.beginPath(); ctx.arc(150, 84, 4, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = '#a371f7';
+    ctx.beginPath(); ctx.arc(52, 90, 3, 0, Math.PI * 2); ctx.fill();
+  }
+  ctx.restore();
+}
+// Gold field lines for the 1/1 black-and-gold window.
+function drawFieldLines(ctx, ax, ay, aw, ah) {
+  ctx.lineWidth = 1;
+  for (let i = 1; i <= 4; i++) {
+    ctx.beginPath(); ctx.moveTo(ax + aw * i / 5, ay); ctx.lineTo(ax + aw * i / 5, ay + ah); ctx.stroke();
+  }
+  ctx.beginPath(); ctx.moveTo(ax, ay + ah * 0.66); ctx.lineTo(ax + aw, ay + ah * 0.66); ctx.stroke();
+}
+
+// Canvas humanoid player, the twin of playerFigureSVG: same figure spec,
+// same 200x120 scene space, same scale/anchor/lift. Drawn inside the art
+// window (ax, ay, aw, ah) after drawScene has painted the backdrop.
+function drawPlayerFigure(ctx, ax, ay, aw, ah, card) {
+  const spec = figureSpec(card);
+  const parts = spec.parts;
+  const t = spec.torso, hd = spec.head;
+  const anchors = torsoAnchors(t);
+  const s = spec.scale;
+  const axFrac = { left: 0.32, center: 0.5, right: 0.68 }[spec.anchor] || 0.5;
+  const tx = axFrac * 200 - 50 * s;
+  const ty = 118 - 112 * s - spec.lift * s;
+  sceneCover(ctx, ax, ay, aw, ah);
   ctx.fillStyle = 'rgba(0,0,0,0.35)';
-  ctx.beginPath(); ctx.ellipse(50, 110, 26, 5, 0, 0, Math.PI * 2); ctx.fill();
+  ctx.beginPath(); ctx.ellipse(axFrac * 200, 116, 26 * s, 4, 0, 0, Math.PI * 2); ctx.fill();
+  ctx.save();
+  if (spec.ghost) ctx.globalAlpha = 0.62;
+  ctx.translate(tx, ty); ctx.scale(s, s);
   if (parts.lean) { ctx.translate(50, 75); ctx.rotate(parts.lean * Math.PI / 180); ctx.translate(-50, -75); }
+  if (spec.ghost) {
+    ctx.fillStyle = 'rgba(242,217,140,0.20)';
+    ctx.beginPath(); ctx.ellipse(50, 60, 36, 50, 0, 0, Math.PI * 2); ctx.fill();
+  }
+  ctx.strokeStyle = 'rgba(255,255,255,0.55)'; ctx.lineWidth = 2; ctx.lineCap = 'round';
+  for (const m of spec.motion) { ctx.beginPath(); ctx.moveTo(m[0], m[1]); ctx.lineTo(m[2], m[3]); ctx.stroke(); }
   if (parts.cape) { // comic cape, behind the body, in the set color
-    ctx.fillStyle = (SETS[card.set] && SETS[card.set].color) || team;
+    ctx.fillStyle = (SETS[card.set] && SETS[card.set].color) || spec.team;
+    ctx.save();
+    if (spec.capeFlip) { ctx.translate(100, 0); ctx.scale(-1, 1); }
     ctx.beginPath();
     ctx.moveTo(38, 38); ctx.quadraticCurveTo(16, 62, 24, 108); ctx.lineTo(44, 108);
     ctx.quadraticCurveTo(36, 70, 44, 42); ctx.closePath(); ctx.fill();
+    ctx.restore();
   }
-  ctx.strokeStyle = pants; ctx.lineWidth = 9; ctx.lineCap = 'round'; ctx.lineJoin = 'round';
-  for (const leg of parts.legs) {
-    ctx.beginPath(); ctx.moveTo(leg[0][0], leg[0][1]);
-    for (let i = 1; i < leg.length; i++) ctx.lineTo(leg[i][0], leg[i][1]);
+  ctx.strokeStyle = spec.pants; ctx.lineWidth = 9; ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+  for (const [l, a] of [[parts.legs[0], anchors.hipL], [parts.legs[1], anchors.hipR]]) {
+    ctx.beginPath(); ctx.moveTo(a[0], a[1]);
+    for (let i = 1; i < l.length; i++) ctx.lineTo(l[i][0], l[i][1]);
     ctx.stroke();
   }
   for (const c of parts.cleats) {
@@ -653,14 +1206,17 @@ function drawPlayerFigure(ctx, ax, ay, aw, ah, card) {
       ctx.fillRect(c[0] - 6, c[1] + 2, 12, 3);
     }
   }
-  ctx.fillStyle = jersey;
-  roundRect(ctx, 34, 36, 32, 38, 8); ctx.fill();
-  ctx.beginPath(); ctx.ellipse(36, 40, 7, 5, 0, 0, Math.PI * 2); ctx.fill();
-  ctx.beginPath(); ctx.ellipse(64, 40, 7, 5, 0, 0, Math.PI * 2); ctx.fill();
-  ctx.strokeStyle = jersey; ctx.lineWidth = 7;
-  for (const arm of parts.arms) {
-    ctx.beginPath(); ctx.moveTo(arm[0][0], arm[0][1]);
-    for (let i = 1; i < arm.length; i++) ctx.lineTo(arm[i][0], arm[i][1]);
+  ctx.save(); // rotated torso
+  ctx.translate(t.cx, t.cy); ctx.rotate(t.rot * Math.PI / 180); ctx.translate(-t.cx, -t.cy);
+  ctx.fillStyle = spec.jersey;
+  roundRect(ctx, t.cx - t.w / 2, t.cy - t.h / 2, t.w, t.h, 8); ctx.fill();
+  ctx.beginPath(); ctx.ellipse(t.cx - t.w / 2 + 2, t.cy - t.h / 2 + 4, 7, 5, 0, 0, Math.PI * 2); ctx.fill();
+  ctx.beginPath(); ctx.ellipse(t.cx + t.w / 2 - 2, t.cy - t.h / 2 + 4, 7, 5, 0, 0, Math.PI * 2); ctx.fill();
+  ctx.restore();
+  ctx.strokeStyle = spec.jersey; ctx.lineWidth = 7; ctx.lineCap = 'round';
+  for (const [a, anchor] of [[parts.arms[0], anchors.shL], [parts.arms[1], anchors.shR]]) {
+    ctx.beginPath(); ctx.moveTo(anchor[0], anchor[1]);
+    for (let i = 1; i < a.length; i++) ctx.lineTo(a[i][0], a[i][1]);
     ctx.stroke();
   }
   if (parts.stick) { // bat (baseball) or stick + blade (hockey)
@@ -674,44 +1230,71 @@ function drawPlayerFigure(ctx, ax, ay, aw, ah, card) {
       ctx.lineTo(parts.stick[1][0] + 9, parts.stick[1][1] + 2); ctx.stroke();
     }
   }
-  const jnum = jerseyNumber(card);
+  const jnum = spec.num;
   if (jnum) {
-    ctx.fillStyle = jerseyInk(jersey);
+    ctx.fillStyle = jerseyInk(spec.jersey);
     ctx.font = '800 15px system-ui, sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-    ctx.fillText(jnum, 50, 58);
+    ctx.fillText(jnum, t.cx, t.cy + 5);
   }
-  ctx.fillStyle = skin;
-  ctx.fillRect(45, 31, 10, 8);
-  ctx.beginPath(); ctx.arc(50, 29, 7.5, 0, Math.PI * 2); ctx.fill();
+  const hx = hd.x, hy = hd.y, hr = hd.r;
+  const neckTop = hy + hr - 2, neckBot = t.cy - t.h / 2 + 2;
+  if (neckBot > neckTop) { ctx.fillStyle = spec.skin; ctx.fillRect(hx - 5, neckTop, 10, neckBot - neckTop); }
+  if (spec.headwear === 'hair' && spec.hair === 'afro') { // afro behind the face
+    ctx.fillStyle = spec.hairColor;
+    ctx.beginPath(); ctx.arc(hx, hy - 4, 12, 0, Math.PI * 2); ctx.fill();
+  }
+  ctx.fillStyle = spec.skin;
+  ctx.beginPath(); ctx.arc(hx, hy, hr, 0, Math.PI * 2); ctx.fill();
   // Headwear by sport (see playerFigureSVG for the SVG twin).
-  ctx.fillStyle = '#1c2433';
-  if (headwear === 'headband') {
-    ctx.beginPath(); ctx.arc(50, 24, 8, Math.PI, 0); ctx.closePath(); ctx.fill();
-    ctx.fillStyle = team; ctx.fillRect(42, 24, 16, 3);
-  } else if (headwear === 'cap') {
-    ctx.fillStyle = team;
-    ctx.beginPath(); ctx.arc(50, 24, 12, Math.PI, 0); ctx.closePath(); ctx.fill();
-    ctx.fillRect(56, 26, 13, 3);
-  } else if (headwear === 'hair') {
-    ctx.beginPath(); ctx.arc(50, 24, 8, Math.PI, 0); ctx.closePath(); ctx.fill();
-  } else if (headwear === 'mask') {
-    ctx.beginPath(); ctx.arc(50, 24, 8, Math.PI, 0); ctx.closePath(); ctx.fill();
-    ctx.fillStyle = team; ctx.fillRect(41, 27, 18, 4);
-    ctx.fillStyle = '#fff';
-    ctx.beginPath(); ctx.arc(47, 29, 1.2, 0, Math.PI * 2); ctx.fill();
-    ctx.beginPath(); ctx.arc(53, 29, 1.2, 0, Math.PI * 2); ctx.fill();
-  } else { // helmet
-    ctx.fillStyle = helmet;
-    ctx.beginPath(); ctx.arc(50, 24, 12, Math.PI, 0); ctx.closePath(); ctx.fill();
-    ctx.fillStyle = 'rgba(255,255,255,0.55)';
-    ctx.fillRect(48, 12, 4, 10);
-    ctx.strokeStyle = '#dfe3ea'; ctx.lineWidth = 1.5;
-    ctx.beginPath(); ctx.moveTo(60, 29); ctx.lineTo(68, 29); ctx.moveTo(60, 33); ctx.lineTo(66, 35); ctx.stroke();
-  }
-  if (headwear !== 'mask') {
+  const eyes = () => {
     ctx.fillStyle = '#1c2433';
-    ctx.beginPath(); ctx.arc(47, 30, 1, 0, Math.PI * 2); ctx.fill();
-    ctx.beginPath(); ctx.arc(53, 30, 1, 0, Math.PI * 2); ctx.fill();
+    ctx.beginPath(); ctx.arc(hx - 3, hy + 1, 1, 0, Math.PI * 2); ctx.fill();
+    ctx.beginPath(); ctx.arc(hx + 3, hy + 1, 1, 0, Math.PI * 2); ctx.fill();
+  };
+  if (spec.headwear === 'headband') {
+    ctx.fillStyle = spec.hairColor;
+    ctx.beginPath(); ctx.arc(hx, hy - 5, 8, Math.PI, 0); ctx.closePath(); ctx.fill();
+    ctx.fillStyle = spec.hair === 'ponytail' ? '#fff' : spec.team;
+    ctx.fillRect(hx - 8, hy - 5, 16, 3);
+    eyes();
+  } else if (spec.headwear === 'cap') {
+    ctx.fillStyle = spec.team;
+    ctx.beginPath(); ctx.arc(hx, hy - 2, 12, Math.PI, 0); ctx.closePath(); ctx.fill();
+    if (spec.hair === 'ponytail') ctx.fillRect(hx - 19, hy - 3, 13, 3);
+    else ctx.fillRect(hx + 6, hy - 3, 13, 3);
+    eyes();
+  } else if (spec.headwear === 'hair') {
+    if (spec.hair === 'mohawk') {
+      ctx.fillStyle = spec.hairColor;
+      ctx.beginPath(); ctx.moveTo(hx - 2, hy - 15); ctx.lineTo(hx + 2, hy - 15); ctx.lineTo(hx, hy - 6); ctx.closePath(); ctx.fill();
+    } else if (spec.hair === 'ponytail') {
+      ctx.fillStyle = spec.hairColor;
+      ctx.beginPath(); ctx.arc(hx, hy - 5, 8, Math.PI, 0); ctx.closePath(); ctx.fill();
+      ctx.beginPath(); ctx.arc(hx + 10, hy + 2, 3, 0, Math.PI * 2); ctx.fill();
+    } else if (spec.hair !== 'afro') {
+      ctx.fillStyle = spec.hairColor;
+      ctx.beginPath(); ctx.arc(hx, hy - 5, 8, Math.PI, 0); ctx.closePath(); ctx.fill();
+    }
+    eyes();
+  } else if (spec.headwear === 'mask') {
+    ctx.fillStyle = spec.hairColor;
+    ctx.beginPath(); ctx.arc(hx, hy - 5, 8, Math.PI, 0); ctx.closePath(); ctx.fill();
+    ctx.fillStyle = spec.team; ctx.fillRect(hx - 9, hy - 2, 18, 4);
+    ctx.fillStyle = '#fff';
+    ctx.beginPath(); ctx.arc(hx - 3, hy, 1.2, 0, Math.PI * 2); ctx.fill();
+    ctx.beginPath(); ctx.arc(hx + 3, hy, 1.2, 0, Math.PI * 2); ctx.fill();
+  } else { // helmet
+    ctx.fillStyle = spec.helmet;
+    ctx.beginPath(); ctx.arc(hx, hy - 2, hr + 4, Math.PI, 0); ctx.closePath(); ctx.fill();
+    if (spec.hair === 'buzz' || spec.hair === 'mohawk') {
+      ctx.fillStyle = 'rgba(255,255,255,0.55)';
+      ctx.fillRect(hx - 2, hy - hr - 7, 4, 10);
+    }
+    eyes();
+    if (spec.hair === 'afro' || spec.hair === 'mohawk') {
+      ctx.strokeStyle = '#dfe3ea'; ctx.lineWidth = 1.5;
+      ctx.beginPath(); ctx.moveTo(hx + 10, hy); ctx.lineTo(hx + 18, hy); ctx.moveTo(hx + 10, hy + 4); ctx.lineTo(hx + 16, hy + 6); ctx.stroke();
+    }
   }
   if (parts.ball) {
     const [bx, by] = parts.ball;
@@ -733,7 +1316,8 @@ function drawPlayerFigure(ctx, ax, ay, aw, ah, card) {
       ctx.beginPath(); ctx.moveTo(bx - 3, by); ctx.lineTo(bx + 3, by - 1); ctx.stroke();
     }
   }
-  ctx.restore();
+  ctx.restore(); // figure group
+  ctx.restore(); // sceneCover
 }
 
 // ---------- Hidden sub-grades ----------
@@ -1077,6 +1661,7 @@ function renderShop() {
   $('packs').innerHTML = Object.entries(SETS).map(([key, s]) => `
     <div class="pack" style="border-top:6px solid ${s.color}">
       <h3>${esc(s.name)}</h3>
+      <div class="pack-back" style="--pc:${s.color}"><span>SLAB<br>HOUSE</span></div>
       <p>${esc(s.desc)}</p>
       <div class="price">${fmt$(s.packPrice)} / pack</div>
       <button data-pack="${key}">Buy &amp; Open Pack</button>
@@ -1092,7 +1677,7 @@ function renderShop() {
   });
 }
 function miniCardHTML(card, withInspect) {
-  return `<div class="mini${card.variant === '1/1' ? ' one-of-one' : ''}" style="border-color:${card.variant === '1/1' ? '#f2b705' : rarityColor(card.rarity)}">
+  return `<div class="mini frame-${card.set}${card.variant === '1/1' ? ' one-of-one' : ''}" style="border-color:${card.variant === '1/1' ? '#f2b705' : frameColor(card)}">
     ${cardFaceHTML(card)}
     <div class="vl">${card.variant === '1/1' ? '1/1 Value ' + fmt$(cardValue(card)) : 'Base ' + fmt$(card.base)}</div>
     ${withInspect ? `<button class="small" data-inspect="${card.uid}">🔍 Inspect</button>` : ''}
@@ -1100,6 +1685,11 @@ function miniCardHTML(card, withInspect) {
 }
 function renderPulls(cards) {
   $('pulls').innerHTML = '<h3 style="width:100%">Your pulls:</h3>' + cards.map(c => miniCardHTML(c, true)).join('');
+  // Best pull gets the gold glow so the hit stands out from the pack.
+  const minis = $('pulls').querySelectorAll('.mini');
+  let best = 0;
+  cards.forEach((c, i) => { if (RARITY_ORDER.indexOf(c.rarity) > RARITY_ORDER.indexOf(cards[best].rarity)) best = i; });
+  if (minis[best]) minis[best].classList.add('hit');
   $('pulls').querySelectorAll('[data-inspect]').forEach(btn => {
     btn.addEventListener('click', () => { state.deskUid = +btn.getAttribute('data-inspect'); resetInspection(); showScreen('desk'); });
   });
@@ -1111,7 +1701,31 @@ const dctx = desk.getContext('2d');
 // Card geometry on the desk canvas (720x500)
 const CARD = { x: 90, y: 70, w: 250, h: 350 };
 const LOUPE_R = 85;
+// Offset loupe: the lens must never sit under the finger. loupe.x/y is the
+// PROBE point — where the finger touches, and what zoneAt/inspectAt use.
+// The lens itself is drawn at loupeCenter(), which floats ABOVE the finger
+// on touch (a full lens radius + gap up), flips BELOW it when the finger is
+// near the top of the desk, and only goes to the side when neither fits.
+// Mouse gets a smaller offset so the lens still tracks the cursor closely.
+// The lens always shows the magnified card area under the PROBE, not under
+// the lens — so what you see is what your finger is on.
+const LOUPE_GAP = 28;
+let loupeTouch = false;
 let loupe = { x: CARD.x + CARD.w / 2, y: CARD.y + CARD.h / 2, active: false };
+function setLoupeTouch(v) { loupeTouch = !!v; }
+function loupeCenter(p) {
+  const up = loupeTouch ? LOUPE_R + LOUPE_GAP : Math.round(LOUPE_R * 0.55) + 8;
+  let lx = p.x, ly;
+  if (p.y - up >= LOUPE_R + 2) ly = p.y - up; // above the finger
+  else if (p.y + LOUPE_R + LOUPE_GAP <= desk.height - LOUPE_R - 2) ly = p.y + LOUPE_R + LOUPE_GAP; // below
+  else { // side (last resort)
+    ly = Math.max(LOUPE_R + 2, Math.min(desk.height - LOUPE_R - 2, p.y));
+    lx = (p.x + LOUPE_R + LOUPE_GAP <= desk.width - LOUPE_R - 2) ? p.x + LOUPE_R + LOUPE_GAP : p.x - LOUPE_R - LOUPE_GAP;
+  }
+  lx = Math.max(LOUPE_R + 2, Math.min(desk.width - LOUPE_R - 2, lx));
+  ly = Math.max(LOUPE_R + 2, Math.min(desk.height - LOUPE_R - 2, ly));
+  return { x: lx, y: ly };
+}
 let off = null; // offscreen 2x card render for the loupe
 
 function resetInspection() {
@@ -1125,9 +1739,11 @@ function resetInspection() {
 
 function setColorForSet(key) { return SETS[key].color; }
 
-// Rarity art-window treatment on the canvas desk card. Common is plain;
-// Uncommon gets a green tint, Rare a holo sheen, Ultra a foil sweep,
-// Secret a gold-on-dark sheen; a 1/1 gets a gold sweep over black-gold.
+// Rarity art-window treatment on the canvas desk card. Parallels change
+// the whole window, not one corner: Uncommon gets a silver shimmer border,
+// Rare a refractor cross-hatch + blue/pink sheen, Ultra a full rainbow
+// holo sweep, Secret a gold-on-dark sheen; a 1/1 gets a gold sweep over
+// black-gold. Common is plain.
 function rarityCanvasTint(ctx, ax, ay, aw, ah, card) {
   if (card.variant === '1/1') {
     const gg = ctx.createLinearGradient(ax, ay, ax + aw, ay + ah);
@@ -1139,7 +1755,14 @@ function rarityCanvasTint(ctx, ax, ay, aw, ah, card) {
     return;
   }
   if (card.rarity === 'uncommon') {
-    ctx.fillStyle = 'rgba(63,185,80,0.10)'; ctx.fillRect(ax, ay, aw, ah);
+    const sg = ctx.createLinearGradient(ax, ay, ax + aw, ay + ah);
+    sg.addColorStop(0, 'rgba(230,235,245,0)');
+    sg.addColorStop(0.45, 'rgba(230,235,245,0.35)');
+    sg.addColorStop(0.55, 'rgba(255,255,255,0.20)');
+    sg.addColorStop(1, 'rgba(230,235,245,0)');
+    ctx.fillStyle = sg; ctx.fillRect(ax, ay, aw, ah);
+    ctx.strokeStyle = 'rgba(220,225,235,0.7)'; ctx.lineWidth = 2;
+    ctx.strokeRect(ax + 1, ay + 1, aw - 2, ah - 2);
   } else if (card.rarity === 'rare') {
     const rg = ctx.createLinearGradient(ax, ay, ax + aw, ay + ah);
     rg.addColorStop(0, 'rgba(140,200,255,0)');
@@ -1147,12 +1770,21 @@ function rarityCanvasTint(ctx, ax, ay, aw, ah, card) {
     rg.addColorStop(0.55, 'rgba(255,140,220,0.15)');
     rg.addColorStop(1, 'rgba(140,200,255,0)');
     ctx.fillStyle = rg; ctx.fillRect(ax, ay, aw, ah);
+    ctx.strokeStyle = 'rgba(140,200,255,0.16)'; ctx.lineWidth = 1;
+    for (let d = -ah; d < aw; d += 12) {
+      ctx.beginPath(); ctx.moveTo(ax + d, ay); ctx.lineTo(ax + d + ah, ay + ah); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(ax + d, ay + ah); ctx.lineTo(ax + d + ah, ay); ctx.stroke();
+    }
+    ctx.strokeStyle = 'rgba(74,144,226,0.8)'; ctx.lineWidth = 2;
+    ctx.strokeRect(ax + 1, ay + 1, aw - 2, ah - 2);
   } else if (card.rarity === 'ultra') {
     const fg = ctx.createLinearGradient(ax, ay, ax + aw, ay + ah);
-    fg.addColorStop(0, 'rgba(255,255,255,0)');
-    fg.addColorStop(0.45, 'rgba(255,255,255,0.22)');
-    fg.addColorStop(0.55, 'rgba(255,255,255,0.10)');
-    fg.addColorStop(1, 'rgba(255,255,255,0)');
+    fg.addColorStop(0, 'rgba(255,0,80,0.20)');
+    fg.addColorStop(0.2, 'rgba(255,160,0,0.18)');
+    fg.addColorStop(0.4, 'rgba(255,235,0,0.16)');
+    fg.addColorStop(0.6, 'rgba(0,200,120,0.18)');
+    fg.addColorStop(0.8, 'rgba(0,120,255,0.20)');
+    fg.addColorStop(1, 'rgba(160,60,255,0.20)');
     ctx.fillStyle = fg; ctx.fillRect(ax, ay, aw, ah);
   } else if (card.rarity === 'secret') {
     ctx.fillStyle = 'rgba(10,8,0,0.25)'; ctx.fillRect(ax, ay, aw, ah);
@@ -1170,16 +1802,17 @@ function drawCardFace(ctx, x, y, w, h, card, detail) {
   ctx.save();
   roundRect(ctx, x, y, w, h, 14); ctx.clip();
   ctx.fillStyle = '#10131a'; ctx.fillRect(x, y, w, h);
-  // border frame (its thickness shows centering: offset art frame)
+  // border frame in the team color (figure sets) or set color (creatures);
+  // its thickness shows centering: offset art frame
   const lrOff = (card.grades.centering.lr - 50) / 50 * 10;
   const tbOff = (card.grades.centering.tb - 50) / 50 * 10;
-  ctx.fillStyle = set.color; ctx.fillRect(x, y, w, h);
+  ctx.fillStyle = frameColor(card); ctx.fillRect(x, y, w, h);
   ctx.fillStyle = '#f5f1e6';
   ctx.fillRect(x + 12 + lrOff, y + 12 + tbOff, w - 24, h - 24);
-  // name bar
-  ctx.fillStyle = '#14161c';
+  // name bar in the team color (1/1 keeps the black Prizm bar)
+  ctx.fillStyle = card.variant === '1/1' ? '#14161c' : frameColor(card);
   ctx.fillRect(x + 12 + lrOff, y + 12 + tbOff, w - 24, 26);
-  ctx.fillStyle = '#f5f1e6';
+  ctx.fillStyle = card.variant === '1/1' ? '#f5f1e6' : inkFor(frameColor(card));
   ctx.font = 'bold ' + Math.round(w * 0.062) + 'px system-ui, sans-serif';
   ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
   ctx.fillText(card.name, x + 20 + lrOff, y + 25 + tbOff, w - 40);
@@ -1190,39 +1823,20 @@ function drawCardFace(ctx, x, y, w, h, card, detail) {
     ctx.fillText('1 OF 1', x + w - 20 + lrOff, y + 25 + tbOff);
     ctx.textAlign = 'left';
   }
-  // art window: sport backdrop (gradient + field lines); creatures keep the green field
+  // art window: a drawn scene for figure cards, a habitat for creatures;
+  // a 1/1 keeps the black-and-gold window with gold field lines.
   const ax = x + 22 + lrOff, ay = y + 44 + tbOff, aw = w - 44, ah = h * 0.44;
-  const ag = ctx.createLinearGradient(ax, ay, ax, ay + ah);
-  const bd = ART_BACKDROPS[card.set] || ['#1d4d2b', '#0f2f18'];
-  ag.addColorStop(0, bd[0]); ag.addColorStop(1, bd[1]);
-  ctx.fillStyle = ag; ctx.fillRect(ax, ay, aw, ah);
-  // 1/1: black-and-gold window with gold field lines; otherwise the
-  // deterministic day/dusk/night variant tints the same field.
-  const bv = backdropVariant(card);
   if (card.variant === '1/1') {
     const og = ctx.createLinearGradient(ax, ay, ax, ay + ah);
     og.addColorStop(0, '#1a1a1a'); og.addColorStop(0.55, '#2e2405'); og.addColorStop(1, '#0a0800');
     ctx.fillStyle = og; ctx.fillRect(ax, ay, aw, ah);
     ctx.strokeStyle = 'rgba(242,183,5,0.55)';
+    drawFieldLines(ctx, ax, ay, aw, ah);
+  } else if (hasFigure(card)) {
+    drawScene(ctx, ax, ay, aw, ah, card);
   } else {
-    if (bv === 'dusk') {
-      ctx.fillStyle = 'rgba(255,140,60,0.14)'; ctx.fillRect(ax, ay, aw, ah);
-      ctx.fillStyle = 'rgba(30,10,50,0.22)'; ctx.fillRect(ax, ay, aw, ah);
-    } else if (bv === 'night') {
-      ctx.fillStyle = 'rgba(8,14,48,0.34)'; ctx.fillRect(ax, ay, aw, ah);
-      ctx.fillStyle = 'rgba(255,255,255,0.85)';
-      const hh = hashStr((card.set || '') + '|' + (card.name || ''));
-      for (let k = 0; k < 5; k++) {
-        ctx.fillRect(ax + ((hh >> (k * 3)) % 100) / 100 * aw, ay + ((hh >> (k * 3 + 5)) % 60) / 100 * ah, 1.5, 1.5);
-      }
-    }
-    ctx.strokeStyle = 'rgba(255,255,255,0.22)';
+    drawHabitat(ctx, ax, ay, aw, ah, card);
   }
-  ctx.lineWidth = 1;
-  for (let i = 1; i <= 4; i++) {
-    ctx.beginPath(); ctx.moveTo(ax + aw * i / 5, ay); ctx.lineTo(ax + aw * i / 5, ay + ah); ctx.stroke();
-  }
-  ctx.beginPath(); ctx.moveTo(ax, ay + ah * 0.66); ctx.lineTo(ax + aw, ay + ah * 0.66); ctx.stroke();
   if (hasFigure(card)) {
     drawPlayerFigure(ctx, ax, ay, aw, ah, card);
   } else {
@@ -1315,19 +1929,75 @@ function buildOffscreen(card) {
   drawCardFace(octx, 0, 0, CARD.w, CARD.h, card, true);
 }
 
+// Face-down card back: dark with gold double border, diagonal pinstripes,
+// and the Slab House monogram. Used for the empty desk.
+function drawCardBack(ctx, x, y, w, h) {
+  ctx.save();
+  const bg = ctx.createLinearGradient(x, y, x + w, y + h);
+  bg.addColorStop(0, '#2a2113'); bg.addColorStop(0.5, '#14100a'); bg.addColorStop(1, '#2a2113');
+  roundRect(ctx, x, y, w, h, 14); ctx.fillStyle = bg; ctx.fill();
+  ctx.strokeStyle = 'rgba(242,183,5,0.9)'; ctx.lineWidth = 3;
+  roundRect(ctx, x + 6, y + 6, w - 12, h - 12, 10); ctx.stroke();
+  ctx.strokeStyle = 'rgba(242,183,5,0.35)'; ctx.lineWidth = 1;
+  roundRect(ctx, x + 12, y + 12, w - 24, h - 24, 8); ctx.stroke();
+  ctx.save();
+  roundRect(ctx, x + 14, y + 14, w - 28, h - 28, 8); ctx.clip();
+  ctx.strokeStyle = 'rgba(242,183,5,0.12)'; ctx.lineWidth = 2;
+  for (let d = -h; d < w; d += 18) {
+    ctx.beginPath(); ctx.moveTo(x + d, y); ctx.lineTo(x + d + h, y + h); ctx.stroke();
+  }
+  ctx.restore();
+  ctx.fillStyle = '#f2b705'; ctx.font = 'bold 64px system-ui, sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+  ctx.fillText('SH', x + w / 2, y + h / 2 - 14);
+  ctx.fillStyle = '#ffe9a8'; ctx.font = 'bold 15px system-ui, sans-serif';
+  ctx.fillText('SLAB HOUSE', x + w / 2, y + h / 2 + 28);
+  ctx.restore();
+}
+
 function drawDesk() {
   const card = deskCard();
   dctx.clearRect(0, 0, desk.width, desk.height);
-  dctx.fillStyle = '#0c0e13'; dctx.fillRect(0, 0, desk.width, desk.height);
-  // felt table
-  dctx.fillStyle = '#17351f';
+  // warm shop backdrop
+  dctx.fillStyle = '#14100a'; dctx.fillRect(0, 0, desk.width, desk.height);
+  // wood frame around the felt
+  const wg = dctx.createLinearGradient(0, 0, desk.width, desk.height);
+  wg.addColorStop(0, '#7a5327'); wg.addColorStop(0.5, '#5a3a1a'); wg.addColorStop(1, '#3f2710');
+  dctx.fillStyle = wg;
+  roundRect(dctx, 8, 8, desk.width - 16, desk.height - 16, 20); dctx.fill();
+  dctx.strokeStyle = 'rgba(242,183,5,0.35)'; dctx.lineWidth = 2;
+  roundRect(dctx, 14, 14, desk.width - 28, desk.height - 28, 16); dctx.stroke();
+  // felt with a warm light pool
+  const fg = dctx.createRadialGradient(desk.width / 2, desk.height / 2, 60, desk.width / 2, desk.height / 2, 380);
+  fg.addColorStop(0, '#22663a'); fg.addColorStop(0.6, '#17351f'); fg.addColorStop(1, '#0e2413');
+  dctx.fillStyle = fg;
   roundRect(dctx, 20, 20, desk.width - 40, desk.height - 40, 18); dctx.fill();
+  // felt speckle (deterministic so the table doesn't shimmer between draws)
+  let seed = 1234567;
+  const rnd = () => { seed = (seed * 1103515245 + 12345) & 0x7fffffff; return seed / 0x7fffffff; };
+  for (let i = 0; i < 260; i++) {
+    const sx = 24 + rnd() * (desk.width - 48), sy = 24 + rnd() * (desk.height - 48);
+    dctx.fillStyle = rnd() < 0.5 ? 'rgba(255,255,255,0.045)' : 'rgba(0,0,0,0.08)';
+    dctx.fillRect(sx, sy, 1.6, 1.6);
+  }
+  // stitched border on the felt
+  dctx.strokeStyle = 'rgba(242,220,150,0.28)'; dctx.lineWidth = 1.5;
+  dctx.setLineDash([7, 6]);
+  roundRect(dctx, 30, 30, desk.width - 60, desk.height - 60, 12); dctx.stroke();
+  dctx.setLineDash([]);
   if (!card) {
-    dctx.fillStyle = '#9aa3b2'; dctx.font = '20px system-ui, sans-serif'; dctx.textAlign = 'center';
-    dctx.fillText('No card on the desk — open a pack or pick one from your Collection.', desk.width / 2, desk.height / 2);
+    // face-down card back on the empty desk
+    drawCardBack(dctx, CARD.x, CARD.y, CARD.w, CARD.h);
+    dctx.fillStyle = '#e8dcc0'; dctx.font = '16px system-ui, sans-serif'; dctx.textAlign = 'center'; dctx.textBaseline = 'middle';
+    dctx.fillText('No card on the desk — open a pack or pick one from your Collection.', desk.width / 2, desk.height - 24);
     return;
   }
   if (!off) buildOffscreen(card);
+  // soft drop shadow under the card
+  dctx.save();
+  dctx.shadowColor = 'rgba(0,0,0,0.55)'; dctx.shadowBlur = 18; dctx.shadowOffsetY = 8;
+  dctx.fillStyle = '#000';
+  roundRect(dctx, CARD.x, CARD.y, CARD.w, CARD.h, 14); dctx.fill();
+  dctx.restore();
   drawCardFace(dctx, CARD.x, CARD.y, CARD.w, CARD.h, card, false);
   // light sheen across the card (angle follows the slider)
   const g = dctx.createLinearGradient(CARD.x, CARD.y, CARD.x + CARD.w, CARD.y + CARD.h);
@@ -1337,21 +2007,57 @@ function drawDesk() {
   g.addColorStop(1, 'rgba(255,255,255,' + (a * 0.12) + ')');
   dctx.fillStyle = g;
   roundRect(dctx, CARD.x, CARD.y, CARD.w, CARD.h, 14); dctx.fill();
-  // loupe
-  const lx = loupe.x, ly = loupe.y;
+  // vignette over the table (card and loupe stay bright)
+  const vg = dctx.createRadialGradient(desk.width / 2, desk.height / 2, 200, desk.width / 2, desk.height / 2, 460);
+  vg.addColorStop(0, 'rgba(0,0,0,0)'); vg.addColorStop(1, 'rgba(0,0,0,0.32)');
+  dctx.fillStyle = vg; dctx.fillRect(0, 0, desk.width, desk.height);
+  // loupe: the PROBE is under the finger, the LENS floats offset from it
+  const px = loupe.x, py = loupe.y;
+  const lc = loupeCenter(loupe), lx = lc.x, ly = lc.y;
+  if (loupe.active) {
+    // dashed connector from the fingertip to the lens edge
+    dctx.save();
+    dctx.strokeStyle = 'rgba(242,183,5,0.75)'; dctx.lineWidth = 2; dctx.setLineDash([5, 5]);
+    dctx.beginPath(); dctx.moveTo(px, py); dctx.lineTo(lx, ly); dctx.stroke();
+    dctx.setLineDash([]);
+    // probe marker (peeks out around the fingertip)
+    dctx.strokeStyle = '#f2b705'; dctx.lineWidth = 2.5;
+    dctx.beginPath(); dctx.arc(px, py, 10, 0, Math.PI * 2); dctx.stroke();
+    dctx.restore();
+  }
+  // lens drop shadow
+  dctx.save();
+  dctx.shadowColor = 'rgba(0,0,0,0.5)'; dctx.shadowBlur = 16; dctx.shadowOffsetY = 6;
+  dctx.beginPath(); dctx.arc(lx, ly, LOUPE_R, 0, Math.PI * 2); dctx.fillStyle = '#000'; dctx.fill();
+  dctx.restore();
+  // magnified card region (2x offscreen, centered on the PROBE)
   dctx.save();
   dctx.beginPath(); dctx.arc(lx, ly, LOUPE_R, 0, Math.PI * 2); dctx.clip();
-  // magnified card region (2x offscreen, centered on loupe)
-  const sx = (lx - CARD.x) * 2 - LOUPE_R, sy = (ly - CARD.y) * 2 - LOUPE_R;
+  const sx = (px - CARD.x) * 2 - LOUPE_R, sy = (py - CARD.y) * 2 - LOUPE_R;
   dctx.drawImage(off, sx, sy, LOUPE_R * 2, LOUPE_R * 2, lx - LOUPE_R, ly - LOUPE_R, LOUPE_R * 2, LOUPE_R * 2);
+  // glass highlight
+  const gl = dctx.createRadialGradient(lx - LOUPE_R * 0.4, ly - LOUPE_R * 0.45, 4, lx - LOUPE_R * 0.4, ly - LOUPE_R * 0.45, LOUPE_R * 1.1);
+  gl.addColorStop(0, 'rgba(255,255,255,0.14)'); gl.addColorStop(0.5, 'rgba(255,255,255,0.02)'); gl.addColorStop(1, 'rgba(255,255,255,0)');
+  dctx.fillStyle = gl; dctx.fillRect(lx - LOUPE_R, ly - LOUPE_R, LOUPE_R * 2, LOUPE_R * 2);
   dctx.restore();
+  // brass ring: dark outer, gold band, bright inner edge
+  dctx.strokeStyle = '#2a1c08'; dctx.lineWidth = 7;
+  dctx.beginPath(); dctx.arc(lx, ly, LOUPE_R + 1, 0, Math.PI * 2); dctx.stroke();
   dctx.strokeStyle = '#f2b705'; dctx.lineWidth = 4;
   dctx.beginPath(); dctx.arc(lx, ly, LOUPE_R, 0, Math.PI * 2); dctx.stroke();
+  dctx.strokeStyle = 'rgba(255,233,168,0.9)'; dctx.lineWidth = 1.5;
+  dctx.beginPath(); dctx.arc(lx, ly, LOUPE_R - 4, 0, Math.PI * 2); dctx.stroke();
+  // crosshair marks the magnified center (the probe point)
   dctx.strokeStyle = 'rgba(242,183,5,0.6)'; dctx.lineWidth = 2;
   dctx.beginPath(); dctx.moveTo(lx - 10, ly); dctx.lineTo(lx + 10, ly); dctx.moveTo(lx, ly - 10); dctx.lineTo(lx, ly + 10); dctx.stroke();
-  // hint text
-  dctx.fillStyle = '#eef1f6'; dctx.font = '14px system-ui, sans-serif'; dctx.textAlign = 'left';
-  dctx.fillText('Loupe: drag over corners, edges, border and face. Light: ' + state.light + '°', 30, desk.height - 28);
+  // hint text on a dark pill
+  const hint = 'Loupe floats above your finger — drag over corners, edges, border and face. Light: ' + state.light + '°';
+  dctx.font = '14px system-ui, sans-serif';
+  const hw = dctx.measureText(hint).width;
+  dctx.fillStyle = 'rgba(0,0,0,0.55)';
+  roundRect(dctx, 20, desk.height - 40, hw + 20, 26, 13); dctx.fill();
+  dctx.fillStyle = '#f5efe4'; dctx.textAlign = 'left'; dctx.textBaseline = 'middle';
+  dctx.fillText(hint, 30, desk.height - 27);
 }
 
 // Which inspection zone is the loupe over? Returns 'corner-i' | 'edge-name' | 'border' | 'face' | null
@@ -1461,8 +2167,8 @@ function deskPos(e) {
   const cy = (e.touches ? e.touches[0].clientY : e.clientY) - r.top;
   return { x: cx * (desk.width / r.width), y: cy * (desk.height / r.height) };
 }
-desk.addEventListener('pointerdown', e => { loupe.active = true; const p = deskPos(e); loupe.x = p.x; loupe.y = p.y; inspectAt(p.x, p.y); });
-desk.addEventListener('pointermove', e => { if (!loupe.active) return; const p = deskPos(e); loupe.x = p.x; loupe.y = p.y; inspectAt(p.x, p.y); });
+desk.addEventListener('pointerdown', e => { loupe.active = true; setLoupeTouch(e.pointerType !== 'mouse'); const p = deskPos(e); loupe.x = p.x; loupe.y = p.y; inspectAt(p.x, p.y); });
+desk.addEventListener('pointermove', e => { if (!loupe.active) return; setLoupeTouch(e.pointerType !== 'mouse'); const p = deskPos(e); loupe.x = p.x; loupe.y = p.y; inspectAt(p.x, p.y); });
 desk.addEventListener('pointerup', () => { loupe.active = false; });
 desk.addEventListener('pointerleave', () => { loupe.active = false; });
 $('light').addEventListener('input', e => {
@@ -1519,7 +2225,7 @@ function renderCollection() {
     return;
   }
   grid.innerHTML = state.inventory.map(card => `
-    <div class="card ${card.graded ? 'slabbed' : ''}${card.variant === '1/1' ? ' one-of-one' : ''}">
+    <div class="card frame-${card.set}${card.graded ? ' slabbed' : ''}${card.variant === '1/1' ? ' one-of-one' : ''}" style="border-color:${card.graded ? '#f2b705' : card.variant === '1/1' ? '#f2b705' : frameColor(card)}">
       ${cardFaceHTML(card)}
       ${card.graded ? `<div class="grade">★ ${card.graded.grade}</div><div class="vl">Slab value ${fmt$(card.graded.value)}</div>`
         : `<div class="vl">${card.variant === '1/1' ? '1/1 Value ' + fmt$(cardValue(card)) : 'Base ' + fmt$(card.base)}</div><div class="vl">Ungraded</div>`}
@@ -1552,7 +2258,7 @@ function renderAuctionPicks() {
     return;
   }
   el.innerHTML = state.inventory.map(card => `
-    <div class="card ${card.graded ? 'slabbed' : ''}${card.variant === '1/1' ? ' one-of-one' : ''}">
+    <div class="card frame-${card.set}${card.graded ? ' slabbed' : ''}${card.variant === '1/1' ? ' one-of-one' : ''}" style="border-color:${card.graded ? '#f2b705' : card.variant === '1/1' ? '#f2b705' : frameColor(card)}">
       ${cardFaceHTML(card)}
       <div class="vl">${card.graded ? '★ ' + card.graded.grade + ' slab' : 'Raw'} · ${fmt$(cardValue(card))}</div>
       <div class="row"><button class="small" data-apick="${card.uid}">🔨 Auction this card</button></div>
@@ -1655,6 +2361,21 @@ function selfTest() {
     for (const [x, y] of zones) inspectAt(x, y);
     state.light = 40; inspectAt(CARD.x + CARD.w / 2, CARD.y + CARD.h / 2);
     ok('inspection reveals all 4 metrics', Object.values(state.inspected).every(Boolean));
+    // 4b. Offset loupe: the lens never sits under the finger
+    setLoupeTouch(true);
+    const lcMid = loupeCenter({ x: 215, y: 300 });
+    ok('touch loupe floats above the finger', lcMid.y === 300 - LOUPE_R - 28 && lcMid.x === 215);
+    const lcTop = loupeCenter({ x: 215, y: 90 });
+    ok('touch loupe flips below near the top', lcTop.y === 90 + LOUPE_R + 28 && lcTop.y > 90);
+    const lcEdge = loupeCenter({ x: 700, y: 480 });
+    ok('loupe stays inside the desk at the edges', lcEdge.x >= LOUPE_R && lcEdge.x <= desk.width - LOUPE_R && lcEdge.y >= LOUPE_R && lcEdge.y <= desk.height - LOUPE_R);
+    setLoupeTouch(false);
+    const lcMouse = loupeCenter({ x: 215, y: 300 });
+    ok('mouse loupe uses a smaller offset', lcMouse.y > lcMid.y && lcMouse.y < 300);
+    ok('loupe still magnifies the probe point, not the lens', (() => {
+      // zone detection is driven by the probe (finger), never the lens center
+      return zoneAt(95, 75) === 'corner-0' && zoneAt(215, 250) === 'face';
+    })());
     // 5. Submit grading (needs $25)
     const before = state.cash;
     const sub = submitGrading(card.uid);
@@ -1726,7 +2447,14 @@ function selfTest() {
       return poses.size >= 3;
     }));
     ok('no real names in new sets', ['hardwood', 'diamond', 'frozen', 'pitch', 'panel', 'critter'].every(k => SETS[k].cards.every(d => !/(lebron|jordan|curry|kobe|messi|ronaldo|ohtani|pikachu|charizard|batman|superman|yankees|lakers)/i.test(d.name + ' ' + d.title + ' ' + (d.team || '')))));
-    ok('critter clash keeps emoji art', SETS.critter.cards.every(d => !cardFaceHTML(makeCard('critter', d.rarity)).includes('<svg')));
+    ok('critter clash keeps emoji art on a habitat scene', (() => {
+      for (let i = 0; i < 9; i++) {
+        const c = makeCard('critter', RARITY_ORDER[i % RARITY_ORDER.length]);
+        const html = cardFaceHTML(c);
+        if (html.indexOf(c.art) === -1 || html.indexOf('hab-') === -1) return false;
+      }
+      return true;
+    })());
     ok('makeCard collector numbers valid for new sets', (() => {
       for (const k of ['hardwood', 'diamond', 'frozen', 'pitch', 'panel', 'critter']) {
         for (let i = 0; i < 10; i++) {
@@ -1800,6 +2528,46 @@ function selfTest() {
       const vs = new Set(SETS.gridiron.cards.map(d => backdropVariant({ set: 'gridiron', name: d.name })));
       return vs.size >= 2;
     })());
+    // 19. Card-art redo: no two cards in a set look the same
+    ok('art signatures unique within every figure set', ['gridiron', 'hardwood', 'diamond', 'frozen', 'pitch', 'panel'].every(k =>
+      new Set(SETS[k].cards.map(d => artSignature({ set: k, name: d.name, position: d.position, team: d.team, number: d.number, sport: SET_SPORT[k] }))).size === SETS[k].cards.length));
+    ok('every set has >=3 distinct torso rotations', ['gridiron', 'hardwood', 'diamond', 'frozen', 'pitch', 'panel'].every(k =>
+      new Set(SETS[k].cards.map(d => figureSpec({ set: k, name: d.name, position: d.position, team: d.team, number: d.number, sport: SET_SPORT[k] }).torso.rot)).size >= 3));
+    ok('every set has >=2 scales and >=2 anchors', ['gridiron', 'hardwood', 'diamond', 'frozen', 'pitch', 'panel'].every(k => {
+      const specs = SETS[k].cards.map(d => figureSpec({ set: k, name: d.name, position: d.position, team: d.team, number: d.number, sport: SET_SPORT[k] }));
+      return new Set(specs.map(s => s.scale)).size >= 2 && new Set(specs.map(s => s.anchor)).size >= 2;
+    }));
+    ok('every sport scene carries its landmark element', (() => {
+      const need = { football: 'goalpost', basketball: 'hoop', baseball: 'diamond', hockey: 'goal', soccer: 'goal', comic: 'skyline' };
+      return Object.entries(need).every(([sport, el]) => sceneSVG({ set: 'x', name: 'T', sport }).indexOf('data-el="' + el + '"') !== -1);
+    })());
+    ok('name bar carries the team color on figure cards', (() => {
+      const c = makeCard('gridiron', 'common');
+      return cardFaceHTML(c).indexOf('background:' + frameColor(c)) !== -1 && miniCardHTML(c, false).indexOf('frame-gridiron') !== -1;
+    })());
+    ok('parallel kind differs per rarity', ['common', 'uncommon', 'rare', 'ultra', 'secret'].every(r => {
+      const kinds = { common: 'plain', uncommon: 'silver', rare: 'refractor', ultra: 'rainbow', secret: 'black-gold' };
+      return cardArtHTML(makeCard('gridiron', r)).indexOf('data-parallel="' + kinds[r] + '"') !== -1;
+    }));
+    ok('creature cards get a habitat class + habitat scene', (() => {
+      const c = makeCard('critter', 'common');
+      const html = cardArtHTML(c);
+      return html.indexOf('hab-') !== -1 && html.indexOf('data-habitat=') !== -1 && html.indexOf('<svg') !== -1;
+    })());
+    ok('1/1 card keeps the black prizm parallel', (() => {
+      const c = makeCard('gridiron', 'rare'); c.variant = '1/1';
+      return cardArtHTML(c).indexOf('data-parallel="prizm"') !== -1 && cardFaceHTML(c).indexOf('background:#14161c') !== -1;
+    })());
+    ok('figure SVG is an edge-to-edge scene, not a lone figure', (() => {
+      const svg = playerFigureSVG({ name: 'Dash Okafor', position: 'Running Back', team: 'Iron Mammoths', number: 22, set: 'gridiron', sport: 'football' });
+      return svg.indexOf('viewBox="0 0 200 120"') !== -1 && svg.indexOf('data-el="floodlight"') !== -1 && svg.indexOf('data-scene=') !== -1;
+    })());
+    ok('every figure head stays inside the scene (never cropped off the top)', ['gridiron', 'hardwood', 'diamond', 'frozen', 'pitch', 'panel'].every(k =>
+      SETS[k].cards.every(d => {
+        const spec = figureSpec({ set: k, name: d.name, position: d.position, team: d.team, number: d.number, sport: SET_SPORT[k] });
+        const ty = 118 - 112 * spec.scale - spec.lift * spec.scale;
+        return ty + (spec.head.y - spec.head.r) * spec.scale >= 0;
+      })));
     // 11. Not enough cash blocks pack
     state.cash = 5;
     ok('insufficient cash blocks pack', buyPack('kaiju').ok === false);
@@ -1833,6 +2601,9 @@ window.SHT = {
   migrateCard, findCardDef, jerseyNumber, jerseyInk, backdropVariant, hashStr,
   TEAM_COLORS, POSE_PARTS, ONE_OF_ONE_ODDS, ONE_OF_ONE_MULT, variantMult,
   rarityCanvasTint, cardArtHTML, drawPlayerFigure, drawCardFace, load, save,
+  figureSpec, artProfile, artSignature, sceneSVG, habitatSVG, drawScene, drawHabitat,
+  frameColor, inkFor, hashRand, torsoAnchors, rotPt, habitatFor, SCENE_COLORS,
+  loupeCenter, setLoupeTouch, drawCardBack, drawDesk,
 };
 </script>
 </body>
