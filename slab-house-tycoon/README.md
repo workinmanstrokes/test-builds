@@ -25,7 +25,12 @@ It is a complete, self-contained HTML5 canvas game:
 - **Inspection Desk** — drag the loupe over the card to reveal the 4
   real grading metrics: Front Centering (e.g. 55/45), 4 Corners
   (whitening), 4 Edges (wear), Surface print lines (tilt the light
-  past ±25° to reveal them). All 4 metrics unlock grading.
+  past ±25° to reveal them). All 4 metrics unlock grading. The loupe
+  floats **above your finger** so you can always see what you're
+  magnifying (it flips below near the top of the desk); a dashed line
+  and a small ring mark the exact spot your finger is on. The desk
+  itself is a wood-framed felt table with a stitched border, a light
+  pool, and a drop shadow under the card.
 - **Grading & Slab Reveal** — $25 fee. Grade 1–10 is weighted from the
   hidden sub-grades (centering 30%, corners 25%, edges 20%, surface
   25%). Value multipliers: Gem Mint 10 = 5×, 9 = 3×, 8 = 2×, 7 = 1.5×,
@@ -40,6 +45,38 @@ It is a complete, self-contained HTML5 canvas game:
 
 Self-test: open `index.html?autotest=1` — it runs the full flow
 (pack → inspect → grade → sell → auction) and prints PASS/FAIL.
+
+## Look & feel
+
+Warm card-shop theme throughout: deep brown panels with gold
+gradient buttons, stat chips, and headings. Every pack shows its own
+**card back** (gold-bordered, set-colored, SLAB HOUSE monogram).
+Opening a pack reveals the five pulls in a staggered flip-in, and the
+best pull gets a pulsing gold glow. Tiles lift on hover; slabbed
+cards glow gold. The Inspection Desk is a wood-framed felt table
+(light pool, speckle, stitched border, vignette) with a brass-ringed
+loupe and a face-down card back when the desk is empty.
+
+## Card art direction
+
+Every card is a composition, not a pose: each position/sport has a
+distinct silhouette (three-point stance, diving receiver, flying comic
+hero, low goalie crouch), and each card rolls a deterministic figure
+scale, horizontal anchor, hair style/color, skin tone, and day/dusk/
+night scene from its set + name — no two cards in a set share the same
+pose + scale + anchor + hair + scene combination (asserted by the
+self-test and the headless harness). The art window is a drawn scene,
+not a flat gradient: stadiums with crowd dots and floodlights, a
+hardwood court with a hoop, a baseball diamond, hockey boards and ice,
+a soccer pitch, comic halftone dots with a skyline, and creature
+habitats (forest, volcano, ocean, storm sky). The card frame and name
+bar carry the team color, and each set has its own frame treatment
+(Gridiron double border, Hardwood rounded corners, Panel comic drop
+shadow). Rarity is a real parallel: Common plain, Uncommon silver
+shimmer, Rare refractor grid, Ultra rainbow holo sweep, Secret
+black-gold, and the 1/1 chase stays a black Prizm with a gold stamp.
+The same figure spec drives both the HTML tile renderer and the
+canvas Inspection Desk renderer, so the two can never drift apart.
 
 ## Godot 4 version
 
