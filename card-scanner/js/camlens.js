@@ -69,13 +69,48 @@
     const k = Math.min(W / vw, H / vh), cover = Math.max(W / vw, H / vh);
     return { k, ox: (W - vw * k) / 2, oy: (H - vh * k) / 2, cover };
   }
+  // Blur check for a captured frame. RMS Laplacian over the card region,
+  // sampled on a grid scaled so the working width is ~500px — the same
+  // scale grade-core's quality() measures the warped card at, so the same
+  // threshold applies. A sharp card scores well above it; a shot taken
+  // before focus settled, or while the phone was moving, scores below it.
+  // Pure function (no DOM) so the capture gate can be unit tested.
+  const BLURRY_SHARP = 9;
+  function laplacianSharp(img, box) {
+    if (!img || !img.d || !img.w || !img.h) return 0;
+    const w = img.w, h = img.h, d = img.d;
+    const b = box || { x0: 0, y0: 0, x1: w, y1: h };
+    const x0 = Math.max(0, Math.floor(b.x0)), y0 = Math.max(0, Math.floor(b.y0));
+    const x1 = Math.min(w, Math.ceil(b.x1)), y1 = Math.min(h, Math.ceil(b.y1));
+    const bw = x1 - x0, bh = y1 - y0;
+    if (bw < 8 || bh < 8) return 0;
+    const step = Math.max(1, Math.round(Math.max(bw, bh) / 500));
+    const gray = (x, y) => { const j = (y * w + x) * 4; return 0.299 * d[j] + 0.587 * d[j + 1] + 0.114 * d[j + 2]; };
+    let sum = 0, n = 0;
+    for (let y = y0 + step; y < y1 - step; y += step) {
+      for (let x = x0 + step; x < x1 - step; x += step) {
+        const L = 4 * gray(x, y) - gray(x - step, y) - gray(x + step, y) - gray(x, y - step) - gray(x, y + step);
+        sum += L * L; n++;
+      }
+    }
+    return n ? Math.sqrt(sum / n) : 0;
+  }
+  // How long to wait after asking the lens to focus before capturing, in ms.
+  // Single-shot AF needs the lens to travel and settle; continuous AF needs
+  // a beat to converge after the phone moves; manual focus is already set.
+  function focusSettleMs(modes) {
+    const m = modes || [];
+    if (m.includes('single-shot')) return 600;
+    if (m.includes('continuous')) return 450;
+    return 0;
+  }
   function presetZoom(base, factor, cap) {
     if (!cap) return null;
     const b = base == null ? naturalZoom(cap) : base;
     if (b == null) return null;
     return clampZoom(b * factor, cap);
   }
-  const api = { clampZoom, naturalZoom, rankCamera, chooseCamera, containMap, presetZoom, facingOf };
+  const api = { clampZoom, naturalZoom, rankCamera, chooseCamera, containMap, presetZoom, facingOf, laplacianSharp, focusSettleMs, BLURRY_SHARP };
   root.CamLens = api;
   if (typeof module !== 'undefined' && module.exports) module.exports = api;
 })(typeof globalThis !== 'undefined' ? globalThis : this);

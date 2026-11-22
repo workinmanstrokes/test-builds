@@ -33,6 +33,23 @@
     const img = imgData(canvas); S.photo[S.side] = { canvas, img };
     let det; try { det = (await call('detect', img)).res; } catch (e) { det = { quad: [[0, 0], [img.w, 0], [img.w, img.h], [0, img.h]], found: false, confidence: 0 }; }
     if (!det.found) { const w = img.w, h = img.h; det.quad = [[w * .12, h * .1], [w * .88, h * .1], [w * .88, h * .9], [w * .12, h * .9]]; }
+    // Blur gate: measure sharpness on the card region (same Laplacian metric
+    // and threshold grade-core uses to call a photo soft). A soft shot is
+    // sent back for a retake instead of being silently graded — the old flow
+    // only mentioned softness in the result notes, after the whole analysis
+    // had already run on a blurry photo. The camera path reopens the camera;
+    // a gallery pick just toasts. Skipped for tiny images (below 800px the
+    // metric is meaningless and the photo is a thumbnail, not a scan).
+    if (Math.max(img.w, img.h) >= 800) {
+      const xs = det.quad.map(p => p[0]), ys = det.quad.map(p => p[1]);
+      const sharp = CamLens.laplacianSharp(img, { x0: Math.min(...xs), y0: Math.min(...ys), x1: Math.max(...xs), y1: Math.max(...ys) });
+      if (sharp < CamLens.BLURRY_SHARP) {
+        delete S.photo[S.side];
+        toast('That photo came out blurry — hold the phone steady and take it again.');
+        if (cur === 'camera') startCam();
+        return;
+      }
+    }
     S.photo[S.side].det = det; S.photo[S.side].quad = det.quad.map(p => p.slice());
     openAdjust();
   }
@@ -162,6 +179,36 @@
       tapFocus._t = setTimeout(() => { const t = stream && stream.getVideoTracks()[0]; if (t) t.applyConstraints({ advanced: [{ focusMode: 'continuous' }] }).catch(() => {}); }, 900);
     }
   }
+  // Focus before the shutter fires, then wait for the lens to settle.
+  // The old shutter grabbed the instant it was tapped: continuous AF was
+  // still hunting from the hand movement, and the tap itself jolts the
+  // phone — so the photo came out blurry even on a sharp lens. Single-shot
+  // focuses on the card (frame centre, where the card fills the frame);
+  // continuous-only cameras just get the settle wait. Everything is
+  // best-effort: if the camera refuses, capture still goes ahead.
+  async function focusAndSettle() {
+    const track = stream && stream.getVideoTracks()[0];
+    if (!track) return;
+    let caps = {};
+    try { caps = track.getCapabilities ? track.getCapabilities() : {}; } catch (e) {}
+    const modes = caps.focusMode || [];
+    const wait = CamLens.focusSettleMs(modes);
+    if (modes.includes('single-shot')) {
+      const set = { focusMode: 'single-shot' };
+      if (caps.pointsOfInterest) set.pointsOfInterest = [{ x: 0.5, y: 0.5 }];
+      try { await track.applyConstraints({ advanced: [set] }); } catch (e) {}
+    }
+    if (wait) await new Promise(r => setTimeout(r, wait));
+  }
+  async function restoreContinuousFocus() {
+    const track = stream && stream.getVideoTracks()[0];
+    if (!track) return;
+    let caps = {};
+    try { caps = track.getCapabilities ? track.getCapabilities() : {}; } catch (e) {}
+    if ((caps.focusMode || []).includes('continuous')) {
+      try { await track.applyConstraints({ advanced: [{ focusMode: 'continuous' }] }); } catch (e) {}
+    }
+  }
   function drawCamLoupe(v) {
     const el = $('camLoupe');
     if (!liveQuad) { el.hidden = true; return; }
@@ -187,7 +234,7 @@
       $('zoomPresets').hidden = !canZoom;
       showZoom(1);
       $('zoomReadout').classList.remove('show');
-      $('camHint').textContent = canZoom ? 'Main lens · 1× · pinch or tap 2×' : 'Main lens · tap the card to focus';
+      $('camHint').textContent = canZoom ? 'Main lens · 1× · pinch or tap 2× · hold steady, then shoot' : 'Main lens · hold steady, then shoot — it focuses first';
       const v = $('video'); v.srcObject = stream; await v.play().catch(() => {});
       liveTimer = setInterval(liveDetect, 450);
     } catch (err) { $('camStatus').textContent = 'Camera unavailable. Use a gallery photo instead.'; $('camHint').textContent = 'Out of the sleeve and toploader'; }
@@ -239,9 +286,14 @@
   $('shutter').onclick = async () => {
     const v = $('video'); if (!v.videoWidth || $('shutter').disabled) return;
     $('shutter').disabled = true;
-    try { const c = await grabStill(); if (!c) return; stopCam(); await takePhoto(c); }
-    catch (e) { toast('Could not capture that photo.'); }
-    finally { $('shutter').disabled = false; }
+    $('camStatus').textContent = 'Focusing — hold still…'; $('camStatus').classList.remove('ok');
+    try {
+      await focusAndSettle();
+      const c = await grabStill(); if (!c) return;
+      stopCam(); await takePhoto(c);
+    }
+    catch (e) { toast('Could not capture that photo.'); $('camStatus').textContent = liveQuad ? 'Card found · hold steady' : 'Fit the card in the frame'; }
+    finally { restoreContinuousFocus().catch(() => {}); $('shutter').disabled = false; }
   };
   $('skipBack').onclick = () => showResults();
   qsa('#zoomPresets button').forEach(b => b.onclick = () => { const z = CamLens.presetZoom(baseZoom, Number(b.dataset.z), zoomCap); if (z != null) setZoom(z); });
