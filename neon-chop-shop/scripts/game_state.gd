@@ -6,6 +6,9 @@ extends RefCounted
 ## Reputation and shift results also persist: a shift is 5 clients, and
 ## its win/loss record is the roguelite meta-progression.
 ## Saved as JSON to user://neon_chop_shop_save.json
+## Heist-only blueprints are FROZEN while the card heist is a prototype
+## (VEX 3/10 scope cut): the shop does not sell them. Blueprints bought
+## before the freeze still work.
 
 const SAVE_PATH := "user://neon_chop_shop_save.json"
 const SHIFT_SIZE := 5
@@ -13,11 +16,11 @@ const SHIFT_QUOTA := 800
 
 const BLUEPRINTS := [
 	{ "id": "optics2",  "name": "Optics Mk II",         "cost": 200, "desc": "+25% surgery payout" },
-	{ "id": "neural2",  "name": "Neural Link Mk II",    "cost": 200, "desc": "Start ICE battles with +2 RAM" },
+	{ "id": "neural2",  "name": "Neural Link Mk II",    "cost": 200, "desc": "Start ICE battles with +2 RAM", "frozen": true },
 	{ "id": "reflex2",  "name": "Reflex Booster Mk II", "cost": 200, "desc": "Surgery generates 20% less Heat" },
-	{ "id": "cloakfw",  "name": "Cloak Firmware",       "cost": 300, "desc": "Cloak cards cut Trace by 25 (was 15)" },
+	{ "id": "cloakfw",  "name": "Cloak Firmware",       "cost": 300, "desc": "Cloak cards cut Trace by 25 (was 15)", "frozen": true },
 	{ "id": "ocgov",    "name": "Overclock Governor",   "cost": 300, "desc": "Overclock Heat penalty halved" },
-	{ "id": "plaspool", "name": "PLA+ Spool",           "cost": 150, "desc": "Draw 5 cards per ICE turn (was 4)" },
+	{ "id": "plaspool", "name": "PLA+ Spool",           "cost": 150, "desc": "Draw 5 cards per ICE turn (was 4)", "frozen": true },
 ]
 
 var banked: int = 0
@@ -38,6 +41,10 @@ func has_blueprint(id: String) -> bool:
 func buy_blueprint(id: String) -> bool:
 	for bp in BLUEPRINTS:
 		if bp["id"] == id:
+			# Frozen while the card heist is a prototype (VEX 3/10 scope
+			# cut): heist-only blueprints are not sold.
+			if bool(bp.get("frozen", false)):
+				return false
 			if has_blueprint(id):
 				return false
 			if banked < int(bp["cost"]):

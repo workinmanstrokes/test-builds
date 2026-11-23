@@ -1,5 +1,8 @@
 extends Node2D
 ## Neon Chop Shop — Milestone 1-3 vertical slice (Godot 4 port).
+## Tester update (VEX 3/10): chip-row tap fix, node loot now reaches
+## unbanked credits, shift progress on surgery/ICE screens, heist
+## blueprints frozen in the shop.
 ## State machine: TITLE -> WORKBENCH -> SURGERY -> ICE -> RAID / JOBDONE.
 ## Mirrors index.html exactly: same screens, same numbers, same stakes.
 ## Rendering is _draw()-based so the project runs with zero scene setup
@@ -110,6 +113,7 @@ func bank_and_next_client() -> void:
 
 func jack_in_from_surgery() -> void:
 	ice = IceBattler.new(state)
+	ice.node_destroyed.connect(_on_ice_node_destroyed)
 	ice.raid_triggered.connect(_on_ice_raid)
 	ice.hack_completed.connect(_on_hack_completed)
 	screen = Screen.ICE
@@ -149,7 +153,17 @@ func _on_ice_raid(reason: String) -> void:
 	_trigger_raid(reason)
 
 
+func _on_ice_node_destroyed(node_name: String) -> void:
+	# Node loot (100cr) reaches unbanked credits here — the HTML build
+	# pays it on destroy; the Godot port never connected this signal, so
+	# jacking out after two nodes paid 0cr of loot.
+	unbanked += 100
+	log_msg(">> %s DOWN. Stole 100cr of tech." % node_name)
+
+
 func _on_hack_completed(stolen: int) -> void:
+	# Node loot already reached unbanked via node_destroyed; the 250cr
+	# here is the all-nodes-down completion bonus only.
 	unbanked += 250
 	state.hacks += 1
 	var kept := unbanked
@@ -382,7 +396,7 @@ func _draw_title() -> void:
 	draw_rect(Rect2(0, 0, W, H), Color("07070f"))
 	_text("NEON", Vector2(360, 210), 110, CYAN)
 	_text("CHOP SHOP", Vector2(360, 320), 74, PINK)
-	_text("cyber-surgery - ice hacking - one wrong wire = raid", Vector2(360, 400), 19, DIM)
+	_text("cyber-surgery - one wrong wire = raid", Vector2(360, 400), 19, DIM)
 	_text("BANKED  %dcr    -    JOBS %d    -    RAIDS %d" % [state.banked, state.jobs, state.raids],
 		Vector2(360, 470), 20, GOLD)
 	_text("REP %d    -    SHIFTS WON %d / LOST %d" % [state.reputation, state.shifts_won, state.shifts_lost],
@@ -403,6 +417,7 @@ func _draw_howto() -> void:
 	_text("HOW TO PLAY", Vector2(360, 230), 30, CYAN)
 	var lines: Array[String] = [
 		"SHIFT: 5 clients. Bank 800cr + keep Rep 40+ to win.",
+		"ONE RUN: Diagnose -> Seat -> Wire -> Complete -> Bank (or Jack In) -> next client.",
 		"PHASE 1 - SURGERY",
 		"1. DIAGNOSE: read the conflicting symptoms, then",
 		"   CALL the faulty slot. Wrong call: -25 Stability.",
@@ -436,19 +451,20 @@ func _draw_howto() -> void:
 func _draw_workbench() -> void:
 	draw_rect(Rect2(0, 0, W, H), Color("07070f"))
 	_text("3D PRINTER - WORKBENCH", Vector2(360, 110), 30, GREEN)
-	_text("Blueprints persist through raids. Buy with banked credits.", Vector2(360, 148), 17, DIM)
+	_text("Surgery blueprints only - heist ones are frozen (prototype).", Vector2(360, 148), 17, DIM)
 	for i in GameState.BLUEPRINTS.size():
 		var bp: Dictionary = GameState.BLUEPRINTS[i]
 		var y := 180 + i * 148
 		var owned := state.has_blueprint(String(bp["id"]))
+		var frozen := bool(bp.get("frozen", false))
 		_rr(Rect2(40, y, 640, 132), 14,
 			Color8(20, 60, 35, 230) if owned else Color8(16, 20, 40, 235),
 			GREEN if owned else Color("1e3a5f"))
 		_text(String(bp["name"]), Vector2(64, y + 32), 24, GREEN if owned else INK, HORIZONTAL_ALIGNMENT_LEFT)
 		_text(String(bp["desc"]), Vector2(64, y + 66), 17, DIM, HORIZONTAL_ALIGNMENT_LEFT)
-		_text("OWNED" if owned else "%d cr" % int(bp["cost"]), Vector2(64, y + 100), 18,
-			GREEN if owned else GOLD, HORIZONTAL_ALIGNMENT_LEFT)
-		if not owned:
+		_text("OWNED" if owned else ("FROZEN - HEIST PROTOTYPE" if frozen else "%d cr" % int(bp["cost"])), Vector2(64, y + 100), 18,
+			GREEN if owned else (DIM if frozen else GOLD), HORIZONTAL_ALIGNMENT_LEFT)
+		if not owned and not frozen:
 			var id := String(bp["id"])
 			_button(Rect2(500, y + 40, 150, 56), "PRINT",
 				func(): buy_blueprint(id), state.banked >= int(bp["cost"]))
@@ -539,10 +555,12 @@ func _draw_surgery() -> void:
 	else:
 		_text("Run diagnostics, then seat the matching implant.", Vector2(360, 930), 17, DIM)
 	# implant variant: Factory (safe) vs Street chip (+30% pay, +15 Heat, -10 Stability)
+	# The chip row used to sit under the Overclock button, so the Street
+	# choice was nearly unreachable by tap. It now sits above it.
 	if surgery.diagnosed and surgery.diagnosis_locked and surgery.seated == "":
-		_text("CHIP: Factory (safe) or Street (+30% pay, +15 Heat, riskier)?", Vector2(360, 1030), 15, DIM)
-		_button(Rect2(40, 1040, 200, 40), "FACTORY", func(): surgery.variant = "factory"; queue_redraw(), true, surgery.variant == "factory")
-		_button(Rect2(260, 1040, 200, 40), "STREET +30%", func(): surgery.variant = "street"; queue_redraw(), true, surgery.variant == "street")
+		_text("CHIP: Factory (safe) or Street (+30% pay, +15 Heat, riskier)?", Vector2(360, 992), 15, DIM)
+		_button(Rect2(40, 1000, 200, 40), "FACTORY", func(): surgery.variant = "factory"; queue_redraw(), true, surgery.variant == "factory")
+		_button(Rect2(260, 1000, 200, 40), "STREET +30%", func(): surgery.variant = "street"; queue_redraw(), true, surgery.variant == "street")
 	# bottom controls
 	var wires_done := true
 	for c in Surgery.WIRE_COLORS:
@@ -555,7 +573,7 @@ func _draw_surgery() -> void:
 		func(): _complete_surgery(), surgery.seated != "" and wires_done)
 	_button(Rect2(40, 1140, 300, 48), "UNDO LAST MOVE",
 		func(): _undo_move(), not surgery.history.is_empty())
-	_text("Payout on completion: %dcr   -   Heat %d%% - 100%% fails" % [surgery.payout(), surgery.heat],
+	_text("SHIFT %d/%dcr  -  REP %d  -  Payout: %dcr%s  -  Heat %d%%" % [shift_earned, GameState.SHIFT_QUOTA, state.reputation, surgery.payout(), " (overclocked)" if surgery.overclock else "", surgery.heat],
 		Vector2(360, 1200), 16, DIM)
 
 
@@ -626,7 +644,7 @@ func _draw_ice() -> void:
 	_text("TURN %d" % ice.turn, Vector2(W - 40, 42), 20, DIM, HORIZONTAL_ALIGNMENT_RIGHT)
 	_bar(Rect2(40, 62, 640, 26), ice.trace / 100.0, RED if ice.trace >= 70 else Color("d946ef"),
 		"TRACE %d%%" % ice.trace)
-	_text("RAM %d/%d   -   STOLEN %dcr   -   UNBANKED %dcr" % [ice.ram, ice.ram_max, ice.stolen, unbanked],
+	_text("RAM %d/%d   -   STOLEN %dcr   -   UNBANKED %dcr   -   SHIFT %d/%dcr" % [ice.ram, ice.ram_max, ice.stolen, unbanked, shift_earned, GameState.SHIFT_QUOTA],
 		Vector2(360, 116), 18, GOLD)
 	for n in ice.nodes.size():
 		var node: Dictionary = ice.nodes[n]
@@ -703,12 +721,16 @@ func _draw_surgerydone() -> void:
 	_text("SCORE BREAKDOWN", Vector2(360, 340), 24, GOLD)
 	for i in surgery_breakdown.size():
 		_text(surgery_breakdown[i], Vector2(360, 390 + i * 34), 19, Color("cbd5e1"))
+	var summary_y := 420 + surgery_breakdown.size() * 34
 	_text("Client pays %dcr (unbanked). Stability %d%%. Rep %d." % [unbanked, surgery.stability if surgery else 100, state.reputation],
-		Vector2(360, 420 + surgery_breakdown.size() * 34), 19, GOLD)
-	_text("The heist is OPTIONAL — surgery is the game.", Vector2(360, 500 + surgery_breakdown.size() * 34), 17, DIM)
-	_button(Rect2(160, 620, 400, 84), "BANK & NEXT CLIENT",
+		Vector2(360, summary_y), 19, GOLD)
+	_text("The heist is OPTIONAL — surgery is the game.", Vector2(360, summary_y + 80), 17, DIM)
+	# Buttons sit below the breakdown whatever its length — a full 6-line
+	# breakdown used to overlap the BANK button.
+	var btn_y := maxi(620, summary_y + 130)
+	_button(Rect2(160, btn_y, 400, 84), "BANK & NEXT CLIENT",
 		func(): bank_and_next_client())
-	_button(Rect2(160, 730, 400, 84), "JACK IN - OPTIONAL HEIST",
+	_button(Rect2(160, btn_y + 110, 400, 84), "JACK IN - OPTIONAL HEIST",
 		func(): jack_in_from_surgery())
 
 
