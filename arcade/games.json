@@ -1,6 +1,6 @@
 {
-  "generated": "2026-11-22T06:20-05:00",
-  "count": 31,
+  "generated": "2026-11-23T06:20-05:00",
+  "count": 32,
   "games": [
     {
       "id": "filterfit",
@@ -15,6 +15,38 @@
       "apk": null,
       "repo": "https://github.com/workinmanstrokes/filterfit",
       "added": "2026-11-20",
+      "updated": "2026-11-22",
+      "isNew": true
+    },
+    {
+      "id": "slab-house-tycoon",
+      "title": "Slab House Tycoon",
+      "kind": "game",
+      "genre": "Godot",
+      "desc": "Fresh from the DowntownDiddlerrr workshop.",
+      "icon": "../arcade/brand-512.png",
+      "art": "../arcade/art/slab-house-tycoon.jpg",
+      "artPos": null,
+      "play": "../slab-house-tycoon/",
+      "apk": null,
+      "repo": "https://github.com/workinmanstrokes/slab-house-tycoon",
+      "added": "2026-11-21",
+      "updated": "2026-11-22",
+      "isNew": true
+    },
+    {
+      "id": "ollama-forge",
+      "title": "Ollama Forge",
+      "kind": "game",
+      "genre": "New",
+      "desc": "Ollama Forge: all-in-one local-AI app & game maker (PC + phone)",
+      "icon": "../ollama-forge/icons/icon-512.png",
+      "art": "../arcade/art/ollama-forge.jpg",
+      "artPos": null,
+      "play": "../ollama-forge/",
+      "apk": "https://github.com/workinmanstrokes/test-builds/releases/download/apks/OllamaForge.apk?v=20261123",
+      "repo": "https://github.com/workinmanstrokes/ollama-forge",
+      "added": "2026-11-23",
       "updated": "2026-11-22",
       "isNew": true
     },
@@ -35,22 +67,6 @@
       "isNew": true
     },
     {
-      "id": "slab-house-tycoon",
-      "title": "Slab House Tycoon",
-      "kind": "game",
-      "genre": "Godot",
-      "desc": "Fresh from the DowntownDiddlerrr workshop.",
-      "icon": "../arcade/brand-512.png",
-      "art": "../arcade/art/slab-house-tycoon.jpg",
-      "artPos": null,
-      "play": "../slab-house-tycoon/",
-      "apk": null,
-      "repo": "https://github.com/workinmanstrokes/slab-house-tycoon",
-      "added": "2026-11-21",
-      "updated": "2026-11-21",
-      "isNew": true
-    },
-    {
       "id": "comanche-rpg",
       "title": "Comanche RPG",
       "kind": "game",
@@ -60,7 +76,7 @@
       "art": "../arcade/art/comanche-rpg.jpg",
       "artPos": null,
       "play": null,
-      "apk": "https://github.com/workinmanstrokes/test-builds/releases/download/apks/ComancheRPG.apk?v=20261121",
+      "apk": "https://github.com/workinmanstrokes/test-builds/releases/download/apks/ComancheRPG.apk?v=20261123",
       "repo": "https://github.com/workinmanstrokes/comanche-rpg",
       "added": "2026-11-14",
       "updated": "2026-11-20",
@@ -435,6 +451,22 @@
       "isNew": false
     },
     {
+      "id": "print-doctor",
+      "title": "Print Doctor",
+      "kind": "app",
+      "genre": "3D printing",
+      "desc": "Offline troubleshooter for Tina2S 3D-print problems.",
+      "icon": "../print-doctor/apple-touch-icon.png",
+      "art": "../arcade/art/print-doctor.jpg",
+      "artPos": null,
+      "play": "../print-doctor/",
+      "apk": "https://github.com/workinmanstrokes/test-builds/releases/download/apks/PrintDoctor.apk?v=20261111",
+      "repo": "https://github.com/workinmanstrokes/print-doctor",
+      "added": "2026-10-26",
+      "updated": "2026-11-22",
+      "isNew": false
+    },
+    {
       "id": "fishing-almanac",
       "title": "Fishing Almanac",
       "kind": "app",
@@ -478,22 +510,6 @@
       "play": "../scan-forge/",
       "apk": "https://github.com/workinmanstrokes/test-builds/releases/download/apks/ScanForge-m1.apk?v=20261111",
       "repo": "https://github.com/workinmanstrokes/scan-forge",
-      "added": "2026-10-26",
-      "updated": "2026-11-19",
-      "isNew": false
-    },
-    {
-      "id": "print-doctor",
-      "title": "Print Doctor",
-      "kind": "app",
-      "genre": "3D printing",
-      "desc": "Offline troubleshooter for Tina2S 3D-print problems.",
-      "icon": "../print-doctor/apple-touch-icon.png",
-      "art": "../arcade/art/print-doctor.jpg",
-      "artPos": null,
-      "play": "../print-doctor/",
-      "apk": "https://github.com/workinmanstrokes/test-builds/releases/download/apks/PrintDoctor.apk?v=20261111",
-      "repo": "https://github.com/workinmanstrokes/print-doctor",
       "added": "2026-10-26",
       "updated": "2026-11-19",
       "isNew": false
