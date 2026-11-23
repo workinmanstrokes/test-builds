@@ -108,11 +108,13 @@ unbanked credits and the active implant are wiped, and the shift ends as a
 loss. **Banked credits, reputation, and unlocked 3D-printer blueprints
 always survive.**
 
-**Workbench (3D printer)** — spend banked credits on persistent blueprints:
-Optics Mk II (+25% surgery payout, 200cr), Neural Link Mk II (+2 starting
-RAM, 200cr), Reflex Booster Mk II (20% less Heat, 200cr), Cloak Firmware
-(Cloak cuts 25 Trace, 300cr), Overclock Governor (Overclock Heat penalty
-halved, 300cr), PLA+ Spool (draw 5 cards/turn, 150cr).
+**Workbench (3D printer)** — spend banked credits on persistent surgery
+blueprints: Optics Mk II (+25% surgery payout, 200cr), Reflex Booster Mk II
+(20% less Heat, 200cr), Overclock Governor (Overclock Heat penalty halved,
+300cr). The three heist blueprints — Neural Link Mk II (+2 starting RAM),
+Cloak Firmware (Cloak cuts 25 Trace), PLA+ Spool (draw 5 cards/turn) — are
+FROZEN while the card heist is a prototype: the shop shows them as frozen
+and refuses the purchase, so no credits go into the frozen system.
 
 ## Tester update — VEX, Game Test Lab (2026-11-20)
 
@@ -156,6 +158,45 @@ update answers every item in the smallest real change that satisfies it:
     risks confusion in search. A rename is a release decision for the
     maker, not something this update pretends to fix.
 
+## Tester update — VEX, Game Test Lab (2026-11-23)
+
+VEX scored the previous build **3/10 (F)**: "a themed surgery prototype
+with a hub, not a playable roguelite yet — prove the single-client loop is
+fun before you build the card heist." The loop itself was already in the
+code (the 2026-11-20 update built it: diagnosis, surgery, payout, banking,
+5-client shifts with a quota/rep win, Trace raids), so this update fixes
+the places where the loop did not actually work as played, and enforces
+the scope cut instead of adding anything:
+
+1. **The single-client loop is tappable end to end** — the Factory/Street
+   chip buttons sat underneath the Overclock button, so the Street-chip
+   risk/reward choice was nearly unreachable by tap (only a 10px strip
+   answered). The chip row moved up in both builds so both choices are
+   tappable.
+2. **Godot heist payout fixed** — destroying an ICE node never paid its
+   100cr in the Godot port (the `node_destroyed` signal was never
+   connected), so jacking out after two nodes paid 0cr of loot and a full
+   hack paid a flat 250cr instead of 550cr. Node loot now reaches
+   unbanked credits; the 250cr is the all-nodes-down bonus only. The HTML
+   build already paid node loot and is unchanged here.
+3. **The run state is visible while you play** — the surgery screen now
+   shows shift progress (banked/quota + reputation) next to the payout,
+   and the ICE screen shows it next to RAM/stolen/unbanked, so the
+   win/fail state is on screen during play, not only on the job-done
+   screen. How to Play now states the run in one line: Diagnose → Seat →
+   Wire → Complete → Bank (or Jack In) → next client.
+4. **Surgery-done layout** — with a full 6-line score breakdown the
+   "Client pays" line overlapped the BANK button; the buttons now sit
+   below the breakdown whatever its length.
+5. **Scope cut, enforced** — the three heist-only blueprints (Neural Link
+   Mk II, Cloak Firmware, PLA+ Spool) are no longer sold while the card
+   heist is a frozen prototype: the shop shows them FROZEN, buying one is
+   refused in code, and the title screen no longer advertises ice hacking
+   as a co-equal feature. The heist itself is unchanged behind the
+   explicit Jack In choice, and blueprints bought before this freeze
+   still work. No new systems were added; surgery is the one loop until
+   it is proven fun on a real device (see the device checklist).
+
 ## Device test checklist (real phone, still to do)
 
 - [ ] One full shift (5 clients) on a real Android phone, one-handed.
@@ -184,6 +225,14 @@ update answers every item in the smallest real change that satisfies it:
 - Godot scripts: delimiter/indentation sanity-checked, but **not executed
   in the Godot editor** (no Godot binary in this environment) — open the
   project in Godot 4.x and run the Main scene to confirm.
+- Tester update (VEX 3/10, 2026-11-23): verified by reading the live repo
+  files — the chip-row tap overlap, the Godot node-loot gap, and the
+  surgery-done button overlap were all confirmed in the shipped code. The
+  in-file self-test grew 51 → 52 assertions (new: a frozen heist blueprint
+  cannot be bought; the buy/persist tests now use Optics Mk II instead of
+  PLA+ Spool) but was NOT executed in this environment — open
+  `index.html?selftest=1` in a browser to confirm 52/52 before playing.
+  Godot scripts: read-through only, not executed in the Godot editor.
 
 ## Known limits
 
