@@ -1,0 +1,1 @@
+var e=new URL(`esbuild-BaXVPFT2.wasm`,import.meta.url).href;export{e as default};
