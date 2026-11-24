@@ -1,7 +1,23 @@
 {
-  "generated": "2026-11-23T06:20-05:00",
+  "generated": "2026-11-24T06:14-05:00",
   "count": 32,
   "games": [
+    {
+      "id": "bronze-and-blood",
+      "title": "Bronze & Blood",
+      "kind": "game",
+      "genre": "Real-time strategy",
+      "desc": "Hold your city together as the Bronze Age collapses.",
+      "icon": "../bronze-and-blood/icon-512.png",
+      "art": "../arcade/art/bronze-and-blood.jpg",
+      "artPos": null,
+      "play": "../bronze-and-blood/",
+      "apk": "https://github.com/workinmanstrokes/test-builds/releases/download/apks/BronzeAndBlood.apk?v=20261116",
+      "repo": "https://github.com/Scofather/bronze-and-blood",
+      "added": "2026-11-15",
+      "updated": "2026-11-23",
+      "isNew": true
+    },
     {
       "id": "filterfit",
       "title": "Filterfit",
@@ -15,7 +31,23 @@
       "apk": null,
       "repo": "https://github.com/workinmanstrokes/filterfit",
       "added": "2026-11-20",
-      "updated": "2026-11-22",
+      "updated": "2026-11-23",
+      "isNew": true
+    },
+    {
+      "id": "neon-chop-shop",
+      "title": "Neon Chop Shop",
+      "kind": "game",
+      "genre": "Godot",
+      "desc": "Fresh from the DowntownDiddlerrr workshop.",
+      "icon": "../arcade/brand-512.png",
+      "art": "../arcade/art/neon-chop-shop.jpg",
+      "artPos": null,
+      "play": "../neon-chop-shop/",
+      "apk": null,
+      "repo": "https://github.com/workinmanstrokes/neon-chop-shop",
+      "added": "2026-11-21",
+      "updated": "2026-11-23",
       "isNew": true
     },
     {
@@ -115,22 +147,6 @@
       "isNew": true
     },
     {
-      "id": "neon-chop-shop",
-      "title": "Neon Chop Shop",
-      "kind": "game",
-      "genre": "Godot",
-      "desc": "Fresh from the DowntownDiddlerrr workshop.",
-      "icon": "../arcade/brand-512.png",
-      "art": "../arcade/art/neon-chop-shop.jpg",
-      "artPos": null,
-      "play": "../neon-chop-shop/",
-      "apk": null,
-      "repo": "https://github.com/workinmanstrokes/neon-chop-shop",
-      "added": "2026-11-21",
-      "updated": "2026-11-20",
-      "isNew": true
-    },
-    {
       "id": "michigan-lunker-rush",
       "title": "Michigan Lunker Rush",
       "kind": "game",
@@ -144,22 +160,6 @@
       "repo": "https://github.com/workinmanstrokes/michigan-lunker-rush",
       "added": "2026-11-21",
       "updated": "2026-11-20",
-      "isNew": true
-    },
-    {
-      "id": "bronze-and-blood",
-      "title": "Bronze & Blood",
-      "kind": "game",
-      "genre": "Real-time strategy",
-      "desc": "Hold your city together as the Bronze Age collapses.",
-      "icon": "../bronze-and-blood/icon-512.png",
-      "art": "../arcade/art/bronze-and-blood.jpg",
-      "artPos": null,
-      "play": "../bronze-and-blood/",
-      "apk": "https://github.com/workinmanstrokes/test-builds/releases/download/apks/BronzeAndBlood.apk?v=20261116",
-      "repo": "https://github.com/Scofather/bronze-and-blood",
-      "added": "2026-11-15",
-      "updated": "2026-11-19",
       "isNew": true
     },
     {
@@ -225,6 +225,22 @@
       "added": "2026-11-11",
       "updated": "2026-11-11",
       "isNew": true
+    },
+    {
+      "id": "sunken-spire",
+      "title": "Echoes of the Sunken Spire",
+      "kind": "game",
+      "genre": "Roguelite",
+      "desc": "Portrait turn-based roguelite. Dive the drowned tower floor by floor.",
+      "icon": "../sunken-spire/icons/icon-512.png",
+      "art": "../arcade/art/sunken-spire.jpg",
+      "artPos": null,
+      "play": "../sunken-spire/",
+      "apk": "https://github.com/workinmanstrokes/test-builds/releases/download/apks/SunkenSpire-rift.apk?v=20261111",
+      "repo": "https://github.com/workinmanstrokes/sunken-spire",
+      "added": "2026-10-24",
+      "updated": "2026-11-23",
+      "isNew": false
     },
     {
       "id": "whos-the-brainrot",
@@ -355,22 +371,6 @@
       "isNew": false
     },
     {
-      "id": "sunken-spire",
-      "title": "Echoes of the Sunken Spire",
-      "kind": "game",
-      "genre": "Roguelite",
-      "desc": "Portrait turn-based roguelite. Dive the drowned tower floor by floor.",
-      "icon": "../sunken-spire/icons/icon-512.png",
-      "art": "../arcade/art/sunken-spire.jpg",
-      "artPos": null,
-      "play": "../sunken-spire/",
-      "apk": "https://github.com/workinmanstrokes/test-builds/releases/download/apks/SunkenSpire-rift.apk?v=20261111",
-      "repo": "https://github.com/workinmanstrokes/sunken-spire",
-      "added": "2026-10-24",
-      "updated": "2026-11-19",
-      "isNew": false
-    },
-    {
       "id": "final-cast",
       "title": "Final Cast",
       "kind": "game",
@@ -435,6 +435,22 @@
       "isNew": false
     },
     {
+      "id": "fishing-almanac",
+      "title": "Fishing Almanac",
+      "kind": "app",
+      "genre": "Outdoors",
+      "desc": "Solunar tables, stream gauges, lake depth maps and fishing reports.",
+      "icon": "../fishing-almanac/icons/icon-512.png",
+      "art": "../arcade/art/fishing-almanac.jpg",
+      "artPos": null,
+      "play": "../fishing-almanac/",
+      "apk": "https://github.com/workinmanstrokes/test-builds/releases/download/apks/FishingAlmanac.apk?v=20261111",
+      "repo": "https://github.com/workinmanstrokes/fishing-almanac",
+      "added": "2026-10-17",
+      "updated": "2026-11-23",
+      "isNew": false
+    },
+    {
       "id": "card-scanner",
       "title": "Card Scanner",
       "kind": "app",
@@ -464,22 +480,6 @@
       "repo": "https://github.com/workinmanstrokes/print-doctor",
       "added": "2026-10-26",
       "updated": "2026-11-22",
-      "isNew": false
-    },
-    {
-      "id": "fishing-almanac",
-      "title": "Fishing Almanac",
-      "kind": "app",
-      "genre": "Outdoors",
-      "desc": "Solunar tables, stream gauges, lake depth maps and fishing reports.",
-      "icon": "../fishing-almanac/icons/icon-512.png",
-      "art": "../arcade/art/fishing-almanac.jpg",
-      "artPos": null,
-      "play": "../fishing-almanac/",
-      "apk": "https://github.com/workinmanstrokes/test-builds/releases/download/apks/FishingAlmanac.apk?v=20261111",
-      "repo": "https://github.com/workinmanstrokes/fishing-almanac",
-      "added": "2026-10-17",
-      "updated": "2026-11-20",
       "isNew": false
     },
     {
