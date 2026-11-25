@@ -23,6 +23,44 @@ static func edges_score(card: CardData) -> float:
 static func surface_score(card: CardData) -> float:
 	return maxf(1.0, 10.0 - 2.0 * card.surface_lines)
 
+## Transparent grading preview — shown BEFORE the player pays.
+## Returns {fee, grade_min, grade_max, value_min, value_max,
+## fully_inspected}. A metric already revealed at the desk pins its real
+## sub-score; an unrevealed metric can still be anything (1.0..10.0), so
+## it widens the range. Once all 4 metrics are inspected the range
+## collapses to the exact grade — the player always knows the outcome
+## before paying the fee. Same weights as grade_card(), so the preview
+## can never disagree with the result.
+static func preview_grading(card: CardData, inspected: Dictionary) -> Dictionary:
+	var subs := {
+		"centering": centering_score(card),
+		"corners": corners_score(card),
+		"edges": edges_score(card),
+		"surface": surface_score(card),
+	}
+	var weights := {"centering": 0.30, "corners": 0.25, "edges": 0.20, "surface": 0.25}
+	var low := 0.0
+	var high := 0.0
+	for k in subs:
+		if inspected.get(k, false):
+			low += weights[k] * subs[k]
+			high += weights[k] * subs[k]
+		else:
+			low += weights[k] * 1.0
+			high += weights[k] * 10.0
+	var grade_min: int = clampi(int(round(low)), 1, 10)
+	var grade_max: int = clampi(int(round(high)), 1, 10)
+	var value_min: int = maxi(1, int(round(card.base_value * GRADE_MULT[grade_min])))
+	var value_max: int = maxi(1, int(round(card.base_value * GRADE_MULT[grade_max])))
+	return {
+		"fee": FEE,
+		"grade_min": grade_min,
+		"grade_max": grade_max,
+		"value_min": value_min,
+		"value_max": value_max,
+		"fully_inspected": grade_min == grade_max,
+	}
+
 ## Returns {grade, subs, mult, value}. Also stamps the card as graded.
 static func grade_card(card: CardData) -> Dictionary:
 	var c := centering_score(card)

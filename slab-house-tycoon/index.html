@@ -106,6 +106,17 @@
   .one-stamp { position:absolute; top:5px; right:5px; z-index:2; background:#f2b705; color:#111; font-size:10px; font-weight:800; padding:2px 6px; border-radius:4px; transform:rotate(6deg); box-shadow:0 1px 4px rgba(0,0,0,.5); }
   .tc-name .one-tag { float:right; color:var(--gold); font-size:10px; font-weight:800; }
   .mini.one-of-one, .card.one-of-one { border-color:var(--gold); box-shadow:0 0 14px rgba(242,183,5,.45); }
+  /* Numbered parallels, serials, rookies and autos */
+  .tc-art.pll { border:3px solid var(--pll); }
+  .tc-art.pll::after { content:''; position:absolute; inset:0; background:linear-gradient(115deg, transparent 32%, color-mix(in srgb, var(--pll) 45%, transparent) 46%, rgba(255,255,255,.22) 52%, transparent 66%); background-size:220% 100%; animation:foilSweep 3.2s linear infinite; pointer-events:none; }
+  .tc-art.pll-refractor::after { background:linear-gradient(115deg, transparent 30%, rgba(143,200,255,.35) 42%, rgba(255,160,220,.3) 50%, rgba(255,255,255,.2) 56%, transparent 68%); background-size:220% 100%; }
+  .ser-stamp { position:absolute; top:5px; left:5px; z-index:2; background:rgba(0,0,0,.72); color:#f5f1e6; font-size:10px; font-weight:800; padding:1px 5px; border-radius:4px; letter-spacing:.3px; }
+  .ser-stamp.jersey { color:var(--gold); box-shadow:0 0 0 1px var(--gold); }
+  .rc-badge { position:absolute; left:5px; bottom:5px; z-index:2; background:#c8102e; color:#fff; font-size:9px; font-weight:900; padding:1px 4px; border-radius:3px; }
+  .auto-sig { position:absolute; right:6px; bottom:6px; z-index:2; max-width:66%; overflow:hidden; white-space:nowrap; background:rgba(255,255,255,.75); color:#1a3d8f; font:italic 600 13px "Brush Script MT","Segoe Script",cursive; padding:0 6px; border-radius:3px; transform:rotate(-4deg); }
+  .fake-stamp { position:absolute; inset:auto 0 38% 0; z-index:3; text-align:center; color:#ff5a5f; font-weight:900; font-size:18px; letter-spacing:3px; transform:rotate(-12deg); text-shadow:0 0 6px #000; }
+  .tc-name .par-tag { float:right; font-size:10px; font-weight:800; color:#fff; background:var(--pll); padding:0 5px; border-radius:3px; margin-left:4px; text-shadow:0 1px 1px rgba(0,0,0,.5); }
+  .mk.up { color:#3fb950; } .mk.down { color:#f85149; }
   .bk-veil { position:absolute; inset:0; pointer-events:none; }
   .bk-veil.bk-dusk { background:linear-gradient(180deg, rgba(255,140,60,.16), rgba(30,10,50,.30)); }
   .bk-veil.bk-night { background:linear-gradient(180deg, rgba(8,14,48,.38), rgba(4,6,24,.50)); }
@@ -135,8 +146,8 @@
   .card .rl { font-size:12px; font-weight:700; }
   .card .vl { color:var(--mut); font-size:12px; }
   .card .grade { font-size:22px; font-weight:800; color:var(--gold); }
-  .card .row { display:flex; gap:6px; margin-top:8px; }
-  .card .row button { flex:1; }
+  .card .row { display:flex; flex-wrap:wrap; gap:6px; margin-top:8px; }
+  .card .row button { flex:1 1 auto; white-space:nowrap; }
   .auc { display:flex; gap:16px; flex-wrap:wrap; }
   .auc-left { flex:1; min-width:280px; }
   .auc-right { flex:1; min-width:280px; }
@@ -189,6 +200,19 @@
   .tier .t-price s { display:block; font-size:12px; color:var(--mut); font-weight:600; }
   .tier .t-note { font-size:12.5px; color:var(--mut); font-weight:500; }
   .tier.express { border-color:#a07d2a; }
+  /* Grader choice and the money diff */
+  .gchips { display:grid; grid-template-columns:repeat(4,1fr); gap:6px; margin:12px 0 6px; }
+  .gchip { display:flex; flex-direction:column; align-items:center; gap:1px; padding:7px 2px; border-radius:10px; background:#221810; color:var(--ink); border:2px solid #54401f; font-weight:700; min-width:0; }
+  .gchip b { font-size:15px; letter-spacing:.5px; }
+  .gchip span { font-size:11.5px; color:var(--mut); }
+  .gchip.on { border-color:var(--gold); background:#3a2a12; box-shadow:0 0 0 2px rgba(242,183,5,.25); }
+  .gchip.gr-titan b { color:#ff6b6b; } .gchip.gr-tux b { color:#f2f2f2; } .gchip.gr-vault b { color:#6fd6c8; } .gchip.gr-slab b { color:var(--gold); }
+  .gblurb { font-size:12.5px; color:var(--mut); margin:4px 0 8px; text-align:left; line-height:1.35; }
+  .roi { text-align:left; background:#171008; border:1px solid #4a3a24; border-radius:10px; padding:8px 10px; margin:0 0 4px; font-size:13px; }
+  .roi-row { display:flex; justify-content:space-between; gap:8px; padding:2px 0; }
+  .roi-row span { color:var(--mut); }
+  .roi-be { border-top:1px solid #3a2d18; margin-top:4px; padding-top:5px; line-height:1.35; }
+  .roi .up { color:#3fb950; } .roi .down { color:#f85149; }
   .tier.economy .t-note b { color:var(--orange); }
   .tier:disabled .t-price { color:#8a7d63; }
   /* ---- Slab reveal ---- */
@@ -216,6 +240,15 @@
   .tier-silver { background:linear-gradient(180deg,#f4f6f8,#c4cbd3 60%,#a7b0ba); color:#1a2028; }
   .tier-red { background:linear-gradient(180deg,#d8403f,#a71f25); color:#fff; }
   .tier-white { background:linear-gradient(180deg,#fbf8f1,#e7e1d3); color:#2b2418; }
+  /* Each grading company has its own look */
+  .slab-label.gr-titan, .mini-label.gr-titan { background:linear-gradient(180deg,#ffffff,#eceff2); color:#141414; border:2px solid #c8102e; box-shadow:none; }
+  .slab-label.gr-titan .l-house { color:#c8102e; }
+  .mini-label.gr-titan span:first-child { color:#c8102e; }
+  .slab-label.gr-tux, .mini-label.gr-tux { background:linear-gradient(180deg,#1f1f22,#060607); color:#f3f3f3; border:1px solid #707076; }
+  .slab-label.gr-vault:not(.tier-black), .mini-label.gr-vault:not(.tier-black) { background:linear-gradient(180deg,#e8f8f5,#a7dcd3); color:#0b3b36; border:1px solid #2a8c80; }
+  .slab.gr-tux .slab-well { background:#050506; }
+  .slab.rejected { border-color:#ff7b72; }
+  .reject-stamp { position:absolute; z-index:3; left:0; right:0; top:42%; text-align:center; font-size:30px; font-weight:900; letter-spacing:4px; color:#ff5a5f; transform:rotate(-14deg); text-shadow:0 0 8px #000; }
   .slab-well { margin-top:9px; border-radius:6px; padding:6px; background:rgba(0,0,0,.25); box-shadow:inset 0 0 0 2px rgba(255,255,255,.18), inset 0 6px 14px rgba(0,0,0,.45); }
   .slab-well canvas { display:block; width:100%; height:auto; border-radius:8px; }
   .seal { position:absolute; inset:-2px; z-index:3; display:flex; align-items:center; justify-content:center; flex-direction:column; gap:8px; border-radius:16px; cursor:pointer; background:repeating-linear-gradient(90deg, rgba(0,0,0,.035) 0 2px, transparent 2px 7px), linear-gradient(160deg,#c9a46b,#a8814a 55%,#8e6a39); color:#3a2408; box-shadow:inset 0 0 0 2px rgba(60,35,10,.35), 0 18px 40px rgba(0,0,0,.6); animation:sealWiggle 1.8s ease-in-out infinite; }
@@ -253,6 +286,22 @@
   .bulk-bar .grow { flex:1; font-size:13px; color:var(--ink); }
   .bulk-bar .grow small { display:block; color:var(--mut); }
   /* ---- Upgrades ---- */
+  /* Hobby News and the Card Show */
+  .news { background:linear-gradient(180deg,#221810,#171008); border:1px solid #4a3a24; border-radius:12px; padding:8px 10px; margin:0 0 12px; }
+  .news-h { font-size:12px; font-weight:800; color:var(--mut); letter-spacing:.4px; text-transform:uppercase; margin-bottom:4px; }
+  .news-item { display:flex; gap:8px; align-items:baseline; font-size:13.5px; padding:3px 0; line-height:1.35; }
+  .news-item > span { font-weight:900; }
+  .news-item.up > span { color:#3fb950; } .news-item.down > span { color:#f85149; }
+  .news-item small { margin-left:auto; white-space:nowrap; color:var(--mut); font-size:11px; padding-left:6px; }
+  .show-h { margin-top:22px; }
+  .listing .seller { font-size:12px; font-weight:700; color:var(--gold); text-align:left; margin:-4px 0 6px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .listing.slabbed .seller { margin-bottom:10px; }
+  .listing.sold { opacity:.6; display:flex; flex-direction:column; justify-content:center; min-height:90px; }
+  .sold-stub { font-size:13px; color:var(--mut); }
+  .deal { color:#3fb950; font-weight:800; } .deal-red { color:#f0883e; font-weight:800; }
+  .chk { font-size:11.5px; text-align:left; line-height:1.3; margin:4px 0; padding:4px 6px; border-radius:6px; background:#171008; }
+  .chk.bad { color:#ffb4ae; border:1px solid #7a2a26; } .chk.good { color:#b9f0c4; border:1px solid #275a33; }
+  button.danger { background:linear-gradient(180deg,#a3302c,#7a1f1c); color:#fff; border-color:#c4413b; }
   .upgrades { display:grid; grid-template-columns:repeat(auto-fill,minmax(230px,1fr)); gap:12px; }
   .upg { display:flex; flex-direction:column; gap:6px; background:linear-gradient(180deg,#31241a,#221810); border:1px solid #54401f; border-radius:14px; padding:14px; box-shadow:0 6px 18px rgba(0,0,0,.4); }
   .upg .u-icon { font-size:34px; line-height:1; width:56px; height:56px; display:flex; align-items:center; justify-content:center; border-radius:14px; background:radial-gradient(circle at 35% 30%, #4a3718, #1c140a); border:1px solid #6a5028; }
@@ -286,6 +335,9 @@
     .seg-btn { font-size:13px; padding:9px 2px; }
     .seg-btn.gyro { font-size:12px; }
     .grid { grid-template-columns:repeat(auto-fill,minmax(148px,1fr)); gap:8px; }
+    .card .row button.small { padding:6px 5px; font-size:12px; }
+    .news-item { font-size:12.5px; }
+    .gchip b { font-size:13.5px; }
     .mini { width:calc(50% - 5px); }
     .auc-left, .auc-right { min-width:0; flex-basis:100%; }
     .timer { font-size:36px; }
@@ -325,9 +377,14 @@
   <section id="screen-shop" class="screen active">
     <h2>Pack Shop</h2>
     <p class="sub">Buy a pack, pull 5 cards. Every pack guarantees at least one Rare or better. No timers, no energy — just money.</p>
+    <div class="news" id="news"></div>
     <div class="packs" id="packs"></div>
     <div class="msg" id="shop-msg"></div>
     <div id="pulls"></div>
+    <h2 class="show-h">Card Show</h2>
+    <p class="sub">Four tables a day, new ones each morning. Low-star sellers sometimes sell fakes, and a price far under book is a warning sign. Look up a slab's cert before you buy.</p>
+    <div class="grid" id="show"></div>
+    <div class="msg" id="show-msg"></div>
   </section>
 
   <section id="screen-desk" class="screen">
@@ -1043,15 +1100,23 @@ function cardArtHTML(card) {
   const rarCls = ' rar-' + (card.rarity || 'common');
   const parCls = ' par-' + (card.rarity || 'common');
   const one = card.variant === '1/1';
-  const stamp = one ? '<span class="one-stamp">1/1</span>' : '';
+  const P = parallelOf(card);
+  const ser = !one ? serialText(card) : '';
+  const stamp = (one ? '<span class="one-stamp">1/1</span>' : '')
+    + (ser ? `<span class="ser-stamp${jerseyMatch(card) ? ' jersey' : ''}">${ser}</span>` : '')
+    + (card.rookie ? '<span class="rc-badge">RC</span>' : '')
+    + (card.auto ? `<span class="auto-sig">${esc(card.name)}</span>` : '')
+    + (card.exposed ? '<span class="fake-stamp">FAKE</span>' : '');
+  const pll = P ? ` pll pll-${card.parallel}" style="--pll:${P.color}` : '';
   const parKind = one ? 'prizm' : ({ common: 'plain', uncommon: 'silver', rare: 'refractor', ultra: 'rainbow', secret: 'black-gold' })[card.rarity] || 'plain';
   if (hasFigure(card)) {
     const sport = sportFor(card);
     const arena = sport === 'football' ? 'stadium arena-football' : 'arena-' + sport;
-    return `<div class="tc-art ${arena}${foil}${rarCls}${parCls}${one ? ' one-of-one' : ''}" data-parallel="${parKind}">${playerFigureSVG(card)}${stamp}</div>`;
+    return `<div class="tc-art ${arena}${foil}${rarCls}${parCls}${one ? ' one-of-one' : ''}${pll}" data-parallel="${parKind}">${playerFigureSVG(card)}${stamp}</div>`;
   }
   const hab = habitatFor(card);
-  return `<div class="tc-art${foil}${rarCls}${parCls}${one ? ' one-of-one' : ''} hab-${hab}" data-parallel="${parKind}" style="background:${SETS[card.set].color}">${habitatSVG(card)}<span class="emoji">${card.art}</span>${stamp}</div>`;
+  const bg = `background:${SETS[card.set].color}`;
+  return `<div class="tc-art${foil}${rarCls}${parCls}${one ? ' one-of-one' : ''} hab-${hab}${P ? ` pll pll-${card.parallel}` : ''}" data-parallel="${parKind}" style="${bg}${P ? `;--pll:${P.color}` : ''}">${habitatSVG(card)}<span class="emoji">${card.art}</span>${stamp}</div>`;
 }
 // Shared trading-card face used by pulls, collection and auction tiles.
 // The name bar carries the team color (figure sets) or set color
@@ -1059,7 +1124,9 @@ function cardArtHTML(card) {
 function cardFaceHTML(card) {
   const rc = rarityColor(card.rarity);
   const flavor = card.flavor ? `<div class="tc-flavor">${esc(card.flavor)}</div>` : '';
-  const oneTag = card.variant === '1/1' ? '<span class="one-tag">1 OF 1</span>' : '';
+  const P = parallelOf(card);
+  const oneTag = card.variant === '1/1' ? '<span class="one-tag">1 OF 1</span>'
+    : P ? `<span class="par-tag" style="--pll:${P.color}">${esc(parallelName(card))}</span>` : '';
   const fc = frameColor(card);
   const nameStyle = card.variant === '1/1' ? ' style="background:#14161c;color:#f5f1e6"' : ` style="background:${fc};color:${inkFor(fc)}"`;
   return `<div class="tc-name"${nameStyle}>${esc(card.name)}${oneTag}</div>
@@ -1583,8 +1650,26 @@ function surfaceScore(g, visibleOnly) {
 }
 
 // ---------- Grade calculation: BGS-style subgrades → overall ----------
-const GRADE_MULT = { 10: 5, 9: 3, 8: 2, 7: 1.5, 6: 1.2, 5: 1, 4: 0.7, 3: 0.5, 2: 0.4, 1: 0.3 };
-const GRADE_NAMES = { 10: 'Gem Mint', 9: 'Mint', 8: 'NM-MT', 7: 'Near Mint', 6: 'EX-MT', 5: 'Excellent', 4: 'VG-EX', 3: 'Very Good', 2: 'Good', 1: 'Poor' };
+const GRADE_MULT = { 10: 5, 9.5: 4, 9: 3, 8: 2, 7: 1.5, 6: 1.2, 5: 1, 4: 0.7, 3: 0.5, 2: 0.4, 1: 0.3 };
+const GRADE_NAMES = { 10: 'Gem Mint', 9.5: 'Mint+', 9: 'Mint', 8: 'NM-MT', 7: 'Near Mint', 6: 'EX-MT', 5: 'Excellent', 4: 'VG-EX', 3: 'Very Good', 2: 'Good', 1: 'Poor' };
+const GRADE_STEPS = [1, 2, 3, 4, 5, 6, 7, 8, 9, 9.5, 10];
+// ---------- Grading companies ----------
+// Four fictional graders, each modeled on how real companies differ:
+//  Slab House: four subgrades on the label, quad 10s earn the Black Label.
+//  Titan: one overall grade, the biggest market (slabs resell highest) but
+//         huge pop reports, and a 10 needs near-perfect centering.
+//  Tuxedo: black "tuxedo" slab, a 9.5 step, cheaper and quicker, resells lower.
+//  Vault: monster/hero/comic specialists, cheapest fees, Pristine 10 label,
+//         weaker resale on sports cards.
+const GRADERS = {
+  slab:  { name: 'Slab House Grading',   short: 'SHG', fee: 1,   resale: { sports: 1,    other: 1 },    share: 1,   subs: true,  halfTop: false, dayShift: 0,  blurb: 'Four subgrades on the label. Quad 10s earn the Black Label.' },
+  titan: { name: 'Titan Card Authority', short: 'TCA', fee: 1.6, resale: { sports: 1.2,  other: 1.1 },  share: 3,   subs: false, halfTop: false, dayShift: 1,  strictCentering: true, blurb: 'The biggest name: slabs resell highest, but pop reports are huge and a 10 needs near-perfect centering.' },
+  tux:   { name: 'Tuxedo Grading Co.',   short: 'TGC', fee: 0.8, resale: { sports: 0.92, other: 0.88 }, share: 0.5, subs: false, halfTop: true,  dayShift: -1, blurb: 'Black tuxedo slabs with a 9.5 step, and a 10 is hard to get. Cheaper and quicker, resells a little lower.' },
+  vault: { name: 'Vault Card Guaranty',  short: 'VCG', fee: 0.6, resale: { sports: 0.8,  other: 1.15 }, share: 0.8, subs: false, halfTop: true,  dayShift: 1,  pristineLabel: true, blurb: 'Monster, hero and comic specialists. Cheapest fees and a Pristine 10 label, weaker on sports.' },
+};
+const GRADER_ORDER = ['slab', 'titan', 'tux', 'vault'];
+function graderOf(key) { return GRADERS[key] || GRADERS.slab; }
+function graderResale(card, key) { if (!key) return 1; return graderOf(key).resale[isSportsCard(card) ? 'sports' : 'other']; }
 // Slab label colors: Pristine Black Label for quad 10s, gold for 10s,
 // silver for 9s, red for 8s, white below.
 const LABEL_TIERS = {
@@ -1596,7 +1681,11 @@ const LABEL_TIERS = {
 };
 function labelTier(grade, pristine) {
   if (grade === 10 && pristine) return 'black';
-  return grade === 10 ? 'gold' : grade === 9 ? 'silver' : grade === 8 ? 'red' : 'white';
+  return grade >= 9.5 ? 'gold' : grade === 9 ? 'silver' : grade === 8 ? 'red' : 'white';
+}
+function gradeWord(res) {
+  if (res.pristine) return 'Pristine';
+  return GRADE_NAMES[res.grade] || '';
 }
 function gradeSubs(g, visibleOnly) {
   return {
@@ -1614,20 +1703,33 @@ function overallFromSubs(subs) {
   return Math.max(1, Math.min(10, grade));
 }
 // opts.tier === 'economy' adds harsh-grader pop control (uses the seeded RNG).
+// opts.grader picks the company (default Slab House).
 function gradeCard(card, opts) {
+  const graderKey = (opts && opts.grader) || 'slab';
+  const G = graderOf(graderKey);
   const subs = gradeSubs(card.grades);
   let grade = overallFromSubs(subs);
+  const minSub = Math.min(subs.centering, subs.corners, subs.edges, subs.surface);
+  if (G.strictCentering && grade === 10 && subs.centering < 9.5) grade = 9; // Titan: a 10 needs near 50/50
+  // Half-point graders split the top: a borderline 10 lands at 9.5, and a
+  // strong 9 climbs to 9.5.
+  if (G.halfTop) {
+    const w = 0.30 * subs.centering + 0.25 * subs.corners + 0.20 * subs.edges + 0.25 * subs.surface;
+    if (grade === 10 && w < 9.75) grade = 9.5;
+    else if (grade === 9 && w >= 9.25 && minSub >= 8.5) grade = 9.5;
+  }
   let popControl = false;
   if (opts && opts.tier === 'economy') {
     if (grade === 10 && rand() < 0.4) { grade = 9; popControl = true; }
-    else if (grade > 1 && rand() < 0.15) { grade -= 1; popControl = true; }
+    else if (grade > 1 && rand() < 0.15) { grade = grade === 9.5 ? 9 : grade - 1; popControl = true; }
   }
-  const pristine = !popControl && grade === 10 && subs.centering === 10 && subs.corners === 10 && subs.edges === 10 && subs.surface === 10;
+  const perfect = grade === 10 && subs.centering === 10 && subs.corners === 10 && subs.edges === 10 && subs.surface === 10;
+  const pristine = !popControl && perfect && (graderKey === 'slab' || !!G.pristineLabel);
   return {
-    grade, subs, pristine, popControl,
+    grade, subs, pristine, popControl, grader: graderKey,
     label: labelTier(grade, pristine),
     mult: GRADE_MULT[grade],
-    value: Math.max(1, Math.round(card.base * GRADE_MULT[grade] * variantMult(card))),
+    value: Math.max(1, Math.round(card.base * GRADE_MULT[grade] * variantMult(card) * (opts && opts.grader ? graderResale(card, graderKey) : 1))),
   };
 }
 
@@ -1637,7 +1739,64 @@ function gradeCard(card, opts) {
 // normal rarity roll, never guaranteed. Odds + multiplier live here only.
 const ONE_OF_ONE_ODDS = 0.01;
 const ONE_OF_ONE_MULT = 10;
-function variantMult(card) { return card.variant === '1/1' ? ONE_OF_ONE_MULT : 1; }
+
+// ---------- Parallels, rookies and autographs ----------
+// Modeled on modern chrome sets: an unnumbered Refractor, then serial-numbered
+// colors from /99 down to /5, with the 1/1 Superfractor (variant '1/1') on top.
+// Monster, hero and comic sets call them foils. Rolled per card when it's made.
+const PARALLELS = {
+  refractor: { name: 'Refractor', alt: 'Holofoil',    run: 0,  mult: 1.5, odds: 0.08,   color: '#8fc8ff' },
+  green:     { name: 'Green',     alt: 'Green Foil',  run: 99, mult: 2,   odds: 0.03,   color: '#2fbf71' },
+  gold:      { name: 'Gold',      alt: 'Gold Foil',   run: 50, mult: 3,   odds: 0.016,  color: '#e0b021' },
+  orange:    { name: 'Orange',    alt: 'Orange Foil', run: 25, mult: 4.5, odds: 0.008,  color: '#f0883e' },
+  black:     { name: 'Black',     alt: 'Black Foil',  run: 10, mult: 6,   odds: 0.0035, color: '#2b2b2b' },
+  red:       { name: 'Red',       alt: 'Red Foil',    run: 5,  mult: 8,   odds: 0.002,  color: '#e5484d' },
+};
+const PARALLEL_ORDER = ['refractor', 'green', 'gold', 'orange', 'black', 'red'];
+const JERSEY_MATCH_MULT = 1.25; // serial number matches the player's jersey number
+const ROOKIE_MULT = 1.6;
+const AUTO_MULT = 3;
+const AUTO_ODDS = { sports: 0.03, other: 0.015 };
+// A player's first card carries the RC logo. One or two per sports set.
+const ROOKIES = new Set(['Dash Okafor', 'Rocket Reeves', 'Crossover Cole', 'Fadeaway Fred', 'Fastball Phil', 'Changeup Chuck', 'Puck Norris', 'Power Play Paul', 'Nutmeg Ned', 'Striker Steve']);
+function isSportsCard(card) { const s = sportFor(card); return !!s && s !== 'comic'; }
+function rollParallel() {
+  const r = rand(); let acc = 0;
+  for (const k of PARALLEL_ORDER) { acc += PARALLELS[k].odds; if (r < acc) return k; }
+  return null;
+}
+function parallelOf(card) { return card.variant === '1/1' ? null : (PARALLELS[card.parallel] || null); }
+function parallelName(card) {
+  if (card.variant === '1/1') return isSportsCard(card) ? 'Superfractor' : 'Prism';
+  const p = parallelOf(card);
+  return p ? (isSportsCard(card) ? p.name : p.alt) : 'Base';
+}
+function serialText(card) {
+  if (card.variant === '1/1') return '1/1';
+  const p = parallelOf(card);
+  return p && p.run && card.serial ? String(card.serial).padStart(String(p.run).length, '0') + '/' + p.run : '';
+}
+function jerseyMatch(card) {
+  const p = parallelOf(card);
+  return !!(p && p.run && Number.isInteger(card.number) && card.number > 0 && card.serial === card.number);
+}
+function variantMult(card) {
+  const p = parallelOf(card);
+  let m = card.variant === '1/1' ? ONE_OF_ONE_MULT : (p ? p.mult : 1);
+  if (jerseyMatch(card)) m *= JERSEY_MATCH_MULT;
+  if (card.rookie) m *= ROOKIE_MULT;
+  if (card.auto) m *= AUTO_MULT;
+  return m;
+}
+// Short tags for a card's extras: "RC", "AUTO", "Gold /50", "Jersey match".
+function extrasText(card) {
+  const t = [];
+  if (card.variant === '1/1' || parallelOf(card)) t.push(parallelName(card) + (serialText(card) && card.variant !== '1/1' ? ' ' + serialText(card).replace(/^\d+/, '') : card.variant === '1/1' ? ' 1/1' : ''));
+  if (card.rookie) t.push('RC');
+  if (card.auto) t.push('AUTO');
+  if (jerseyMatch(card)) t.push('Jersey match');
+  return t;
+}
 
 // ---------- Card generation ----------
 let nextUid = 1;
@@ -1661,8 +1820,19 @@ function makeCard(setKey, rarity) {
     collectorNo: set.cards.indexOf(def) + 1, // #n within its set, e.g. Brick Wallson is #1/9
     base: randInt(lo, hi),
     grades: makeGrades(),
-    graded: null, // set by grading: { grade, subs, mult, value, label, popAware, ... }
+    graded: null, // set by grading: { grade, subs, mult, value, label, popAware, grader, ... }
+    rookie: ROOKIES.has(def.name),
+    parallel: null, serial: null, auto: false,
   };
+}
+// Parallels and autographs are rolled after the card exists (pack slots and
+// Card Show listings both use this).
+function rollExtras(card) {
+  const pk = rollParallel();
+  card.parallel = pk;
+  card.serial = pk && PARALLELS[pk].run ? randInt(1, PARALLELS[pk].run) : null;
+  card.auto = rand() < (isSportsCard(card) ? AUTO_ODDS.sports : AUTO_ODDS.other);
+  return card;
 }
 function makeGrades() {
   const surfaceDefects = rollSurfaceDefects();
@@ -1676,22 +1846,27 @@ function makeGrades() {
 }
 function openPack(setKey) {
   const cards = [];
-  for (let i = 0; i < 4; i++) cards.push(makeCard(setKey, rollRarity()));
+  for (let i = 0; i < 4; i++) cards.push(rollExtras(makeCard(setKey, rollRarity())));
   // Last card guaranteed Rare or better
-  const last = makeCard(setKey, pickWeighted([['rare', 55], ['ultra', 32], ['secret', 13]]));
+  const last = rollExtras(makeCard(setKey, pickWeighted([['rare', 55], ['ultra', 32], ['secret', 13]])));
   // 1/1 chase: 1% of packs, only on the guaranteed slot
-  if (rand() < ONE_OF_ONE_ODDS) last.variant = '1/1';
+  if (rand() < ONE_OF_ONE_ODDS) { last.variant = '1/1'; last.parallel = null; last.serial = null; }
   cards.push(last);
   return cards;
 }
-function cardValue(card) { return card.graded ? slabValue(card) : card.base * variantMult(card); }
+// What the shop believes a card is worth. A counterfeit you've caught is worth
+// nothing; one you haven't caught still looks like the real thing.
+function cardValue(card) {
+  if (card.exposed) return 0;
+  return card.graded ? slabValue(card) : Math.max(1, Math.round(card.base * variantMult(card) * marketMult(card)));
+}
 function rarityLabel(r) { return RARITY[r].label; }
 function rarityColor(r) { return RARITY[r].color; }
 
 // ---------- Game state & economy ----------
 const START_CASH = 500;
 const SAVE_KEY = 'slab-house-tycoon-v1'; // same key: old saves migrate in place
-const SAVE_VERSION = 2;
+const SAVE_VERSION = 3;
 
 // Grading services. Days are shop days: one passes per finished auction or
 // when you close the shop with End Day.
@@ -1711,10 +1886,11 @@ const UPGRADES = {
   prep:     { name: 'Microfiber Prep Station', icon: '🧽', price: 250, desc: 'Wipe off fingerprints and pack dust before you submit: +0.5 surface on dirty cards. Bulk orders get prepped for you.' },
   bulk:     { name: 'Bulk Submitter Account', icon: '📦', price: 350, desc: 'Send ' + BULK_MIN + '+ cards in one order for $15/card Regular or $7/card Economy.' },
   vip:      { name: 'VIP Auction Slots', icon: '👑', price: 750, desc: 'House fee drops from 10% to 3%, and deeper-pocketed bidders join your streams (+20% bid ceilings).' },
+  uv:       { name: 'UV Blacklight', icon: '🔦', price: 200, desc: 'Shine it on Card Show listings and desk cards: fake card stock glows and fake slab labels show no security print.' },
 };
-const UPGRADE_ORDER = ['lamp', 'calipers', 'prep', 'bulk', 'vip'];
-function defaultUpgrades() { return { lamp: false, calipers: false, prep: false, bulk: false, vip: false }; }
-function defaultStats() { return { packs: 0, graded: 0, sold: 0, auctions: 0, earned: 0, fees: 0 }; }
+const UPGRADE_ORDER = ['lamp', 'calipers', 'prep', 'bulk', 'vip', 'uv'];
+function defaultUpgrades() { return { lamp: false, calipers: false, prep: false, bulk: false, vip: false, uv: false }; }
+function defaultStats() { return { packs: 0, graded: 0, sold: 0, auctions: 0, earned: 0, fees: 0, bought: 0, fakesCaught: 0, fakesLost: 0 }; }
 function freshInspect() {
   return {
     border: { front: false, back: false },
@@ -1735,6 +1911,9 @@ const state = {
   day: 1,
   upgrades: defaultUpgrades(),
   pop: {},                // your own graded population: { popKey: { grade: count } }
+  market: { events: [] }, // Hobby News: price swings on players and sets
+  worldSeed: Math.floor(Math.random() * 1e9), // drives news and the Card Show, apart from pack luck
+  show: { day: 0, listings: [] }, // Card Show singles for today
   stats: defaultStats(),
   auction: null,          // live auction engine state (see below)
   screen: 'shop',
@@ -1746,32 +1925,49 @@ const state = {
 // Commons flood fast; Secrets stay scarce; a 1/1 is only ever yours.
 const POP_SEED = { common: [40, 90], uncommon: [12, 34], rare: [3, 9], ultra: [0, 3], secret: [0, 1] }; // market 10s on day 1
 const POP_GROWTH = { common: 0.06, uncommon: 0.045, rare: 0.03, ultra: 0.02, secret: 0.012 };       // per day
-const POP_SHAPE = { 10: 1, 9: 3.2, 8: 4.5, 7: 3.4, 6: 2.2, 5: 1.4, 4: 0.9, 3: 0.6, 2: 0.4, 1: 0.3 };
-function popKey(card) { return card.set + '|' + card.name + '|' + (card.variant === '1/1' ? '1of1' : 'base'); }
-function marketPop(card, grade, day) {
-  if (card.variant === '1/1') return 0;
-  const [lo, hi] = POP_SEED[card.rarity] || POP_SEED.common;
-  const tens = lo + Math.floor(hashRand(popKey(card), 7) * (hi - lo + 1));
-  const growth = 1 + (POP_GROWTH[card.rarity] || 0.03) * Math.max(0, (day || 1) - 1);
-  return Math.floor(tens * (POP_SHAPE[grade] || 0) * growth);
+const POP_SHAPE = { 10: 1, 9.5: 1.6, 9: 3.2, 8: 4.5, 7: 3.4, 6: 2.2, 5: 1.4, 4: 0.9, 3: 0.6, 2: 0.4, 1: 0.3 };
+// Numbered parallels and autos are graded far less often than the base card.
+const PAR_POP = { refractor: 0.25, green: 0.03, gold: 0.015, orange: 0.008, black: 0.003, red: 0.0015 };
+// Each grader keeps its own pop report. Slab House keys stay as they were so
+// older saves keep their counts.
+function popKey(card, grader) {
+  const v = card.variant === '1/1' ? '1of1' : (card.parallel || 'base');
+  return card.set + '|' + card.name + '|' + v + (card.auto ? '|auto' : '') + (grader && grader !== 'slab' ? '|' + grader : '');
 }
-function ownPop(card, grade) { return ((state.pop[popKey(card)] || {})[grade]) || 0; }
-function popCount(card, grade, day) { return marketPop(card, grade, day == null ? state.day : day) + ownPop(card, grade); }
-function popHigher(card, grade) { let n = 0; for (let g = grade + 1; g <= 10; g++) n += popCount(card, g); return n; }
+function cardGrader(card) { return (card.graded && card.graded.grader) || 'slab'; }
+function marketPop(card, grade, day, grader) {
+  if (card.variant === '1/1') return 0;
+  const g = grader || cardGrader(card);
+  if (grade === 9.5 && !graderOf(g).halfTop) return 0;
+  const [lo, hi] = POP_SEED[card.rarity] || POP_SEED.common;
+  const tens = lo + Math.floor(hashRand(card.set + '|' + card.name + '|base', 7) * (hi - lo + 1));
+  const growth = 1 + (POP_GROWTH[card.rarity] || 0.03) * Math.max(0, (day || 1) - 1);
+  const scarce = (PAR_POP[card.parallel] || 1) * (card.auto ? 0.05 : 1);
+  return Math.floor(tens * (POP_SHAPE[grade] || 0) * growth * scarce * graderOf(g).share);
+}
+function ownPop(card, grade, grader) { return ((state.pop[popKey(card, grader || cardGrader(card))] || {})[grade]) || 0; }
+function popCount(card, grade, day, grader) {
+  const g = grader || cardGrader(card);
+  return marketPop(card, grade, day == null ? state.day : day, g) + ownPop(card, grade, g);
+}
+function popHigher(card, grade, grader) { let n = 0; for (const g of GRADE_STEPS) if (g > grade) n += popCount(card, g, null, grader); return n; }
 // Scarcity premium: a Pop 1 Gem Mint is worth 2.5x its normal 10 price; a
 // flooded grade sinks toward 0.6x. 9s swing less, lower grades barely move.
 function popMult(grade, pop) {
   const p = Math.max(1, pop);
   if (grade >= 10) return +(0.6 + 1.9 * Math.exp(-(p - 1) / 5)).toFixed(3);
-  if (grade === 9) return +(0.75 + 0.75 * Math.exp(-(p - 1) / 8)).toFixed(3);
+  if (grade >= 9) return +(0.75 + 0.75 * Math.exp(-(p - 1) / 8)).toFixed(3);
   return +(0.9 + 0.2 * Math.exp(-(p - 1) / 12)).toFixed(3);
 }
 // Slabs graded in this version price off the live pop report; slabs from
 // older saves keep the value they were graded at.
+// Graders other than Slab House change resale (Titan sells highest), and
+// Hobby News swings move every price.
 function slabValue(card) {
   const g = card.graded;
-  if (!g.popAware) return g.value;
-  return Math.max(1, Math.round(card.base * GRADE_MULT[g.grade] * variantMult(card) * popMult(g.grade, popCount(card, g.grade))));
+  if (!g.popAware) return Math.max(1, Math.round(g.value * marketMult(card)));
+  return Math.max(1, Math.round(card.base * GRADE_MULT[g.grade] * variantMult(card) * popMult(g.grade, popCount(card, g.grade))
+    * graderResale(card, g.grader) * marketMult(card)));
 }
 
 // ---------- Save migration ----------
@@ -1799,6 +1995,9 @@ function migrateCard(card) {
     if (!(card.collectorNo >= 1)) { card.collectorNo = SETS[card.set].cards.indexOf(def) + 1; changed = true; }
   }
   if (!('variant' in card)) { card.variant = null; changed = true; }
+  if (!('parallel' in card)) { card.parallel = null; card.serial = null; changed = true; }
+  if (!('auto' in card)) { card.auto = false; changed = true; }
+  if (!('rookie' in card)) { card.rookie = ROOKIES.has(card.name); changed = true; }
   const g = card.grades;
   if (g) {
     if (!g.back) { g.back = { centering: { lr: 50, tb: 50 }, corners: [false, false, false, false] }; changed = true; }
@@ -1817,7 +2016,7 @@ function save() {
   try {
     localStorage.setItem(SAVE_KEY, JSON.stringify({
       version: SAVE_VERSION, cash: state.cash, inventory: state.inventory, stats: state.stats, nextUid,
-      day: state.day, upgrades: state.upgrades, pop: state.pop,
+      day: state.day, upgrades: state.upgrades, pop: state.pop, market: state.market, show: state.show, nextListingId, worldSeed: state.worldSeed,
     }));
   } catch (e) { /* private mode / headless: ignore */ }
 }
@@ -1829,6 +2028,10 @@ function applySave(d) {
   state.day = d.day >= 1 ? d.day : 1;
   state.upgrades = Object.assign(defaultUpgrades(), d.upgrades || {});
   state.pop = d.pop && typeof d.pop === 'object' ? d.pop : {};
+  state.market = d.market && Array.isArray(d.market.events) ? d.market : { events: [] };
+  state.show = d.show && Array.isArray(d.show.listings) ? d.show : { day: 0, listings: [] };
+  nextListingId = d.nextListingId || 1;
+  state.worldSeed = typeof d.worldSeed === 'number' ? d.worldSeed : Math.floor(Math.random() * 1e9);
   nextUid = d.nextUid || (state.inventory.reduce((m, c) => Math.max(m, c.uid), 0) + 1);
   let migrated = d.version !== SAVE_VERSION;
   for (const c of state.inventory) { if (migrateCard(c)) migrated = true; }
@@ -1868,6 +2071,8 @@ function rawSell(uid) {
   if (!card) return { ok: false, reason: 'Card not found.' };
   if (card.graded) return { ok: false, reason: 'Already slabbed — sell it as a slab instead.' };
   if (atGrader(card)) return { ok: false, reason: 'That card is at the grader.' };
+  if (card.exposed) return { ok: false, reason: 'Nobody buys a known fake. Trash it.' };
+  if (isFake(card)) return exposeAtSale(card);
   const amount = cardValue(card);
   state.cash += amount;
   state.stats.sold++; state.stats.earned += amount;
@@ -1887,47 +2092,70 @@ function prepCard(uid) {
   return { ok: true, cleaned };
 }
 // Per-card fee for an order of `count` cards on a service tier.
-function tierFee(tier, count) {
+// Each company scales the tier price (Titan costs more, Vault less).
+function tierFee(tier, count, grader) {
   const t = GRADING_TIERS[tier];
-  return (count >= BULK_MIN && state.upgrades.bulk) ? t.bulkFee : t.fee;
+  const base = (count >= BULK_MIN && state.upgrades.bulk) ? t.bulkFee : t.fee;
+  return Math.max(1, Math.round(base * graderOf(grader).fee));
+}
+function tierDays(tier, grader) {
+  const t = GRADING_TIERS[tier];
+  if (t.days[1] === 0) return [0, 0]; // walk-through stays instant
+  const s = graderOf(grader).dayShift;
+  return [Math.max(1, t.days[0] + s), Math.max(1, t.days[1] + s)];
 }
 // Submit one card for grading. Express slabs it now; Economy and Regular send
 // it out and it comes back when the day comes.
-function submitGrading(uid, tier) { return submitBatch([uid], tier || 'regular'); }
-function submitBatch(uids, tier) {
+function submitGrading(uid, tier, grader) { return submitBatch([uid], tier || 'regular', grader); }
+function submitBatch(uids, tier, grader) {
   const t = GRADING_TIERS[tier];
+  grader = grader || 'slab';
   if (!t) return { ok: false, reason: 'Unknown grading service.' };
+  if (!GRADERS[grader]) return { ok: false, reason: 'Unknown grading company.' };
   if (!uids.length) return { ok: false, reason: 'No cards selected.' };
   const cards = uids.map(u => state.inventory.find(c => c.uid === u));
   if (cards.some(c => !c)) return { ok: false, reason: 'Card not found.' };
   if (cards.some(c => c.graded)) return { ok: false, reason: 'Already graded.' };
   if (cards.some(atGrader)) return { ok: false, reason: 'Already at the grader.' };
-  const per = tierFee(tier, cards.length), total = per * cards.length;
+  if (cards.some(c => c.exposed)) return { ok: false, reason: 'No grader will take a known counterfeit.' };
+  const per = tierFee(tier, cards.length, grader), total = per * cards.length;
   if (state.cash < total) return { ok: false, reason: 'Need ' + fmt$(total) + ' for ' + t.name + ' grading.' };
   state.cash -= total;
   state.stats.fees += total;
   const returned = [];
   for (const c of cards) {
     if (cards.length > 1 && state.upgrades.prep && c.grades.dust) { c.grades.dust = false; c.prepped = true; }
-    const days = randInt(t.days[0], t.days[1]);
-    if (days === 0) returned.push(finishGrading(c, tier));
-    else c.submission = { tier, sentDay: state.day, readyDay: state.day + days, fee: per };
+    const [d0, d1] = tierDays(tier, grader);
+    const days = randInt(d0, d1);
+    if (days === 0) returned.push(finishGrading(c, tier, grader));
+    else c.submission = { tier, grader, sentDay: state.day, readyDay: state.day + days, fee: per };
   }
   save();
-  return { ok: true, per, total, tier, cards, returned, card: cards[0], result: returned.length ? returned[0].result : null };
+  return { ok: true, per, total, tier, grader, cards, returned, card: cards[0], result: returned.length ? returned[0].result : null };
 }
-function finishGrading(card, tier) {
-  const result = gradeCard(card, { tier });
+function certFor(uid, grader) {
+  return graderOf(grader).short + '-' + String(1000000 + ((uid * 7919 + 4243) % 9000000)).slice(-7);
+}
+function finishGrading(card, tier, grader) {
+  grader = grader || 'slab';
+  delete card.submission;
+  // Every grader checks authenticity first. A counterfeit comes back
+  // unslabbed, the fee is gone, and now everyone knows it's fake.
+  if (card.counterfeit) {
+    card.exposed = true;
+    state.stats.fakesCaught = (state.stats.fakesCaught || 0) + 1;
+    return { card, result: { rejected: true, grader, tier, day: state.day } };
+  }
+  const result = gradeCard(card, { tier, grader });
   result.popAware = true;
   result.tier = tier;
   result.day = state.day;
-  result.cert = 'SH-' + String(1000000 + ((card.uid * 7919 + 4243) % 9000000)).slice(-7);
+  result.cert = grader === 'slab' ? 'SH-' + String(1000000 + ((card.uid * 7919 + 4243) % 9000000)).slice(-7) : certFor(card.uid, grader);
   card.graded = result;
-  delete card.submission;
-  const k = popKey(card);
+  const k = popKey(card, grader);
   state.pop[k] = state.pop[k] || {};
   state.pop[k][result.grade] = (state.pop[k][result.grade] || 0) + 1;
-  result.popAtGrade = popCount(card, result.grade);
+  result.popAtGrade = popCount(card, result.grade, null, grader);
   state.stats.graded++;
   return { card, result };
 }
@@ -1936,10 +2164,12 @@ function advanceDay() {
   state.day++;
   const returned = [];
   for (const c of state.inventory) {
-    if (c.submission && c.submission.readyDay <= state.day) returned.push(finishGrading(c, c.submission.tier));
+    if (c.submission && c.submission.readyDay <= state.day) returned.push(finishGrading(c, c.submission.tier, c.submission.grader));
   }
+  const news = rollNews();
+  refreshShow();
   save();
-  return { day: state.day, returned };
+  return { day: state.day, returned, news };
 }
 function buyUpgrade(key) {
   const u = UPGRADES[key];
@@ -1956,12 +2186,209 @@ function sellCard(uid) {
   const card = state.inventory.find(c => c.uid === uid);
   if (!card) return { ok: false, reason: 'Card not found.' };
   if (atGrader(card)) return { ok: false, reason: 'That card is at the grader.' };
+  if (card.exposed) return { ok: false, reason: 'Nobody buys a known fake. Trash it.' };
+  if (isFake(card)) return exposeAtSale(card);
   const amount = cardValue(card);
   state.cash += amount;
   state.stats.sold++; state.stats.earned += amount;
   removeFromInventory(uid);
   save();
   return { ok: true, amount };
+}
+
+// ---------- Hobby News: the market moves ----------
+// Real prices swing on news: a player breaks out, a star gets hurt, a set is
+// over-hyped and then crashes, a reprint floods supply. Headlines come from
+// the save's own world seed, so they never disturb the pack RNG.
+const NEWS_ODDS = 0.55; // chance of a new headline on each new day
+function worldRand(tag, i) { return hashRand(String(state.worldSeed) + '|' + tag, i); }
+function worldInt(tag, i, lo, hi) { return lo + Math.floor(worldRand(tag, i) * (hi - lo + 1)); }
+function worldPick(tag, i, arr) { return arr[Math.min(arr.length - 1, Math.floor(worldRand(tag, i) * arr.length))]; }
+const SPORT_SETS = Object.keys(SETS).filter(k => SET_SPORT[k] && SET_SPORT[k] !== 'comic');
+const OTHER_SETS = Object.keys(SETS).filter(k => !SPORT_SETS.includes(k));
+function eventLive(e, day) { return e.start <= day && e.end >= day; }
+function eventHits(e, card) {
+  return (e.type === 'player' && e.key === card.set + '|' + card.name) || (e.type === 'set' && e.key === card.set);
+}
+function marketMult(card, day) {
+  const d = day == null ? state.day : day;
+  let m = 1;
+  for (const e of (state.market && state.market.events) || []) if (eventLive(e, d) && eventHits(e, card)) m *= e.mult;
+  return +m.toFixed(3);
+}
+function activeNews() { return ((state.market && state.market.events) || []).filter(e => eventLive(e, state.day)); }
+function rollNews() {
+  const d = state.day;
+  state.market.events = state.market.events.filter(e => e.end >= d);
+  if (worldRand('news', d) >= NEWS_ODDS) return null;
+  const kind = worldPick('kind', d, ['breakout', 'breakout', 'injury', 'hype', 'reprint', 'cartoon', 'anniv']);
+  let e = null, follow = null;
+  if (kind === 'breakout' || kind === 'injury') {
+    const setKey = worldPick('set', d, SPORT_SETS), def = worldPick('who', d, SETS[setKey].cards);
+    const key = setKey + '|' + def.name;
+    e = kind === 'breakout'
+      ? { type: 'player', key, mult: +(1.6 + worldRand('m', d) * 0.9).toFixed(2), start: d, end: d + worldInt('len', d, 2, 4), tone: 'up',
+          text: def.name + ' had a monster game. Every ' + def.name + ' card is up.' }
+      : { type: 'player', key, mult: +(0.55 + worldRand('m', d) * 0.2).toFixed(2), start: d, end: d + worldInt('len', d, 2, 3), tone: 'down',
+          text: def.name + ' is out injured. Sellers are dumping ' + def.name + ' cards.' };
+  } else if (kind === 'hype') {
+    const k = worldPick('set', d, Object.keys(SETS));
+    e = { type: 'set', key: k, mult: 1.5, start: d, end: d + 1, tone: 'up', text: SETS[k].name + ' is all over the breakers’ streams. Prices are up 50%, for now.' };
+    follow = { type: 'set', key: k, mult: 0.7, start: d + 2, end: d + 3, tone: 'down', text: 'The ' + SETS[k].name + ' hype fizzled. Prices sit 30% under normal.' };
+  } else if (kind === 'reprint') {
+    const k = worldPick('set', d, Object.keys(SETS));
+    e = { type: 'set', key: k, mult: 0.75, start: d, end: d + 3, tone: 'down', text: 'A surprise reprint of ' + SETS[k].name + ' floods the market. Prices are down 25%.' };
+  } else if (kind === 'cartoon') {
+    const k = worldPick('set', d, OTHER_SETS);
+    e = { type: 'set', key: k, mult: 1.4, start: d, end: d + 3, tone: 'up', text: 'A new cartoon based on ' + SETS[k].name + ' just premiered. Prices are up 40%.' };
+  } else {
+    const k = worldPick('set', d, Object.keys(SETS));
+    e = { type: 'set', key: k, mult: 1.25, start: d, end: d + 2, tone: 'up', text: SETS[k].name + ' turns 10. Collectors want the originals: up 25%.' };
+  }
+  if (state.market.events.some(x => x.key === e.key && x.end >= d)) return null; // one story per player or set at a time
+  state.market.events.push(e);
+  if (follow) state.market.events.push(follow);
+  return e;
+}
+
+// ---------- Card Show: buying singles, and the fakes that come with it ----------
+// Four tables a day. Sellers carry star ratings; the fewer stars, the more
+// likely the card or the slab is fake. Fakes are priced to tempt you (well
+// under value). A cert lookup catches a bogus or altered label but not a
+// cloned one, because counterfeiters copy real cert numbers; the UV
+// blacklight catches them all. Graders reject counterfeits, and a buyer who
+// catches one cancels the sale.
+const SELLERS = [['CardBarn_Dave', 5], ['MintCondition_Mo', 5], ['SlabSlinger', 4], ['RipCity_Rita', 4],
+  ['PackRat_Pete', 3], ['FlipKing99', 3], ['DealsDealsDeals', 2], ['NoReturns_Ned', 2]];
+const FAKE_ODDS = { 5: 0, 4: 0.04, 3: 0.12, 2: 0.35 };
+const SHOW_SIZE = 4;
+let nextListingId = 1;
+// An undiscovered fake: a counterfeit card, or a real card in a faked slab.
+function isFake(card) { return !!(card && !card.exposed && (card.counterfeit || card.fakeSlab)); }
+function stepUp(grade, n, grader) {
+  const steps = GRADE_STEPS.filter(g => g !== 9.5 || graderOf(grader).halfTop);
+  const i = steps.indexOf(grade);
+  return steps[Math.min(steps.length - 1, (i < 0 ? steps.length - 1 : i) + n)];
+}
+function setLabelGrade(card, grade) {
+  const g = card.graded;
+  g.grade = grade; g.mult = GRADE_MULT[grade]; g.pristine = false; g.label = labelTier(grade, false);
+}
+function refreshShow() {
+  if (state.show.day === state.day && state.show.listings.length) return state.show;
+  // Listings come from their own RNG stream so the show never changes your packs.
+  const savedRng = rng, savedUid = nextUid;
+  setSeed(hashStr(String(state.worldSeed) + '|show|' + state.day));
+  const setKeys = Object.keys(SETS), listings = [];
+  try {
+    for (let i = 0; i < SHOW_SIZE; i++) {
+      const [seller, stars] = SELLERS[randInt(0, SELLERS.length - 1)];
+      const card = rollExtras(makeCard(setKeys[randInt(0, setKeys.length - 1)], pickWeighted([['uncommon', 30], ['rare', 40], ['ultra', 22], ['secret', 8]])));
+      const id = nextListingId++;
+      card.uid = -id; card.fromShow = true;
+      const fake = rand() < FAKE_ODDS[stars];
+      if (rand() < 0.45) {
+        const grader = pickWeighted([['titan', 45], ['slab', 20], ['tux', 15], ['vault', 20]]);
+        const res = gradeCard(card, { grader });
+        Object.assign(res, { popAware: true, tier: 'regular', day: state.day, cert: certFor(500000 + id, grader) });
+        card.graded = res;
+        if (fake) {
+          let style = pickWeighted([['bogus', 35], ['altered', 35], ['cloned', 30]]);
+          if (style === 'altered' && res.grade >= 10) style = 'cloned';
+          card.fakeSlab = { style, realGrade: res.grade };
+          if (style === 'altered') setLabelGrade(card, stepUp(res.grade, randInt(1, 2), grader));
+          else {
+            card.counterfeit = true;
+            setLabelGrade(card, graderOf(grader).halfTop && rand() < 0.5 ? 9.5 : 10);
+            if (style === 'bogus') res.cert = certFor(900000 + id, grader);
+          }
+        }
+      } else if (fake) card.counterfeit = true;
+      const val = cardValue(card);
+      const price = Math.max(5, Math.round(val * (fake ? 0.55 + rand() * 0.2 : 0.8 + rand() * 0.5)));
+      listings.push({ id, seller, stars, price, card, checks: {} });
+    }
+  } finally { rng = savedRng; nextUid = savedUid; }
+  state.show = { day: state.day, listings };
+  return state.show;
+}
+// Look up a slab's cert number in its grader's registry.
+function certLookup(card) {
+  if (!card || !card.graded) return { ok: false, reason: 'Only slabs have a cert number.' };
+  const g = card.graded, G = graderOf(g.grader), fs = card.fakeSlab;
+  if (fs && fs.style === 'bogus') return { ok: true, fake: true, text: G.short + ' has no record of cert ' + g.cert + '.' };
+  if (fs && fs.style === 'altered') return { ok: true, fake: true, text: G.short + ' lists cert ' + g.cert + ' as a ' + fs.realGrade + ', but this label says ' + g.grade + '.' };
+  return { ok: true, fake: false, text: G.short + ' cert ' + g.cert + ' matches: ' + card.name + ', ' + g.grade + '. A match proves the number is real, not the slab.' };
+}
+// Shine the UV blacklight on a card or slab.
+function uvCheck(card) {
+  if (!state.upgrades.uv) return { ok: false, reason: 'You need the UV Blacklight.' };
+  const fs = card.fakeSlab;
+  if (fs && fs.style === 'altered') return { ok: true, fake: true, text: 'The grade on the label glows a different color from the rest of the print. Altered label.' };
+  if (fs) return { ok: true, fake: true, text: 'No security print on the label, and the card stock glows blue-white. Fake slab.' };
+  if (card.counterfeit) return { ok: true, fake: true, text: 'The card stock glows blue-white. Real cards stay dark. Counterfeit.' };
+  return { ok: true, fake: false, text: card.graded ? 'The label’s security print shows and the card stays dark. Genuine.' : 'The card stays dark under UV. Genuine stock.' };
+}
+function checkListing(id, kind) {
+  const L = state.show.listings.find(l => l.id === id);
+  if (!L || !L.card) return { ok: false, reason: 'That listing is gone.' };
+  const r = kind === 'uv' ? uvCheck(L.card) : certLookup(L.card);
+  if (r.ok) { L.checks[kind] = r; save(); }
+  return r;
+}
+// When you catch a fake you own: an altered slab is corrected to its real
+// grade, a counterfeit becomes worthless.
+function catchFake(card) {
+  if (!isFake(card)) return false;
+  if (card.fakeSlab && card.fakeSlab.style === 'altered') {
+    setLabelGrade(card, card.fakeSlab.realGrade);
+    card.graded.corrected = true;
+    delete card.fakeSlab;
+  } else card.exposed = true;
+  state.stats.fakesCaught++;
+  return true;
+}
+function checkCard(uid, kind) {
+  const card = state.inventory.find(c => c.uid === uid);
+  if (!card) return { ok: false, reason: 'Card not found.' };
+  const r = kind === 'uv' ? uvCheck(card) : certLookup(card);
+  if (r.ok && r.fake) { r.caught = catchFake(card); save(); }
+  return r;
+}
+function buyListing(id) {
+  const L = state.show.listings.find(l => l.id === id);
+  if (!L || !L.card) return { ok: false, reason: 'That listing is gone.' };
+  if (state.cash < L.price) return { ok: false, reason: 'Need ' + fmt$(L.price) + ' for that card.' };
+  const card = L.card;
+  state.cash -= L.price;
+  card.uid = nextUid++;
+  card.paid = L.price;
+  state.inventory.push(card);
+  L.card = null; L.soldName = card.name;
+  state.stats.bought++;
+  save();
+  return { ok: true, card, price: L.price };
+}
+// A buyer checks what they bought. Caught fakes kill the sale.
+function exposeAtSale(card) {
+  if (card.fakeSlab && card.fakeSlab.style === 'altered') {
+    const shown = card.graded.grade, real = card.fakeSlab.realGrade;
+    catchFake(card); state.stats.fakesCaught--; state.stats.fakesLost++;
+    save();
+    return { ok: false, exposed: true, reason: 'The buyer looked up the cert: it’s a ' + real + ', not a ' + shown + '. The label was altered, so the sale is off and the slab is corrected.' };
+  }
+  card.exposed = true;
+  state.stats.fakesLost++;
+  save();
+  return { ok: false, exposed: true, reason: 'The buyer’s check flagged it as counterfeit. The sale is off and the card is worth nothing.' };
+}
+function trashCard(uid) {
+  const card = state.inventory.find(c => c.uid === uid);
+  if (!card) return { ok: false, reason: 'Card not found.' };
+  if (!card.exposed) return { ok: false, reason: 'Only known fakes go in the trash.' };
+  removeFromInventory(uid);
+  save();
+  return { ok: true };
 }
 
 // ---------- Live auction engine (pure, step-driven) ----------
@@ -2054,7 +2481,10 @@ function settleAuction(a) {
   a.settled = true;
   const card = state.inventory.find(c => c.uid === a.cardUid);
   let r = { ok: true, sold: false, amount: 0, fee: 0, net: 0 };
-  if (a.winner && card) {
+  if (a.winner && card && isFake(card)) {
+    const x = exposeAtSale(card);
+    r = { ok: true, sold: false, amount: 0, fee: 0, net: 0, fakeCaught: true, reason: 'The winner checked it. ' + x.reason };
+  } else if (a.winner && card) {
     const fee = Math.round(a.finalBid * houseFeeRate());
     const net = a.finalBid - fee;
     state.cash += net;
@@ -2092,6 +2522,7 @@ function showScreen(name) {
     $('screen-' + s).classList.toggle('active', s === name);
     $('tab-' + s).classList.toggle('active', s === name);
   }
+  if (name === 'shop') renderMarket();
   if (name === 'collection') renderCollection();
   if (name === 'auction') renderAuctionPicks();
   if (name === 'upgrades') renderUpgrades();
@@ -2105,7 +2536,47 @@ function showScreen(name) {
 }
 
 // ---------- Shop ----------
+// Hobby News ticker and the Card Show tables.
+function renderMarket() {
+  const news = activeNews();
+  $('news').innerHTML = `<div class="news-h">📰 Hobby News · day ${state.day}</div>` + (news.length
+    ? news.map(e => `<div class="news-item ${e.tone}"><span>${e.tone === 'up' ? '▲' : '▼'}</span>${esc(e.text)}<small>${e.end > state.day ? (e.end - state.day + 1) + ' days left' : 'last day'}</small></div>`).join('')
+    : '<div class="news-item">Quiet market today. Prices sit at book value.</div>');
+  renderShow();
+}
+function stars(n) { return '★'.repeat(n) + '☆'.repeat(5 - n); }
+function renderShow() {
+  refreshShow();
+  const el = $('show');
+  el.innerHTML = state.show.listings.map(L => {
+    if (!L.card) return `<div class="card listing sold"><div class="seller">${stars(L.stars)} ${esc(L.seller)}</div><div class="sold-stub">Sold to you: ${esc(L.soldName)}</div></div>`;
+    const c = L.card, book = cardValue(c), off = Math.round((1 - L.price / book) * 100);
+    const tier = c.graded ? (c.graded.label || labelTier(c.graded.grade, c.graded.pristine)) : null;
+    const checks = Object.values(L.checks).map(r => `<div class="chk ${r.fake ? 'bad' : 'good'}">${r.fake ? '⚠️' : '✅'} ${esc(r.text)}</div>`).join('');
+    return `<div class="card listing frame-${c.set}${c.graded ? ' slabbed slab-' + tier : ''}" style="border-color:${c.graded ? '#f2b705' : frameColor(c)}">
+      <div class="seller">${stars(L.stars)} ${esc(L.seller)}</div>
+      ${c.graded ? gradeTagHTML(c) : ''}
+      ${cardFaceHTML(c)}
+      <div class="vl">Asking <b>${fmt$(L.price)}</b> · book ${fmt$(book)}${off >= 5 ? ` <span class="${off >= 25 ? 'deal-red' : 'deal'}">${off}% under</span>` : off <= -5 ? ` <span class="mk down">${-off}% over</span>` : ''}</div>
+      ${extrasText(c).length ? `<div class="vl">${extrasText(c).map(esc).join(' · ')}</div>` : ''}
+      ${checks}
+      <div class="row">
+        ${c.graded ? `<button class="small secondary" data-lcert="${L.id}" ${L.checks.cert ? 'disabled' : ''}>🔎 Cert</button>` : ''}
+        ${state.upgrades.uv ? `<button class="small secondary" data-luv="${L.id}" ${L.checks.uv ? 'disabled' : ''}>🔦 UV</button>` : ''}
+        <button class="small" data-lbuy="${L.id}" ${state.cash < L.price ? 'disabled' : ''}>Buy ${fmt$(L.price)}</button>
+      </div>
+    </div>`;
+  }).join('');
+  el.querySelectorAll('[data-lcert]').forEach(b => b.addEventListener('click', () => { checkListing(+b.getAttribute('data-lcert'), 'cert'); renderShow(); }));
+  el.querySelectorAll('[data-luv]').forEach(b => b.addEventListener('click', () => { checkListing(+b.getAttribute('data-luv'), 'uv'); renderShow(); }));
+  el.querySelectorAll('[data-lbuy]').forEach(b => b.addEventListener('click', () => {
+    const r = buyListing(+b.getAttribute('data-lbuy'));
+    $('show-msg').innerHTML = r.ok ? `🤝 Bought <b>${esc(r.card.name)}</b> for ${fmt$(r.price)}. It's in your Collection.` : '❌ ' + esc(r.reason);
+    refreshStats(); renderShow();
+  }));
+}
 function renderShop() {
+  renderMarket();
   $('packs').innerHTML = Object.entries(SETS).map(([key, s]) => `
     <div class="pack" style="border-top:6px solid ${s.color}">
       <h3>${esc(s.name)}</h3>
@@ -2127,9 +2598,20 @@ function renderShop() {
 function miniCardHTML(card, withInspect) {
   return `<div class="mini frame-${card.set}${card.variant === '1/1' ? ' one-of-one' : ''}" style="border-color:${card.variant === '1/1' ? '#f2b705' : frameColor(card)}">
     ${cardFaceHTML(card)}
-    <div class="vl">${card.variant === '1/1' ? '1/1 Value ' + fmt$(cardValue(card)) : 'Base ' + fmt$(card.base)}</div>
+    <div class="vl">${valueLine(card)}</div>
     ${withInspect ? `<button class="small" data-inspect="${card.uid}">🔍 Inspect</button>` : ''}
   </div>`;
+}
+// "Base $12", or "Value $58 · Gold /50 · RC" once a card has extras or the
+// market has moved it.
+function valueLine(card) {
+  if (card.exposed) return 'Counterfeit · worth $0';
+  const v = cardValue(card), tags = extrasText(card);
+  if (card.variant === '1/1') return '1/1 Value ' + fmt$(v);
+  const mm = marketMult(card);
+  const arrow = mm > 1 ? ' <span class="mk up">▲</span>' : mm < 1 ? ' <span class="mk down">▼</span>' : '';
+  if (!tags.length && v === card.base) return 'Base ' + fmt$(card.base);
+  return 'Value ' + fmt$(v) + arrow + (tags.length ? ' · ' + tags.map(esc).join(' · ') : '');
 }
 function renderPulls(cards) {
   $('pulls').innerHTML = '<h3 style="width:100%">Your pulls:</h3>' + cards.map(c => miniCardHTML(c, true)).join('');
@@ -2400,6 +2882,39 @@ function drawCardFace(ctx, x, y, w, h, card, detail) {
   if (detail) drawFrontDetail(ctx, card, detail === true ? detailOpts() : detail);
   ctx.restore();
 }
+// Parallel border and sheen, serial stamp, RC badge and on-card autograph,
+// drawn over the art window of the desk card.
+function drawExtrasCanvas(ctx, ax, ay, aw, ah, card) {
+  const P = parallelOf(card);
+  ctx.save();
+  if (P) {
+    ctx.strokeStyle = P.color; ctx.lineWidth = 5; ctx.strokeRect(ax + 2.5, ay + 2.5, aw - 5, ah - 5);
+    const sg = ctx.createLinearGradient(ax, ay, ax + aw, ay + ah);
+    sg.addColorStop(0, 'rgba(255,255,255,0)'); sg.addColorStop(0.42, P.color + '55'); sg.addColorStop(0.5, 'rgba(255,255,255,0.28)');
+    sg.addColorStop(0.58, P.color + '55'); sg.addColorStop(1, 'rgba(255,255,255,0)');
+    ctx.fillStyle = sg; ctx.fillRect(ax, ay, aw, ah);
+    const ser = serialText(card);
+    if (ser) {
+      ctx.font = '800 11px system-ui, sans-serif';
+      const tw = ctx.measureText(ser).width + 10;
+      ctx.fillStyle = 'rgba(0,0,0,0.72)'; roundRect(ctx, ax + 7, ay + 7, tw, 16, 4); ctx.fill();
+      ctx.fillStyle = jerseyMatch(card) ? '#f2b705' : '#f5f1e6'; ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
+      ctx.fillText(ser, ax + 12, ay + 15.5);
+    }
+  }
+  if (card.rookie) {
+    ctx.fillStyle = '#c8102e'; roundRect(ctx, ax + 7, ay + ah - 23, 26, 16, 4); ctx.fill();
+    ctx.fillStyle = '#fff'; ctx.font = '900 10px system-ui, sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.fillText('RC', ax + 20, ay + ah - 15);
+  }
+  if (card.auto) {
+    ctx.fillStyle = 'rgba(255,255,255,0.75)'; roundRect(ctx, ax + aw * 0.28, ay + ah - 30, aw * 0.66, 22, 3); ctx.fill();
+    ctx.fillStyle = '#1a3d8f'; ctx.font = 'italic 600 15px "Brush Script MT", "Segoe Script", cursive';
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.fillText(card.name, ax + aw * 0.61, ay + ah - 19, aw * 0.62);
+  }
+  ctx.restore();
+}
 function drawFaceLocal(ctx, card) {
   const x = 0, y = 0, w = BASE_W, h = BASE_H;
   ctx.save();
@@ -2444,6 +2959,7 @@ function drawFaceLocal(ctx, card) {
     ctx.fillText(card.art, ax + aw / 2, ay + ah / 2);
   }
   rarityCanvasTint(ctx, ax, ay, aw, ah, card);
+  drawExtrasCanvas(ctx, ax, ay, aw, ah, card);
   if (card.variant === '1/1') {
     ctx.fillStyle = '#f2b705';
     roundRect(ctx, ax + aw - 46, ay + 6, 40, 18, 4); ctx.fill();
@@ -2472,7 +2988,7 @@ function drawFaceLocal(ctx, card) {
   ctx.fillStyle = '#444a56';
   ctx.font = Math.round(w * 0.05) + 'px system-ui, sans-serif';
   ctx.textAlign = 'right';
-  ctx.fillText('Base ' + fmt$(card.base), x + w - 20 + lrOff, ry);
+  ctx.fillText(parallelOf(card) ? parallelName(card) + ' parallel' : 'Base ' + fmt$(card.base), x + w - 20 + lrOff, ry);
   ctx.textAlign = 'left';
   ctx.fillText(card.setName + '  ' + collectorLabel(card), x + 20 + lrOff, y + h - 38);
   if (card.graded) {
@@ -2602,6 +3118,14 @@ function drawFrontDetail(ctx, card, o) {
   roundRect(ctx, 0, 0, BASE_W, BASE_H, 14); ctx.clip();
   card.grades.corners.forEach((white, i) => { if (white) whitenCorner(ctx, i, 'cf' + card.uid + i, 1); });
   drawEdgeNicks(ctx, card);
+  if (o.visible && card.counterfeit) {
+    // Fake stock: an inkjet dot screen and a plastic gloss show under raking light.
+    ctx.fillStyle = 'rgba(80,140,255,0.10)';
+    for (let yy = 4; yy < BASE_H; yy += 5) for (let xx = (yy % 10 ? 2 : 4.5); xx < BASE_W; xx += 5) ctx.fillRect(xx, yy, 1.4, 1.4);
+    const gl = ctx.createLinearGradient(0, 0, BASE_W, BASE_H);
+    gl.addColorStop(0.3, 'rgba(255,255,255,0)'); gl.addColorStop(0.5, 'rgba(255,255,255,0.22)'); gl.addColorStop(0.7, 'rgba(255,255,255,0)');
+    ctx.fillStyle = gl; ctx.fillRect(0, 0, BASE_W, BASE_H);
+  }
   if (o.visible) {
     for (const d of surfaceDefectsOf(card.grades)) if (o.lamp || d.type !== 'micro') drawDefect(ctx, d);
     if (card.grades.dust) {
@@ -2773,6 +3297,10 @@ function drawDesk() {
   g.addColorStop(0.5, 'rgba(255,255,255,0)');
   g.addColorStop(1, 'rgba(255,255,255,' + (a * 0.1) + ')');
   dctx.fillStyle = g; roundRect(dctx, CARD.x, CARD.y, CARD.w, CARD.h, 14 * CARD.w / BASE_W); dctx.fill();
+  if (state.upgrades.uv && (card.counterfeit || card.exposed)) {
+    // Under the blacklight, fake card stock glows blue-white.
+    dctx.fillStyle = 'rgba(150,190,255,0.32)'; roundRect(dctx, CARD.x, CARD.y, CARD.w, CARD.h, 14 * CARD.w / BASE_W); dctx.fill();
+  }
   if (!flipAnim) {
     dctx.translate(CARD.x, CARD.y); dctx.scale(CARD.w / BASE_W, CARD.h / BASE_H);
     drawGlows(dctx, card, side);
@@ -2991,6 +3519,14 @@ function inspectAt(px, py) {
   } else if (z === 'face') {
     if (side === 'back') {
       info = { zone: 'Back face', text: 'Graders score surface on the front. Check the back corners and border here.', flawed: null };
+    } else if (state.upgrades.uv && card.counterfeit && !card.exposed) {
+      catchFake(card); save(); I.face = true;
+      info = { zone: 'Surface', text: 'The card stock glows under the blacklight. Counterfeit.', flawed: true };
+      msg = '🔦 The card glows blue-white under the blacklight. Real stock stays dark: this one is a counterfeit.';
+      if (typeof renderCollection === 'function') renderCollection();
+    } else if (lightVisible() && card.counterfeit && !card.exposed) {
+      info = { zone: 'Surface', text: 'The print shows a dot pattern and a plastic shine. Real cards don\u2019t look like this.', flawed: true };
+      if (!I.face) { I.face = true; msg = 'Surface: a dot-screen print and an odd plastic gloss. That\u2019s a classic sign of a fake.'; }
     } else if (lightVisible()) {
       const parts = describeSurface(card, true);
       info = { zone: 'Surface', text: parts.length ? 'Found ' + parts.join(', ') + '.' : 'Clean under the light.', flawed: parts.length > 0 };
@@ -3254,34 +3790,76 @@ function showToast(html) {
 }
 
 // ---------- Grading service picker ----------
+// The money diff: what grading this card is likely to return with this
+// grader, against selling it raw today.
+function gradeOutlook(card, grader, tier, count) {
+  const fee = tierFee(tier || 'regular', count || 1, grader);
+  const raw = cardValue(card);
+  const at = g => Math.max(1, Math.round(card.base * GRADE_MULT[g] * variantMult(card) * graderResale(card, grader) * marketMult(card)));
+  const steps = GRADE_STEPS.filter(g => g !== 9.5 || graderOf(grader).halfTop);
+  const be = steps.find(g => at(g) - fee > raw);
+  return { fee, raw, at, breakEven: be == null ? null : be };
+}
+function estimateFor(card) {
+  if (!card || card.uid !== state.deskUid || !Object.values(state.inspected).every(Boolean)) return null;
+  return overallFromSubs(gradeSubs(card.grades, !state.upgrades.lamp));
+}
+function aGrade(g) { return (g === 8 || g === 8.5 ? 'an ' : 'a ') + g; }
+function daysText(tier, grader) {
+  const [a, b] = tierDays(tier, grader);
+  if (b === 0) return 'Instant · graded while you wait';
+  const d = a === b ? (a === 1 ? 'Back tomorrow' : 'Back in ' + a + ' days') : a + '–' + b + ' days';
+  return tier === 'economy' ? d + ' · <b>strict graders, pop-control risk</b>' : d + ' · balanced';
+}
+let pickerGrader = 'slab';
 function showTierPicker(uids, onSent) {
-  const n = uids.length;
+  const n = uids.length, G = graderOf(pickerGrader);
+  const one = n === 1 ? state.inventory.find(c => c.uid === uids[0]) : null;
   const rows = TIER_ORDER.map(key => {
-    const t = GRADING_TIERS[key], per = tierFee(key, n), total = per * n;
-    const discounted = per < t.fee;
+    const t = GRADING_TIERS[key], per = tierFee(key, n, pickerGrader), total = per * n;
+    const listPrice = tierFee(key, 1, pickerGrader);
+    const discounted = per < listPrice;
     return `<button class="tier ${key}" data-tier="${key}" ${state.cash < total ? 'disabled' : ''}>
       <span class="t-name">${esc(t.name)}</span>
-      <span class="t-price">${fmt$(per)}${n > 1 ? '<small style="font-size:12px">/card</small>' : ''}${discounted ? `<s>${fmt$(t.fee)}</s>` : ''}</span>
-      <span class="t-note">${t.note}${n > 1 ? ` · total ${fmt$(total)}` : ''}</span>
+      <span class="t-price">${fmt$(per)}${n > 1 ? '<small style="font-size:12px">/card</small>' : ''}${discounted ? `<s>${fmt$(listPrice)}</s>` : ''}</span>
+      <span class="t-note">${daysText(key, pickerGrader)}${n > 1 ? ` · total ${fmt$(total)}` : ''}</span>
     </button>`;
   }).join('');
+  const chips = GRADER_ORDER.map(k => `<button class="gchip gr-${k}${k === pickerGrader ? ' on' : ''}" data-grader="${k}"><b>${GRADERS[k].short}</b><span>${fmt$(tierFee('regular', n, k))}</span></button>`).join('');
+  let roi = '';
+  if (one) {
+    const o = gradeOutlook(one, pickerGrader, 'regular', 1), est = estimateFor(one);
+    const net = est != null ? o.at(est) - o.fee - o.raw : null;
+    roi = `<div class="roi">
+      <div class="roi-row"><span>Sell raw now</span><b>${fmt$(o.raw)}</b></div>
+      <div class="roi-row"><span>${G.short} 10 · 9 · 8</span><b>${fmt$(o.at(10))} · ${fmt$(o.at(9))} · ${fmt$(o.at(8))}</b></div>
+      <div class="roi-row"><span>Regular fee</span><b>−${fmt$(o.fee)}</b></div>
+      <div class="roi-be">${o.breakEven == null ? 'Even a 10 won\u2019t beat selling it raw.' : `Grading pays at ${aGrade(o.breakEven).replace(/(\S+)$/, '<b>$1</b>')} or better.`}${net != null ? ` Your estimate is ${aGrade(est).replace(/(\S+)$/, '<b>$1</b>')}: ${net >= 0 ? `about <b class="up">+${fmt$(net)}</b> over selling raw.` : `you\u2019d be <b class="down">${fmt$(-net)}</b> worse off.`}` : ' Inspect it on the desk for your own estimate.'}</div>
+    </div>`;
+  }
   let hint = '';
   if (n > 1 && n < BULK_MIN && state.upgrades.bulk) hint = `Add ${BULK_MIN - n} more for the bulk rate.`;
-  else if (n >= BULK_MIN && !state.upgrades.bulk) hint = 'The Bulk Submitter Account (Upgrades) drops this order to $15/card Regular.';
+  else if (n >= BULK_MIN && !state.upgrades.bulk) hint = 'The Bulk Submitter Account (Upgrades) cuts the price per card on 10 or more.';
   const box = openOverlay(`
     <div class="reveal-head">Grading service</div>
-    <div style="font-size:20px;font-weight:800;margin-top:4px">Send ${n === 1 ? esc(state.inventory.find(c => c.uid === uids[0]).name) : n + ' cards'} to the grader</div>
+    <div style="font-size:20px;font-weight:800;margin-top:4px">Send ${n === 1 ? esc(one.name) : n + ' cards'} to the grader</div>
+    <div class="gchips">${chips}</div>
+    <p class="gblurb"><b>${esc(G.name)}</b>: ${esc(G.blurb)}</p>
+    ${roi}
     <div class="tiers">${rows}</div>
     ${hint ? `<p class="sub" style="margin:0 0 10px">${hint}</p>` : ''}
     <p class="sub" style="margin:0 0 10px">You have ${fmt$(state.cash)}. Days pass when an auction ends or you press End day.</p>
     <button class="secondary" id="btn-tier-cancel">Cancel</button>`);
+  box.querySelectorAll('[data-grader]').forEach(b => b.addEventListener('click', () => {
+    pickerGrader = b.getAttribute('data-grader'); showTierPicker(uids, onSent);
+  }));
   box.querySelectorAll('[data-tier]').forEach(b => b.addEventListener('click', () => {
-    const r = submitBatch(uids, b.getAttribute('data-tier'));
+    const r = submitBatch(uids, b.getAttribute('data-tier'), pickerGrader);
     if (!r.ok) { showToast('❌ ' + esc(r.reason)); return; }
     closeOverlay(); refreshStats();
     if (onSent) onSent(r);
     if (r.returned.length) showRevealQueue(r.returned);
-    else showToast(`📮 ${n === 1 ? 'Sent' : n + ' cards sent'} to ${esc(GRADING_TIERS[r.tier].name)} for ${fmt$(r.total)}. Back on <b>day ${r.cards[0].submission.readyDay}</b>${n > 1 ? ' or later' : ''}.`);
+    else showToast(`📮 ${n === 1 ? 'Sent' : n + ' cards sent'} to ${esc(GRADERS[r.grader].short)} ${esc(GRADING_TIERS[r.tier].name)} for ${fmt$(r.total)}. Back on <b>day ${r.cards[0].submission.readyDay}</b>${n > 1 ? ' or later' : ''}.`);
     if (state.screen === 'collection') renderCollection();
   }));
   $('btn-tier-cancel').addEventListener('click', closeOverlay);
@@ -3292,14 +3870,16 @@ function slabLabelHTML(card, res) {
   const tier = res.label || labelTier(res.grade, res.pristine);
   const subs = res.subs || {};
   const word = tier === 'black' ? 'PRISTINE' : (GRADE_NAMES[res.grade] || '').toUpperCase();
-  return `<div class="slab-label tier-${tier}">
-    <div class="l-house">SLAB HOUSE GRADING</div>
-    <div class="l-name">${esc(card.name)}${card.variant === '1/1' ? ' · 1/1' : ''}</div>
+  const gk = res.grader || 'slab', G = graderOf(gk), P = parallelOf(card);
+  const extra = (card.variant === '1/1' ? ' · 1/1' : '') + (P ? ' · ' + parallelName(card) + (serialText(card) ? ' ' + serialText(card) : '') : '') + (card.auto ? ' · AUTO' : '') + (card.rookie ? ' · RC' : '');
+  return `<div class="slab-label tier-${tier} gr-${gk}">
+    <div class="l-house">${esc(G.name.toUpperCase())}</div>
+    <div class="l-name">${esc(card.name)}${esc(extra)}</div>
     <div class="l-grade">${res.grade}</div>
     <div class="l-set">${esc(card.setName)} ${esc(collectorLabel(card))}</div>
     <div class="l-word">${word}</div>
-    ${res.subs ? `<div class="l-subs"><span>CEN ${subTxt(subs.centering)}</span><span>COR ${subTxt(subs.corners)}</span><span>EDG ${subTxt(subs.edges)}</span><span>SUR ${subTxt(subs.surface)}</span></div>` : ''}
-    <div class="l-cert"><span>${esc((LABEL_TIERS[tier] || LABEL_TIERS.white).name)}</span><span>${esc(res.cert || '')}</span></div>
+    ${res.subs && G.subs ? `<div class="l-subs"><span>CEN ${subTxt(subs.centering)}</span><span>COR ${subTxt(subs.corners)}</span><span>EDG ${subTxt(subs.edges)}</span><span>SUR ${subTxt(subs.surface)}</span></div>` : ''}
+    <div class="l-cert"><span>${gk === 'slab' ? esc((LABEL_TIERS[tier] || LABEL_TIERS.white).name) : esc(tier === 'black' ? 'Pristine' : G.short + ' authentic')}</span><span>${esc(res.cert || '')}</span></div>
   </div>`;
 }
 function cardCanvas(card) {
@@ -3315,6 +3895,20 @@ function showRevealQueue(items, onDone) {
     if (i >= items.length) { closeOverlay(); refreshStats(); if (state.screen === 'collection') renderCollection(); if (onDone) onDone(); return; }
     const { card, result: res } = items[i++];
     const left = items.length - i;
+    const G = graderOf(res.grader);
+    if (res.rejected) {
+      openOverlay(`
+        <div class="reveal-head">${items.length > 1 ? `Slab ${i} of ${items.length} · ` : ''}${esc(G.name)}</div>
+        <div class="slab-stage"><div class="slab rejected"><div class="reject-stamp">REJECTED</div><div class="slab-well" id="rv-well"></div></div></div>
+        <div class="reveal-info show">
+          <div style="font-size:20px;font-weight:800;color:#ff7b72">Sent back: counterfeit</div>
+          <p class="sub" style="margin:6px 0">The authenticity check failed, so there's no slab, and the grading fee is gone. You can trash it from your Collection.</p>
+          <button id="rv-next" style="margin-top:6px">${left ? 'Next slab (' + left + ' left)' : 'OK'}</button>
+        </div>`, 'reveal');
+      $('rv-well').appendChild(cardCanvas(card));
+      $('rv-next').addEventListener('click', next);
+      return;
+    }
     const pop = popCount(card, res.grade), higher = popHigher(card, res.grade);
     const sparkle = res.label === 'gold' || res.label === 'black';
     let sparks = '';
@@ -3326,12 +3920,12 @@ function showRevealQueue(items, onDone) {
     const box = openOverlay(`
       <div class="reveal-head">${items.length > 1 ? `Slab ${i} of ${items.length} · ` : ''}${esc(tierName)} grading is back</div>
       <div class="slab-stage">
-        <div class="slab" id="rv-slab">${slabLabelHTML(card, res)}<div class="slab-well" id="rv-well"></div></div>
-        <div class="seal" id="rv-seal"><span>SLAB HOUSE · SEALED</span><span class="seal-tap">Tap to crack it open</span></div>
+        <div class="slab gr-${res.grader || 'slab'}" id="rv-slab">${slabLabelHTML(card, res)}<div class="slab-well" id="rv-well"></div></div>
+        <div class="seal" id="rv-seal"><span>${esc(G.short)} · SEALED</span><span class="seal-tap">Tap to crack it open</span></div>
         <div class="sparks" id="rv-sparks"></div>
       </div>
       <div class="reveal-info" id="rv-info">
-        <div style="font-size:22px;font-weight:800">${res.grade} ${esc(res.label === 'black' ? 'Pristine' : GRADE_NAMES[res.grade])} · ${fmt$(slabValue(card))}</div>
+        <div style="font-size:22px;font-weight:800">${G.short} ${res.grade} ${esc(res.label === 'black' ? 'Pristine' : GRADE_NAMES[res.grade])} · ${fmt$(slabValue(card))}</div>
         <div style="margin:6px 0"><span class="pop-pill${pop === 1 && res.grade >= 9 ? ' p1' : ''}">Pop ${pop} at ${res.grade}${higher ? ` · ${higher} higher` : ''}</span></div>
         ${pop === 1 && res.grade >= 9 ? '<div class="pc" style="color:var(--gold)">The only one at this grade. Scarcity premium applied.</div>' : ''}
         ${res.popControl ? '<div class="pc">The strict Economy grader knocked it down a grade.</div>' : ''}
@@ -3357,7 +3951,8 @@ const bulkSel = new Set();
 function gradeTagHTML(card) {
   const gr = card.graded, tier = gr.label || labelTier(gr.grade, gr.pristine);
   const pop = gr.popAware ? popCount(card, gr.grade) : null;
-  return `<div class="mini-label tier-${tier}"><span>★ ${gr.grade} ${esc(tier === 'black' ? 'PRISTINE' : (GRADE_NAMES[gr.grade] || '').toUpperCase())}</span>${pop != null ? `<span>Pop ${pop}</span>` : ''}</div>`;
+  const gk = gr.grader || 'slab';
+  return `<div class="mini-label tier-${tier} gr-${gk}"><span>${graderOf(gk).short} ${gr.grade} ${esc(tier === 'black' ? 'PRISTINE' : (GRADE_NAMES[gr.grade] || '').toUpperCase())}</span>${pop != null ? `<span>Pop ${pop}</span>` : ''}</div>`;
 }
 function renderCollection() {
   const grid = $('collection-grid');
@@ -3375,21 +3970,24 @@ function renderCollection() {
   grid.innerHTML = state.inventory.map(card => {
     const away = atGrader(card);
     const tier = card.graded ? (card.graded.label || labelTier(card.graded.grade, card.graded.pristine)) : null;
-    const selectable = bulkMode && !card.graded && !away;
+    const selectable = bulkMode && !card.graded && !away && !card.exposed;
     const cls = ['card', 'frame-' + card.set, card.graded ? 'slabbed slab-' + tier : '', card.variant === '1/1' ? 'one-of-one' : '', away ? 'at-grader' : '', selectable ? 'selectable' : '', bulkSel.has(card.uid) ? 'selected' : ''].filter(Boolean).join(' ');
     const border = card.graded || card.variant === '1/1' ? '#f2b705' : frameColor(card);
     let body = card.graded ? gradeTagHTML(card) : '';
     if (selectable) body += `<div class="pick">${bulkSel.has(card.uid) ? '✓' : ''}</div>`;
     body += cardFaceHTML(card);
-    if (card.graded) body += `<div class="vl">Slab value ${fmt$(cardValue(card))}</div>`;
-    else body += `<div class="vl">${card.variant === '1/1' ? '1/1 Value ' + fmt$(cardValue(card)) : 'Base ' + fmt$(card.base)}</div><div class="vl">Ungraded${card.prepped ? ' · prepped' : ''}</div>`;
-    if (away) body += `<div class="grader-tag">🕒 At ${esc(GRADING_TIERS[card.submission.tier].name)} · back day ${card.submission.readyDay}</div>`;
+    const mm = marketMult(card), arrow = mm > 1 ? ' <span class="mk up">▲</span>' : mm < 1 ? ' <span class="mk down">▼</span>' : '';
+    if (card.exposed) body += `<div class="vl">Counterfeit · worth $0</div>`;
+    else if (card.graded) body += `<div class="vl">Slab value ${fmt$(cardValue(card))}${arrow}</div>${extrasText(card).length ? `<div class="vl">${extrasText(card).map(esc).join(' · ')}</div>` : ''}${card.graded.corrected ? '<div class="vl" style="color:var(--orange)">Label corrected</div>' : ''}`;
+    else body += `<div class="vl">${valueLine(card)}</div><div class="vl">Ungraded${card.prepped ? ' · prepped' : ''}${card.paid ? ' · paid ' + fmt$(card.paid) : ''}</div>`;
+    if (away) body += `<div class="grader-tag">🕒 At ${esc(graderOf(card.submission.grader).short)} ${esc(GRADING_TIERS[card.submission.tier].name)} · back day ${card.submission.readyDay}</div>`;
+    else if (card.exposed && !bulkMode) body += `<div class="row"><button class="small danger" data-trash="${card.uid}">🗑️ Trash it</button></div>`;
     else if (!bulkMode) body += `
       <div class="row">
         <button class="small secondary" data-desk="${card.uid}">🔍 Desk</button>
         <button class="small" data-sell="${card.uid}">Sell ${fmt$(cardValue(card))}</button>
       </div>
-      <div class="row"><button class="small secondary" data-auction="${card.uid}">🔨 Auction</button></div>`;
+      <div class="row"><button class="small secondary" data-auction="${card.uid}">🔨 Auction</button>${card.graded ? `<button class="small secondary" data-cert="${card.uid}">🔎 Cert</button>` : ''}${state.upgrades.uv ? `<button class="small secondary" data-uv="${card.uid}">🔦 UV</button>` : ''}</div>`;
     return `<div class="${cls}" data-uid="${card.uid}" style="border-color:${border}">${body}</div>`;
   }).join('');
   grid.querySelectorAll('[data-desk]').forEach(b => b.addEventListener('click', () => {
@@ -3401,6 +3999,18 @@ function renderCollection() {
     refreshStats(); renderCollection();
   }));
   grid.querySelectorAll('[data-auction]').forEach(b => b.addEventListener('click', () => startAuctionUI(+b.getAttribute('data-auction'))));
+  const runCheck = (uid, kind) => {
+    const r = checkCard(uid, kind);
+    $('collection-msg').innerHTML = !r.ok ? '❌ ' + esc(r.reason) : (r.fake ? '⚠️ ' : '✅ ') + esc(r.text) + (r.caught ? ' <b>Caught a fake.</b>' : '');
+    refreshStats(); renderCollection();
+  };
+  grid.querySelectorAll('[data-cert]').forEach(b => b.addEventListener('click', () => runCheck(+b.getAttribute('data-cert'), 'cert')));
+  grid.querySelectorAll('[data-uv]').forEach(b => b.addEventListener('click', () => runCheck(+b.getAttribute('data-uv'), 'uv')));
+  grid.querySelectorAll('[data-trash]').forEach(b => b.addEventListener('click', () => {
+    const r = trashCard(+b.getAttribute('data-trash'));
+    $('collection-msg').textContent = r.ok ? '🗑️ Tossed the fake. Lesson learned.' : '❌ ' + r.reason;
+    renderCollection();
+  }));
   grid.querySelectorAll('.card.selectable').forEach(el => el.addEventListener('click', () => {
     const uid = +el.getAttribute('data-uid');
     if (bulkSel.has(uid)) bulkSel.delete(uid); else bulkSel.add(uid);
@@ -3446,7 +4056,11 @@ function renderUpgrades() {
 }
 
 // ---------- End day ----------
+function newsToast(dayRes) {
+  if (dayRes && dayRes.news) setTimeout(() => showToast(`📰 ${dayRes.news.tone === 'up' ? '▲' : '▼'} ${esc(dayRes.news.text)}`), dayRes.returned && dayRes.returned.length ? 300 : 1800);
+}
 function handleReturns(dayRes) {
+  if (state.screen === 'shop') renderMarket();
   if (dayRes && dayRes.returned && dayRes.returned.length) {
     showToast(`📅 Day ${dayRes.day} · <b>${dayRes.returned.length}</b> slab${dayRes.returned.length > 1 ? 's' : ''} back from the grader!`);
     setTimeout(() => showRevealQueue(dayRes.returned), 600);
@@ -3459,8 +4073,10 @@ $('btn-day').addEventListener('click', () => {
   if (r.returned.length) handleReturns(r);
   else {
     const away = state.inventory.filter(atGrader);
-    showToast(`📅 Day ${r.day}. ${away.length ? away.length + ' still at the grader.' : 'Nothing at the grader.'}`);
+    showToast(`📅 Day ${r.day}. ${away.length ? away.length + ' still at the grader.' : 'Nothing at the grader.'} New tables at the Card Show.`);
+    if (state.screen === 'shop') renderMarket();
   }
+  newsToast(r);
   if (state.screen === 'collection') renderCollection();
   if (state.screen === 'upgrades') renderUpgrades();
 });
@@ -3470,7 +4086,7 @@ let aucTimer = null;
 function stopAuctionTimer() { if (aucTimer) { clearInterval(aucTimer); aucTimer = null; } }
 function renderAuctionPicks() {
   const el = $('auction-picks');
-  const avail = state.inventory.filter(c => !atGrader(c));
+  const avail = state.inventory.filter(c => !atGrader(c) && !c.exposed);
   if (!avail.length) {
     el.innerHTML = '<p style="color:#9aa3b2">No cards to auction — buy a pack first' + (state.inventory.length ? ', or wait for your grading to come back' : '') + '.</p>';
     return;
@@ -3488,7 +4104,7 @@ function renderAuctionPicks() {
 }
 function startAuctionUI(uid) {
   const card = state.inventory.find(c => c.uid === uid);
-  if (!card || atGrader(card)) return;
+  if (!card || atGrader(card) || card.exposed) return;
   stopAuctionTimer();
   state.auction = createAuction(card);
   $('auction-setup').style.display = 'none';
@@ -3511,13 +4127,14 @@ function startAuctionUI(uid) {
 function finishAuctionUI(r, gavel) {
   $('btn-hype').disabled = true; $('btn-gavel').disabled = true;
   renderAuctionFrame();
-  $('auc-status').innerHTML = r.sold
+  $('auc-status').innerHTML = r.fakeCaught ? '⚠️ ' + esc(r.reason) : r.sold
     ? `🔨 <b>SOLD</b> to ${esc(r.winner)} for <b>${fmt$(r.amount)}</b>. House fee ${fmt$(r.fee)}, you net <b>${fmt$(r.net)}</b>.`
     : (gavel ? '🔨 Gavel slammed — no bids, the card is back in your Collection.' : '🔨 Auction ended with no bids — the card is back in your Collection.');
   refreshStats();
   if (r.day) setTimeout(() => {
     showToast(`📅 Day ${r.day.day} begins.`);
     handleReturns(r.day);
+    newsToast(r.day);
   }, 1200);
   setTimeout(() => { $('auction-live').style.display = 'none'; $('auction-setup').style.display = 'block'; renderAuctionPicks(); }, 4000);
 }
@@ -3560,6 +4177,7 @@ function selfTest() {
     setSeed(12345);
     state.cash = 500; state.inventory = []; state.stats = defaultStats();
     state.day = 1; state.upgrades = defaultUpgrades(); state.pop = {}; state.light = 0;
+    state.market = { events: [] }; state.show = { day: 0, listings: [] }; state.worldSeed = 4242;
     layoutDesk(1000); resetView();
     // 1. Buy pack
     const buy = buyPack('gridiron');
@@ -3615,9 +4233,9 @@ function selfTest() {
     ok('returned slab has a cert, label and pop', /^SH-\d{7}$/.test(card.graded.cert) && !!LABEL_TIERS[card.graded.label] && card.graded.popAtGrade >= 1);
     // 6. Raw sell
     const raw = buy.cards[1];
-    const cashBefore = state.cash;
+    const cashBefore = state.cash, rawWorth = cardValue(raw);
     const rs = rawSell(raw.uid);
-    ok('raw sell pays base', rs.ok && rs.amount === raw.base && state.cash === cashBefore + raw.base);
+    ok('raw sell pays the card\'s value', rs.ok && rs.amount === rawWorth && state.cash === cashBefore + rawWorth);
     // 7. Auction engine: run a full 15s auction, seeded
     const aucCard = buy.cards[2];
     const a = createAuction(aucCard);
@@ -3740,8 +4358,9 @@ function selfTest() {
     }));
     // 18. 1/1 chase: odds, value, rendering, persistence
     ok('1/1 odds are 1% on the guaranteed slot only', ONE_OF_ONE_ODDS === 0.01 && ONE_OF_ONE_MULT === 10);
+    state.market.events = [];
     ok('1/1 card is worth 10x raw and graded', (() => {
-      const c = makeCard('gridiron', 'rare'); c.variant = '1/1';
+      const c = makeCard('gridiron', 'rare'); c.variant = '1/1'; c.rookie = false;
       const g = gradeCard(c);
       return cardValue(c) === c.base * 10 && g.value === Math.max(1, Math.round(c.base * GRADE_MULT[g.grade] * 10));
     })());
@@ -3751,7 +4370,7 @@ function selfTest() {
       return html.indexOf('one-of-one') !== -1 && html.indexOf('one-stamp') !== -1 && html.indexOf('1 OF 1') !== -1 && html.indexOf('1/1') !== -1;
     })());
     ok('1/1 survives a save/load round-trip', (() => {
-      const c = makeCard('gridiron', 'rare'); c.variant = '1/1';
+      const c = makeCard('gridiron', 'rare'); c.variant = '1/1'; c.rookie = false;
       const back = JSON.parse(JSON.stringify(c)); migrateCard(back);
       return back.variant === '1/1' && cardValue(back) === c.base * 10;
     })());
@@ -3934,8 +4553,184 @@ function selfTest() {
       layoutDesk(1000);
       return r && z === 'corner-0';
     })());
+    // 20. Hobby realism: graders, parallels, news, Card Show fakes
+    state.cash = 100000; state.market = { events: [] }; state.upgrades = defaultUpgrades();
+    const perfectCard = () => {
+      const c = makeCard('gridiron', 'rare');
+      c.rookie = false; c.parallel = null; c.serial = null; c.auto = false;
+      c.grades = { centering: { lr: 50, tb: 50 }, corners: [false, false, false, false], edges: 0, surface: 0, surfaceDefects: [], dust: false,
+        back: { centering: { lr: 50, tb: 50 }, corners: [false, false, false, false] } };
+      return c;
+    };
+    ok('four graders, each with its own fee', GRADER_ORDER.length === 4 && tierFee('regular', 1, 'titan') > tierFee('regular', 1, 'slab') && tierFee('regular', 1, 'vault') < tierFee('regular', 1, 'tux'));
+    ok('Titan needs near-perfect centering for a 10', (() => {
+      const c = perfectCard(); c.grades.centering = { lr: 57, tb: 50 };
+      return gradeCard(c, { grader: 'slab' }).grade === 10 && gradeCard(c, { grader: 'titan' }).grade === 9;
+    })());
+    ok('Tuxedo and Vault give a 9.5; Titan does not', (() => {
+      const c = perfectCard(); c.grades.edges = 1; c.grades.centering = { lr: 55, tb: 50 };
+      return gradeCard(c, { grader: 'tux' }).grade === 9.5 && gradeCard(c, { grader: 'vault' }).grade === 9.5 && gradeCard(c, { grader: 'titan' }).grade !== 9.5 && gradeCard(c, { grader: 'slab' }).grade === 10;
+    })());
+    ok('Vault can print a Pristine 10; Titan cannot', (() => {
+      const c = perfectCard();
+      return gradeCard(c, { grader: 'vault' }).pristine === true && gradeCard(c, { grader: 'titan' }).pristine === false;
+    })());
+    ok('Titan slabs resell above Tuxedo on sports cards', (() => {
+      const c = perfectCard();
+      return gradeCard(c, { grader: 'titan' }).value < gradeCard(c, { grader: 'slab' }).value * 2 && graderResale(c, 'titan') > graderResale(c, 'tux');
+    })());
+    ok('Vault resells better on monster cards than sports', (() => {
+      const m = makeCard('kaiju', 'rare'), s = perfectCard();
+      return graderResale(m, 'vault') > 1 && graderResale(s, 'vault') < 1;
+    })());
+    ok('each grader keeps its own pop report', (() => {
+      const c = perfectCard();
+      return popKey(c, 'titan') !== popKey(c, 'slab') && popKey(c, 'slab') === c.set + '|' + c.name + '|base' && popCount(c, 10, 5, 'titan') > popCount(c, 10, 5, 'tux');
+    })());
+    ok('no 9.5 pop at a grader without half points', popCount(perfectCard(), 9.5, 3, 'titan') === 0 && popCount(perfectCard(), 9.5, 3, 'tux') > 0);
+    ok('numbered parallels climb in value as the run shrinks', (() => {
+      const c = perfectCard(); const v = k => { c.parallel = k; c.serial = 2; return variantMult(c); };
+      return v('refractor') < v('green') && v('green') < v('gold') && v('gold') < v('orange') && v('orange') < v('black') && v('black') < v('red');
+    })());
+    ok('serial number matching the jersey earns a premium', (() => {
+      const c = perfectCard(); c.parallel = 'green'; c.serial = c.number === 1 ? 2 : 1;
+      const plain = variantMult(c); c.serial = c.number;
+      return jerseyMatch(c) && Math.abs(variantMult(c) / plain - JERSEY_MATCH_MULT) < 1e-9 && serialText(c) === String(c.number).padStart(2, '0') + '/99';
+    })());
+    ok('rookie and auto stack on value', (() => {
+      const c = perfectCard(); const a = variantMult(c); c.rookie = true; const b = variantMult(c); c.auto = true;
+      return Math.abs(b / a - ROOKIE_MULT) < 1e-9 && Math.abs(variantMult(c) / b - AUTO_MULT) < 1e-9 && extrasText(c).includes('RC') && extrasText(c).includes('AUTO');
+    })());
+    ok('packs roll parallels and autos at their odds', (() => {
+      setSeed(77); let par = 0, auto = 0, n = 0;
+      for (let i = 0; i < 400; i++) for (const c of openPack('gridiron')) { n++; if (c.parallel) par++; if (c.auto) auto++; if (c.variant === '1/1' && c.parallel) return false; }
+      return par / n > 0.08 && par / n < 0.2 && auto / n > 0.01 && auto / n < 0.06;
+    })());
+    ok('a breakout lifts that player and a crash drops the set', (() => {
+      const c = perfectCard(); const before = cardValue(c);
+      state.market.events = [{ type: 'player', key: c.set + '|' + c.name, mult: 2, start: state.day, end: state.day + 1, text: 't' }];
+      const up = cardValue(c);
+      state.market.events = [{ type: 'set', key: c.set, mult: 0.7, start: state.day, end: state.day, text: 't' }];
+      const down = cardValue(c);
+      state.market.events = [];
+      return up === Math.round(before * 2) && down < before;
+    })());
+    ok('news rolls from the world seed, not the pack RNG', (() => {
+      state.worldSeed = 99; state.market = { events: [] };
+      setSeed(5); const r1 = rand(); setSeed(5);
+      let found = 0; const d0 = state.day;
+      for (let d = 0; d < 30; d++) { state.day = d0 + d; if (rollNews()) found++; }
+      state.day = d0;
+      const sameRng = rand() === r1; state.market = { events: [] };
+      return sameRng && found >= 5 && found <= 25;
+    })());
+    ok('hype is followed by a crash', (() => {
+      state.worldSeed = 0; state.market = { events: [] };
+      for (let d = 1; d < 400; d++) {
+        state.day = d; state.market.events = [];
+        const e = rollNews();
+        if (e && e.mult === 1.5) { const crash = state.market.events.find(x => x.key === e.key && x.mult === 0.7); state.day = 1; state.market = { events: [] }; return !!crash && crash.start === d + 2; }
+      }
+      state.day = 1; return false;
+    })());
+    ok('Card Show opens with four tables and leaves pack luck alone', (() => {
+      state.worldSeed = 1; state.show = { day: 0, listings: [] };
+      setSeed(8); const r1 = rand(); setSeed(8); const uid0 = nextUid;
+      const sh = refreshShow();
+      return sh.listings.length === SHOW_SIZE && rand() === r1 && nextUid === uid0 && sh.listings.every(l => l.card.uid < 0 && l.price >= 5);
+    })());
+    let sawFake = false, sawHonest = false, sawClone = false, sawBogus = false, sawAltered = false;
+    for (let s = 1; s <= 120; s++) {
+      state.worldSeed = s; state.show = { day: 0, listings: [] };
+      for (const L of refreshShow().listings) {
+        if (isFake(L.card)) {
+          sawFake = true;
+          if (L.stars === 5) sawFake = 'five-star fake';
+          const fs = L.card.fakeSlab;
+          if (fs && fs.style === 'cloned') sawClone = L; if (fs && fs.style === 'bogus') sawBogus = L; if (fs && fs.style === 'altered') sawAltered = L;
+        } else sawHonest = true;
+      }
+    }
+    ok('fakes show up, never from five-star sellers', sawFake === true && sawHonest);
+    ok('a cert lookup catches bogus and altered labels', !!sawBogus && !!sawAltered && certLookup(sawBogus.card).fake && certLookup(sawAltered.card).fake);
+    ok('a cloned cert passes the lookup, but not the blacklight', (() => {
+      if (!sawClone) return false;
+      const look = certLookup(sawClone.card); const noUv = uvCheck(sawClone.card).ok === false;
+      state.upgrades.uv = true; const uv = uvCheck(sawClone.card); state.upgrades.uv = false;
+      return !look.fake && noUv && uv.fake;
+    })());
+    ok('fakes are priced under value to tempt you', (() => {
+      const L = sawBogus || sawClone; const v = cardValue(L.card); return L.price < v * 0.8;
+    })());
+    ok('buying a show card moves it to your inventory', (() => {
+      state.worldSeed = 3; state.show = { day: 0, listings: [] }; refreshShow();
+      const L = state.show.listings[0], cash = state.cash, n = state.inventory.length, price = L.price;
+      const r = buyListing(L.id);
+      return r.ok && state.cash === cash - price && state.inventory.length === n + 1 && r.card.uid > 0 && !L.card && buyListing(L.id).ok === false;
+    })());
+    ok('selling an undiscovered counterfeit gets it caught', (() => {
+      const c = perfectCard(); c.counterfeit = true; state.inventory.push(c);
+      const cash = state.cash, r = sellCard(c.uid);
+      const stays = state.inventory.includes(c);
+      const t = trashCard(c.uid);
+      return !r.ok && r.exposed && stays && c.exposed && cardValue(c) === 0 && state.cash === cash && t.ok && !state.inventory.includes(c);
+    })());
+    ok('an altered slab is corrected to its real grade when caught', (() => {
+      const c = perfectCard(); c.graded = gradeCard(c, { grader: 'tux' }); c.graded.cert = 'TGC-1234567'; c.graded.popAware = true;
+      c.fakeSlab = { style: 'altered', realGrade: 7 }; state.inventory.push(c);
+      const r = checkCard(c.uid, 'cert');
+      return r.fake && r.caught && c.graded.grade === 7 && !c.fakeSlab && !c.exposed && sellCard(c.uid).ok;
+    })());
+    ok('graders reject a counterfeit and keep the fee', (() => {
+      const c = perfectCard(); c.counterfeit = true; state.inventory.push(c);
+      const cash = state.cash, r = submitBatch([c.uid], 'express', 'slab');
+      return r.ok && r.returned[0].result.rejected && c.exposed && !c.graded && state.cash === cash - tierFee('express', 1, 'slab') && submitBatch([c.uid], 'express').ok === false;
+    })());
+    ok('grader choice sets the cert prefix and turnaround', (() => {
+      const c = perfectCard(); state.inventory.push(c);
+      const r = submitBatch([c.uid], 'express', 'titan');
+      const d = perfectCard(); state.inventory.push(d);
+      submitBatch([d.uid], 'regular', 'titan');
+      return r.ok && /^TCA-\d{7}$/.test(c.graded.cert) && c.graded.grader === 'titan' && d.submission.readyDay === state.day + 2 && d.submission.grader === 'titan';
+    })());
+    ok('save v3 keeps news, show and world seed', (() => {
+      state.market.events = [{ type: 'set', key: 'kaiju', mult: 1.4, start: state.day, end: state.day + 2, text: 'x' }];
+      state.worldSeed = 31337; refreshShow();
+      const snap = JSON.parse(JSON.stringify({ version: SAVE_VERSION, cash: state.cash, inventory: state.inventory, stats: state.stats, nextUid, day: state.day,
+        upgrades: state.upgrades, pop: state.pop, market: state.market, show: state.show, nextListingId, worldSeed: state.worldSeed }));
+      state.market = { events: [] }; state.worldSeed = 0;
+      applySave(snap);
+      const r = SAVE_VERSION === 3 && state.market.events.length === 1 && state.worldSeed === 31337 && state.show.listings.length === SHOW_SIZE;
+      state.market = { events: [] };
+      return r;
+    })());
+    ok('Card Show renders four tables with seller stars', (() => {
+      state.show = { day: 0, listings: [] }; state.worldSeed = 5; renderShow();
+      const ls = $('show').querySelectorAll('.listing');
+      return ls.length === SHOW_SIZE && /★/.test(ls[0].querySelector('.seller').textContent) && !!$('show').querySelector('[data-lbuy]');
+    })());
+    ok('grader picker shows four companies and the money diff', (() => {
+      const c = perfectCard(); state.inventory.push(c); pickerGrader = 'slab';
+      showTierPicker([c.uid]);
+      const box = $('overlay');
+      const r = box.querySelectorAll('.gchip').length === 4 && !!box.querySelector('.roi') && /Sell raw now/.test(box.querySelector('.roi').textContent);
+      box.querySelector('[data-grader="vault"]').click();
+      const r2 = box.querySelector('.gchip.on').getAttribute('data-grader') === 'vault' && /Vault/.test(box.querySelector('.gblurb').textContent);
+      closeOverlay(); pickerGrader = 'slab';
+      return r && r2;
+    })());
+    ok('slab labels carry the grader name and style', (() => {
+      const c = perfectCard(); const res = gradeCard(c, { grader: 'tux' }); res.cert = 'TGC-0000001';
+      const h = slabLabelHTML(c, res);
+      return h.includes('gr-tux') && h.includes('TUXEDO GRADING CO.') && !h.includes('l-subs') && slabLabelHTML(c, gradeCard(c)).includes('l-subs');
+    })());
+    ok('v2 cards migrate with no parallel, auto or fake', (() => {
+      const old = { uid: 9999, set: 'gridiron', name: 'Dash Okafor', rarity: 'uncommon', base: 20, grades: makeGrades(), graded: null };
+      migrateCard(old);
+      return old.parallel === null && old.auto === false && old.rookie === true && !isFake(old) && cardValue(old) === Math.round(20 * ROOKIE_MULT);
+    })());
     // 11. Not enough cash blocks pack
-    state.cash = 5;
+    state.cash = 5; state.upgrades = defaultUpgrades();
     ok('insufficient cash blocks pack', buyPack('kaiju').ok === false);
     ok('insufficient cash blocks grading', submitGrading(buy.cards[3].uid).ok === false);
     out.push('SELF-TEST DONE: ' + out.filter(l => l.startsWith('PASS')).length + '/' + out.filter(l => l.startsWith('PASS') || l.startsWith('FAIL')).length + ' passed');

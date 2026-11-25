@@ -31,6 +31,31 @@ the item-by-item map. The short version:
 The fixes live in the Godot project (the plan's stack). The HTML slice has
 not been ported yet — see `docs/TESTER-RESPONSE.md`, "Still open".
 
+## Tester update (VEX, 3.5/10, 2026-11-25)
+
+VEX re-tested and scored the build 3.5/10 (D), repeating two complaints:
+no menu/tutorial/lake select/catch log/progression evidenced, and species
+that feel like reskins of one tension pattern. The Godot project already
+had a menu, lake select, and per-species fight profiles from the 3/10
+round — but it had no Fish Log, no How to Play, and the profiles only
+changed rates, so this push adds the missing pieces:
+
+- **Fish Log (new screen):** all 7 species with caught count, personal
+  best, and "NOT CAUGHT YET" plus where to find them; header shows
+  species caught (x/7), fish landed, gold caught, and today's target.
+  Reachable from the menu and from the water (FISH LOG button).
+- **How to Play (new screen):** cast, strike, fight, drone & Workbench
+  in four short steps, from the menu.
+- **Species signature moves:** bass now jump mid-run — holding the reel
+  while one is airborne spikes tension, so you must let go; pike runs
+  now blunt your taps (25% progress), so you ride the run out and reel
+  in the rests; panfish stay quick nibblers. Same bar, a different
+  fight — the HUD shows the hooked species' style and flashes JUMP!
+  during a bass jump.
+
+The HTML slice still carries the older build — it was not ported in this
+push; see `docs/TESTER-RESPONSE.md`, "Still open".
+
 ## Play it right now (HTML5, no install)
 
 Open **`index.html`** in any browser (double-click it, or serve the folder).
@@ -66,7 +91,7 @@ The same systems, as a real Godot 4 starting point:
 |---|---|
 | `project.godot` | Portrait 720×1280, canvas stretch, touch-from-mouse on |
 | `main.tscn` | Root `Node2D` running `scripts/main.gd` |
-| `scripts/main.gd` | Game controller: scenes, input, fish spawning, drawing |
+| `scripts/main.gd` | Game controller: scenes, input, fish spawning, drawing — plus Fish Log and How to Play screens |
 | `scripts/lakes.gd` | Lakes, species, weather, lure and line data + bite math |
 | `scripts/weather.gd` | Weather state machine (Rain = +40% pike) |
 | `scripts/drone.gd` | Scout Drone 5 s reveal / 15 s cooldown |

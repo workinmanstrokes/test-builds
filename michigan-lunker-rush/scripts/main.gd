@@ -7,6 +7,10 @@ extends Node2D
 ## the first loop teaches itself, gold fish + daily target + personal bests
 ## as the one retention hook, and a wider one-handed tension bar with a
 ## visible danger zone. See docs/TESTER-RESPONSE.md for the item-by-item map.
+## Tester update (VEX 3.5/10, 2026-11-25): Fish Log screen (catch log +
+## progression) and How to Play screen (tutorial), both reachable from the
+## menu; the fight HUD shows the hooked species' fight style and flashes
+## JUMP! during a bass jump.
 
 const W := 720.0
 const H := 1280.0
@@ -14,8 +18,9 @@ const WATER_TOP := 300.0
 const WATER_BOT := 1020.0
 
 var save: Dictionary = {}
-var scene: String = "menu" # menu | fishing | workbench
+var scene: String = "menu" # menu | fishing | workbench | log | howto
 var lake: Dictionary = {}
+var log_return: String = "menu" # scene to return to from the Fish Log
 var weather := WeatherSystem.new()
 var drone := ScoutDrone.new()
 var casting := Casting.new()
@@ -247,10 +252,20 @@ func _handle_action(id: String) -> void:
 		enter_lake(id.substr(5))
 	elif id == "workbench":
 		scene = "workbench"
+	elif id == "log":
+		log_return = scene
+		scene = "log"
+	elif id == "howto":
+		scene = "howto"
 	elif id == "menu":
 		scene = "menu"
 	elif id == "back":
-		scene = "fishing" if not lake.is_empty() else "menu"
+		if scene == "log":
+			scene = log_return
+		elif scene == "howto":
+			scene = "menu"
+		else:
+			scene = "fishing" if not lake.is_empty() else "menu"
 	elif id == "drone":
 		if drone.use():
 			drone.mark(fish)
@@ -280,6 +295,10 @@ func _draw() -> void:
 		_draw_menu()
 	elif scene == "workbench":
 		_draw_workbench()
+	elif scene == "log":
+		_draw_log()
+	elif scene == "howto":
+		_draw_howto()
 	else:
 		_draw_fishing()
 
@@ -320,6 +339,8 @@ func _draw_menu() -> void:
 		_text(Vector2(76, y + 116), String(lk["desc"]), 22, Color("#cfe8f7"), HORIZONTAL_ALIGNMENT_LEFT)
 		y += 196.0
 	_button("workbench", Rect2(50, y + 6, W - 100, 84), "WORKBENCH — 3D PRINTER")
+	_button("log", Rect2(50, y + 100, 300, 84), "FISH LOG")
+	_button("howto", Rect2(370, y + 100, 300, 84), "HOW TO PLAY")
 
 
 func _draw_fishing() -> void:
@@ -339,6 +360,7 @@ func _draw_fishing() -> void:
 	elif drone.cool_t > 0.0:
 		dlabel = "DRONE %ds" % int(ceil(drone.cool_t))
 	_button("drone", Rect2(W - 236, 100, 212, 62), dlabel, Color("#3a6ea5"))
+	_button("log", Rect2(W - 236, 172, 212, 62), "FISH LOG", Color("#3a6ea5"))
 	# Revealed fish — species, size, depth and cover. Casting near one
 	# bites 2.5x faster, so the reveal tells you where to cast.
 	if drone.active:
@@ -389,10 +411,15 @@ func _draw_fishing() -> void:
 		if frac >= 0.8:
 			var blink: Color = Color("#ff3b30") if int(time * 4.0) % 2 == 0 else Color.WHITE
 			_text(Vector2(bx + 25, by - 48), "DANGER", 24, blink)
+		if tension.jumping:
+			var jblink: Color = Color("#ffdf3d") if int(time * 6.0) % 2 == 0 else Color.WHITE
+			_text(Vector2(bx + 25, by - 74), "JUMP! LET GO!", 24, jblink)
 		draw_rect(Rect2(40, WATER_TOP + 14, W - 140, 26), Color(0, 0, 0, 0.55), true)
 		draw_rect(Rect2(44, WATER_TOP + 18, (W - 148) * (tension.progress / 100.0), 18), Color("#39c6ff"), true)
 		_text(Vector2(W / 2 - 30, WATER_TOP + 66),
 			"%s  •  %.1f lb" % [String(casting.hooked["species"]["name"]), float(casting.hooked["weight"])], 18, Color.WHITE)
+		_text(Vector2(W / 2 - 30, WATER_TOP + 92),
+			String(tension.profile.get("style", "")), 18, Color("#9fd8b6"))
 		if tension.escape > 35.0:
 			_text(Vector2(W / 2, WATER_BOT - 60), "SLACK! TAP TO STAY TIGHT", 30, Color("#ff3b30"))
 		_text(Vector2(W / 2, WATER_BOT - 28), "TAP = reel in  •  HOLD = reel hard (tension!)  •  idle = fish spits hook", 18, Color("#cfe8f7"))
@@ -454,3 +481,86 @@ func _draw_workbench() -> void:
 		_button(bid2, Rect2(W - 220, y + 22, 160, 72), label2)
 		y += 134.0
 	_button("back", Rect2(40, 1160, W - 80, 76), "← BACK TO THE WATER")
+
+
+# Lakes holding a species, for the Fish Log's "where to find it" line.
+func _lakes_for(species_id: String) -> String:
+	var names: Array = []
+	for lake_id in LakesData.LAKES.keys():
+		var lk: Dictionary = LakesData.LAKES[lake_id]
+		for sp in (lk["species"] as Array):
+			if String(sp["id"]) == species_id:
+				names.append(String(lk["name"]))
+	return ", ".join(names)
+
+
+# Fish Log / Collection + progression: every species, what you have
+# caught and what is still out there, and the run totals.
+func _draw_log() -> void:
+	draw_rect(Rect2(0, 0, W, H), Color("#10222f"), true)
+	_text(Vector2(W / 2, 90), "FISH LOG", 44, Color.WHITE)
+	_text(Vector2(W / 2, 130), "Every species in Michigan waters — caught, and still out there", 22, Color("#cfe8f7"))
+	var species: Array = LakesData.all_species()
+	var caught_n: int = 0
+	for sp in species:
+		if int((save["caught"] as Dictionary).get(String(sp["id"]), 0)) > 0:
+			caught_n += 1
+	_text(Vector2(40, 180), "%d of %d species caught  •  %d fish landed  •  %d gold" % [caught_n, species.size(), int(save["totalCaught"]), int(save.get("goldCaught", 0))], 24, Color("#ffd94d"), HORIZONTAL_ALIGNMENT_LEFT)
+	var daily: Dictionary = save.get("daily", {})
+	if not daily.is_empty():
+		var done_mark: String = "✓ DONE" if bool(daily.get("done", false)) else "— +%d coins" % int(daily.get("bonus", 50))
+		_text(Vector2(40, 212), "Today: land a %s over %.1f lb  %s" % [String(daily.get("name", "")), float(daily.get("min_weight", 0.0)), done_mark], 22, Color("#cfe8f7"), HORIZONTAL_ALIGNMENT_LEFT)
+	var y := 250.0
+	for sp in species:
+		var sid: String = String(sp["id"])
+		var count: int = int((save["caught"] as Dictionary).get(sid, 0))
+		var best_w: float = float((save["best"] as Dictionary).get(sid, 0.0))
+		var profile: Dictionary = LakesData.fight_profile(sp)
+		draw_rect(Rect2(40, y, W - 80, 112), Color(1, 1, 1, 0.07), true)
+		var title: String = String(sp["name"])
+		if count == 0:
+			title += "  —  NOT CAUGHT YET"
+		_text(Vector2(60, y + 34), title, 26, Color("#ffd94d") if count == 0 else Color.WHITE, HORIZONTAL_ALIGNMENT_LEFT)
+		if count > 0:
+			_text(Vector2(60, y + 66), "Caught ×%d   •   Best %.1f lb   •   %d coins/lb" % [count, best_w, int(sp["coins"])], 20, Color("#cfe8f7"), HORIZONTAL_ALIGNMENT_LEFT)
+		else:
+			_text(Vector2(60, y + 66), "Find it in: " + _lakes_for(sid), 20, Color("#cfe8f7"), HORIZONTAL_ALIGNMENT_LEFT)
+		_text(Vector2(60, y + 96), String(profile.get("style", "")), 18, Color("#9fd8b6"), HORIZONTAL_ALIGNMENT_LEFT)
+		y += 118.0
+	_button("back", Rect2(40, 1100, W - 80, 76), "← BACK")
+
+
+# How to Play: the tutorial in four short steps. No coaching text
+# appears anywhere else, so a new player has one place to learn.
+func _draw_howto() -> void:
+	draw_rect(Rect2(0, 0, W, H), Color("#10222f"), true)
+	_text(Vector2(W / 2, 90), "HOW TO PLAY", 44, Color.WHITE)
+	_text(Vector2(W / 2, 130), "Four steps from first cast to first lunker", 22, Color("#cfe8f7"))
+	var lines: Array = [
+		["1 · CAST", 28, Color("#ffd94d")],
+		["Drag on the water, release to cast.", 22, Color.WHITE],
+		["Longer drag = further cast.", 22, Color.WHITE],
+		["Cast near a drone-revealed fish and", 22, Color.WHITE],
+		["it bites 2.5× faster.", 22, Color.WHITE],
+		["2 · STRIKE", 28, Color("#ffd94d")],
+		["When the bobber dips and STRIKE! flashes,", 22, Color.WHITE],
+		["tap fast — you have about a second.", 22, Color.WHITE],
+		["3 · FIGHT", 28, Color("#ffd94d")],
+		["Tap to reel in. Hold to reel hard,", 22, Color.WHITE],
+		["but watch the tension bar — over your", 22, Color.WHITE],
+		["line's limit and it snaps. Go idle and", 22, Color.WHITE],
+		["the fish spits the hook.", 22, Color.WHITE],
+		["Panfish nibble in short runs, bass jump", 22, Color("#9fd8b6")],
+		["(let go!), pike make long runs —", 22, Color("#9fd8b6")],
+		["reel in the rests.", 22, Color("#9fd8b6")],
+		["4 · DRONE & WORKBENCH", 28, Color("#ffd94d")],
+		["Scout Drone reveals fish, depth and", 22, Color.WHITE],
+		["cover for 5 s, then recharges for 15 s.", 22, Color.WHITE],
+		["Coins buy printed lures and stronger", 22, Color.WHITE],
+		["line in the Workbench.", 22, Color.WHITE],
+	]
+	var y := 190.0
+	for row in lines:
+		_text(Vector2(40, y), String(row[0]), int(row[1]), row[2], HORIZONTAL_ALIGNMENT_LEFT)
+		y += 40.0 if int(row[1]) >= 28 else 34.0
+	_button("back", Rect2(40, 1100, W - 80, 76), "← BACK")

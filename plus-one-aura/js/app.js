@@ -15,6 +15,7 @@ import { initPortal, gameplayStart, gameplayStop, isPortal } from './portal.js';
 import * as SOC from './social.js';
 import * as SC from './social-core.js';
 import * as D from './daily.js';
+import * as PT from './playtest.js';
 import { initBilling, billingAvailable, buyRemoveAds, restoreRemoveAds, removeAdsPrice } from './billing.js';
 
 const $ = id => document.getElementById(id);
@@ -104,6 +105,31 @@ function startPlay(via) {
   exitEscape();
   screen = 'play'; document.body.classList.remove('on-title'); $('title').hidden = true;
   track('title_play', { via }); unlockAudio(); gameplayStart();
+  ptMaybeStart();
+}
+// ---------- playtest logging: VEX scope-risk gate (core loop proven only by the log) ----------
+// A logged session is one full climb: it starts on floor 1 and finishes when the
+// player Ascends from the top of the tower (floor 9). Until coreLoopProof() passes
+// (3 finished sessions, every one a full 9-floor clear) the second act stays frozen:
+// no new modes, floors or skins, and streak decay / overheat warning / floor twists
+// change only from this log — never from balance tests alone.
+let ptSession = null, ptFloorT0 = Date.now();
+function ptMaybeStart() {
+  if (ptSession || s.floor !== 0) return;
+  ptSession = PT.newSession(''); ptFloorT0 = Date.now();
+}
+function ptRecordFloor(clearedFloor1Based) {
+  if (!ptSession) return;
+  PT.recordFloor(ptSession, clearedFloor1Based, (Date.now() - ptFloorT0) / 1000);
+  ptFloorT0 = Date.now();
+}
+function ptFinishOnAscend(wasTop) {
+  if (!ptSession) return;
+  if (wasTop) {
+    PT.recordFloor(ptSession, G.FLOORS, (Date.now() - ptFloorT0) / 1000);
+    PT.finishSession(ptSession); PT.saveSession(ptSession);
+  }
+  ptSession = null; // an Ascend below the top abandons the in-progress climb
 }
 function pause(why) {
   if (paused || (screen !== 'play' && screen !== 'escape') || !$('modal').hidden) return;
@@ -170,6 +196,7 @@ function doTap(x, y) {
   if (r.crit) { fx.float(fx.target().x, fx.target().y - fx.target().r * 1.5, skin.text.burst, '#fff', 30, { life: 1.3, vy: -60 }); fx.ring('#fff', 1.6); fx.shake(0.5); fx.flash(st.glow, .8); sfx('burst'); buzz('heavy'); }
   bumpTotal();
   handle(r.events);
+  if (ptSession && !r.locked) PT.recordTap(ptSession);
 }
 // floor-3 twist: golden wisps drift across; catching one pays a few seconds of income
 function catchWisp() {
@@ -194,6 +221,7 @@ function handle(events) {
       const t = fx.target(); fx.float(t.x, t.y - t.r * 1.4, `${skin.text.streak} +${G.fmt(e.value)}`, st.accent, 28, { life: 1.2, vy: -70 }); fx.burst(t.x, t.y, st.colors, 18, 300, 4); fx.ring(st.accent, 1.2); sfx('bank'); buzz('success'); bumpTotal();
     } else if (e.type === 'overheat') {
       fx.shake(1); fx.flash('#ff2a1a', 1); sfx('overheat'); buzz('error'); track('overheat', { lost: e.lost, stage: s.stage });
+      if (ptSession) PT.recordOverheat(ptSession);
       if (e.lost > 0) showOverheat(e.lost); else toast('Overheated! Cool down…');
     } else if (e.type === 'chain') {
       const t = fx.target(); fx.float(t.x, t.y - t.r * 2.4, `${skin.text.chain ? skin.text.chain(e.n) : 'CHAIN!'} +${G.fmt(e.value)}`, st.accent, 24, { life: 1, vy: -50 }); sfx('chain');
@@ -201,6 +229,7 @@ function handle(events) {
       sfx('levelUp'); fx.ring('#fff', 1); track('level_up', { level: e.level });
     } else if (e.type === 'floor_up') {
       fx.hop(); fx.ring('#fff', 1.3); sfx('levelUp'); buzz('success'); buildTower();
+      ptRecordFloor(e.floor); // e.floor is the new floor index, so it is also the cleared floor (1-based)
       if (themeChange(events)) {} else banner(`FLOOR ${e.floor + 1}`);
       track('floor_up', { floor: e.floor, via: e.via, seconds_played: Math.round((Date.now() - s.installedAt) / 1000) }); save(); syncScores(true);
     } else if (e.type === 'stage_unlock') {
@@ -253,7 +282,7 @@ function openAscend() {
   const ph = G.pendingHalos(s);
   if (ph < 1) { toast('Not enough lifetime aura for a Halo yet'); return; }
   modal(`<h2>Ascend?</h2><p>Reset your ${skin.text.currency}, upgrades and the tower to earn <b>+${ph} Halo${ph > 1 ? 's' : ''}</b>.<br>Each Halo is <b>+10% all ${skin.text.currency}</b>, forever. Skins and settings stay.</p><div class="row"><button class="btn primary" id="mAsc">Ascend (+${ph} 😇)</button><button class="btn" id="mClose">Not yet</button></div>`);
-  $('mAsc').onclick = () => { const n = G.ascend(s); closeModal(); applySkin(); banner(`ASCENDED! +${n} HALO`); fx.flash('#fff', 1); fx.hop(); sfx('unlock'); track('ascend', { halos: s.halos, gained: n }); save(); };
+  $('mAsc').onclick = () => { const wasTop = s.floor >= G.FLOORS - 1; const n = G.ascend(s); if (wasTop) ptFinishOnAscend(true); closeModal(); applySkin(); banner(`ASCENDED! +${n} HALO`); fx.flash('#fff', 1); fx.hop(); sfx('unlock'); track('ascend', { halos: s.halos, gained: n }); save(); };
   $('mClose').onclick = closeModal;
 }
 
@@ -358,6 +387,8 @@ function openSettings() {
     ${billingAvailable() ? (s.noAds ? '<div class="set">Ads removed ✓ <span style="font-size:12px;opacity:.7">bonuses skip the video</span></div>' : `<div class="set">Remove ads <button class="btn primary" id="mBuy">${removeAdsPrice()}</button></div><div class="set">Already bought? <button class="btn" id="mRestore">Restore</button></div>`) : ''}
     ${isPortal ? '' : `<div class="set">Privacy policy <a href="${PRIVACY_URL}" target="_blank" rel="noopener">Open</a></div>`}
     ${isPortal ? '' : `<div class="set"><span>Delete online data<br><small style="opacity:.7;font-weight:600">Removes social rows it can find from 1 Oct 2026 through today, plus any score row the server lists for your id. Keeps the anonymous sign-in. Does not delete analytics.</small></span> <button class="btn" id="mDel">Delete</button></div><p class="soc-note" id="mDelWhy" style="white-space:pre-wrap;text-align:left"></p>`}
+    <div class="set"><span><b>Playtest log — core-loop proof</b><br><small style="opacity:.7;font-weight:600">${PT.proofStatusLine(PT.loadSessions())}${ptSession ? ` Logging this climb: floor ${s.floor + 1}, ${ptSession.floors.length} floor(s) in.` : ''}<br>Second act frozen until proven: no new modes, floors or skins. A logged session is one full climb from floor 1 to Ascend.</small></span></div>
+    <div class="row"><button class="btn" id="mPtExport">Export log</button>${ptSession ? '<button class="btn" id="mPtBoring">This climb feels boring</button>' : ''}</div>
     <div class="set" style="font-size:12px;opacity:.7">Language: English · Total taps ${G.fmt(s.taps)} · Best streak ${s.best.combo} · Halos ${s.halos} · v${VERSION} · analytics ${analyticsMode()}</div>
     <div class="row" style="margin-top:12px"><button class="btn" id="mClose">Close</button></div>`);
   const flip = (id, key, after) => { $(id).onclick = e => { s.settings[key] = !s.settings[key]; e.target.classList.toggle('on', s.settings[key]); e.target.setAttribute('aria-pressed', s.settings[key]); applySettings(); after?.(); save(); }; };
@@ -379,6 +410,8 @@ function openSettings() {
   if ($('mBuy')) track('remove_ads_shown');
   $('mBuy') && ($('mBuy').onclick = async () => { $('mBuy').disabled = true; if (await buyRemoveAds(s)) { save(); banner('ADS REMOVED!'); sfx('unlock'); closeModal(); refreshAdButtons(); } else { toast('Purchase not completed'); $('mBuy').disabled = false; } });
   $('mRestore') && ($('mRestore').onclick = async () => { const ok = await restoreRemoveAds(s); save(); toast(ok ? 'Purchase restored' : 'No purchase found'); if (ok) { closeModal(); refreshAdButtons(); } });
+  $('mPtExport') && ($('mPtExport').onclick = () => { const blob = new Blob([PT.exportLog()], { type: 'application/json' }); const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'aura-playtest-log.json'; a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 1000); });
+  $('mPtBoring') && ($('mPtBoring').onclick = () => { if (!ptSession) return; const minute = Math.round(((Date.now() - Date.parse(ptSession.startedAt)) / 60000) * 10) / 10; PT.recordBoredom(ptSession, s.floor + 1, minute); PT.saveSession(ptSession); toast('Boredom point marked — thanks!'); });
   $('mClose').onclick = closeModal;
 }
 $('btnSettings').addEventListener('click', openSettings);
@@ -658,4 +691,4 @@ initAds();
 initPortal();
 initBilling(s, () => { save(); refreshAdButtons(); });
 // test hook (harmless in production): lets the Playwright smoke test inspect state
-window.__aura = { get state() { return s; }, G, save, get screen() { return screen; }, get paused() { return paused; }, pause, resume, R, get run() { return run; }, startEscape, openRanks, shareScore, SOC, D, get X() { return X; }, saveX, openGhosts, checkStreak };
+window.__aura = { get state() { return s; }, G, save, get screen() { return screen; }, get paused() { return paused; }, pause, resume, R, get run() { return run; }, startEscape, openRanks, shareScore, SOC, D, PT, get X() { return X; }, saveX, openGhosts, checkStreak };

@@ -11,6 +11,9 @@ const START_CASH := 500
 var cash: int = START_CASH
 var inventory: Array[CardData] = []
 var stats := {"packs": 0, "graded": 0, "sold": 0, "auctions": 0, "earned": 0}
+## Buyer-demand multiplier from shop upgrades (Tycoon: Neon Sign = 1.15).
+## Applies to every cash sale — raw, slab, and fixed offers.
+var demand_mult: float = 1.0
 
 func buy_pack(set_key: String) -> Dictionary:
 	if not CardData.SETS.has(set_key):
@@ -39,18 +42,44 @@ func remove_card(uid: int) -> void:
 			inventory_changed.emit()
 			return
 
+## Standing fixed cash offer for a raw card — the placeholder sale that
+## closes the buy -> inspect -> grade-or-sell loop even before the
+## auction is reached. A graded slab never sells raw; sell it as a slab.
+func fixed_offer(uid: int) -> Dictionary:
+	var card := find_card(uid)
+	if card == null:
+		return {"ok": false, "reason": "Card not found."}
+	if card.graded:
+		return {"ok": false, "reason": "Already slabbed — sell it as a slab instead."}
+	var amount: int = maxi(1, int(round(card.base_value * demand_mult)))
+	return {"ok": true, "amount": amount}
+
 func raw_sell(uid: int) -> Dictionary:
 	var card := find_card(uid)
 	if card == null:
 		return {"ok": false, "reason": "Card not found."}
 	if card.graded:
 		return {"ok": false, "reason": "Already slabbed — sell it as a slab instead."}
-	cash += card.base_value
+	var amount: int = maxi(1, int(round(card.base_value * demand_mult)))
+	cash += amount
 	stats["sold"] += 1
-	stats["earned"] += card.base_value
+	stats["earned"] += amount
 	remove_card(uid)
 	cash_changed.emit(cash)
-	return {"ok": true, "amount": card.base_value}
+	return {"ok": true, "amount": amount}
+
+## What grading will cost and what it will return, BEFORE the player
+## pays. `inspected` is the desk's inspected dictionary; unrevealed
+## metrics widen the grade/value range, a full inspection pins it exact.
+func grading_preview(uid: int, inspected: Dictionary) -> Dictionary:
+	var card := find_card(uid)
+	if card == null:
+		return {"ok": false, "reason": "Card not found."}
+	if card.graded:
+		return {"ok": false, "reason": "Already graded."}
+	var preview: Dictionary = Grading.preview_grading(card, inspected)
+	preview["ok"] = true
+	return preview
 
 func submit_grading(uid: int) -> Dictionary:
 	var card := find_card(uid)
@@ -71,7 +100,7 @@ func sell_card(uid: int) -> Dictionary:
 	var card := find_card(uid)
 	if card == null:
 		return {"ok": false, "reason": "Card not found."}
-	var amount: int = card.value()
+	var amount: int = maxi(1, int(round(card.value() * demand_mult)))
 	cash += amount
 	stats["sold"] += 1
 	stats["earned"] += amount

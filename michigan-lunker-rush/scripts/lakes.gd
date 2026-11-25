@@ -89,19 +89,39 @@ static func bite_rate(species: Dictionary, lure_id: String, weather: Dictionary,
 ## run/rest ranges = how long runs and rests last. Panfish nibble in short
 ## weak runs, bass fight in bursts, pike make long powerful runs — same
 ## tension bar, a different fish.
+## Tester update (VEX 3.5/10): each group also gets a signature move.
+## jump = the fish jumps mid-run; holding the reel while it is airborne
+## spikes tension (TensionGame), so the player must let go. tap_run_mult
+## = how much of a tap's progress counts while the fish is running —
+## pike runs blunt taps, so the player rides the run out and reels in
+## the rests. style = the one-line fight hint shown in the Fish Log
+## and during the fight.
 static func fight_profile(species: Dictionary) -> Dictionary:
 	match String(species["id"]):
 		"bluegill", "pumpkinseed", "perch":
-			return {"surge": 14.0, "rest": 10.0, "tap": 7.0, "run_min": 0.5, "run_max": 0.9, "rest_min": 1.2, "rest_max": 2.0}
+			return {"surge": 14.0, "rest": 10.0, "tap": 7.0, "run_min": 0.5, "run_max": 0.9, "rest_min": 1.2, "rest_max": 2.0, "jump": false, "tap_run_mult": 1.0, "style": "Nibbles in short runs — tap fast, it tires quickly"}
 		"largemouth":
-			return {"surge": 24.0, "rest": 6.0, "tap": 5.0, "run_min": 0.6, "run_max": 1.1, "rest_min": 0.8, "rest_max": 1.4}
+			return {"surge": 24.0, "rest": 6.0, "tap": 5.0, "run_min": 0.6, "run_max": 1.1, "rest_min": 0.8, "rest_max": 1.4, "jump": true, "tap_run_mult": 0.7, "style": "Bursts and jumps — let go when it jumps clear of the water"}
 		"smallmouth":
-			return {"surge": 28.0, "rest": 6.0, "tap": 5.0, "run_min": 0.6, "run_max": 1.1, "rest_min": 0.7, "rest_max": 1.3}
+			return {"surge": 28.0, "rest": 6.0, "tap": 5.0, "run_min": 0.6, "run_max": 1.1, "rest_min": 0.7, "rest_max": 1.3, "jump": true, "tap_run_mult": 0.7, "style": "Bursts and jumps — let go when it jumps clear of the water"}
 		"walleye":
-			return {"surge": 26.0, "rest": 6.0, "tap": 5.0, "run_min": 0.7, "run_max": 1.2, "rest_min": 0.9, "rest_max": 1.5}
+			return {"surge": 26.0, "rest": 6.0, "tap": 5.0, "run_min": 0.7, "run_max": 1.2, "rest_min": 0.9, "rest_max": 1.5, "jump": false, "tap_run_mult": 0.6, "style": "Steady head-shakes — keep a steady rhythm, reel in the pauses"}
 		"pike":
-			return {"surge": 36.0, "rest": 4.0, "tap": 4.0, "run_min": 1.2, "run_max": 2.0, "rest_min": 0.6, "rest_max": 1.0}
-	return {"surge": 20.0, "rest": 6.0, "tap": 5.0, "run_min": 0.6, "run_max": 1.2, "rest_min": 0.8, "rest_max": 1.5}
+			return {"surge": 36.0, "rest": 4.0, "tap": 4.0, "run_min": 1.2, "run_max": 2.0, "rest_min": 0.6, "rest_max": 1.0, "jump": false, "tap_run_mult": 0.25, "style": "Long hard runs — ride them out, reel in the rests"}
+	return {"surge": 20.0, "rest": 6.0, "tap": 5.0, "run_min": 0.6, "run_max": 1.2, "rest_min": 0.8, "rest_max": 1.5, "jump": false, "tap_run_mult": 0.7, "style": "Steady fight — tap in the rests"}
+
+
+## Every species in the game, once each, in lake order — the Fish Log list.
+static func all_species() -> Array:
+	var seen: Dictionary = {}
+	var out: Array = []
+	for lake_id in LAKES.keys():
+		for sp in (LAKES[lake_id] as Dictionary)["species"]:
+			var sid: String = String(sp["id"])
+			if not seen.has(sid):
+				seen[sid] = true
+				out.append(sp)
+	return out
 
 
 ## Depth a species holds at — what the drone reveals.

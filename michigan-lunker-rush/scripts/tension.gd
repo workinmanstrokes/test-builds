@@ -6,6 +6,11 @@ class_name TensionGame
 ## profile (LakesData.fight_profile) instead of one scalar — panfish nibble
 ## in short weak runs and reel in fast, bass fight in bursts, pike make
 ## long powerful runs that hold tension. Same bar, a different fish.
+## Tester update (VEX 3.5/10): each species group now has a signature
+## move, so the correct play changes, not just the rates — bass jump
+## mid-run (holding while one is airborne spikes tension: let go),
+## pike runs blunt reel taps to 25% (ride the run out, reel in the
+## rests), panfish keep full tap value on short runs.
 extends RefCounted
 
 var progress: float = 0.0
@@ -15,6 +20,8 @@ var slack: float = 0.0
 var holding: bool = false
 var running: bool = false
 var run_t: float = 0.0
+var jumping: bool = false
+var jump_t: float = 3.0
 # Fight profile of the currently hooked fish; {} until a fight starts.
 var profile: Dictionary = {}
 
@@ -26,12 +33,17 @@ func reset() -> void:
 	slack = 0.0
 	holding = false
 	running = false
+	jumping = false
+	jump_t = randf_range(2.5, 4.5)
 	profile = {}
 	run_t = randf_range(0.8, 1.6)
 
 
 func tap_reel() -> void:
-	progress += float(profile.get("tap", 5.0))
+	# Taps blunt while the fish is running — most of all on a pike run,
+	# where reeling against the run barely gains line.
+	var mult: float = float(profile.get("tap_run_mult", 1.0)) if running else 1.0
+	progress += float(profile.get("tap", 5.0)) * mult
 	tension = maxf(0.0, tension - 3.0)
 	slack = 0.0
 	escape = maxf(0.0, escape - 30.0)
@@ -61,6 +73,21 @@ func update(delta: float, hooked: Dictionary, line: Dictionary, weather: Diction
 		tension += surge * gain * delta
 	else:
 		tension = maxf(0.0, tension - float(profile["rest"]) * delta)
+	# Bass jump: while the fish is out of the water, holding the reel
+	# drags the line across its jaw — a big tension spike. Let go.
+	if bool(profile.get("jump", false)):
+		jump_t -= delta
+		if jump_t <= 0.0:
+			if jumping:
+				jumping = false
+				jump_t = randf_range(2.5, 4.5)
+			elif running:
+				jumping = true
+				jump_t = 0.9
+			else:
+				jump_t = 0.5
+	if jumping and holding:
+		tension += 45.0 * gain * delta
 	if holding:
 		progress += 16.0 * delta
 		tension += 28.0 * gain * delta

@@ -1,9 +1,12 @@
 class_name Auction
 extends Node
-## Single-player Whatnot-style live auction.
+## Single-player Whatnot-style live auction — for graded slabs only.
 ## 15-second countdown, Hype Chat button boosts bidder momentum,
 ## three AI bidders with distinct behaviour, manual Gavel Slam.
 ## A bid in the final 3 seconds adds 2 seconds (max 2 extensions).
+## Bids respond to the card: bidder caps scale with the slab's value
+## (rarity + grade) and with a rarity-demand factor, so a Secret 10
+## draws far bigger jumps than a Common 7.
 
 signal ticked(time_left: float, bid: int, leader: String)
 signal chat_line(who: String, text: String)
@@ -12,9 +15,12 @@ signal finished(winner: String, final_bid: int)
 const DURATION := 15.0
 const BIDDER_CAPS := {"whale": 2.5, "snipe": 1.8, "bargain": 1.2}
 const BIDDER_NAMES := {"whale": "Whale 🐋", "snipe": "SnipeBot 🤖", "bargain": "BargainHunter 🤑"}
+## How much extra heat each rarity draws from bidders, on top of value.
+const RARITY_DEMAND := {"common": 1.0, "uncommon": 1.1, "rare": 1.25, "ultra": 1.5, "secret": 2.0}
 
 var card: CardData = null
 var value: int = 0
+var demand: float = 1.0
 var time_left: float = DURATION
 var bid: int = 0
 var leader: String = ""
@@ -25,9 +31,17 @@ var winner: String = ""
 var final_bid: int = 0
 var _timer: float = 0.0
 
-func start_auction(c: CardData) -> void:
+## Opens the auction. Returns {ok, reason}. Raw cards are refused:
+## the auction is the payoff for graded slabs, and a raw card already
+## has its fixed-offer sale (Economy.fixed_offer).
+func start_auction(c: CardData) -> Dictionary:
+	if c == null:
+		return {"ok": false, "reason": "No card on the desk."}
+	if not c.graded:
+		return {"ok": false, "reason": "Auctions are for graded slabs — grade the card first, or sell it raw for the fixed offer."}
 	card = c
 	value = c.value()
+	demand = RARITY_DEMAND.get(c.rarity, 1.0)
 	bid = maxi(1, int(round(value * 0.5)))
 	time_left = DURATION
 	leader = ""
@@ -37,6 +51,7 @@ func start_auction(c: CardData) -> void:
 	winner = ""
 	final_bid = 0
 	chat_line.emit("📢", "Auction open for %s — starting at $%d!" % [c.card_name, bid])
+	return {"ok": true}
 
 func hype_chat() -> void:
 	if over:
@@ -52,7 +67,7 @@ func gavel_slam() -> void:
 		_finish()
 
 func _try_bid(bidder: String, pct: float) -> bool:
-	var cap: int = int(round(value * BIDDER_CAPS[bidder]))
+	var cap: int = int(round(value * BIDDER_CAPS[bidder] * demand))
 	var next_bid: int = bid + maxi(1, int(round(bid * pct)))
 	if next_bid > cap:
 		return false

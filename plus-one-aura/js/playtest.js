@@ -131,6 +131,19 @@ export function coreLoopProof(sessions) {
   };
 }
 
+/**
+ * One-line human-readable proof status for the Settings → Playtest log UI.
+ * "Core loop: PROVEN — 3/3 full climbs logged." when the gate passes, else
+ * "Core loop: NOT proven — 0/3 sessions, 0 full tower clear(s). Still needed: …"
+ */
+export function proofStatusLine(sessions) {
+  const p = coreLoopProof(sessions);
+  const head = p.proven
+    ? `Core loop: PROVEN — ${p.fullTowerClears}/${p.sessionsRequired} full climbs logged.`
+    : `Core loop: NOT proven — ${p.sessionsCompleted}/${p.sessionsRequired} sessions, ${p.fullTowerClears} full tower clear(s).`;
+  return p.missing.length ? `${head} Still needed: ${p.missing.join('; ')}.` : head;
+}
+
 // ---------- persistence (localStorage; safe no-op when unavailable) ----------
 
 function storage() {
