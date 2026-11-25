@@ -1,7 +1,39 @@
 {
-  "generated": "2026-11-24T06:14-05:00",
+  "generated": "2026-11-25T06:20-05:00",
   "count": 32,
   "games": [
+    {
+      "id": "filterfit",
+      "title": "Filterfit",
+      "kind": "game",
+      "genre": "New",
+      "desc": "Fresh from the DowntownDiddlerrr workshop.",
+      "icon": "../arcade/brand-512.png",
+      "art": "../arcade/art/filterfit.jpg",
+      "artPos": null,
+      "play": "../filterfit/",
+      "apk": null,
+      "repo": "https://github.com/workinmanstrokes/filterfit",
+      "added": "2026-11-20",
+      "updated": "2026-11-25",
+      "isNew": true
+    },
+    {
+      "id": "slab-house-tycoon",
+      "title": "Slab House Tycoon",
+      "kind": "game",
+      "genre": "Godot",
+      "desc": "Fresh from the DowntownDiddlerrr workshop.",
+      "icon": "../arcade/brand-512.png",
+      "art": "../arcade/art/slab-house-tycoon.jpg",
+      "artPos": null,
+      "play": "../slab-house-tycoon/",
+      "apk": null,
+      "repo": "https://github.com/workinmanstrokes/slab-house-tycoon",
+      "added": "2026-11-21",
+      "updated": "2026-11-25",
+      "isNew": true
+    },
     {
       "id": "bronze-and-blood",
       "title": "Bronze & Blood",
@@ -19,22 +51,6 @@
       "isNew": true
     },
     {
-      "id": "filterfit",
-      "title": "Filterfit",
-      "kind": "game",
-      "genre": "New",
-      "desc": "Fresh from the DowntownDiddlerrr workshop.",
-      "icon": "../arcade/brand-512.png",
-      "art": "../arcade/art/filterfit.jpg",
-      "artPos": null,
-      "play": "../filterfit/",
-      "apk": null,
-      "repo": "https://github.com/workinmanstrokes/filterfit",
-      "added": "2026-11-20",
-      "updated": "2026-11-23",
-      "isNew": true
-    },
-    {
       "id": "neon-chop-shop",
       "title": "Neon Chop Shop",
       "kind": "game",
@@ -48,22 +64,6 @@
       "repo": "https://github.com/workinmanstrokes/neon-chop-shop",
       "added": "2026-11-21",
       "updated": "2026-11-23",
-      "isNew": true
-    },
-    {
-      "id": "slab-house-tycoon",
-      "title": "Slab House Tycoon",
-      "kind": "game",
-      "genre": "Godot",
-      "desc": "Fresh from the DowntownDiddlerrr workshop.",
-      "icon": "../arcade/brand-512.png",
-      "art": "../arcade/art/slab-house-tycoon.jpg",
-      "artPos": null,
-      "play": "../slab-house-tycoon/",
-      "apk": null,
-      "repo": "https://github.com/workinmanstrokes/slab-house-tycoon",
-      "added": "2026-11-21",
-      "updated": "2026-11-22",
       "isNew": true
     },
     {
@@ -227,6 +227,38 @@
       "isNew": true
     },
     {
+      "id": "final-cast",
+      "title": "Final Cast",
+      "kind": "game",
+      "genre": "Fishing",
+      "desc": "Pixel-art idle fishing. Your line fishes for you until the big one bites.",
+      "icon": "../final-cast/icons/icon-512.png",
+      "art": "../arcade/art/final-cast.jpg",
+      "artPos": null,
+      "play": "../final-cast/",
+      "apk": "https://github.com/workinmanstrokes/test-builds/releases/download/apks/FinalCast-M2.apk?v=20261111",
+      "repo": "https://github.com/workinmanstrokes/final-cast",
+      "added": "2026-10-26",
+      "updated": "2026-11-25",
+      "isNew": false
+    },
+    {
+      "id": "hunterduel",
+      "title": "Hunter Duel",
+      "kind": "game",
+      "genre": "Marksman",
+      "desc": "Precision foam-dart duels against plush wild animals.",
+      "icon": "../hunterduel/icons/icon-512.png",
+      "art": null,
+      "artPos": null,
+      "play": "../hunterduel/",
+      "apk": "https://github.com/workinmanstrokes/test-builds/releases/download/apks/HunterDuel-test.apk?v=20261030",
+      "repo": "https://github.com/workinmanstrokes/hunterduel",
+      "added": "2026-10-26",
+      "updated": "2026-11-24",
+      "isNew": false
+    },
+    {
       "id": "sunken-spire",
       "title": "Echoes of the Sunken Spire",
       "kind": "game",
@@ -371,38 +403,6 @@
       "isNew": false
     },
     {
-      "id": "final-cast",
-      "title": "Final Cast",
-      "kind": "game",
-      "genre": "Fishing",
-      "desc": "Pixel-art idle fishing. Your line fishes for you until the big one bites.",
-      "icon": "../final-cast/icons/icon-512.png",
-      "art": "../arcade/art/final-cast.jpg",
-      "artPos": null,
-      "play": "../final-cast/",
-      "apk": "https://github.com/workinmanstrokes/test-builds/releases/download/apks/FinalCast-M2.apk?v=20261111",
-      "repo": "https://github.com/workinmanstrokes/final-cast",
-      "added": "2026-10-26",
-      "updated": "2026-11-19",
-      "isNew": false
-    },
-    {
-      "id": "hunterduel",
-      "title": "Hunter Duel",
-      "kind": "game",
-      "genre": "Marksman",
-      "desc": "Precision foam-dart duels against plush wild animals.",
-      "icon": "../hunterduel/icons/icon-512.png",
-      "art": null,
-      "artPos": null,
-      "play": "../hunterduel/",
-      "apk": "https://github.com/workinmanstrokes/test-builds/releases/download/apks/HunterDuel-test.apk?v=20261030",
-      "repo": "https://github.com/workinmanstrokes/hunterduel",
-      "added": "2026-10-26",
-      "updated": "2026-11-19",
-      "isNew": false
-    },
-    {
       "id": "nhl94-remake",
       "title": "94 Ice Legends",
       "kind": "game",
@@ -447,7 +447,7 @@
       "apk": "https://github.com/workinmanstrokes/test-builds/releases/download/apks/FishingAlmanac.apk?v=20261111",
       "repo": "https://github.com/workinmanstrokes/fishing-almanac",
       "added": "2026-10-17",
-      "updated": "2026-11-23",
+      "updated": "2026-11-25",
       "isNew": false
     },
     {
