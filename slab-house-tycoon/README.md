@@ -22,26 +22,48 @@ It is a complete, self-contained HTML5 canvas game:
   Old saves migrate automatically on load: cards pulled before the
   trading-card redesign get their jersey number, team, position, and
   collector number backfilled from their set.
-- **Inspection Desk** — drag the loupe over the card to reveal the 4
-  real grading metrics: Front Centering (e.g. 55/45), 4 Corners
-  (whitening), 4 Edges (wear), Surface print lines (tilt the light
-  past ±25° to reveal them). All 4 metrics unlock grading. The loupe
-  floats **above your finger** so you can always see what you're
-  magnifying (it flips below near the top of the desk); a dashed line
-  and a small ring mark the exact spot your finger is on. The desk
-  itself is a wood-framed felt table with a stitched border, a light
-  pool, and a drop shadow under the card.
-- **Grading & Slab Reveal** — $25 fee. Grade 1–10 is weighted from the
-  hidden sub-grades (centering 30%, corners 25%, edges 20%, surface
-  25%). Value multipliers: Gem Mint 10 = 5×, 9 = 3×, 8 = 2×, 7 = 1.5×,
-  6 = 1.2×, 5 = 1×, lower grades pay less than base.
+- **Inspection Desk** — touch the card and read the **jeweler's screen**:
+  a fixed magnified window (top of the desk on phones, beside the card on
+  desktop) that shows the spot under your finger, so your hand never
+  covers what you're inspecting. Pinch or scroll to zoom the card,
+  double-tap to reset. Light presets (−30° / 0° / +30°) or **Tilt phone**
+  to rake the light with the gyroscope. Checked corners and edges glow
+  **green** when clean and **amber** when flawed; the measured centering
+  frame and split ratios show on the card. **Flip the card** to check the
+  back corners and back centering: grading stays locked until both sides
+  are done. The old floating loupe is still there as an option.
+- **True subgrades** — BGS-style half-point subgrades. Centering uses
+  split ratios (fronts: 55/45 = 9.5, 60/40 = 9; backs allow 60/40 for a
+  10). Corners count front whitening at 2.5 and back at 1. Edges score
+  chipping. Surface tells print lines, roller marks, scratches,
+  micro-scratches, dimples and fingerprints apart, each with its own
+  penalty. One weak subgrade caps the slab; a 10 needs every sub at 9+.
+- **Grading services** — Economy $10 (3–5 days, strict graders with
+  pop-control risk), Regular $25 (back the next day), Walk-Through
+  Express $75 (instant). A day passes when an auction ends or you press
+  **End day** in the header.
+- **Slab reveal** — tap the sealed sleeve to crack it open. Label colors:
+  Pristine Black Label for quad 10s, gold for 10s, silver for 9s, red for
+  8s. Each slab gets a cert number and subgrades on the label.
+- **Pop report** — every grade has a population (market copies that grow
+  over time, plus your own). A Pop 1 Gem Mint 10 is worth 2.5× a normal
+  10; a flooded grade sinks toward 0.6×. Slabs value off the live pop.
+- **Upgrades** — High-Lumen Lamp (every surface flaw, micro-scratches
+  included, at any angle), Digital Calipers (centering locks the moment a
+  side faces up), Prep Station (+0.5 surface by wiping fingerprints),
+  Bulk Submitter Account (10+ cards at $15/card Regular, $7 Economy) and
+  VIP Auction Slots (house fee 10% → 3%, bigger bidders).
 - **Live Stream Auction** — 15-second countdown, Hype Chat button that
   boosts bidder momentum, AI bidders Whale (rare huge jumps), SnipeBot
   (strikes in the last 4 seconds), BargainHunter (early small bids,
   walks away above 1.2× value), and a manual Gavel Slam. A bid in the
   final 3 seconds adds 2 seconds (max 2 extensions).
 - **Collection** — everything you own, with Sell and Send-to-Auction.
-- Progress (cash, inventory, stats) saves to browser localStorage.
+  Slabs show their label color and pop; cards at the grader show when
+  they're due back. **Bulk submit** selects several raw cards at once.
+- Progress (cash, inventory, day, upgrades, pop) saves to browser
+  localStorage. Older saves load as before: their cards get a clean back
+  and their slabs keep the value they were graded at.
 
 Self-test: open `index.html?autotest=1` — it runs the full flow
 (pack → inspect → grade → sell → auction) and prints PASS/FAIL.
@@ -92,8 +114,9 @@ Godot 4.3 project, portrait 720×1280 (`project.godot`, main scene
 | `scripts/auction.gd` | 15s countdown, Hype Chat, Whale/SnipeBot/BargainHunter AI, Gavel Slam |
 | `scripts/main.gd` | Screen glue: wires Economy + Desk + Auction together |
 
-The Godot scripts mirror the web game's systems one-to-one (same
-weights, prices, bidder caps, and rules), so the Godot version is a
+The Godot scripts mirror the web game's original systems (the newer
+card backs, subgrades, service tiers, pop report and upgrades are
+web-only for now), so the Godot version is a
 real starting point for the full game, not an empty shell. The web
 build is the fully playable vertical slice; the Godot scene is the
 same systems wired into a runnable project shell (UI layout is

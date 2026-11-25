@@ -115,8 +115,9 @@
   .tc-foot { display:flex; justify-content:space-between; gap:4px; font-size:10px; color:var(--mut); border-top:1px solid #3a2d18; padding-top:4px; }
   .tc-foot .sym { font-weight:800; white-space:nowrap; }
   .desk-wrap { display:flex; gap:16px; flex-wrap:wrap; }
-  #desk { background:#14100a; border:1px solid #4a3a24; border-radius:12px; touch-action:none; cursor:crosshair; max-width:100%; height:auto; box-shadow:0 12px 32px rgba(0,0,0,.55), 0 0 0 1px rgba(242,183,5,.12); }
-  .desk-side { flex:1; min-width:260px; }
+  .desk-main { flex:1 1 440px; min-width:0; }
+  #desk { display:block; width:100%; height:auto; background:#14100a; border:1px solid #4a3a24; border-radius:12px; touch-action:none; cursor:crosshair; box-shadow:0 12px 32px rgba(0,0,0,.55), 0 0 0 1px rgba(242,183,5,.12); -webkit-user-select:none; user-select:none; -webkit-touch-callout:none; }
+  .desk-side { flex:1 1 260px; min-width:0; }
   .metric { background:linear-gradient(180deg,#2e2318,#241a10); border:1px solid #54401f; border-radius:10px; padding:10px 12px; margin-bottom:8px; font-size:14px; box-shadow:0 2px 8px rgba(0,0,0,.3); }
   .metric b { display:block; font-size:13px; color:var(--mut); text-transform:uppercase; letter-spacing:.5px; }
   .metric .val { font-size:16px; font-weight:700; }
@@ -144,13 +145,158 @@
   .chat { background:#171008; border:1px solid #4a3a24; border-radius:10px; height:220px; overflow-y:auto; padding:10px; font-size:13px; box-shadow:inset 0 2px 10px rgba(0,0,0,.5); }
   .chat div { margin-bottom:6px; }
   .chat .who { font-weight:700; }
-  .overlay { position:fixed; inset:0; background:rgba(20,12,4,.78); display:none; align-items:center; justify-content:center; z-index:50; padding:16px; }
+  .overlay { position:fixed; inset:0; background:rgba(20,12,4,.82); display:none; align-items:center; justify-content:center; z-index:50; padding:16px; overflow-y:auto; -webkit-backdrop-filter:blur(3px); backdrop-filter:blur(3px); }
   .overlay.show { display:flex; }
-  .slabbox { background:linear-gradient(180deg,#2c2114,#1d150b); border:2px solid var(--gold); border-radius:16px; padding:24px; max-width:460px; width:100%; text-align:center; box-shadow:0 0 40px rgba(242,183,5,.25), 0 20px 50px rgba(0,0,0,.6); }
+  .slabbox { margin:auto; background:linear-gradient(180deg,#2c2114,#1d150b); border:2px solid var(--gold); border-radius:16px; padding:24px; max-width:460px; width:100%; text-align:center; box-shadow:0 0 40px rgba(242,183,5,.25), 0 20px 50px rgba(0,0,0,.6); }
   .slabbox .biggrade { font-size:64px; font-weight:800; line-height:1; background:linear-gradient(180deg,#ffe9a8,#f2b705 60%,#c78d00); -webkit-background-clip:text; background-clip:text; color:transparent; }
   .slabbox table { margin:14px auto; border-collapse:collapse; font-size:14px; }
   .slabbox td { padding:4px 12px; text-align:left; }
   .slabbox td:last-child { text-align:right; font-weight:700; }
+  /* ---- Header day chip + toast ---- */
+  .stat.day-chip { cursor:pointer; color:var(--ink); font-weight:600; background:linear-gradient(180deg,#3d2c14,#2a1e0f); border-color:#7a5a22; }
+  .stat.day-chip:hover { filter:brightness(1.12); }
+  .stat.day-chip .end { color:var(--gold); font-weight:800; margin-left:4px; }
+  .toast { position:fixed; left:50%; bottom:18px; transform:translate(-50%, 24px); opacity:0; pointer-events:none; z-index:60; background:linear-gradient(180deg,#3a2b16,#241a0e); border:1px solid #8a6a2a; color:var(--ink); padding:10px 16px; border-radius:12px; font-size:14px; box-shadow:0 10px 30px rgba(0,0,0,.55); transition:opacity .25s ease, transform .25s ease; max-width:min(92vw, 460px); text-align:center; }
+  .toast.show { opacity:1; transform:translate(-50%, 0); }
+  .toast b { color:var(--gold); }
+  .lbl-short { display:none; }
+  /* ---- Desk controls: tilt presets, tools ---- */
+  .desk-controls { margin-top:10px; display:flex; flex-direction:column; gap:8px; }
+  .seg { display:flex; align-items:stretch; gap:0; background:#171008; border:1px solid #4a3a24; border-radius:12px; padding:3px; box-shadow:inset 0 2px 8px rgba(0,0,0,.45); }
+  .seg-label { display:flex; align-items:center; padding:0 10px 0 8px; font-size:13px; color:var(--mut); white-space:nowrap; }
+  .seg-btn { flex:1; background:transparent; color:var(--ink); box-shadow:none; border-radius:9px; padding:9px 6px; font-size:14px; font-weight:700; white-space:nowrap; }
+  .seg-btn:hover:not(:disabled) { background:rgba(242,183,5,.08); filter:none; }
+  .seg-btn.active { background:linear-gradient(180deg,#ffd94a,#e69e00); color:#1a1206; box-shadow:0 2px 10px rgba(242,183,5,.35); }
+  .seg-btn.gyro { flex:1.3; font-weight:600; font-size:13px; }
+  .seg-btn.gyro.on { background:linear-gradient(180deg,#5fd37a,#2f9e4a); color:#06210f; }
+  .tool-row { display:flex; gap:6px; flex-wrap:wrap; }
+  .tool-row button { flex:1 1 auto; }
+  .tool-row .flip-btn { flex:2 1 150px; }
+  .tool-row .zoom-btn { flex:0 0 44px; padding:6px 0; font-size:16px; }
+  .flip-btn.nudge { animation:nudge 1.6s ease-in-out infinite; }
+  @keyframes nudge { 0%,100% { box-shadow:0 3px 10px rgba(0,0,0,.4); } 50% { box-shadow:0 0 0 3px rgba(242,183,5,.35), 0 0 18px rgba(242,183,5,.55); } }
+  .metric .est { display:block; font-size:12px; color:var(--mut); margin-top:3px; font-weight:500; }
+  .metric .side-tag { display:inline-block; font-size:11px; font-weight:800; letter-spacing:.4px; padding:1px 6px; border-radius:6px; margin-right:4px; background:#171008; border:1px solid #4a3a24; color:var(--mut); }
+  .metric .side-tag.ok { color:var(--green); border-color:rgba(63,185,80,.6); }
+  .metric.estimate { border-color:#7a5a22; background:linear-gradient(180deg,#33260f,#251b0c); }
+  .metric.estimate .val { color:var(--gold); }
+  /* ---- Tier picker ---- */
+  .tiers { display:flex; flex-direction:column; gap:10px; margin:14px 0 10px; text-align:left; }
+  .tier { display:grid; grid-template-columns:1fr auto; gap:2px 10px; align-items:center; width:100%; text-align:left; background:linear-gradient(180deg,#34271a,#251b10); color:var(--ink); border:1px solid #6a5028; border-radius:12px; padding:12px 14px; font-weight:600; }
+  .tier:hover:not(:disabled) { border-color:var(--gold); filter:none; box-shadow:0 0 0 1px rgba(242,183,5,.4), 0 6px 18px rgba(0,0,0,.45); }
+  .tier .t-name { font-size:16px; font-weight:800; }
+  .tier .t-price { font-size:20px; font-weight:800; color:var(--gold); grid-row:span 2; text-align:right; }
+  .tier .t-price s { display:block; font-size:12px; color:var(--mut); font-weight:600; }
+  .tier .t-note { font-size:12.5px; color:var(--mut); font-weight:500; }
+  .tier.express { border-color:#a07d2a; }
+  .tier.economy .t-note b { color:var(--orange); }
+  .tier:disabled .t-price { color:#8a7d63; }
+  /* ---- Slab reveal ---- */
+  .reveal { max-width:440px; }
+  .reveal-head { font-size:13px; color:var(--mut); letter-spacing:.4px; text-transform:uppercase; }
+  .slab-stage { position:relative; width:min(250px, 68vw); margin:12px auto 6px; perspective:900px; }
+  .slab { position:relative; border-radius:14px; padding:10px 10px 12px; background:linear-gradient(135deg, rgba(255,255,255,.30), rgba(210,225,240,.10) 40%, rgba(255,255,255,.22) 60%, rgba(190,210,230,.08)); border:1px solid rgba(255,255,255,.55); box-shadow:inset 0 0 0 3px rgba(255,255,255,.10), inset 0 0 22px rgba(255,255,255,.12), 0 18px 40px rgba(0,0,0,.6); overflow:hidden; }
+  .slab::after { content:''; position:absolute; inset:-40% -60%; background:linear-gradient(115deg, transparent 42%, rgba(255,255,255,.55) 50%, transparent 58%); transform:translateX(-70%); pointer-events:none; }
+  .slab.revealed::after { animation:slabShine 1.4s .55s ease-out both; }
+  @keyframes slabShine { to { transform:translateX(70%); } }
+  .slab-label { position:relative; border-radius:7px; padding:7px 9px; display:grid; grid-template-columns:1fr auto; gap:0 8px; align-items:center; text-align:left; transform-origin:50% 0; box-shadow:0 2px 6px rgba(0,0,0,.35); }
+  .slab.revealed .slab-label { animation:labelIn .55s .15s cubic-bezier(.2,.8,.25,1.2) both; }
+  @keyframes labelIn { from { transform:rotateX(90deg); opacity:0; } to { transform:none; opacity:1; } }
+  .slab-label .l-house { grid-column:1 / -1; font-size:8.5px; font-weight:900; letter-spacing:1.6px; opacity:.85; }
+  .slab-label .l-name { font-size:13px; font-weight:800; line-height:1.15; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .slab-label .l-set { font-size:10px; opacity:.85; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .slab-label .l-grade { grid-row:2 / span 3; grid-column:2; font-size:38px; font-weight:900; line-height:.9; text-align:center; }
+  .slab.revealed .l-grade { animation:gradePop .6s .5s cubic-bezier(.2,.9,.3,1.4) both; }
+  @keyframes gradePop { from { transform:scale(.2); opacity:0; } to { transform:none; opacity:1; } }
+  .slab-label .l-word { font-size:10.5px; font-weight:900; letter-spacing:.8px; }
+  .slab-label .l-subs { grid-column:1 / -1; display:flex; justify-content:space-between; gap:4px; font-size:9.5px; font-weight:800; margin-top:4px; padding-top:4px; border-top:1px solid currentColor; opacity:.92; }
+  .slab-label .l-cert { grid-column:1 / -1; display:flex; justify-content:space-between; font-size:8.5px; opacity:.75; margin-top:2px; }
+  .tier-black { background:linear-gradient(180deg,#1b1b1d,#050506); color:#f2c94c; border:1px solid #c9a227; box-shadow:0 0 0 1px #000, 0 0 14px rgba(242,201,76,.35); }
+  .tier-gold { background:linear-gradient(180deg,#ffe58a,#e0a71c 55%,#c98d0a); color:#2a1a00; }
+  .tier-silver { background:linear-gradient(180deg,#f4f6f8,#c4cbd3 60%,#a7b0ba); color:#1a2028; }
+  .tier-red { background:linear-gradient(180deg,#d8403f,#a71f25); color:#fff; }
+  .tier-white { background:linear-gradient(180deg,#fbf8f1,#e7e1d3); color:#2b2418; }
+  .slab-well { margin-top:9px; border-radius:6px; padding:6px; background:rgba(0,0,0,.25); box-shadow:inset 0 0 0 2px rgba(255,255,255,.18), inset 0 6px 14px rgba(0,0,0,.45); }
+  .slab-well canvas { display:block; width:100%; height:auto; border-radius:8px; }
+  .seal { position:absolute; inset:-2px; z-index:3; display:flex; align-items:center; justify-content:center; flex-direction:column; gap:8px; border-radius:16px; cursor:pointer; background:repeating-linear-gradient(90deg, rgba(0,0,0,.035) 0 2px, transparent 2px 7px), linear-gradient(160deg,#c9a46b,#a8814a 55%,#8e6a39); color:#3a2408; box-shadow:inset 0 0 0 2px rgba(60,35,10,.35), 0 18px 40px rgba(0,0,0,.6); animation:sealWiggle 1.8s ease-in-out infinite; }
+  .seal::before { content:''; position:absolute; left:0; right:0; top:46%; height:30px; background:linear-gradient(180deg,#e9d9a5,#d6c07a); box-shadow:0 1px 3px rgba(0,0,0,.3); opacity:.95; }
+  .seal span { position:relative; font-weight:900; letter-spacing:1.5px; font-size:12px; text-align:center; }
+  .seal .seal-tap { font-size:15px; letter-spacing:.5px; background:rgba(255,248,230,.85); padding:6px 12px; border-radius:999px; box-shadow:0 2px 8px rgba(0,0,0,.25); }
+  @keyframes sealWiggle { 0%,86%,100% { transform:rotate(0); } 90% { transform:rotate(-1.4deg); } 94% { transform:rotate(1.4deg); } }
+  .seal.torn { animation:sealTear .7s ease-in forwards; pointer-events:none; }
+  @keyframes sealTear { 0% { clip-path:inset(0 0 0 0); transform:none; opacity:1; } 35% { transform:scale(1.04) rotate(-2deg); } 100% { clip-path:inset(0 0 0 100%); transform:translateX(30%) rotate(8deg); opacity:0; } }
+  .sparks { position:absolute; inset:0; pointer-events:none; z-index:4; }
+  .sparks i { position:absolute; left:50%; top:30%; width:7px; height:7px; border-radius:50%; background:#ffe08a; box-shadow:0 0 8px #ffd14a; opacity:0; animation:spark 1.1s .55s ease-out forwards; }
+  @keyframes spark { from { transform:translate(0,0) scale(1); opacity:1; } to { transform:translate(var(--dx), var(--dy)) scale(.3); opacity:0; } }
+  .reveal-info { opacity:0; transform:translateY(8px); transition:opacity .4s ease, transform .4s ease; }
+  .reveal-info.show { opacity:1; transform:none; }
+  .reveal-info .pc { font-size:13px; color:var(--orange); margin:4px 0; }
+  .pop-pill { display:inline-block; font-size:12px; font-weight:800; padding:2px 8px; border-radius:999px; background:#171008; border:1px solid #6a5028; color:var(--gold); }
+  .pop-pill.p1 { background:linear-gradient(180deg,#ffe58a,#e0a71c); color:#2a1a00; border-color:#ffe58a; }
+  /* ---- Collection: slab labels, grader status, bulk select ---- */
+  .mini-label { margin:-10px -10px 8px; padding:5px 8px; font-size:11px; font-weight:900; letter-spacing:.4px; display:flex; justify-content:space-between; gap:6px; border-radius:8px 8px 0 0; }
+  .card.slabbed { padding-top:10px; }
+  .card.slab-black { border-color:#c9a227 !important; box-shadow:0 0 18px rgba(242,201,76,.45); }
+  .card.slab-silver { border-color:#c4cbd3 !important; box-shadow:0 0 14px rgba(196,203,211,.3); }
+  .card.slab-red { border-color:#d8403f !important; box-shadow:0 0 12px rgba(216,64,63,.3); }
+  .card.slab-white { border-color:#e7e1d3 !important; box-shadow:0 0 10px rgba(231,225,211,.2); }
+  .card.at-grader { opacity:.82; }
+  .grader-tag { font-size:12px; font-weight:700; color:var(--orange); margin-top:6px; }
+  .coll-bar { display:flex; gap:8px; flex-wrap:wrap; align-items:center; margin-bottom:10px; }
+  .coll-bar .grow { flex:1; color:var(--mut); font-size:13px; min-width:180px; }
+  .card.selectable { cursor:pointer; }
+  .card.selected { outline:3px solid var(--gold); outline-offset:2px; }
+  .card .pick { position:absolute; top:6px; left:6px; z-index:3; width:24px; height:24px; border-radius:7px; background:rgba(0,0,0,.6); border:2px solid #b8a98c; display:flex; align-items:center; justify-content:center; font-size:14px; font-weight:900; color:#1a1206; }
+  .card.selected .pick { background:var(--gold); border-color:#ffe58a; }
+  .card { position:relative; }
+  .bulk-bar { position:sticky; bottom:8px; z-index:20; margin-top:12px; display:flex; gap:10px; align-items:center; background:linear-gradient(180deg,#3a2b16,#241a0e); border:1px solid #8a6a2a; border-radius:14px; padding:10px 12px; box-shadow:0 10px 30px rgba(0,0,0,.6); }
+  .bulk-bar .grow { flex:1; font-size:13px; color:var(--ink); }
+  .bulk-bar .grow small { display:block; color:var(--mut); }
+  /* ---- Upgrades ---- */
+  .upgrades { display:grid; grid-template-columns:repeat(auto-fill,minmax(230px,1fr)); gap:12px; }
+  .upg { display:flex; flex-direction:column; gap:6px; background:linear-gradient(180deg,#31241a,#221810); border:1px solid #54401f; border-radius:14px; padding:14px; box-shadow:0 6px 18px rgba(0,0,0,.4); }
+  .upg .u-icon { font-size:34px; line-height:1; width:56px; height:56px; display:flex; align-items:center; justify-content:center; border-radius:14px; background:radial-gradient(circle at 35% 30%, #4a3718, #1c140a); border:1px solid #6a5028; }
+  .upg h3 { margin:2px 0 0; font-size:16px; }
+  .upg p { margin:0; font-size:13px; color:var(--mut); flex:1; }
+  .upg.owned { border-color:var(--green); box-shadow:0 0 14px rgba(63,185,80,.25); }
+  .upg.owned .u-icon { border-color:var(--green); }
+  .shop-status { display:flex; gap:8px; flex-wrap:wrap; margin-bottom:12px; }
+  .shop-status .stat { font-size:13px; }
+  @media (prefers-reduced-motion: reduce) {
+    .seal, .flip-btn.nudge, .slab.revealed::after, .slab.revealed .slab-label, .slab.revealed .l-grade, .sparks i { animation:none !important; }
+  }
+  /* ---- Phone portrait (S25 Ultra ~412px, small phones 360px) ---- */
+  @media (max-width: 560px) {
+    #app { padding:8px 8px 28px; }
+    header { gap:8px; }
+    h1 { font-size:20px; }
+    .stats { gap:5px; }
+    .stat { padding:5px 8px; font-size:12px; border-radius:8px; }
+    nav { display:grid; grid-template-columns:repeat(5, 1fr); gap:4px; margin:10px 0; }
+    nav button { padding:7px 2px; font-size:11px; line-height:1.15; display:flex; flex-direction:column; align-items:center; gap:2px; border-radius:9px; min-width:0; }
+    nav button .ico { font-size:18px; }
+    .lbl-long { display:none; }
+    .lbl-short { display:inline; }
+    section.screen { padding:10px; border-radius:12px; }
+    h2 { font-size:17px; }
+    .sub { font-size:12.5px; margin-bottom:10px; }
+    .desk-wrap { gap:10px; }
+    .desk-actions button { min-width:0; flex:1 1 140px; padding:12px 8px; }
+    .seg-label { padding:0 6px; font-size:12px; }
+    .seg-btn { font-size:13px; padding:9px 2px; }
+    .seg-btn.gyro { font-size:12px; }
+    .grid { grid-template-columns:repeat(auto-fill,minmax(148px,1fr)); gap:8px; }
+    .mini { width:calc(50% - 5px); }
+    .auc-left, .auc-right { min-width:0; flex-basis:100%; }
+    .timer { font-size:36px; }
+    .slabbox { padding:16px 14px; }
+    .upgrades { grid-template-columns:1fr; }
+    .pack { padding:12px; }
+  }
+  @media (max-width: 370px) {
+    .seg-label { display:none; }
+    .stat { font-size:11.5px; padding:4px 7px; }
+  }
   #test-output { white-space:pre-wrap; font-family:monospace; font-size:12px; color:#8affc1; margin-top:16px; }
   footer { color:var(--mut); font-size:12px; margin-top:18px; }
 </style>
@@ -165,13 +311,15 @@
       <div class="stat">Slabs: <b id="stat-slabs">0</b></div>
       <div class="stat">Sold: <b id="stat-sold">0</b></div>
       <div class="stat">Earned: <b id="stat-earned">$0</b></div>
+      <button class="stat day-chip" id="btn-day" title="Close the shop for the night. Grading orders come back as days pass.">📅 Day <b id="stat-day">1</b><span class="end">· End day ▸</span></button>
     </div>
   </header>
   <nav>
-    <button id="tab-shop" class="active">🛒 Pack Shop</button>
-    <button id="tab-desk">🔍 Inspection Desk</button>
-    <button id="tab-collection">🗂️ Collection</button>
-    <button id="tab-auction">🔨 Live Auction</button>
+    <button id="tab-shop" class="active"><span class="ico">🛒</span> <span class="lbl-long">Pack Shop</span><span class="lbl-short">Shop</span></button>
+    <button id="tab-desk"><span class="ico">🔍</span> <span class="lbl-long">Inspection Desk</span><span class="lbl-short">Desk</span></button>
+    <button id="tab-collection"><span class="ico">🗂️</span> <span class="lbl-long">Collection</span><span class="lbl-short">Cards</span></button>
+    <button id="tab-auction"><span class="ico">🔨</span> <span class="lbl-long">Live Auction</span><span class="lbl-short">Auction</span></button>
+    <button id="tab-upgrades"><span class="ico">🛠️</span> <span class="lbl-long">Upgrades</span><span class="lbl-short">Upgrades</span></button>
   </nav>
 
   <section id="screen-shop" class="screen active">
@@ -184,27 +332,40 @@
 
   <section id="screen-desk" class="screen">
     <h2>Inspection Desk</h2>
-    <p class="sub">Drag the loupe over the card — it floats above your finger so you can always see what you're magnifying. Corners show whitening, edges show wear, the border shows centering, and tilting the light reveals surface print lines. Inspect all 4 metrics to unlock grading.</p>
+    <p class="sub">Touch the card and watch the jeweler's screen. Corners and edges glow <b style="color:var(--green)">green</b> when clean and <b style="color:#f0b429">amber</b> when you've found a flaw. Pinch to zoom. Set the light to ±30° to catch surface flaws, then <b>flip the card</b> to check the back before you grade.</p>
     <div class="desk-wrap">
-      <div>
-        <canvas id="desk" width="720" height="500"></canvas>
-        <div style="margin-top:10px">
-          <label for="light">💡 Light angle: <span id="light-val">0°</span> (tilt past ±25° to reveal surface print lines)</label>
-          <input type="range" id="light" min="-60" max="60" value="0" step="1">
+      <div class="desk-main">
+        <canvas id="desk" width="720" height="500" aria-label="Inspection desk"></canvas>
+        <div class="desk-controls">
+          <div class="seg" id="tilt-seg" role="group" aria-label="Light angle">
+            <span class="seg-label">💡 Light</span>
+            <button class="seg-btn" data-tilt="-30">◀ −30°</button>
+            <button class="seg-btn active" data-tilt="0">0°</button>
+            <button class="seg-btn" data-tilt="30">+30° ▶</button>
+            <button class="seg-btn gyro" id="btn-gyro" aria-pressed="false">📱 Tilt phone</button>
+          </div>
+          <div class="tool-row">
+            <button class="flip-btn" id="btn-flip" disabled>🔄 Flip to back</button>
+            <button class="secondary small" id="btn-loupe-mode" title="Switch between the jeweler's screen and the floating loupe">🔎 Floating loupe</button>
+            <button class="secondary small zoom-btn" id="btn-zoom-out" aria-label="Zoom out">－</button>
+            <button class="secondary small zoom-btn" id="btn-zoom-in" aria-label="Zoom in">＋</button>
+            <button class="secondary small" id="btn-zoom-reset" hidden>⟲ Reset zoom</button>
+            <button class="secondary small" id="btn-prep" hidden>🧽 Wipe &amp; prep</button>
+          </div>
         </div>
         <div class="msg" id="desk-msg">Pick a card from the Shop pulls or your Collection to inspect it.</div>
       </div>
       <div class="desk-side">
-        <div class="metric" id="m-centering"><b>Front Centering</b><span class="val">Not inspected — loupe the border</span></div>
-        <div class="metric" id="m-corners"><b>4 Corners</b><span class="val">Not inspected — loupe each corner</span></div>
-        <div class="metric" id="m-edges"><b>4 Edges</b><span class="val">Not inspected — loupe each edge</span></div>
+        <div class="metric" id="m-centering"><b>Centering</b><span class="val">Not inspected — loupe the border</span></div>
+        <div class="metric" id="m-corners"><b>Corners</b><span class="val">Not inspected — loupe each corner</span></div>
+        <div class="metric" id="m-edges"><b>Edges</b><span class="val">Not inspected — loupe each edge</span></div>
         <div class="metric" id="m-surface"><b>Surface</b><span class="val">Not inspected — tilt light, loupe the face</span></div>
-        <div class="metric"><b>Inspection progress</b><span class="val" id="m-progress">0 / 4 metrics</span></div>
+        <div class="metric" id="m-progress-box"><b>Inspection progress</b><span class="val" id="m-progress">0 / 4 subgrades</span></div>
         <div class="desk-actions">
           <button id="btn-raw" class="secondary" disabled>Sleeve &amp; Raw Sell</button>
-          <button id="btn-grade" disabled>Submit for Grading ($25)</button>
+          <button id="btn-grade" disabled>Submit for Grading…</button>
         </div>
-        <p class="sub" style="margin-top:10px">Raw sell pays the card's base value. Grading costs $25 and can multiply the value up to 5× at Gem Mint 10 — or less than base if the card is rough.</p>
+        <p class="sub" style="margin-top:10px">Raw sell pays the card's base value. Grading runs from $10 (Economy, slow and strict) to $75 (Express, instant). A Gem Mint 10 pays up to 5× — and a low-pop 10 pays far more.</p>
       </div>
     </div>
   </section>
@@ -212,8 +373,25 @@
   <section id="screen-collection" class="screen">
     <h2>Collection</h2>
     <p class="sub">Everything you own. Raw cards sell at base value. Slabbed cards sell at their graded value — or send one to the Live Auction and let the bidders fight over it.</p>
+    <div class="coll-bar">
+      <div class="grow" id="queue-summary"></div>
+      <button class="secondary small" id="btn-bulk">📦 Bulk submit</button>
+    </div>
     <div class="msg" id="collection-msg"></div>
     <div class="grid" id="collection-grid"></div>
+    <div class="bulk-bar" id="bulk-bar" hidden>
+      <div class="grow" id="bulk-info"></div>
+      <button class="secondary small" id="btn-bulk-cancel">Cancel</button>
+      <button id="btn-bulk-go" disabled>Submit…</button>
+    </div>
+  </section>
+
+  <section id="screen-upgrades" class="screen">
+    <h2>Desk &amp; Shop Upgrades</h2>
+    <p class="sub">Reinvest your profits. Better gear finds flaws faster, better accounts cut fees.</p>
+    <div class="shop-status" id="shop-status"></div>
+    <div class="upgrades" id="upgrades"></div>
+    <div class="msg" id="upgrades-msg"></div>
   </section>
 
   <section id="screen-auction" class="screen">
@@ -247,6 +425,7 @@
   <div class="overlay" id="overlay">
     <div class="slabbox" id="slabbox"></div>
   </div>
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
   <div id="test-output"></div>
   <footer>Slab House Tycoon — Milestone 1–5 vertical slice. All sets, players and creatures are original parody content. Progress saves locally in your browser.</footer>
@@ -1320,48 +1499,133 @@ function drawPlayerFigure(ctx, ax, ay, aw, ah, card) {
   ctx.restore(); // sceneCover
 }
 
-// ---------- Hidden sub-grades ----------
-// Every pulled card gets hidden physical condition. The player can
-// only learn it by inspecting the card at the desk.
-function rollCentering() {
-  // deviation in percent points off 50/50, per axis
-  const dev = pickWeighted([[0, 25], [5, 35], [10, 22], [15, 12], [20, 6]]);
-  const lr = 50 + (rand() < 0.5 ? -dev : dev);
-  const tb = 50 + (rand() < 0.5 ? -dev : dev);
+// ---------- Hidden condition: front AND back ----------
+// Every pulled card gets hidden physical condition on both sides. The
+// player can only learn it by inspecting the card at the desk.
+function half(x) { return Math.round(x * 2) / 2; }
+function rollCentering(back) {
+  // deviation in percent points off 50/50, per axis. Backs are cut looser.
+  const devs = back ? [[0, 16], [5, 24], [10, 24], [15, 16], [20, 12], [25, 8]]
+    : [[0, 25], [5, 35], [10, 22], [15, 12], [20, 6]];
+  const dLR = pickWeighted(devs), dTB = pickWeighted(devs);
+  const lr = 50 + (rand() < 0.5 ? -dLR : dLR);
+  const tb = 50 + (rand() < 0.5 ? -dTB : dTB);
   return { lr, tb };
 }
-function centeringScore(c) {
-  const dev = Math.max(Math.abs(c.lr - 50), Math.abs(c.tb - 50));
-  return Math.max(1, 10 - dev / 2.5);
+// BGS-style centering: the worst split on either axis sets the sub-score.
+// Fronts are held to 50/50; backs are allowed far more slop.
+const FRONT_CENTERING = [[50, 10], [55, 9.5], [60, 9], [65, 8.5], [70, 8], [75, 7], [80, 6], [85, 5], [90, 4]];
+const BACK_CENTERING = [[60, 10], [70, 9.5], [75, 9], [80, 8.5], [85, 8], [90, 7], [95, 6]];
+function worstSplit(c) { return Math.max(c.lr, 100 - c.lr, c.tb, 100 - c.tb); }
+function splitScore(big, table) { for (const [lim, sc] of table) if (big <= lim) return sc; return 3; }
+function splitText(v) { return v + '/' + (100 - v); }
+function centeringScore(c, back) {
+  let sc = splitScore(worstSplit(c), FRONT_CENTERING);
+  if (back) sc = Math.min(sc, splitScore(worstSplit(back), BACK_CENTERING));
+  return sc;
 }
-function rollCorners() {
-  const count = pickWeighted([[0, 30], [1, 32], [2, 22], [3, 11], [4, 5]]);
+function rollCorners(back) {
+  // Backs whiten more often (that's where the rough handling shows), but each
+  // back touch costs less than a front ding.
+  const count = back ? pickWeighted([[0, 24], [1, 30], [2, 24], [3, 14], [4, 8]])
+    : pickWeighted([[0, 30], [1, 32], [2, 22], [3, 11], [4, 5]]);
   const corners = [false, false, false, false];
   const idx = [0, 1, 2, 3].sort(() => rand() - 0.5);
   for (let i = 0; i < count; i++) corners[idx[i]] = true; // true = whitening
   return corners;
 }
-function cornersScore(corners) {
+function cornersScore(corners, backCorners) {
   const n = corners.filter(Boolean).length;
-  return Math.max(1, 10 - 2.5 * n);
+  const b = backCorners ? backCorners.filter(Boolean).length : 0;
+  return half(Math.max(1, 10 - 2.5 * n - 1 * b));
 }
 function rollEdges() { return pickWeighted([[0, 25], [1, 22], [2, 20], [3, 14], [4, 9], [5, 6], [6, 4]]); } // wear 0-6
 function edgesScore(wear) { return Math.max(1, 10 - wear); }
-function rollSurface() { return pickWeighted([[0, 35], [1, 28], [2, 20], [3, 10], [4, 7]]); } // print lines 0-4
-function surfaceScore(lines) { return Math.max(1, 10 - 2 * lines); }
+// Which edges show the wear: top/bottom nick first, sides only on rough cards.
+function edgeFlawed(wear, e) { return (e === 'top' || e === 'bottom') ? wear >= 1 : wear >= 3; }
+// Surface flaws are real kinds of damage, not a generic count. Positions are
+// in card-local units (the 250x350 card face).
+const SURFACE_DEFECTS = {
+  print:   { label: 'Print line',    plural: 'print lines',    penalty: 1.5 },
+  roller:  { label: 'Roller mark',   plural: 'roller marks',   penalty: 2 },
+  scratch: { label: 'Scratch',       plural: 'scratches',      penalty: 1.5 },
+  micro:   { label: 'Micro-scratch', plural: 'micro-scratches', penalty: 0.5 },
+  dimple:  { label: 'Dimple',        plural: 'dimples',        penalty: 2.5 },
+};
+const DUST_PENALTY = 0.5;
+function rollSurfaceDefects() {
+  const n = pickWeighted([[0, 35], [1, 28], [2, 20], [3, 10], [4, 7]]);
+  const out = [];
+  for (let i = 0; i < n; i++) {
+    const type = pickWeighted([['print', 30], ['micro', 26], ['scratch', 18], ['roller', 13], ['dimple', 13]]);
+    out.push({ type, x: Math.round(55 + rand() * 140), y: Math.round(70 + rand() * 200), a: Math.round(rand() * 180), l: Math.round(28 + rand() * 50) });
+  }
+  return out;
+}
+// Older saves stored a print-line count only; read it as print lines.
+function surfaceDefectsOf(g) {
+  if (Array.isArray(g.surfaceDefects)) return g.surfaceDefects;
+  const n = Math.max(0, g.surface | 0);
+  const out = [];
+  for (let k = 0; k < n; k++) out.push({ type: 'print', x: 45 + k * 45, y: 40, a: 72, l: 260 });
+  return out;
+}
+// visibleOnly: drop flaws the player can't see without the high-lumen lamp.
+function surfaceScore(g, visibleOnly) {
+  if (typeof g === 'number') g = { surface: g };
+  let sc = 10;
+  for (const d of surfaceDefectsOf(g)) {
+    if (visibleOnly && d.type === 'micro') continue;
+    sc -= SURFACE_DEFECTS[d.type] ? SURFACE_DEFECTS[d.type].penalty : 1.5;
+  }
+  if (g.dust) sc -= DUST_PENALTY;
+  return half(Math.max(1, sc));
+}
 
-// ---------- Grade calculation: weighted from hidden sub-grades ----------
+// ---------- Grade calculation: BGS-style subgrades → overall ----------
 const GRADE_MULT = { 10: 5, 9: 3, 8: 2, 7: 1.5, 6: 1.2, 5: 1, 4: 0.7, 3: 0.5, 2: 0.4, 1: 0.3 };
-function gradeCard(card) {
-  const c = centeringScore(card.grades.centering);
-  const k = cornersScore(card.grades.corners);
-  const e = edgesScore(card.grades.edges);
-  const s = surfaceScore(card.grades.surface);
-  const overall = Math.round(0.30 * c + 0.25 * k + 0.20 * e + 0.25 * s);
-  const grade = Math.max(1, Math.min(10, overall));
+const GRADE_NAMES = { 10: 'Gem Mint', 9: 'Mint', 8: 'NM-MT', 7: 'Near Mint', 6: 'EX-MT', 5: 'Excellent', 4: 'VG-EX', 3: 'Very Good', 2: 'Good', 1: 'Poor' };
+// Slab label colors: Pristine Black Label for quad 10s, gold for 10s,
+// silver for 9s, red for 8s, white below.
+const LABEL_TIERS = {
+  black:  { name: 'Pristine Black Label' },
+  gold:   { name: 'Gold Label' },
+  silver: { name: 'Silver Label' },
+  red:    { name: 'Red Label' },
+  white:  { name: 'Standard Label' },
+};
+function labelTier(grade, pristine) {
+  if (grade === 10 && pristine) return 'black';
+  return grade === 10 ? 'gold' : grade === 9 ? 'silver' : grade === 8 ? 'red' : 'white';
+}
+function gradeSubs(g, visibleOnly) {
   return {
-    grade,
-    subs: { centering: +c.toFixed(1), corners: +k.toFixed(1), edges: +e.toFixed(1), surface: +s.toFixed(1) },
+    centering: centeringScore(g.centering, g.back && g.back.centering),
+    corners: cornersScore(g.corners, g.back && g.back.corners),
+    edges: half(edgesScore(g.edges)),
+    surface: surfaceScore(g, visibleOnly),
+  };
+}
+function overallFromSubs(subs) {
+  const minSub = Math.min(subs.centering, subs.corners, subs.edges, subs.surface);
+  let grade = Math.round(0.30 * subs.centering + 0.25 * subs.corners + 0.20 * subs.edges + 0.25 * subs.surface);
+  grade = Math.min(grade, Math.floor(minSub) + 2); // one bad subgrade drags the slab down
+  if (grade === 10 && minSub < 9) grade = 9;       // a Gem Mint 10 needs every sub at 9+
+  return Math.max(1, Math.min(10, grade));
+}
+// opts.tier === 'economy' adds harsh-grader pop control (uses the seeded RNG).
+function gradeCard(card, opts) {
+  const subs = gradeSubs(card.grades);
+  let grade = overallFromSubs(subs);
+  let popControl = false;
+  if (opts && opts.tier === 'economy') {
+    if (grade === 10 && rand() < 0.4) { grade = 9; popControl = true; }
+    else if (grade > 1 && rand() < 0.15) { grade -= 1; popControl = true; }
+  }
+  const pristine = !popControl && grade === 10 && subs.centering === 10 && subs.corners === 10 && subs.edges === 10 && subs.surface === 10;
+  return {
+    grade, subs, pristine, popControl,
+    label: labelTier(grade, pristine),
     mult: GRADE_MULT[grade],
     value: Math.max(1, Math.round(card.base * GRADE_MULT[grade] * variantMult(card))),
   };
@@ -1396,8 +1660,18 @@ function makeCard(setKey, rarity) {
     variant: null, // '1/1' for the chase parallel, else null
     collectorNo: set.cards.indexOf(def) + 1, // #n within its set, e.g. Brick Wallson is #1/9
     base: randInt(lo, hi),
-    grades: { centering: rollCentering(), corners: rollCorners(), edges: rollEdges(), surface: rollSurface() },
-    graded: null, // set by grading: { grade, subs, mult, value }
+    grades: makeGrades(),
+    graded: null, // set by grading: { grade, subs, mult, value, label, popAware, ... }
+  };
+}
+function makeGrades() {
+  const surfaceDefects = rollSurfaceDefects();
+  return {
+    centering: rollCentering(false), corners: rollCorners(false), edges: rollEdges(),
+    surface: surfaceDefects.length, // count, kept for older readers
+    surfaceDefects,
+    dust: rand() < 0.45,            // fingerprints / pack dust: the prep station wipes it off
+    back: { centering: rollCentering(true), corners: rollCorners(true) },
   };
 }
 function openPack(setKey) {
@@ -1410,27 +1684,95 @@ function openPack(setKey) {
   cards.push(last);
   return cards;
 }
-function cardValue(card) { return card.graded ? card.graded.value : card.base * variantMult(card); }
+function cardValue(card) { return card.graded ? slabValue(card) : card.base * variantMult(card); }
 function rarityLabel(r) { return RARITY[r].label; }
 function rarityColor(r) { return RARITY[r].color; }
 
 // ---------- Game state & economy ----------
-const GRADING_FEE = 25;
 const START_CASH = 500;
-const SAVE_KEY = 'slab-house-tycoon-v1';
+const SAVE_KEY = 'slab-house-tycoon-v1'; // same key: old saves migrate in place
+const SAVE_VERSION = 2;
+
+// Grading services. Days are shop days: one passes per finished auction or
+// when you close the shop with End Day.
+const GRADING_TIERS = {
+  economy: { name: 'Economy', fee: 10, bulkFee: 7, days: [3, 5], note: '3–5 days · <b>strict graders, pop-control risk</b>' },
+  regular: { name: 'Regular', fee: 25, bulkFee: 15, days: [1, 1], note: 'Back tomorrow · balanced' },
+  express: { name: 'Walk-Through Express', fee: 75, bulkFee: 75, days: [0, 0], note: 'Instant · graded while you wait' },
+};
+const TIER_ORDER = ['economy', 'regular', 'express'];
+const GRADING_FEE = GRADING_TIERS.regular.fee; // the standard service
+const BULK_MIN = 10;
+
+// Desk equipment and shop accounts bought with shop earnings.
+const UPGRADES = {
+  lamp:     { name: 'High-Lumen Desk Lamp', icon: '💡', price: 400, desc: 'Raking light from every side: all surface flaws, micro-scratches included, show at any angle. No tilting needed.' },
+  calipers: { name: 'Digital Centering Calipers', icon: '📏', price: 300, desc: 'Measures front and back centering the moment a card hits the desk and locks the split in.' },
+  prep:     { name: 'Microfiber Prep Station', icon: '🧽', price: 250, desc: 'Wipe off fingerprints and pack dust before you submit: +0.5 surface on dirty cards. Bulk orders get prepped for you.' },
+  bulk:     { name: 'Bulk Submitter Account', icon: '📦', price: 350, desc: 'Send ' + BULK_MIN + '+ cards in one order for $15/card Regular or $7/card Economy.' },
+  vip:      { name: 'VIP Auction Slots', icon: '👑', price: 750, desc: 'House fee drops from 10% to 3%, and deeper-pocketed bidders join your streams (+20% bid ceilings).' },
+};
+const UPGRADE_ORDER = ['lamp', 'calipers', 'prep', 'bulk', 'vip'];
+function defaultUpgrades() { return { lamp: false, calipers: false, prep: false, bulk: false, vip: false }; }
+function defaultStats() { return { packs: 0, graded: 0, sold: 0, auctions: 0, earned: 0, fees: 0 }; }
+function freshInspect() {
+  return {
+    border: { front: false, back: false },
+    corners: { front: [false, false, false, false], back: [false, false, false, false] },
+    edges: { top: false, bottom: false, left: false, right: false },
+    face: false,
+  };
+}
 
 const state = {
   cash: START_CASH,
   inventory: [],          // Card objects
   deskUid: null,          // uid of card on the desk
-  inspected: { centering: false, corners: false, edges: false, surface: false },
-  cornerSeen: [false, false, false, false],
-  edgeSeen: { top: false, bottom: false, left: false, right: false },
+  side: 'front',          // which side of the desk card faces up
+  inspect: freshInspect(),
+  inspected: { centering: false, corners: false, edges: false, surface: false }, // derived from inspect
   light: 0,
-  stats: { packs: 0, graded: 0, sold: 0, auctions: 0, earned: 0 },
+  day: 1,
+  upgrades: defaultUpgrades(),
+  pop: {},                // your own graded population: { popKey: { grade: count } }
+  stats: defaultStats(),
   auction: null,          // live auction engine state (see below)
   screen: 'shop',
 };
+
+// ---------- Population report ----------
+// Total pop = the market's graded copies (deterministic per card, growing as
+// days pass and other shops submit) + the copies you graded yourself.
+// Commons flood fast; Secrets stay scarce; a 1/1 is only ever yours.
+const POP_SEED = { common: [40, 90], uncommon: [12, 34], rare: [3, 9], ultra: [0, 3], secret: [0, 1] }; // market 10s on day 1
+const POP_GROWTH = { common: 0.06, uncommon: 0.045, rare: 0.03, ultra: 0.02, secret: 0.012 };       // per day
+const POP_SHAPE = { 10: 1, 9: 3.2, 8: 4.5, 7: 3.4, 6: 2.2, 5: 1.4, 4: 0.9, 3: 0.6, 2: 0.4, 1: 0.3 };
+function popKey(card) { return card.set + '|' + card.name + '|' + (card.variant === '1/1' ? '1of1' : 'base'); }
+function marketPop(card, grade, day) {
+  if (card.variant === '1/1') return 0;
+  const [lo, hi] = POP_SEED[card.rarity] || POP_SEED.common;
+  const tens = lo + Math.floor(hashRand(popKey(card), 7) * (hi - lo + 1));
+  const growth = 1 + (POP_GROWTH[card.rarity] || 0.03) * Math.max(0, (day || 1) - 1);
+  return Math.floor(tens * (POP_SHAPE[grade] || 0) * growth);
+}
+function ownPop(card, grade) { return ((state.pop[popKey(card)] || {})[grade]) || 0; }
+function popCount(card, grade, day) { return marketPop(card, grade, day == null ? state.day : day) + ownPop(card, grade); }
+function popHigher(card, grade) { let n = 0; for (let g = grade + 1; g <= 10; g++) n += popCount(card, g); return n; }
+// Scarcity premium: a Pop 1 Gem Mint is worth 2.5x its normal 10 price; a
+// flooded grade sinks toward 0.6x. 9s swing less, lower grades barely move.
+function popMult(grade, pop) {
+  const p = Math.max(1, pop);
+  if (grade >= 10) return +(0.6 + 1.9 * Math.exp(-(p - 1) / 5)).toFixed(3);
+  if (grade === 9) return +(0.75 + 0.75 * Math.exp(-(p - 1) / 8)).toFixed(3);
+  return +(0.9 + 0.2 * Math.exp(-(p - 1) / 12)).toFixed(3);
+}
+// Slabs graded in this version price off the live pop report; slabs from
+// older saves keep the value they were graded at.
+function slabValue(card) {
+  const g = card.graded;
+  if (!g.popAware) return g.value;
+  return Math.max(1, Math.round(card.base * GRADE_MULT[g.grade] * variantMult(card) * popMult(g.grade, popCount(card, g.grade))));
+}
 
 // ---------- Save migration ----------
 // Cards pulled before the trading-card redesign lack position/team/number/
@@ -1438,6 +1780,8 @@ const state = {
 // set + name) so old saves render correctly instead of "undefined".
 // A card whose definition is unknown stays playable; the render guards
 // below hide its number instead of printing anything.
+// Cards from before the back-side update get a clean back (no new hidden
+// damage), no dust, and their print-line count read as print lines.
 function findCardDef(card) {
   const set = SETS[card.set];
   if (!set) return null;
@@ -1455,6 +1799,15 @@ function migrateCard(card) {
     if (!(card.collectorNo >= 1)) { card.collectorNo = SETS[card.set].cards.indexOf(def) + 1; changed = true; }
   }
   if (!('variant' in card)) { card.variant = null; changed = true; }
+  const g = card.grades;
+  if (g) {
+    if (!g.back) { g.back = { centering: { lr: 50, tb: 50 }, corners: [false, false, false, false] }; changed = true; }
+    if (!('dust' in g)) { g.dust = false; changed = true; }
+    if (!Array.isArray(g.surfaceDefects)) { g.surfaceDefects = surfaceDefectsOf(g); changed = true; }
+  }
+  if (card.graded && !card.graded.label) {
+    card.graded.label = labelTier(card.graded.grade, false); card.graded.pristine = false; changed = true;
+  }
   return changed;
 }
 // Render-time guard: never print the literal word "undefined" for any card.
@@ -1463,21 +1816,30 @@ function jerseyNumber(card) { return Number.isInteger(card.number) ? String(card
 function save() {
   try {
     localStorage.setItem(SAVE_KEY, JSON.stringify({
-      cash: state.cash, inventory: state.inventory, stats: state.stats, nextUid,
+      version: SAVE_VERSION, cash: state.cash, inventory: state.inventory, stats: state.stats, nextUid,
+      day: state.day, upgrades: state.upgrades, pop: state.pop,
     }));
   } catch (e) { /* private mode / headless: ignore */ }
+}
+// Apply a parsed save object to state (shared by load() and the tests).
+function applySave(d) {
+  state.cash = typeof d.cash === 'number' ? d.cash : START_CASH;
+  state.inventory = d.inventory || [];
+  state.stats = Object.assign(defaultStats(), d.stats || {});
+  state.day = d.day >= 1 ? d.day : 1;
+  state.upgrades = Object.assign(defaultUpgrades(), d.upgrades || {});
+  state.pop = d.pop && typeof d.pop === 'object' ? d.pop : {};
+  nextUid = d.nextUid || (state.inventory.reduce((m, c) => Math.max(m, c.uid), 0) + 1);
+  let migrated = d.version !== SAVE_VERSION;
+  for (const c of state.inventory) { if (migrateCard(c)) migrated = true; }
+  return migrated;
 }
 function load() {
   try {
     const raw = localStorage.getItem(SAVE_KEY);
     if (!raw) return false;
-    const d = JSON.parse(raw);
-    state.cash = d.cash; state.inventory = d.inventory || []; state.stats = d.stats || state.stats;
-    nextUid = d.nextUid || (state.inventory.reduce((m, c) => Math.max(m, c.uid), 0) + 1);
-    // Migrate pre-redesign saves, then persist so the fix sticks.
-    let migrated = false;
-    for (const c of state.inventory) { if (migrateCard(c)) migrated = true; }
-    if (migrated) save();
+    // Migrate older saves, then persist so the fix sticks.
+    if (applySave(JSON.parse(raw))) save();
     return true;
   } catch (e) { return false; }
 }
@@ -1486,6 +1848,7 @@ function removeFromInventory(uid) {
   state.inventory = state.inventory.filter(c => c.uid !== uid);
   if (state.deskUid === uid) state.deskUid = null;
 }
+function atGrader(card) { return !!(card && card.submission); }
 
 // Buy a pack: returns { ok, cards } or { ok:false, reason }
 function buyPack(setKey) {
@@ -1504,6 +1867,7 @@ function rawSell(uid) {
   const card = state.inventory.find(c => c.uid === uid);
   if (!card) return { ok: false, reason: 'Card not found.' };
   if (card.graded) return { ok: false, reason: 'Already slabbed — sell it as a slab instead.' };
+  if (atGrader(card)) return { ok: false, reason: 'That card is at the grader.' };
   const amount = cardValue(card);
   state.cash += amount;
   state.stats.sold++; state.stats.earned += amount;
@@ -1511,23 +1875,87 @@ function rawSell(uid) {
   save();
   return { ok: true, amount };
 }
-// Submit for grading: $25 fee, grade from hidden sub-grades, card becomes a slab.
-function submitGrading(uid) {
+// Prep station: wipe fingerprints and dust off a raw card before grading.
+function prepCard(uid) {
   const card = state.inventory.find(c => c.uid === uid);
   if (!card) return { ok: false, reason: 'Card not found.' };
-  if (card.graded) return { ok: false, reason: 'Already graded.' };
-  if (state.cash < GRADING_FEE) return { ok: false, reason: 'Need $' + GRADING_FEE + ' for grading.' };
-  state.cash -= GRADING_FEE;
-  const result = gradeCard(card);
-  card.graded = result;
-  state.stats.graded++;
+  if (!state.upgrades.prep) return { ok: false, reason: 'Buy the Prep Station in Upgrades first.' };
+  if (card.graded || atGrader(card)) return { ok: false, reason: 'Only raw cards on hand can be prepped.' };
+  const cleaned = !!card.grades.dust;
+  card.grades.dust = false; card.prepped = true;
   save();
-  return { ok: true, card, result };
+  return { ok: true, cleaned };
+}
+// Per-card fee for an order of `count` cards on a service tier.
+function tierFee(tier, count) {
+  const t = GRADING_TIERS[tier];
+  return (count >= BULK_MIN && state.upgrades.bulk) ? t.bulkFee : t.fee;
+}
+// Submit one card for grading. Express slabs it now; Economy and Regular send
+// it out and it comes back when the day comes.
+function submitGrading(uid, tier) { return submitBatch([uid], tier || 'regular'); }
+function submitBatch(uids, tier) {
+  const t = GRADING_TIERS[tier];
+  if (!t) return { ok: false, reason: 'Unknown grading service.' };
+  if (!uids.length) return { ok: false, reason: 'No cards selected.' };
+  const cards = uids.map(u => state.inventory.find(c => c.uid === u));
+  if (cards.some(c => !c)) return { ok: false, reason: 'Card not found.' };
+  if (cards.some(c => c.graded)) return { ok: false, reason: 'Already graded.' };
+  if (cards.some(atGrader)) return { ok: false, reason: 'Already at the grader.' };
+  const per = tierFee(tier, cards.length), total = per * cards.length;
+  if (state.cash < total) return { ok: false, reason: 'Need ' + fmt$(total) + ' for ' + t.name + ' grading.' };
+  state.cash -= total;
+  state.stats.fees += total;
+  const returned = [];
+  for (const c of cards) {
+    if (cards.length > 1 && state.upgrades.prep && c.grades.dust) { c.grades.dust = false; c.prepped = true; }
+    const days = randInt(t.days[0], t.days[1]);
+    if (days === 0) returned.push(finishGrading(c, tier));
+    else c.submission = { tier, sentDay: state.day, readyDay: state.day + days, fee: per };
+  }
+  save();
+  return { ok: true, per, total, tier, cards, returned, card: cards[0], result: returned.length ? returned[0].result : null };
+}
+function finishGrading(card, tier) {
+  const result = gradeCard(card, { tier });
+  result.popAware = true;
+  result.tier = tier;
+  result.day = state.day;
+  result.cert = 'SH-' + String(1000000 + ((card.uid * 7919 + 4243) % 9000000)).slice(-7);
+  card.graded = result;
+  delete card.submission;
+  const k = popKey(card);
+  state.pop[k] = state.pop[k] || {};
+  state.pop[k][result.grade] = (state.pop[k][result.grade] || 0) + 1;
+  result.popAtGrade = popCount(card, result.grade);
+  state.stats.graded++;
+  return { card, result };
+}
+// Close the shop for the day: grading orders that are due come back.
+function advanceDay() {
+  state.day++;
+  const returned = [];
+  for (const c of state.inventory) {
+    if (c.submission && c.submission.readyDay <= state.day) returned.push(finishGrading(c, c.submission.tier));
+  }
+  save();
+  return { day: state.day, returned };
+}
+function buyUpgrade(key) {
+  const u = UPGRADES[key];
+  if (!u) return { ok: false, reason: 'Unknown upgrade.' };
+  if (state.upgrades[key]) return { ok: false, reason: 'Already owned.' };
+  if (state.cash < u.price) return { ok: false, reason: 'Need ' + fmt$(u.price) + ' for the ' + u.name + '.' };
+  state.cash -= u.price;
+  state.upgrades[key] = true;
+  save();
+  return { ok: true };
 }
 // Sell a slabbed (or raw) card outright at its value.
 function sellCard(uid) {
   const card = state.inventory.find(c => c.uid === uid);
   if (!card) return { ok: false, reason: 'Card not found.' };
+  if (atGrader(card)) return { ok: false, reason: 'That card is at the grader.' };
   const amount = cardValue(card);
   state.cash += amount;
   state.stats.sold++; state.stats.earned += amount;
@@ -1551,7 +1979,7 @@ function createAuction(card) {
   const startBid = Math.max(1, Math.round(value * 0.5));
   return {
     cardUid: card.uid, cardName: card.name, value,
-    timeLeft: 15, bid: startBid, leader: null, hype: 0, over: false,
+    timeLeft: 15, bid: startBid, leader: null, hype: 0, over: false, vip: !!state.upgrades.vip,
     extensions: 0, winner: null, finalBid: 0,
     log: [{ who: '📢', text: 'Auction open for ' + card.name + ' — starting at $' + startBid + '!' }],
   };
@@ -1561,7 +1989,7 @@ function auctionChatLine(who, text, a) {
   if (a.log.length > 60) a.log.shift();
 }
 function auctionBid(a, bidderKey, pct) {
-  const cap = Math.round(a.value * BIDDERS[bidderKey].capMult);
+  const cap = Math.round(a.value * BIDDERS[bidderKey].capMult * (a.vip ? 1.2 : 1));
   const inc = Math.max(1, Math.round(a.bid * pct));
   const next = a.bid + inc;
   if (next > cap) return false;
@@ -1616,18 +2044,27 @@ function finishAuction(a) {
     auctionChatLine('🔨', 'No bids — the card did not sell.', a);
   }
 }
-// Settle a finished auction: pay out and remove the card.
+// The auction house keeps a seller's fee; VIP slots cut it.
+function houseFeeRate() { return state.upgrades.vip ? 0.03 : 0.10; }
+// Settle a finished auction: pay out (minus the house fee), remove the card,
+// and close out the day (one stream per shop day).
 function settleAuction(a) {
   if (!a.over) return { ok: false, reason: 'Auction still running.' };
+  if (a.settled) return { ok: false, reason: 'Already settled.' };
+  a.settled = true;
   const card = state.inventory.find(c => c.uid === a.cardUid);
+  let r = { ok: true, sold: false, amount: 0, fee: 0, net: 0 };
   if (a.winner && card) {
-    state.cash += a.finalBid;
-    state.stats.auctions++; state.stats.earned += a.finalBid;
+    const fee = Math.round(a.finalBid * houseFeeRate());
+    const net = a.finalBid - fee;
+    state.cash += net;
+    state.stats.auctions++; state.stats.earned += net; state.stats.fees += fee;
     removeFromInventory(a.cardUid);
-    save();
-    return { ok: true, sold: true, amount: a.finalBid, winner: BIDDERS[a.winner].name };
+    r = { ok: true, sold: true, amount: a.finalBid, fee, net, winner: BIDDERS[a.winner].name };
   }
-  return { ok: true, sold: false, amount: 0 };
+  r.day = advanceDay();
+  save();
+  return r;
 }
 
 // ============================================================
@@ -1638,22 +2075,33 @@ const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;',
 
 function fmt$(n) { return '$' + Number(n).toLocaleString('en-US'); }
 
+const SCREENS = ['shop', 'desk', 'collection', 'upgrades', 'auction'];
 function refreshStats() {
   $('stat-cash').textContent = fmt$(state.cash);
   $('stat-cards').textContent = state.inventory.length;
   $('stat-slabs').textContent = state.inventory.filter(c => c.graded).length;
   $('stat-sold').textContent = state.stats.sold;
   $('stat-earned').textContent = fmt$(state.stats.earned);
+  $('stat-day').textContent = state.day;
+  const away = state.inventory.filter(atGrader).length;
+  $('btn-day').title = 'Close the shop for the day' + (away ? ' (' + away + ' at the grader)' : '');
 }
 function showScreen(name) {
   state.screen = name;
-  for (const s of ['shop', 'desk', 'collection', 'auction']) {
+  for (const s of SCREENS) {
     $('screen-' + s).classList.toggle('active', s === name);
     $('tab-' + s).classList.toggle('active', s === name);
   }
   if (name === 'collection') renderCollection();
   if (name === 'auction') renderAuctionPicks();
-  if (name === 'desk') drawDesk();
+  if (name === 'upgrades') renderUpgrades();
+  if (name === 'desk') {
+    layoutDesk(); updateMetricsUI(); drawDesk();
+    // phones: bring the whole desk (screen + card) into view
+    if (deskLayout === 'narrow' && deskCard() && typeof desk.scrollIntoView === 'function') {
+      try { desk.scrollIntoView({ block: 'start', behavior: 'smooth' }); } catch (e) { /* older browsers */ }
+    }
+  }
 }
 
 // ---------- Shop ----------
@@ -1698,19 +2146,74 @@ function renderPulls(cards) {
 // ---------- Inspection Desk (canvas) ----------
 const desk = $('desk');
 const dctx = desk.getContext('2d');
-// Card geometry on the desk canvas (720x500)
+// The card face is always drawn in a 250x350 "card-local" space; CARD is
+// where that card sits on the desk canvas. Two desk layouts:
+//  wide (desktop/landscape): 720x500, card left, jeweler's screen right
+//  narrow (phone portrait):  720x980,  jeweler's screen + readout on top,
+//                            a big card below so your hand never covers it
+const BASE_W = 250, BASE_H = 350;
 const CARD = { x: 90, y: 70, w: 250, h: 350 };
+const INSET = { x: 390, y: 30, s: 280 };          // jeweler's screen (static zoom window)
+const READOUT = { x: 380, y: 322, w: 300, h: 138 };
+const INSET_WIN = 70;                              // card-local units shown in the screen (~4.3x)
+const OFF_SCALE = 4;                               // offscreen card renders at 4x for crisp zoom
+const CORNER_NAMES = ['Top-left', 'Top-right', 'Bottom-left', 'Bottom-right'];
+let deskLayout = 'wide';
+function layoutDesk(forceWidth) {
+  const host = desk.parentElement;
+  const vw = forceWidth || (typeof window !== 'undefined' && window.innerWidth) || 1024;
+  const hw = forceWidth || (host && host.clientWidth) || vw;
+  const next = (vw <= 600 || hw < 460) ? 'narrow' : 'wide';
+  if (next === deskLayout && desk.width === 720 && desk.height === (next === 'narrow' ? 980 : 500)) return false;
+  deskLayout = next;
+  if (next === 'narrow') {
+    desk.width = 720; desk.height = 980;
+    Object.assign(CARD, { x: 160, y: 358, w: 400, h: 560 });
+    Object.assign(INSET, { x: 40, y: 40, s: 296 });
+    Object.assign(READOUT, { x: 360, y: 40, w: 320, h: 296 });
+  } else {
+    desk.width = 720; desk.height = 500;
+    Object.assign(CARD, { x: 90, y: 70, w: 250, h: 350 });
+    Object.assign(INSET, { x: 390, y: 30, s: 280 });
+    Object.assign(READOUT, { x: 380, y: 322, w: 300, h: 138 });
+  }
+  resetView();
+  return true;
+}
+// Pinch/zoom view of the card: desk point = card point * z + t.
+const view = { z: 1, tx: 0, ty: 0 };
+function resetView() { view.z = 1; view.tx = 0; view.ty = 0; }
+function clampView() {
+  if (view.z <= 1.001) { resetView(); return; }
+  const x0 = CARD.x * view.z + view.tx, x1 = (CARD.x + CARD.w) * view.z + view.tx;
+  const y0 = CARD.y * view.z + view.ty, y1 = (CARD.y + CARD.h) * view.z + view.ty;
+  const m = 90;
+  if (x1 < m) view.tx += m - x1;
+  if (x0 > desk.width - m) view.tx -= x0 - (desk.width - m);
+  if (y1 < m) view.ty += m - y1;
+  if (y0 > desk.height - m) view.ty -= y0 - (desk.height - m);
+}
+// Zoom by factor f keeping desk point (cx, cy) fixed.
+function zoomAt(f, cx, cy) {
+  const z = Math.max(1, Math.min(4, view.z * f));
+  const ax = (cx - view.tx) / view.z, ay = (cy - view.ty) / view.z;
+  view.z = z; view.tx = cx - ax * z; view.ty = cy - ay * z;
+  clampView();
+}
+// Desk point → card-local point (unclamped; may fall outside 0..250 x 0..350).
+function toCardLocal(px, py) {
+  const x = (px - view.tx) / view.z, y = (py - view.ty) / view.z;
+  const k = BASE_W / CARD.w;
+  return { u: (x - CARD.x) * k, v: (y - CARD.y) * k };
+}
+// Floating loupe (optional mode): the lens never sits under the finger.
+// loupe.x/y is the PROBE point — where the finger touches, and what
+// zoneAt/inspectAt use. The lens is drawn at loupeCenter(): above the finger
+// on touch, below it near the top of the desk, to the side as a last resort.
 const LOUPE_R = 85;
-// Offset loupe: the lens must never sit under the finger. loupe.x/y is the
-// PROBE point — where the finger touches, and what zoneAt/inspectAt use.
-// The lens itself is drawn at loupeCenter(), which floats ABOVE the finger
-// on touch (a full lens radius + gap up), flips BELOW it when the finger is
-// near the top of the desk, and only goes to the side when neither fits.
-// Mouse gets a smaller offset so the lens still tracks the cursor closely.
-// The lens always shows the magnified card area under the PROBE, not under
-// the lens — so what you see is what your finger is on.
 const LOUPE_GAP = 28;
 let loupeTouch = false;
+let loupeMode = 'screen'; // 'screen' = static jeweler's screen only, 'float' = also a floating lens
 let loupe = { x: CARD.x + CARD.w / 2, y: CARD.y + CARD.h / 2, active: false };
 function setLoupeTouch(v) { loupeTouch = !!v; }
 function loupeCenter(p) {
@@ -1726,15 +2229,72 @@ function loupeCenter(p) {
   ly = Math.max(LOUPE_R + 2, Math.min(desk.height - LOUPE_R - 2, ly));
   return { x: lx, y: ly };
 }
-let off = null; // offscreen 2x card render for the loupe
+// Offscreen renders of the desk card (plain for the table, detail for the
+// jeweler's screen — flaws only show under magnification).
+let offCache = { plain: {}, detail: null, detailKey: '' };
+function invalidateCardArt() { offCache = { plain: {}, detail: null, detailKey: '' }; }
+// Flip animation state
+let flipAnim = null; // { t0, from, to }
+const FLIP_MS = 420;
+function nowMs() { return (typeof performance !== 'undefined' && performance.now) ? performance.now() : Date.now(); }
+function flipProgress() { return flipAnim ? Math.min(1, (nowMs() - flipAnim.t0) / FLIP_MS) : 1; }
+function displayedSide() { return flipAnim ? (flipProgress() < 0.5 ? flipAnim.from : flipAnim.to) : state.side; }
+function flipScale() { return flipAnim ? Math.max(0.02, Math.abs(Math.cos(Math.PI * flipProgress()))) : 1; }
 
+function recomputeInspected() {
+  const I = state.inspect;
+  state.inspected = {
+    centering: I.border.front && I.border.back,
+    corners: I.corners.front.every(Boolean) && I.corners.back.every(Boolean),
+    edges: Object.values(I.edges).every(Boolean),
+    surface: I.face,
+  };
+}
+// Calipers measure centering the moment a side faces up.
+function onSideShown() {
+  const card = deskCard();
+  if (!card || !state.upgrades.calipers) return;
+  const side = state.side;
+  if (!state.inspect.border[side]) {
+    state.inspect.border[side] = true;
+    const c = side === 'front' ? card.grades.centering : card.grades.back.centering;
+    $('desk-msg').textContent = '📏 Calipers locked the ' + side + ' centering: ' + splitText(c.lr) + ' L/R · ' + splitText(c.tb) + ' T/B.';
+    recomputeInspected();
+  }
+}
 function resetInspection() {
-  state.inspected = { centering: false, corners: false, edges: false, surface: false };
-  state.cornerSeen = [false, false, false, false];
-  state.edgeSeen = { top: false, bottom: false, left: false, right: false };
-  off = null;
+  state.inspect = freshInspect();
+  state.side = 'front';
+  state.probe = null; state.probeInfo = null;
+  flipAnim = null;
+  resetView();
+  invalidateCardArt();
+  recomputeInspected();
+  $('desk-msg').textContent = deskCard() ? 'Drag over the card: corners, edges, the border and the face. Then flip it and check the back.' : 'Pick a card from the Shop pulls or your Collection to inspect it.';
+  onSideShown();
   updateMetricsUI();
-  $('desk-msg').textContent = 'Drag the loupe over the card. Find all 4 metrics to unlock grading.';
+}
+function flipDeskCard(instant) {
+  const card = deskCard();
+  if (!card || flipAnim) return false;
+  const from = state.side;
+  state.side = from === 'front' ? 'back' : 'front';
+  state.probeInfo = null;
+  $('desk-msg').textContent = state.side === 'back'
+    ? 'Back side up. Real graders whiten-check the back corners and measure back centering too.'
+    : 'Front side up.';
+  onSideShown();
+  recomputeInspected();
+  updateMetricsUI();
+  if (instant || typeof requestAnimationFrame !== 'function') { drawDesk(); return true; }
+  flipAnim = { t0: nowMs(), from, to: state.side };
+  const step = () => {
+    if (!flipAnim) return;
+    if (flipProgress() >= 1) { flipAnim = null; drawDesk(); return; }
+    drawDesk(); requestAnimationFrame(step);
+  };
+  requestAnimationFrame(step);
+  return true;
 }
 
 function setColorForSet(key) { return SETS[key].color; }
@@ -1797,136 +2357,10 @@ function rarityCanvasTint(ctx, ax, ay, aw, ah, card) {
   }
 }
 
-function drawCardFace(ctx, x, y, w, h, card, detail) {
-  const set = SETS[card.set];
-  ctx.save();
-  roundRect(ctx, x, y, w, h, 14); ctx.clip();
-  ctx.fillStyle = '#10131a'; ctx.fillRect(x, y, w, h);
-  // border frame in the team color (figure sets) or set color (creatures);
-  // its thickness shows centering: offset art frame
-  const lrOff = (card.grades.centering.lr - 50) / 50 * 10;
-  const tbOff = (card.grades.centering.tb - 50) / 50 * 10;
-  ctx.fillStyle = frameColor(card); ctx.fillRect(x, y, w, h);
-  ctx.fillStyle = '#f5f1e6';
-  ctx.fillRect(x + 12 + lrOff, y + 12 + tbOff, w - 24, h - 24);
-  // name bar in the team color (1/1 keeps the black Prizm bar)
-  ctx.fillStyle = card.variant === '1/1' ? '#14161c' : frameColor(card);
-  ctx.fillRect(x + 12 + lrOff, y + 12 + tbOff, w - 24, 26);
-  ctx.fillStyle = card.variant === '1/1' ? '#f5f1e6' : inkFor(frameColor(card));
-  ctx.font = 'bold ' + Math.round(w * 0.062) + 'px system-ui, sans-serif';
-  ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
-  ctx.fillText(card.name, x + 20 + lrOff, y + 25 + tbOff, w - 40);
-  if (card.variant === '1/1') {
-    ctx.fillStyle = '#f2b705';
-    ctx.font = 'bold ' + Math.round(w * 0.055) + 'px system-ui, sans-serif';
-    ctx.textAlign = 'right';
-    ctx.fillText('1 OF 1', x + w - 20 + lrOff, y + 25 + tbOff);
-    ctx.textAlign = 'left';
-  }
-  // art window: a drawn scene for figure cards, a habitat for creatures;
-  // a 1/1 keeps the black-and-gold window with gold field lines.
-  const ax = x + 22 + lrOff, ay = y + 44 + tbOff, aw = w - 44, ah = h * 0.44;
-  if (card.variant === '1/1') {
-    const og = ctx.createLinearGradient(ax, ay, ax, ay + ah);
-    og.addColorStop(0, '#1a1a1a'); og.addColorStop(0.55, '#2e2405'); og.addColorStop(1, '#0a0800');
-    ctx.fillStyle = og; ctx.fillRect(ax, ay, aw, ah);
-    ctx.strokeStyle = 'rgba(242,183,5,0.55)';
-    drawFieldLines(ctx, ax, ay, aw, ah);
-  } else if (hasFigure(card)) {
-    drawScene(ctx, ax, ay, aw, ah, card);
-  } else {
-    drawHabitat(ctx, ax, ay, aw, ah, card);
-  }
-  if (hasFigure(card)) {
-    drawPlayerFigure(ctx, ax, ay, aw, ah, card);
-  } else {
-    ctx.fillStyle = '#fff';
-    ctx.font = Math.round(ah * 0.5) + 'px serif';
-    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-    ctx.fillText(card.art, ax + aw / 2, ay + ah / 2);
-  }
-  // rarity art-window treatment + 1/1 stamp
-  rarityCanvasTint(ctx, ax, ay, aw, ah, card);
-  if (card.variant === '1/1') {
-    ctx.fillStyle = '#f2b705';
-    roundRect(ctx, ax + aw - 46, ay + 6, 40, 18, 4); ctx.fill();
-    ctx.fillStyle = '#111';
-    ctx.font = '800 12px system-ui, sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-    ctx.fillText('1/1', ax + aw - 26, ay + 16);
-    ctx.textAlign = 'left'; ctx.textBaseline = 'alphabetic';
-  }
-  // type line
-  const ty = ay + ah + 18;
-  ctx.fillStyle = '#444a56';
-  ctx.font = Math.round(w * 0.055) + 'px system-ui, sans-serif';
-  ctx.textAlign = 'left'; ctx.textBaseline = 'alphabetic';
-  ctx.fillText(card.title, x + 20 + lrOff, ty, w - 40);
-  // flavor box (any card with flavor text)
-  if (card.flavor) {
-    const fy = ty + 8;
-    ctx.fillStyle = '#ece7d8';
-    roundRect(ctx, x + 20 + lrOff, fy, w - 40, 30, 5); ctx.fill();
-    ctx.fillStyle = '#3a3f4a';
-    ctx.font = 'italic ' + Math.round(w * 0.05) + 'px system-ui, sans-serif';
-    wrapText(ctx, card.flavor, x + 26 + lrOff, fy + 11, w - 52, 12);
-  }
-  // rarity line (left) + base value (right)
-  const ry = y + h - 58;
-  ctx.fillStyle = rarityColor(card.rarity);
-  ctx.font = 'bold ' + Math.round(w * 0.055) + 'px system-ui, sans-serif';
-  ctx.fillText(raritySymbol(card.rarity) + ' ' + rarityLabel(card.rarity).toUpperCase(), x + 20 + lrOff, ry);
-  ctx.fillStyle = '#444a56';
-  ctx.font = Math.round(w * 0.05) + 'px system-ui, sans-serif';
-  ctx.textAlign = 'right';
-  ctx.fillText('Base ' + fmt$(card.base), x + w - 20 + lrOff, ry);
-  ctx.textAlign = 'left';
-  // footer: set + collector number
-  ctx.fillText(card.setName + '  ' + collectorLabel(card), x + 20 + lrOff, y + h - 38);
-  // slab label
-  if (card.graded) {
-    ctx.fillStyle = '#f2b705';
-    ctx.font = 'bold ' + Math.round(w * 0.075) + 'px system-ui, sans-serif';
-    ctx.fillText('★ ' + card.graded.grade + ' SLAB ★', x + 20 + lrOff, y + h - 20);
-  }
-  if (detail) {
-    // Whitening specks on whitened corners (only visible under the loupe)
-    const cs = 26;
-    const corners = [[x, y], [x + w - cs, y], [x, y + h - cs], [x + w - cs, y + h - cs]];
-    ctx.fillStyle = 'rgba(255,255,255,0.95)';
-    card.grades.corners.forEach((white, i) => {
-      if (!white) return;
-      const [cx, cy] = corners[i];
-      for (let k = 0; k < 5; k++) ctx.fillRect(cx + 4 + (k * 4) % (cs - 8), cy + 3 + (k * 7) % (cs - 6), 3, 3);
-    });
-    // Edge nicks
-    ctx.fillStyle = 'rgba(20,20,20,0.55)';
-    for (let k = 0; k < card.grades.edges; k++) {
-      ctx.fillRect(x + 30 + k * 32, y + 1, 10, 3);
-      ctx.fillRect(x + 30 + k * 32, y + h - 4, 10, 3);
-    }
-    // Surface print lines (only visible when light is tilted)
-    if (Math.abs(state.light) > 25 && card.grades.surface > 0) {
-      ctx.strokeStyle = 'rgba(255,255,255,0.75)'; ctx.lineWidth = 1.5;
-      for (let k = 0; k < card.grades.surface; k++) {
-        ctx.beginPath();
-        ctx.moveTo(x + 30 + k * 45, y + 40); ctx.lineTo(x + 60 + k * 45, y + h - 60); ctx.stroke();
-      }
-    }
-  }
-  ctx.restore();
-}
 function roundRect(ctx, x, y, w, h, r) {
   ctx.beginPath();
   ctx.moveTo(x + r, y); ctx.arcTo(x + w, y, x + w, y + h, r); ctx.arcTo(x + w, y + h, x, y + h, r);
   ctx.arcTo(x, y + h, x, y, r); ctx.arcTo(x, y, x + w, y, r); ctx.closePath();
-}
-
-function buildOffscreen(card) {
-  off = document.createElement('canvas');
-  off.width = CARD.w * 2; off.height = CARD.h * 2;
-  const octx = off.getContext('2d');
-  octx.scale(2, 2);
-  drawCardFace(octx, 0, 0, CARD.w, CARD.h, card, true);
 }
 
 // Face-down card back: dark with gold double border, diagonal pinstripes,
@@ -1954,287 +2388,1010 @@ function drawCardBack(ctx, x, y, w, h) {
   ctx.restore();
 }
 
-function drawDesk() {
-  const card = deskCard();
-  dctx.clearRect(0, 0, desk.width, desk.height);
-  // warm shop backdrop
-  dctx.fillStyle = '#14100a'; dctx.fillRect(0, 0, desk.width, desk.height);
-  // wood frame around the felt
-  const wg = dctx.createLinearGradient(0, 0, desk.width, desk.height);
+
+// Card face, drawn in card-local units (250x350) then scaled to x,y,w,h.
+// Centering shows as an off-center inner frame: a 60/40 split moves it a
+// visible 2.4 units on a 12-unit border.
+function centerOffsets(c) { return { lr: (c.lr - 50) * 0.24, tb: (c.tb - 50) * 0.24 }; }
+function drawCardFace(ctx, x, y, w, h, card, detail) {
+  ctx.save();
+  ctx.translate(x, y); ctx.scale(w / BASE_W, h / BASE_H);
+  drawFaceLocal(ctx, card);
+  if (detail) drawFrontDetail(ctx, card, detail === true ? detailOpts() : detail);
+  ctx.restore();
+}
+function drawFaceLocal(ctx, card) {
+  const x = 0, y = 0, w = BASE_W, h = BASE_H;
+  ctx.save();
+  roundRect(ctx, x, y, w, h, 14); ctx.clip();
+  ctx.fillStyle = '#10131a'; ctx.fillRect(x, y, w, h);
+  const off = centerOffsets(card.grades.centering);
+  const lrOff = off.lr, tbOff = off.tb;
+  ctx.fillStyle = frameColor(card); ctx.fillRect(x, y, w, h);
+  ctx.fillStyle = '#f5f1e6';
+  ctx.fillRect(x + 12 + lrOff, y + 12 + tbOff, w - 24, h - 24);
+  ctx.fillStyle = card.variant === '1/1' ? '#14161c' : frameColor(card);
+  ctx.fillRect(x + 12 + lrOff, y + 12 + tbOff, w - 24, 26);
+  ctx.fillStyle = card.variant === '1/1' ? '#f5f1e6' : inkFor(frameColor(card));
+  ctx.font = 'bold ' + Math.round(w * 0.062) + 'px system-ui, sans-serif';
+  ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
+  ctx.fillText(card.name, x + 20 + lrOff, y + 25 + tbOff, w - 40);
+  if (card.variant === '1/1') {
+    ctx.fillStyle = '#f2b705';
+    ctx.font = 'bold ' + Math.round(w * 0.055) + 'px system-ui, sans-serif';
+    ctx.textAlign = 'right';
+    ctx.fillText('1 OF 1', x + w - 20 + lrOff, y + 25 + tbOff);
+    ctx.textAlign = 'left';
+  }
+  const ax = x + 22 + lrOff, ay = y + 44 + tbOff, aw = w - 44, ah = h * 0.44;
+  if (card.variant === '1/1') {
+    const og = ctx.createLinearGradient(ax, ay, ax, ay + ah);
+    og.addColorStop(0, '#1a1a1a'); og.addColorStop(0.55, '#2e2405'); og.addColorStop(1, '#0a0800');
+    ctx.fillStyle = og; ctx.fillRect(ax, ay, aw, ah);
+    ctx.strokeStyle = 'rgba(242,183,5,0.55)';
+    drawFieldLines(ctx, ax, ay, aw, ah);
+  } else if (hasFigure(card)) {
+    drawScene(ctx, ax, ay, aw, ah, card);
+  } else {
+    drawHabitat(ctx, ax, ay, aw, ah, card);
+  }
+  if (hasFigure(card)) {
+    drawPlayerFigure(ctx, ax, ay, aw, ah, card);
+  } else {
+    ctx.fillStyle = '#fff';
+    ctx.font = Math.round(ah * 0.5) + 'px serif';
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.fillText(card.art, ax + aw / 2, ay + ah / 2);
+  }
+  rarityCanvasTint(ctx, ax, ay, aw, ah, card);
+  if (card.variant === '1/1') {
+    ctx.fillStyle = '#f2b705';
+    roundRect(ctx, ax + aw - 46, ay + 6, 40, 18, 4); ctx.fill();
+    ctx.fillStyle = '#111';
+    ctx.font = '800 12px system-ui, sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.fillText('1/1', ax + aw - 26, ay + 16);
+    ctx.textAlign = 'left'; ctx.textBaseline = 'alphabetic';
+  }
+  const ty = ay + ah + 18;
+  ctx.fillStyle = '#444a56';
+  ctx.font = Math.round(w * 0.055) + 'px system-ui, sans-serif';
+  ctx.textAlign = 'left'; ctx.textBaseline = 'alphabetic';
+  ctx.fillText(card.title, x + 20 + lrOff, ty, w - 40);
+  if (card.flavor) {
+    const fy = ty + 8;
+    ctx.fillStyle = '#ece7d8';
+    roundRect(ctx, x + 20 + lrOff, fy, w - 40, 30, 5); ctx.fill();
+    ctx.fillStyle = '#3a3f4a';
+    ctx.font = 'italic ' + Math.round(w * 0.05) + 'px system-ui, sans-serif';
+    wrapText(ctx, card.flavor, x + 26 + lrOff, fy + 11, w - 52, 12);
+  }
+  const ry = y + h - 58;
+  ctx.fillStyle = rarityColor(card.rarity);
+  ctx.font = 'bold ' + Math.round(w * 0.055) + 'px system-ui, sans-serif';
+  ctx.fillText(raritySymbol(card.rarity) + ' ' + rarityLabel(card.rarity).toUpperCase(), x + 20 + lrOff, ry);
+  ctx.fillStyle = '#444a56';
+  ctx.font = Math.round(w * 0.05) + 'px system-ui, sans-serif';
+  ctx.textAlign = 'right';
+  ctx.fillText('Base ' + fmt$(card.base), x + w - 20 + lrOff, ry);
+  ctx.textAlign = 'left';
+  ctx.fillText(card.setName + '  ' + collectorLabel(card), x + 20 + lrOff, y + h - 38);
+  if (card.graded) {
+    ctx.fillStyle = '#f2b705';
+    ctx.font = 'bold ' + Math.round(w * 0.075) + 'px system-ui, sans-serif';
+    ctx.fillText('★ ' + card.graded.grade + ' SLAB ★', x + 20 + lrOff, y + h - 20);
+  }
+  ctx.restore();
+}
+// The back: set-colored pattern, Slab House logo and a stats box. Its border
+// shows the back centering, which graders hold to a looser standard.
+function drawCardReverse(ctx, x, y, w, h, card, detail) {
+  ctx.save();
+  ctx.translate(x, y); ctx.scale(w / BASE_W, h / BASE_H);
+  const W = BASE_W, H = BASE_H;
+  const set = SETS[card.set];
+  const col = set ? set.color : '#555';
+  ctx.save();
+  roundRect(ctx, 0, 0, W, H, 14); ctx.clip();
+  ctx.fillStyle = '#f2ece0'; ctx.fillRect(0, 0, W, H);
+  const off = centerOffsets(card.grades.back.centering);
+  const ix = 12 + off.lr, iy = 12 + off.tb, iw = W - 24, ih = H - 24;
+  const bg = ctx.createLinearGradient(ix, iy, ix + iw, iy + ih);
+  bg.addColorStop(0, col); bg.addColorStop(1, '#1a1410');
+  ctx.fillStyle = bg; ctx.fillRect(ix, iy, iw, ih);
+  ctx.strokeStyle = 'rgba(255,255,255,0.08)'; ctx.lineWidth = 3;
+  for (let d = -ih; d < iw; d += 14) { ctx.beginPath(); ctx.moveTo(ix + d, iy); ctx.lineTo(ix + d + ih, iy + ih); ctx.stroke(); }
+  ctx.fillStyle = '#f2b705';
+  ctx.font = '900 22px system-ui, sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+  ctx.fillText('SLAB HOUSE', ix + iw / 2, iy + 30);
+  ctx.font = '700 10px system-ui, sans-serif'; ctx.fillStyle = 'rgba(255,233,168,0.85)';
+  ctx.fillText((card.setName || '').toUpperCase(), ix + iw / 2, iy + 50, iw - 20);
+  // stats box
+  const bx = ix + 14, by = iy + 66, bw = iw - 28, bh = ih - 110;
+  ctx.fillStyle = 'rgba(250,246,236,0.94)'; roundRect(ctx, bx, by, bw, bh, 8); ctx.fill();
+  ctx.fillStyle = '#1d1a14'; ctx.textAlign = 'left'; ctx.textBaseline = 'alphabetic';
+  ctx.font = '800 15px system-ui, sans-serif'; ctx.fillText(card.name, bx + 10, by + 24, bw - 20);
+  ctx.font = '12px system-ui, sans-serif'; ctx.fillStyle = '#4a4438';
+  ctx.fillText(card.title || '', bx + 10, by + 42, bw - 20);
+  ctx.strokeStyle = 'rgba(0,0,0,0.15)'; ctx.lineWidth = 1;
+  ctx.beginPath(); ctx.moveTo(bx + 10, by + 52); ctx.lineTo(bx + bw - 10, by + 52); ctx.stroke();
+  const rows = [['Rarity', rarityLabel(card.rarity)], ['Base value', fmt$(card.base)], ['Card', collectorLabel(card) || '—']];
+  if (card.team) rows.unshift(['Team', card.team]);
+  if (card.position) rows.unshift(['Position', card.position]);
+  rows.slice(0, 5).forEach(([k, v], i) => {
+    const ry = by + 72 + i * 20;
+    ctx.fillStyle = '#7a7060'; ctx.font = '600 11px system-ui, sans-serif'; ctx.fillText(k, bx + 10, ry);
+    ctx.fillStyle = '#1d1a14'; ctx.font = '700 12px system-ui, sans-serif'; ctx.textAlign = 'right';
+    ctx.fillText(String(v), bx + bw - 10, ry, bw * 0.6); ctx.textAlign = 'left';
+  });
+  if (card.flavor) {
+    ctx.fillStyle = '#5a5244'; ctx.font = 'italic 10.5px system-ui, sans-serif';
+    wrapText(ctx, card.flavor, bx + 10, by + bh - 34, bw - 20, 12);
+  }
+  ctx.fillStyle = 'rgba(255,233,168,0.75)'; ctx.font = '700 9px system-ui, sans-serif'; ctx.textAlign = 'center';
+  ctx.fillText('© SLAB HOUSE CARD CO. · ORIGINAL PARODY SET', ix + iw / 2, iy + ih - 14, iw - 16);
+  ctx.restore();
+  if (detail) drawBackDetail(ctx, card);
+  ctx.restore();
+}
+// --- Condition detail (only rendered for the magnified view) ---
+const CORNER_POS = [[0, 0], [1, 0], [0, 1], [1, 1]];
+function whitenCorner(ctx, i, seed, strength) {
+  const cs = 22, [fx, fy] = CORNER_POS[i];
+  const cx = fx ? BASE_W - cs : 0, cy = fy ? BASE_H - cs : 0;
+  ctx.fillStyle = 'rgba(255,255,255,0.95)';
+  for (let k = 0; k < 7 * strength; k++) {
+    const r1 = hashRand(seed, k * 2), r2 = hashRand(seed, k * 2 + 1);
+    // specks hug the very corner tip
+    const dx = fx ? cs - r1 * 10 - 2 : r1 * 10 + 1, dy = fy ? cs - r2 * 10 - 2 : r2 * 10 + 1;
+    ctx.fillRect(cx + dx, cy + dy, 1.6 + r1 * 1.4, 1.6 + r2 * 1.2);
+  }
+}
+function drawEdgeNicks(ctx, card) {
+  const wear = card.grades.edges;
+  ctx.fillStyle = 'rgba(255,255,255,0.9)';
+  const seed = 'edge' + card.uid;
+  const tb = Math.min(3, wear), lr = Math.max(0, wear - 2);
+  for (let k = 0; k < tb; k++) {
+    const t = 30 + hashRand(seed, k) * (BASE_W - 60), b = 30 + hashRand(seed, k + 20) * (BASE_W - 60);
+    ctx.fillRect(t, 0, 5 + k, 2.2); ctx.fillRect(b, BASE_H - 2.2, 5 + k, 2.2);
+  }
+  for (let k = 0; k < Math.min(3, lr); k++) {
+    const l = 50 + hashRand(seed, k + 40) * (BASE_H - 100), r = 50 + hashRand(seed, k + 60) * (BASE_H - 100);
+    ctx.fillRect(0, l, 2.2, 5 + k); ctx.fillRect(BASE_W - 2.2, r, 2.2, 5 + k);
+  }
+}
+// What can be seen on the surface right now: every flaw type with the lamp,
+// otherwise only at a raking angle (±25° or more) and never micro-scratches.
+function lightVisible() { return state.upgrades.lamp || Math.abs(state.light) >= 25; }
+function defectVisible(d) { return state.upgrades.lamp || (Math.abs(state.light) >= 25 && d.type !== 'micro'); }
+function detailOpts() { return { visible: lightVisible(), lamp: !!state.upgrades.lamp }; }
+function drawDefect(ctx, d) {
+  const rad = d.a * Math.PI / 180, dx = Math.cos(rad) * d.l / 2, dy = Math.sin(rad) * d.l / 2;
+  ctx.save();
+  if (d.type === 'print') {
+    ctx.strokeStyle = 'rgba(255,255,255,0.8)'; ctx.lineWidth = 1.1;
+    ctx.beginPath(); ctx.moveTo(d.x - dx * 2, d.y - dy * 2); ctx.lineTo(d.x + dx * 2, d.y + dy * 2); ctx.stroke();
+  } else if (d.type === 'roller') {
+    ctx.strokeStyle = 'rgba(255,255,255,0.22)'; ctx.lineWidth = 9;
+    ctx.beginPath(); ctx.moveTo(14, d.y - 4); ctx.lineTo(BASE_W - 14, d.y + 4); ctx.stroke();
+    ctx.strokeStyle = 'rgba(255,255,255,0.45)'; ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(14, d.y - 8); ctx.lineTo(BASE_W - 14, d.y); ctx.stroke();
+  } else if (d.type === 'scratch') {
+    ctx.strokeStyle = 'rgba(255,255,255,0.85)'; ctx.lineWidth = 1.2;
+    ctx.beginPath(); ctx.moveTo(d.x - dx, d.y - dy);
+    for (let k = 1; k <= 5; k++) {
+      const t = k / 5, j = (hashRand('s' + d.x + d.y, k) - 0.5) * 4;
+      ctx.lineTo(d.x - dx + dx * 2 * t + j * Math.sin(rad), d.y - dy + dy * 2 * t - j * Math.cos(rad));
+    }
+    ctx.stroke();
+  } else if (d.type === 'micro') {
+    ctx.strokeStyle = 'rgba(255,255,255,0.7)'; ctx.lineWidth = 0.5;
+    for (let k = 0; k < 3; k++) {
+      const o = (k - 1) * 2.2;
+      ctx.beginPath(); ctx.moveTo(d.x - dx * 0.35 + o, d.y - dy * 0.35 + o); ctx.lineTo(d.x + dx * 0.35 + o, d.y + dy * 0.35 + o); ctx.stroke();
+    }
+  } else if (d.type === 'dimple') {
+    const g = ctx.createRadialGradient(d.x - 1.5, d.y - 1.5, 0.5, d.x, d.y, 6);
+    g.addColorStop(0, 'rgba(0,0,0,0.45)'); g.addColorStop(0.7, 'rgba(0,0,0,0.12)'); g.addColorStop(1, 'rgba(255,255,255,0.35)');
+    ctx.fillStyle = g; ctx.beginPath(); ctx.arc(d.x, d.y, 6, 0, Math.PI * 2); ctx.fill();
+  }
+  ctx.restore();
+}
+function drawFrontDetail(ctx, card, o) {
+  ctx.save();
+  roundRect(ctx, 0, 0, BASE_W, BASE_H, 14); ctx.clip();
+  card.grades.corners.forEach((white, i) => { if (white) whitenCorner(ctx, i, 'cf' + card.uid + i, 1); });
+  drawEdgeNicks(ctx, card);
+  if (o.visible) {
+    for (const d of surfaceDefectsOf(card.grades)) if (o.lamp || d.type !== 'micro') drawDefect(ctx, d);
+    if (card.grades.dust) {
+      // fingerprint swirl + dust specks catch the light
+      ctx.strokeStyle = 'rgba(255,255,255,0.18)'; ctx.lineWidth = 0.8;
+      const fx = 70 + hashRand('fp' + card.uid, 1) * 110, fy = 120 + hashRand('fp' + card.uid, 2) * 120;
+      for (let r = 3; r < 15; r += 2.4) { ctx.beginPath(); ctx.ellipse(fx, fy, r, r * 0.75, 0.5, 0, Math.PI * 1.7); ctx.stroke(); }
+      ctx.fillStyle = 'rgba(255,255,255,0.6)';
+      for (let k = 0; k < 14; k++) ctx.fillRect(20 + hashRand('dust' + card.uid, k) * 210, 20 + hashRand('dust' + card.uid, k + 50) * 310, 1, 1);
+    }
+  }
+  ctx.restore();
+}
+function drawBackDetail(ctx, card) {
+  ctx.save();
+  roundRect(ctx, 0, 0, BASE_W, BASE_H, 14); ctx.clip();
+  card.grades.back.corners.forEach((white, i) => { if (white) whitenCorner(ctx, i, 'cb' + card.uid + i, 1.3); });
+  drawEdgeNicks(ctx, card);
+  ctx.restore();
+}
+// Offscreen renders at OFF_SCALE for crisp magnification.
+function makeOff(drawFn) {
+  const c = document.createElement('canvas');
+  c.width = BASE_W * OFF_SCALE; c.height = BASE_H * OFF_SCALE;
+  const octx = c.getContext('2d');
+  octx.scale(OFF_SCALE, OFF_SCALE);
+  drawFn(octx);
+  return c;
+}
+function cardArt(card, side, detail) {
+  if (!detail) {
+    if (!offCache.plain[side]) offCache.plain[side] = makeOff(o => side === 'back' ? drawCardReverse(o, 0, 0, BASE_W, BASE_H, card, false) : drawCardFace(o, 0, 0, BASE_W, BASE_H, card, false));
+    return offCache.plain[side];
+  }
+  const opts = detailOpts();
+  const key = side + '|' + opts.visible + '|' + opts.lamp + '|' + !!card.grades.dust;
+  if (offCache.detailKey !== key) {
+    offCache.detail = makeOff(o => side === 'back' ? drawCardReverse(o, 0, 0, BASE_W, BASE_H, card, true) : drawCardFace(o, 0, 0, BASE_W, BASE_H, card, opts));
+    offCache.detailKey = key;
+  }
+  return offCache.detail;
+}
+// drawImage with a source rect that may fall outside the image: clip both.
+function drawSub(ctx, img, sx, sy, sw, sh, dx, dy, dw, dh) {
+  const kx = dw / sw, ky = dh / sh;
+  let x0 = Math.max(0, sx), y0 = Math.max(0, sy);
+  const x1 = Math.min(img.width, sx + sw), y1 = Math.min(img.height, sy + sh);
+  if (x1 <= x0 || y1 <= y0) return;
+  ctx.drawImage(img, x0, y0, x1 - x0, y1 - y0, dx + (x0 - sx) * kx, dy + (y0 - sy) * ky, (x1 - x0) * kx, (y1 - y0) * ky);
+}
+
+function deskFS() { return deskLayout === 'narrow' ? 1.6 : 1; }
+function drawFelt() {
+  const W = desk.width, H = desk.height;
+  dctx.setTransform(1, 0, 0, 1, 0, 0);
+  dctx.clearRect(0, 0, W, H);
+  dctx.fillStyle = '#14100a'; dctx.fillRect(0, 0, W, H);
+  const wg = dctx.createLinearGradient(0, 0, W, H);
   wg.addColorStop(0, '#7a5327'); wg.addColorStop(0.5, '#5a3a1a'); wg.addColorStop(1, '#3f2710');
-  dctx.fillStyle = wg;
-  roundRect(dctx, 8, 8, desk.width - 16, desk.height - 16, 20); dctx.fill();
+  dctx.fillStyle = wg; roundRect(dctx, 8, 8, W - 16, H - 16, 20); dctx.fill();
   dctx.strokeStyle = 'rgba(242,183,5,0.35)'; dctx.lineWidth = 2;
-  roundRect(dctx, 14, 14, desk.width - 28, desk.height - 28, 16); dctx.stroke();
-  // felt with a warm light pool
-  const fg = dctx.createRadialGradient(desk.width / 2, desk.height / 2, 60, desk.width / 2, desk.height / 2, 380);
+  roundRect(dctx, 14, 14, W - 28, H - 28, 16); dctx.stroke();
+  const fg = dctx.createRadialGradient(W / 2, H * 0.62, 60, W / 2, H / 2, Math.max(W, H) * 0.75);
   fg.addColorStop(0, '#22663a'); fg.addColorStop(0.6, '#17351f'); fg.addColorStop(1, '#0e2413');
-  dctx.fillStyle = fg;
-  roundRect(dctx, 20, 20, desk.width - 40, desk.height - 40, 18); dctx.fill();
-  // felt speckle (deterministic so the table doesn't shimmer between draws)
+  dctx.fillStyle = fg; roundRect(dctx, 20, 20, W - 40, H - 40, 18); dctx.fill();
   let seed = 1234567;
   const rnd = () => { seed = (seed * 1103515245 + 12345) & 0x7fffffff; return seed / 0x7fffffff; };
-  for (let i = 0; i < 260; i++) {
-    const sx = 24 + rnd() * (desk.width - 48), sy = 24 + rnd() * (desk.height - 48);
+  for (let i = 0; i < 300; i++) {
+    const sx = 24 + rnd() * (W - 48), sy = 24 + rnd() * (H - 48);
     dctx.fillStyle = rnd() < 0.5 ? 'rgba(255,255,255,0.045)' : 'rgba(0,0,0,0.08)';
     dctx.fillRect(sx, sy, 1.6, 1.6);
   }
-  // stitched border on the felt
   dctx.strokeStyle = 'rgba(242,220,150,0.28)'; dctx.lineWidth = 1.5;
-  dctx.setLineDash([7, 6]);
-  roundRect(dctx, 30, 30, desk.width - 60, desk.height - 60, 12); dctx.stroke();
-  dctx.setLineDash([]);
-  if (!card) {
-    // face-down card back on the empty desk
-    drawCardBack(dctx, CARD.x, CARD.y, CARD.w, CARD.h);
-    dctx.fillStyle = '#e8dcc0'; dctx.font = '16px system-ui, sans-serif'; dctx.textAlign = 'center'; dctx.textBaseline = 'middle';
-    dctx.fillText('No card on the desk — open a pack or pick one from your Collection.', desk.width / 2, desk.height - 24);
-    return;
+  dctx.setLineDash([7, 6]); roundRect(dctx, 30, 30, W - 60, H - 60, 12); dctx.stroke(); dctx.setLineDash([]);
+}
+const GLOW_OK = '#3fb950', GLOW_BAD = '#f0b429';
+// Green/amber glows on the regions already inspected (card-local units).
+function drawGlows(ctx, card, side) {
+  const I = state.inspect;
+  const line = (col, w, fn) => {
+    ctx.save(); ctx.strokeStyle = col; ctx.lineWidth = w; ctx.lineCap = 'round';
+    ctx.shadowColor = col; ctx.shadowBlur = 10; ctx.beginPath(); fn(); ctx.stroke(); ctx.restore();
+  };
+  // corners: L brackets
+  const corners = side === 'front' ? card.grades.corners : card.grades.back.corners;
+  I.corners[side].forEach((seen, i) => {
+    if (!seen) return;
+    const [fx, fy] = CORNER_POS[i], L = 30, p = 3;
+    const cx = fx ? BASE_W - p : p, cy = fy ? BASE_H - p : p, sx = fx ? -1 : 1, sy = fy ? -1 : 1;
+    line(corners[i] ? GLOW_BAD : GLOW_OK, 3.5, () => {
+      ctx.moveTo(cx, cy + sy * L); ctx.lineTo(cx, cy + sy * 10); ctx.quadraticCurveTo(cx, cy, cx + sx * 10, cy); ctx.lineTo(cx + sx * L, cy);
+    });
+  });
+  // edges: a bar along the middle of each checked edge
+  const wear = card.grades.edges;
+  for (const e of ['top', 'bottom', 'left', 'right']) {
+    if (!I.edges[e]) continue;
+    const col = edgeFlawed(wear, e) ? GLOW_BAD : GLOW_OK;
+    line(col, 3, () => {
+      if (e === 'top') { ctx.moveTo(52, 2.5); ctx.lineTo(BASE_W - 52, 2.5); }
+      if (e === 'bottom') { ctx.moveTo(52, BASE_H - 2.5); ctx.lineTo(BASE_W - 52, BASE_H - 2.5); }
+      if (e === 'left') { ctx.moveTo(2.5, 52); ctx.lineTo(2.5, BASE_H - 52); }
+      if (e === 'right') { ctx.moveTo(BASE_W - 2.5, 52); ctx.lineTo(BASE_W - 2.5, BASE_H - 52); }
+    });
   }
-  if (!off) buildOffscreen(card);
-  // soft drop shadow under the card
+  // border: the measured inner frame + split labels
+  if (I.border[side]) {
+    const c = side === 'front' ? card.grades.centering : card.grades.back.centering;
+    const sc = splitScore(worstSplit(c), side === 'front' ? FRONT_CENTERING : BACK_CENTERING);
+    const col = sc >= 9 ? GLOW_OK : GLOW_BAD, off = centerOffsets(c);
+    ctx.save(); ctx.setLineDash([4, 3]);
+    line(col, 1.4, () => { ctx.rect(12 + off.lr, 12 + off.tb, BASE_W - 24, BASE_H - 24); });
+    ctx.restore();
+    ctx.save();
+    ctx.font = '800 10px system-ui, sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    const tag = (t, x, y) => {
+      const w = ctx.measureText(t).width + 8;
+      ctx.fillStyle = 'rgba(10,8,4,0.78)'; roundRect(ctx, x - w / 2, y - 7, w, 14, 7); ctx.fill();
+      ctx.fillStyle = col; ctx.fillText(t, x, y + 0.5);
+    };
+    // labels sit just under the card so they never hide the art or text
+    tag(splitText(c.lr) + ' L/R', BASE_W / 2 - 38, BASE_H + 13);
+    tag(splitText(c.tb) + ' T/B', BASE_W / 2 + 38, BASE_H + 13);
+    ctx.restore();
+  }
+  // face: brackets around the face, rings around flaws you've found
+  if (side === 'front' && I.face) {
+    const defs = surfaceDefectsOf(card.grades).filter(defectVisible);
+    const flawed = defs.length > 0 || card.grades.dust;
+    const col = flawed ? GLOW_BAD : GLOW_OK, a = 34, b = BASE_W - 34, t = 34, u = BASE_H - 34, L = 16;
+    line(col, 2, () => {
+      ctx.moveTo(a, t + L); ctx.lineTo(a, t); ctx.lineTo(a + L, t);
+      ctx.moveTo(b - L, t); ctx.lineTo(b, t); ctx.lineTo(b, t + L);
+      ctx.moveTo(a, u - L); ctx.lineTo(a, u); ctx.lineTo(a + L, u);
+      ctx.moveTo(b - L, u); ctx.lineTo(b, u); ctx.lineTo(b, u - L);
+    });
+    for (const d of defs) line(GLOW_BAD, 1.5, () => { ctx.arc(d.type === 'roller' ? BASE_W / 2 : d.x, d.y, 9, 0, Math.PI * 2); });
+  }
+}
+function drawEmptyDesk(text) {
+  drawCardBack(dctx, CARD.x, CARD.y, CARD.w, CARD.h);
+  dctx.fillStyle = '#e8dcc0'; dctx.font = Math.round(15 * deskFS()) + 'px system-ui, sans-serif';
+  dctx.textAlign = 'center'; dctx.textBaseline = 'middle';
+  dctx.fillText(text, desk.width / 2, desk.height - 26 * deskFS(), desk.width - 60);
+}
+function drawDesk() {
+  const card = deskCard();
+  drawFelt();
+  if (!card) { drawEmptyDesk('No card on the desk. Open a pack or pick one from your Collection.'); drawInset(null); drawReadout(null); return; }
+  const side = displayedSide();
+  // card on the table (zoom/pan transform, flip squash around its center)
+  dctx.save();
+  roundRect(dctx, 20, 20, desk.width - 40, desk.height - 40, 18); dctx.clip();
+  dctx.setTransform(view.z, 0, 0, view.z, view.tx, view.ty);
+  const sx = flipScale(), cx = CARD.x + CARD.w / 2;
+  dctx.translate(cx, 0); dctx.scale(sx, 1); dctx.translate(-cx, 0);
   dctx.save();
   dctx.shadowColor = 'rgba(0,0,0,0.55)'; dctx.shadowBlur = 18; dctx.shadowOffsetY = 8;
-  dctx.fillStyle = '#000';
-  roundRect(dctx, CARD.x, CARD.y, CARD.w, CARD.h, 14); dctx.fill();
+  dctx.fillStyle = '#000'; roundRect(dctx, CARD.x, CARD.y, CARD.w, CARD.h, 14 * CARD.w / BASE_W); dctx.fill();
   dctx.restore();
-  drawCardFace(dctx, CARD.x, CARD.y, CARD.w, CARD.h, card, false);
-  // light sheen across the card (angle follows the slider)
-  const g = dctx.createLinearGradient(CARD.x, CARD.y, CARD.x + CARD.w, CARD.y + CARD.h);
-  const a = Math.abs(state.light) / 60;
-  g.addColorStop(0, 'rgba(255,255,255,' + (a * 0.25) + ')');
+  // zoomed in, the table shows the detail render so flaws are visible
+  dctx.drawImage(cardArt(card, side, view.z > 1.5), CARD.x, CARD.y, CARD.w, CARD.h);
+  // light sheen follows the angle
+  const a = Math.min(1, Math.abs(state.light) / 60);
+  const g = state.light >= 0
+    ? dctx.createLinearGradient(CARD.x, CARD.y, CARD.x + CARD.w, CARD.y + CARD.h)
+    : dctx.createLinearGradient(CARD.x + CARD.w, CARD.y, CARD.x, CARD.y + CARD.h);
+  g.addColorStop(0, 'rgba(255,255,255,' + (a * 0.28) + ')');
   g.addColorStop(0.5, 'rgba(255,255,255,0)');
-  g.addColorStop(1, 'rgba(255,255,255,' + (a * 0.12) + ')');
-  dctx.fillStyle = g;
-  roundRect(dctx, CARD.x, CARD.y, CARD.w, CARD.h, 14); dctx.fill();
-  // vignette over the table (card and loupe stay bright)
-  const vg = dctx.createRadialGradient(desk.width / 2, desk.height / 2, 200, desk.width / 2, desk.height / 2, 460);
-  vg.addColorStop(0, 'rgba(0,0,0,0)'); vg.addColorStop(1, 'rgba(0,0,0,0.32)');
-  dctx.fillStyle = vg; dctx.fillRect(0, 0, desk.width, desk.height);
-  // loupe: the PROBE is under the finger, the LENS floats offset from it
-  const px = loupe.x, py = loupe.y;
-  const lc = loupeCenter(loupe), lx = lc.x, ly = lc.y;
-  if (loupe.active) {
-    // dashed connector from the fingertip to the lens edge
-    dctx.save();
-    dctx.strokeStyle = 'rgba(242,183,5,0.75)'; dctx.lineWidth = 2; dctx.setLineDash([5, 5]);
-    dctx.beginPath(); dctx.moveTo(px, py); dctx.lineTo(lx, ly); dctx.stroke();
-    dctx.setLineDash([]);
-    // probe marker (peeks out around the fingertip)
-    dctx.strokeStyle = '#f2b705'; dctx.lineWidth = 2.5;
-    dctx.beginPath(); dctx.arc(px, py, 10, 0, Math.PI * 2); dctx.stroke();
-    dctx.restore();
+  g.addColorStop(1, 'rgba(255,255,255,' + (a * 0.1) + ')');
+  dctx.fillStyle = g; roundRect(dctx, CARD.x, CARD.y, CARD.w, CARD.h, 14 * CARD.w / BASE_W); dctx.fill();
+  if (!flipAnim) {
+    dctx.translate(CARD.x, CARD.y); dctx.scale(CARD.w / BASE_W, CARD.h / BASE_H);
+    drawGlows(dctx, card, side);
+    if (state.probe && loupe.active) {
+      dctx.strokeStyle = 'rgba(242,183,5,0.95)'; dctx.lineWidth = 1.5;
+      const r = INSET_WIN / 2;
+      dctx.strokeRect(state.probe.u - r, state.probe.v - r, INSET_WIN, INSET_WIN);
+    }
   }
-  // lens drop shadow
+  dctx.restore();
+  if (loupeMode === 'float' && loupe.active && !flipAnim) drawFloatLoupe(card);
+  drawInset(card);
+  drawReadout(card);
+  // hint pill (on phones the card fills the bottom, so only while zoomed)
+  const fs = deskFS();
+  if (deskLayout === 'narrow' && view.z <= 1) return;
+  const hint = view.z > 1 ? 'Zoom ' + view.z.toFixed(1) + '× · double-tap to reset' : 'Drag on the card · pinch to zoom · light ' + (state.light > 0 ? '+' : '') + state.light + '°';
+  dctx.font = Math.round(13 * fs) + 'px system-ui, sans-serif';
+  const hw = dctx.measureText(hint).width;
+  const hy = desk.height - 38 * fs;
+  dctx.fillStyle = 'rgba(0,0,0,0.6)'; roundRect(dctx, 22, hy, hw + 20 * fs, 24 * fs, 12 * fs); dctx.fill();
+  dctx.fillStyle = '#f5efe4'; dctx.textAlign = 'left'; dctx.textBaseline = 'middle';
+  dctx.fillText(hint, 22 + 10 * fs, hy + 12 * fs);
+}
+// Jeweler's screen: a fixed magnified window that shows the spot under your
+// finger, so the finger never hides what you're looking at.
+function drawInset(card) {
+  const { x, y, s } = INSET, fs = deskFS();
   dctx.save();
+  dctx.shadowColor = 'rgba(0,0,0,0.6)'; dctx.shadowBlur = 18; dctx.shadowOffsetY = 6;
+  dctx.fillStyle = '#1b130a'; roundRect(dctx, x - 8, y - 8, s + 16, s + 16, 18); dctx.fill();
+  dctx.restore();
+  dctx.save();
+  roundRect(dctx, x, y, s, s, 12); dctx.clip();
+  dctx.fillStyle = '#0d1a10'; dctx.fillRect(x, y, s, s);
+  const p = state.probe;
+  if (card && p && !flipAnim) {
+    const img = cardArt(card, state.side, true), k = OFF_SCALE, win = INSET_WIN;
+    drawSub(dctx, img, (p.u - win / 2) * k, (p.v - win / 2) * k, win * k, win * k, x, y, s, s);
+    // raking-light glare across the glass
+    if (state.light) {
+      const gg = dctx.createLinearGradient(x, y, x + s, y + s);
+      const al = Math.min(0.22, Math.abs(state.light) / 250);
+      gg.addColorStop(state.light > 0 ? 0 : 1, 'rgba(255,250,230,' + al + ')'); gg.addColorStop(0.55, 'rgba(255,250,230,0)');
+      dctx.fillStyle = gg; dctx.fillRect(x, y, s, s);
+    }
+    dctx.strokeStyle = 'rgba(242,183,5,0.55)'; dctx.lineWidth = 1.5;
+    const m = x + s / 2, n = y + s / 2;
+    dctx.beginPath(); dctx.moveTo(m - 14, n); dctx.lineTo(m - 4, n); dctx.moveTo(m + 4, n); dctx.lineTo(m + 14, n);
+    dctx.moveTo(m, n - 14); dctx.lineTo(m, n - 4); dctx.moveTo(m, n + 4); dctx.lineTo(m, n + 14); dctx.stroke();
+  } else {
+    dctx.fillStyle = 'rgba(232,220,192,0.75)'; dctx.font = Math.round(14 * fs) + 'px system-ui, sans-serif';
+    dctx.textAlign = 'center'; dctx.textBaseline = 'middle';
+    dctx.fillText(card ? 'Touch the card' : 'No card', x + s / 2, y + s / 2 - 10 * fs);
+    dctx.font = Math.round(12 * fs) + 'px system-ui, sans-serif'; dctx.fillStyle = 'rgba(232,220,192,0.5)';
+    dctx.fillText(card ? 'the magnified view shows here' : '', x + s / 2, y + s / 2 + 12 * fs);
+  }
+  // glass highlight
+  const gl = dctx.createRadialGradient(x + s * 0.3, y + s * 0.25, 4, x + s * 0.3, y + s * 0.25, s * 0.9);
+  gl.addColorStop(0, 'rgba(255,255,255,0.10)'); gl.addColorStop(1, 'rgba(255,255,255,0)');
+  dctx.fillStyle = gl; dctx.fillRect(x, y, s, s);
+  dctx.restore();
+  dctx.strokeStyle = '#f2b705'; dctx.lineWidth = 3; roundRect(dctx, x, y, s, s, 12); dctx.stroke();
+  // caption + live dot
+  dctx.fillStyle = 'rgba(10,8,4,0.8)'; roundRect(dctx, x + 8, y + 8, 128 * fs, 20 * fs, 10 * fs); dctx.fill();
+  dctx.fillStyle = '#ffe9a8'; dctx.font = '800 ' + Math.round(10.5 * fs) + 'px system-ui, sans-serif';
+  dctx.textAlign = 'left'; dctx.textBaseline = 'middle';
+  dctx.fillText('LOUPE ' + (BASE_W / INSET_WIN * (CARD.w / BASE_W)).toFixed(1) + '× · ' + (state.side === 'back' ? 'BACK' : 'FRONT'), x + 16, y + 8 + 10 * fs);
+  if (loupe.active && card) {
+    dctx.fillStyle = '#ff4d4d'; dctx.beginPath(); dctx.arc(x + s - 18, y + 18, 5 * fs, 0, Math.PI * 2); dctx.fill();
+  }
+}
+function drawReadout(card) {
+  const { x, y, w, h } = READOUT, fs = deskFS(), narrow = deskLayout === 'narrow';
+  dctx.fillStyle = 'rgba(16,11,6,0.86)'; roundRect(dctx, x, y, w, h, 12); dctx.fill();
+  dctx.strokeStyle = 'rgba(242,183,5,0.4)'; dctx.lineWidth = 1.5; roundRect(dctx, x, y, w, h, 12); dctx.stroke();
+  dctx.textAlign = 'left'; dctx.textBaseline = 'top';
+  const pad = 12 * fs, lineH = 17 * fs; let ty = y + pad * 0.8;
+  const text = (t, col, weight, size) => {
+    dctx.fillStyle = col; dctx.font = (weight || 600) + ' ' + Math.round((size || 13) * fs) + 'px system-ui, sans-serif';
+    dctx.fillText(t, x + pad, ty, w - pad * 2); ty += lineH * ((size || 13) / 13);
+  };
+  if (!card) { text('Inspection readout', '#ffe9a8', 800, 14); text('Put a card on the desk.', '#b8a98c'); return; }
+  // checklist chips, laid out first so the text knows how much room it has
+  const I = state.inspect;
+  const chips = [
+    [narrow ? 'Center' : 'Cent', (I.border.front ? 1 : 0) + (I.border.back ? 1 : 0), 2],
+    [narrow ? 'Corners' : 'Corn', I.corners.front.filter(Boolean).length + I.corners.back.filter(Boolean).length, 8],
+    ['Edges', Object.values(I.edges).filter(Boolean).length, 4],
+    [narrow ? 'Surface' : 'Surf', I.face ? 1 : 0, 1],
+  ];
+  const chipH = 18 * fs, gap = 6 * fs;
+  dctx.font = '700 ' + Math.round(11 * fs) + 'px system-ui, sans-serif';
+  const widths = chips.map(([n, k, of]) => dctx.measureText(n + ' ' + k + '/' + of).width + (k >= of ? 22 : 12) * fs);
+  const pos = []; let cx = x + pad, rows = 1;
+  if (narrow) { // 2x2 grid
+    const cw = (w - pad * 2 - gap) / 2;
+    chips.forEach((c, i) => pos.push([x + pad + (i % 2) * (cw + gap), Math.floor(i / 2), cw])); rows = 2;
+  } else {
+    let row = 0;
+    chips.forEach((c, i) => { if (cx + widths[i] > x + w - pad) { cx = x + pad; row++; } pos.push([cx, row, widths[i]]); cx += widths[i] + gap; });
+    rows = row + 1;
+  }
+  const chipTop = y + h - pad - rows * chipH - (rows - 1) * gap;
+  chips.forEach(([name, n, of], i) => {
+    const [px, row, cw] = pos[i], py = chipTop + row * (chipH + gap), done = n >= of;
+    dctx.fillStyle = done ? 'rgba(63,185,80,0.22)' : 'rgba(255,255,255,0.06)';
+    roundRect(dctx, px, py, cw, chipH, chipH / 2); dctx.fill();
+    let tx = px + 6 * fs;
+    if (done) { // drawn tick (no font dependency)
+      dctx.strokeStyle = GLOW_OK; dctx.lineWidth = 2 * fs; dctx.beginPath();
+      dctx.moveTo(tx, py + chipH * 0.52); dctx.lineTo(tx + 3.5 * fs, py + chipH * 0.74); dctx.lineTo(tx + 9 * fs, py + chipH * 0.28); dctx.stroke();
+      tx += 13 * fs;
+    }
+    dctx.fillStyle = done ? GLOW_OK : '#cdbf9f'; dctx.textBaseline = 'middle';
+    dctx.fillText(name + ' ' + n + '/' + of, tx, py + chipH / 2 + 0.5);
+  });
+  dctx.textBaseline = 'top';
+  const info = state.probeInfo;
+  text(info ? info.zone : 'Readout', '#ffe9a8', 800, 14);
+  if (narrow) text('Light ' + (state.light > 0 ? '+' : '') + state.light + '°' + (state.upgrades.lamp ? ' · lamp on' : '') + (gyro.on ? ' · phone tilt' : ''), '#b8a98c', 600, 12);
+  const body = info ? info.text : 'Drag over corners, edges, the border and the face.';
+  const col = !info || info.flawed === null ? '#d9ccae' : info.flawed ? GLOW_BAD : GLOW_OK;
+  dctx.font = '600 ' + Math.round(13 * fs) + 'px system-ui, sans-serif';
+  const lines = []; let ln = '';
+  for (const wd of body.split(' ')) {
+    const t = ln ? ln + ' ' + wd : wd;
+    if (dctx.measureText(t).width > w - pad * 2 && ln) { lines.push(ln); ln = wd; } else ln = t;
+  }
+  if (ln) lines.push(ln);
+  const room = Math.max(1, Math.floor((chipTop - 4 * fs - ty) / lineH));
+  lines.slice(0, room).forEach((l, i) => text(i === room - 1 && lines.length > room ? l + '…' : l, col));
+}
+function drawFloatLoupe(card) {
+  const lc = loupeCenter(loupe), lx = lc.x, ly = lc.y, px = loupe.x, py = loupe.y;
+  dctx.save();
+  dctx.strokeStyle = 'rgba(242,183,5,0.75)'; dctx.lineWidth = 2; dctx.setLineDash([5, 5]);
+  dctx.beginPath(); dctx.moveTo(px, py); dctx.lineTo(lx, ly); dctx.stroke(); dctx.setLineDash([]);
   dctx.shadowColor = 'rgba(0,0,0,0.5)'; dctx.shadowBlur = 16; dctx.shadowOffsetY = 6;
   dctx.beginPath(); dctx.arc(lx, ly, LOUPE_R, 0, Math.PI * 2); dctx.fillStyle = '#000'; dctx.fill();
   dctx.restore();
-  // magnified card region (2x offscreen, centered on the PROBE)
   dctx.save();
   dctx.beginPath(); dctx.arc(lx, ly, LOUPE_R, 0, Math.PI * 2); dctx.clip();
-  const sx = (px - CARD.x) * 2 - LOUPE_R, sy = (py - CARD.y) * 2 - LOUPE_R;
-  dctx.drawImage(off, sx, sy, LOUPE_R * 2, LOUPE_R * 2, lx - LOUPE_R, ly - LOUPE_R, LOUPE_R * 2, LOUPE_R * 2);
-  // glass highlight
-  const gl = dctx.createRadialGradient(lx - LOUPE_R * 0.4, ly - LOUPE_R * 0.45, 4, lx - LOUPE_R * 0.4, ly - LOUPE_R * 0.45, LOUPE_R * 1.1);
-  gl.addColorStop(0, 'rgba(255,255,255,0.14)'); gl.addColorStop(0.5, 'rgba(255,255,255,0.02)'); gl.addColorStop(1, 'rgba(255,255,255,0)');
-  dctx.fillStyle = gl; dctx.fillRect(lx - LOUPE_R, ly - LOUPE_R, LOUPE_R * 2, LOUPE_R * 2);
+  dctx.fillStyle = '#0d1a10'; dctx.fillRect(lx - LOUPE_R, ly - LOUPE_R, LOUPE_R * 2, LOUPE_R * 2);
+  if (state.probe) {
+    const img = cardArt(card, state.side, true), k = OFF_SCALE, win = INSET_WIN * 0.8;
+    drawSub(dctx, img, (state.probe.u - win / 2) * k, (state.probe.v - win / 2) * k, win * k, win * k, lx - LOUPE_R, ly - LOUPE_R, LOUPE_R * 2, LOUPE_R * 2);
+  }
   dctx.restore();
-  // brass ring: dark outer, gold band, bright inner edge
-  dctx.strokeStyle = '#2a1c08'; dctx.lineWidth = 7;
-  dctx.beginPath(); dctx.arc(lx, ly, LOUPE_R + 1, 0, Math.PI * 2); dctx.stroke();
-  dctx.strokeStyle = '#f2b705'; dctx.lineWidth = 4;
-  dctx.beginPath(); dctx.arc(lx, ly, LOUPE_R, 0, Math.PI * 2); dctx.stroke();
-  dctx.strokeStyle = 'rgba(255,233,168,0.9)'; dctx.lineWidth = 1.5;
-  dctx.beginPath(); dctx.arc(lx, ly, LOUPE_R - 4, 0, Math.PI * 2); dctx.stroke();
-  // crosshair marks the magnified center (the probe point)
-  dctx.strokeStyle = 'rgba(242,183,5,0.6)'; dctx.lineWidth = 2;
-  dctx.beginPath(); dctx.moveTo(lx - 10, ly); dctx.lineTo(lx + 10, ly); dctx.moveTo(lx, ly - 10); dctx.lineTo(lx, ly + 10); dctx.stroke();
-  // hint text on a dark pill
-  const hint = 'Loupe floats above your finger — drag over corners, edges, border and face. Light: ' + state.light + '°';
-  dctx.font = '14px system-ui, sans-serif';
-  const hw = dctx.measureText(hint).width;
-  dctx.fillStyle = 'rgba(0,0,0,0.55)';
-  roundRect(dctx, 20, desk.height - 40, hw + 20, 26, 13); dctx.fill();
-  dctx.fillStyle = '#f5efe4'; dctx.textAlign = 'left'; dctx.textBaseline = 'middle';
-  dctx.fillText(hint, 30, desk.height - 27);
+  dctx.strokeStyle = '#2a1c08'; dctx.lineWidth = 7; dctx.beginPath(); dctx.arc(lx, ly, LOUPE_R + 1, 0, Math.PI * 2); dctx.stroke();
+  dctx.strokeStyle = '#f2b705'; dctx.lineWidth = 4; dctx.beginPath(); dctx.arc(lx, ly, LOUPE_R, 0, Math.PI * 2); dctx.stroke();
 }
 
-// Which inspection zone is the loupe over? Returns 'corner-i' | 'edge-name' | 'border' | 'face' | null
-function zoneAt(px, py) {
-  const { x, y, w, h } = CARD;
-  if (px < x || px > x + w || py < y || py > y + h) return null;
-  const cs = 46; // corner zone size
-  if (px < x + cs && py < y + cs) return 'corner-0';
-  if (px > x + w - cs && py < y + cs) return 'corner-1';
-  if (px < x + cs && py > y + h - cs) return 'corner-2';
-  if (px > x + w - cs && py > y + h - cs) return 'corner-3';
-  const es = 12; // edge strip
-  if (py < y + es) return 'edge-top';
-  if (py > y + h - es) return 'edge-bottom';
-  if (px < x + es) return 'edge-left';
-  if (px > x + w - es) return 'edge-right';
-  // border ring (centering) vs face
-  if (px < x + 30 || px > x + w - 30 || py < y + 30 || py > y + h - 30) return 'border';
+// ---------- Zones & inspection ----------
+// Card-local zones: corners (46u squares), 12u edge strips, a 30u border ring, the face.
+function zoneAtLocal(u, v) {
+  if (u < 0 || u > BASE_W || v < 0 || v > BASE_H) return null;
+  const cs = 46;
+  if (u < cs && v < cs) return 'corner-0';
+  if (u > BASE_W - cs && v < cs) return 'corner-1';
+  if (u < cs && v > BASE_H - cs) return 'corner-2';
+  if (u > BASE_W - cs && v > BASE_H - cs) return 'corner-3';
+  const es = 12;
+  if (v < es) return 'edge-top';
+  if (v > BASE_H - es) return 'edge-bottom';
+  if (u < es) return 'edge-left';
+  if (u > BASE_W - es) return 'edge-right';
+  if (u < 30 || u > BASE_W - 30 || v < 30 || v > BASE_H - 30) return 'border';
   return 'face';
 }
-
+// Desk-pixel API (kept for the tests): which zone is under (px, py)?
+function zoneAt(px, py) { const p = toCardLocal(px, py); return zoneAtLocal(p.u, p.v); }
+function describeSurface(card, visibleOnly) {
+  const defs = surfaceDefectsOf(card.grades).filter(d => !visibleOnly || defectVisible(d));
+  const counts = {};
+  for (const d of defs) counts[d.type] = (counts[d.type] || 0) + 1;
+  const parts = Object.entries(counts).map(([t, n]) => n + ' ' + (n === 1 ? SURFACE_DEFECTS[t].label.toLowerCase() : SURFACE_DEFECTS[t].plural));
+  if (card.grades.dust) parts.push('fingerprints/dust');
+  return parts;
+}
 function inspectAt(px, py) {
   const card = deskCard();
-  if (!card) return;
-  const z = zoneAt(px, py);
+  if (!card || flipAnim || atGrader(card)) return;
+  const p = toCardLocal(px, py);
+  const z = zoneAtLocal(p.u, p.v);
   if (!z) return;
+  state.probe = { u: Math.max(0, Math.min(BASE_W, p.u)), v: Math.max(0, Math.min(BASE_H, p.v)) };
+  const I = state.inspect, side = state.side, Side = side === 'back' ? 'Back' : 'Front';
+  let info = null, msg = null;
   if (z.startsWith('corner-')) {
     const i = +z.split('-')[1];
-    if (!state.cornerSeen[i]) {
-      state.cornerSeen[i] = true;
-      $('desk-msg').textContent = 'Corner ' + ['top-left', 'top-right', 'bottom-left', 'bottom-right'][i] + ': ' +
-        (card.grades.corners[i] ? '⚠️ whitening visible!' : '✅ clean.');
-      if (state.cornerSeen.every(Boolean)) {
-        state.inspected.corners = true;
-        $('desk-msg').textContent = 'All 4 corners checked — Corners metric revealed.';
-      }
+    const white = (side === 'front' ? card.grades.corners : card.grades.back.corners)[i];
+    info = { zone: Side + ' ' + CORNER_NAMES[i].toLowerCase() + ' corner', text: white ? 'Whitening on the tip.' : 'Sharp and clean.', flawed: white };
+    if (!I.corners[side][i]) {
+      I.corners[side][i] = true;
+      msg = info.zone + ': ' + (white ? '⚠️ whitening.' : '✅ clean.');
+      if (I.corners[side].every(Boolean)) msg = 'All 4 ' + side + ' corners checked.' + (side === 'front' && !I.corners.back.every(Boolean) ? ' Flip the card for the back corners.' : '');
     }
   } else if (z.startsWith('edge-')) {
     const e = z.split('-')[1];
-    if (!state.edgeSeen[e]) {
-      state.edgeSeen[e] = true;
-      $('desk-msg').textContent = 'Edge (' + e + ') checked — wear level ' + card.grades.edges + '/6 overall.';
-      if (Object.values(state.edgeSeen).every(Boolean)) {
-        state.inspected.edges = true;
-        $('desk-msg').textContent = 'All 4 edges checked — Edges metric revealed.';
-      }
+    const bad = edgeFlawed(card.grades.edges, e);
+    info = { zone: e[0].toUpperCase() + e.slice(1) + ' edge', text: bad ? 'Chipping along the edge.' : 'Smooth, no chipping.', flawed: bad };
+    if (!I.edges[e]) {
+      I.edges[e] = true;
+      msg = info.zone + ': ' + (bad ? '⚠️ chipping.' : '✅ clean.');
+      if (Object.values(I.edges).every(Boolean)) msg = 'All 4 edges checked.';
     }
   } else if (z === 'border') {
-    if (!state.inspected.centering) {
-      state.inspected.centering = true;
-      $('desk-msg').textContent = 'Centering measured: ' + card.grades.centering.lr + '/' + (100 - card.grades.centering.lr) +
-        ' L/R, ' + card.grades.centering.tb + '/' + (100 - card.grades.centering.tb) + ' T/B.';
+    const c = side === 'front' ? card.grades.centering : card.grades.back.centering;
+    const sc = splitScore(worstSplit(c), side === 'front' ? FRONT_CENTERING : BACK_CENTERING);
+    info = { zone: Side + ' centering', text: splitText(c.lr) + ' L/R · ' + splitText(c.tb) + ' T/B' + (side === 'back' ? ' (backs allow up to 60/40 for a 10)' : ''), flawed: sc < 9 };
+    if (!I.border[side]) {
+      I.border[side] = true;
+      msg = Side + ' centering measured: ' + splitText(c.lr) + ' L/R, ' + splitText(c.tb) + ' T/B.';
     }
   } else if (z === 'face') {
-    if (Math.abs(state.light) > 25 && !state.inspected.surface) {
-      state.inspected.surface = true;
-      $('desk-msg').textContent = 'Under the tilted light you spot ' + card.grades.surface + ' print line(s) on the surface.';
-    } else if (!state.inspected.surface) {
-      $('desk-msg').textContent = 'The face looks clean head-on — tilt the light past ±25° to check for print lines.';
+    if (side === 'back') {
+      info = { zone: 'Back face', text: 'Graders score surface on the front. Check the back corners and border here.', flawed: null };
+    } else if (lightVisible()) {
+      const parts = describeSurface(card, true);
+      info = { zone: 'Surface', text: parts.length ? 'Found ' + parts.join(', ') + '.' : 'Clean under the light.', flawed: parts.length > 0 };
+      if (!I.face) { I.face = true; msg = parts.length ? 'Surface: ' + parts.join(', ') + '.' : 'Surface looks clean under the raking light.'; }
+    } else {
+      info = { zone: 'Surface', text: 'Looks clean head-on. Set the light to ±30° to catch flaws.', flawed: null };
+      if (!I.face) msg = 'The face looks clean head-on. Set the light to ±30° (or tilt your phone) to check for flaws.';
     }
   }
+  state.probeInfo = info;
+  if (msg) $('desk-msg').textContent = msg;
+  recomputeInspected();
   updateMetricsUI();
   drawDesk();
 }
-
+function subTxt(n) { return Number(n).toFixed(1).replace(/\.0$/, ''); }
+function sideTags(f, b) {
+  return `<span class="side-tag${f ? ' ok' : ''}">FRONT ${f ? '✓' : '·'}</span><span class="side-tag${b ? ' ok' : ''}">BACK ${b ? '✓' : '·'}</span> `;
+}
 function updateMetricsUI() {
   const card = deskCard();
-  const setMetric = (id, done, text) => {
+  const setMetric = (id, done, html) => {
     const el = $(id);
     el.classList.toggle('done', done);
-    el.querySelector('.val').textContent = text;
+    el.querySelector('.val').innerHTML = html;
   };
+  const flip = $('btn-flip');
+  $('btn-zoom-reset').hidden = view.z <= 1;
   if (!card) {
     for (const id of ['m-centering', 'm-corners', 'm-edges', 'm-surface']) $(id).classList.remove('done');
-    $('m-progress').textContent = '0 / 4 metrics';
-    $('btn-raw').disabled = true; $('btn-grade').disabled = true;
+    setMetric('m-centering', false, 'Not inspected — measure the border, front and back');
+    setMetric('m-corners', false, 'Not inspected — check all 4 corners, front and back');
+    setMetric('m-edges', false, 'Not inspected — run along each edge');
+    setMetric('m-surface', false, 'Not inspected — set the light to ±30°, check the face');
+    $('m-progress').textContent = '0 / 4 subgrades';
+    $('m-progress-box').classList.remove('estimate');
+    $('btn-raw').disabled = true; $('btn-grade').disabled = true; flip.disabled = true; flip.classList.remove('nudge');
+    $('btn-prep').hidden = true;
     return;
   }
-  const c = card.grades.centering;
-  setMetric('m-centering', state.inspected.centering,
-    state.inspected.centering
-      ? `Centering ${c.lr}/${100 - c.lr} L/R · ${c.tb}/${100 - c.tb} T/B — ${centeringScore(c).toFixed(1)}/10`
-      : 'Not inspected — loupe the border');
-  const white = card.grades.corners.filter(Boolean).length;
-  setMetric('m-corners', state.inspected.corners,
-    state.inspected.corners
-      ? `${white} of 4 corners whitened — ${cornersScore(card.grades.corners).toFixed(1)}/10`
-      : `Not inspected — loupe each corner (${state.cornerSeen.filter(Boolean).length}/4 seen)`);
-  setMetric('m-edges', state.inspected.edges,
-    state.inspected.edges
-      ? `Edge wear ${card.grades.edges}/6 — ${edgesScore(card.grades.edges).toFixed(1)}/10`
-      : `Not inspected — loupe each edge (${Object.values(state.edgeSeen).filter(Boolean).length}/4 seen)`);
-  setMetric('m-surface', state.inspected.surface,
-    state.inspected.surface
-      ? `${card.grades.surface} print line(s) — ${surfaceScore(card.grades.surface).toFixed(1)}/10`
-      : 'Not inspected — tilt light, loupe the face');
+  const I = state.inspect, g = card.grades;
+  flip.disabled = !!flipAnim;
+  flip.textContent = state.side === 'front' ? '🔄 Flip to back' : '🔄 Flip to front';
+  const frontDone = I.border.front && I.corners.front.every(Boolean);
+  const backDone = I.border.back && I.corners.back.every(Boolean);
+  flip.classList.toggle('nudge', (state.side === 'front' && frontDone && !backDone) || (state.side === 'back' && backDone && !I.face));
+  // Centering
+  const cf = g.centering, cb = g.back.centering;
+  let cHtml = sideTags(I.border.front, I.border.back);
+  if (I.border.front) cHtml += `Front ${splitText(cf.lr)} L/R · ${splitText(cf.tb)} T/B`;
+  if (I.border.back) cHtml += `${I.border.front ? '<br>' : ''}Back ${splitText(cb.lr)} L/R · ${splitText(cb.tb)} T/B`;
+  if (state.inspected.centering) cHtml += ` — <b>${subTxt(centeringScore(cf, cb))}</b>`;
+  if (!I.border.front && !I.border.back) cHtml += 'Measure the border';
+  setMetric('m-centering', state.inspected.centering, cHtml);
+  // Corners
+  const nf = I.corners.front.filter(Boolean).length, nb = I.corners.back.filter(Boolean).length;
+  const wf = g.corners.filter((w, i) => w && I.corners.front[i]).length, wb = g.back.corners.filter((w, i) => w && I.corners.back[i]).length;
+  let coHtml = sideTags(nf === 4, nb === 4) + `Front ${nf}/4${wf ? ` (${wf} whitened)` : ''} · Back ${nb}/4${wb ? ` (${wb} whitened)` : ''}`;
+  if (state.inspected.corners) coHtml += ` — <b>${subTxt(cornersScore(g.corners, g.back.corners))}</b>`;
+  setMetric('m-corners', state.inspected.corners, coHtml);
+  // Edges
+  const ne = Object.values(I.edges).filter(Boolean).length;
+  const badE = ['top', 'bottom', 'left', 'right'].filter(e => I.edges[e] && edgeFlawed(g.edges, e));
+  let eHtml = state.inspected.edges
+    ? (badE.length ? 'Chipping on ' + badE.join(', ') : 'All 4 edges clean') + ` — <b>${subTxt(edgesScore(g.edges))}</b>`
+    : `${ne}/4 edges checked${badE.length ? ' · chipping on ' + badE.join(', ') : ''}`;
+  setMetric('m-edges', state.inspected.edges, eHtml);
+  // Surface
+  let sHtml;
+  if (I.face) {
+    const parts = describeSurface(card, !state.upgrades.lamp);
+    sHtml = (parts.length ? parts.join(', ') : 'Clean') + ` — <b>${subTxt(surfaceScore(g, !state.upgrades.lamp))}</b>`;
+    if (!state.upgrades.lamp) sHtml += '<span class="est">≈ estimate: micro-scratches only show under the high-lumen lamp.</span>';
+    if (g.dust && state.upgrades.prep) sHtml += '<span class="est">🧽 Wipe &amp; prep removes the fingerprints (+0.5).</span>';
+  } else sHtml = state.side === 'back' ? 'Flip to the front, set the light to ±30°, check the face' : 'Set the light to ±30°, check the face';
+  setMetric('m-surface', state.inspected.surface, sHtml);
+  // Progress / estimate
   const n = Object.values(state.inspected).filter(Boolean).length;
-  $('m-progress').textContent = n + ' / 4 metrics';
-  $('btn-raw').disabled = false;
-  $('btn-grade').disabled = !(n === 4) || state.cash < GRADING_FEE;
+  const box = $('m-progress-box');
+  if (card.graded) {
+    const gr = card.graded;
+    $('m-progress').innerHTML = `Slabbed: <b>${gr.grade} ${esc(GRADE_NAMES[gr.grade] || '')}</b> · ${esc((LABEL_TIERS[gr.label] || LABEL_TIERS.white).name)}`;
+    box.classList.add('estimate');
+  } else if (n === 4) {
+    const est = overallFromSubs(gradeSubs(g, !state.upgrades.lamp));
+    $('m-progress').innerHTML = `4 / 4 · your estimate: <b>${est} ${esc(GRADE_NAMES[est])}</b>`;
+    box.classList.add('estimate');
+  } else {
+    $('m-progress').textContent = n + ' / 4 subgrades' + (state.side === 'front' && n < 4 && frontDone ? ' · flip to finish' : '');
+    box.classList.remove('estimate');
+  }
+  const cheapest = Math.min(...TIER_ORDER.map(t => GRADING_TIERS[t].fee));
+  $('btn-raw').disabled = !!card.graded || atGrader(card);
+  $('btn-grade').disabled = n !== 4 || !!card.graded || atGrader(card) || state.cash < cheapest;
+  $('btn-prep').hidden = !state.upgrades.prep || !!card.graded;
+  $('btn-prep').disabled = !!card.prepped || !g.dust;
+  $('btn-prep').textContent = card.prepped || !g.dust ? '🧽 Prepped' : '🧽 Wipe & prep';
 }
 
-// ---------- Desk events ----------
+// ---------- Desk events: probe, pinch-zoom, wheel, double-tap ----------
 function deskPos(e) {
   const r = desk.getBoundingClientRect();
-  const cx = (e.touches ? e.touches[0].clientX : e.clientX) - r.left;
-  const cy = (e.touches ? e.touches[0].clientY : e.clientY) - r.top;
-  return { x: cx * (desk.width / r.width), y: cy * (desk.height / r.height) };
+  const cx = e.clientX - r.left, cy = e.clientY - r.top;
+  return { x: cx * (desk.width / (r.width || desk.width)), y: cy * (desk.height / (r.height || desk.height)) };
 }
-desk.addEventListener('pointerdown', e => { loupe.active = true; setLoupeTouch(e.pointerType !== 'mouse'); const p = deskPos(e); loupe.x = p.x; loupe.y = p.y; inspectAt(p.x, p.y); });
-desk.addEventListener('pointermove', e => { if (!loupe.active) return; setLoupeTouch(e.pointerType !== 'mouse'); const p = deskPos(e); loupe.x = p.x; loupe.y = p.y; inspectAt(p.x, p.y); });
-desk.addEventListener('pointerup', () => { loupe.active = false; });
-desk.addEventListener('pointerleave', () => { loupe.active = false; });
-$('light').addEventListener('input', e => {
-  state.light = +e.target.value;
-  $('light-val').textContent = state.light + '°';
-  off = null; // re-render detail layer (print lines appear/disappear)
+const pointers = new Map();
+let pinch = null, lastTap = 0, tapStart = null;
+function pinchState() {
+  const [a, b] = [...pointers.values()];
+  return { d: Math.hypot(a.x - b.x, a.y - b.y) || 1, mx: (a.x + b.x) / 2, my: (a.y + b.y) / 2 };
+}
+desk.addEventListener('pointerdown', e => {
+  const p = deskPos(e);
+  pointers.set(e.pointerId, p);
+  try { desk.setPointerCapture(e.pointerId); } catch (err) { /* jsdom */ }
+  setLoupeTouch(e.pointerType !== 'mouse');
+  if (pointers.size === 2) {
+    loupe.active = false; pinch = Object.assign(pinchState(), { z: view.z });
+    drawDesk(); return;
+  }
+  if (pointers.size > 2) return;
+  tapStart = { x: p.x, y: p.y, t: Date.now() };
+  loupe.active = true; loupe.x = p.x; loupe.y = p.y;
+  inspectAt(p.x, p.y);
   drawDesk();
 });
+desk.addEventListener('pointermove', e => {
+  if (!pointers.has(e.pointerId)) return;
+  const p = deskPos(e);
+  pointers.set(e.pointerId, p);
+  if (pinch && pointers.size === 2) {
+    const s = pinchState();
+    // zoom about the pinch midpoint, and pan with it
+    zoomAt((pinch.z * s.d / pinch.d) / view.z, s.mx, s.my);
+    view.tx += s.mx - pinch.mx; view.ty += s.my - pinch.my; clampView();
+    pinch.mx = s.mx; pinch.my = s.my;
+    updateMetricsUI(); drawDesk(); return;
+  }
+  if (!loupe.active) return;
+  loupe.x = p.x; loupe.y = p.y;
+  inspectAt(p.x, p.y);
+  drawDesk();
+});
+function endPointer(e) {
+  if (!pointers.has(e.pointerId)) return;
+  const p = pointers.get(e.pointerId);
+  pointers.delete(e.pointerId);
+  if (pointers.size < 2) pinch = null;
+  if (pointers.size === 0) {
+    loupe.active = false;
+    // double-tap resets the zoom
+    if (tapStart && Math.hypot(p.x - tapStart.x, p.y - tapStart.y) < 12 && Date.now() - tapStart.t < 250) {
+      if (Date.now() - lastTap < 320 && view.z > 1) { resetView(); updateMetricsUI(); lastTap = 0; } else lastTap = Date.now();
+    }
+    tapStart = null;
+    drawDesk();
+  }
+}
+desk.addEventListener('pointerup', endPointer);
+desk.addEventListener('pointercancel', endPointer);
+desk.addEventListener('pointerleave', e => { if (e.pointerType === 'mouse') endPointer(e); });
+desk.addEventListener('wheel', e => {
+  if (!deskCard()) return;
+  e.preventDefault();
+  const p = deskPos(e);
+  zoomAt(Math.exp(-e.deltaY * 0.0015), p.x, p.y);
+  updateMetricsUI(); drawDesk();
+}, { passive: false });
+function zoomButton(f) {
+  if (!deskCard()) return;
+  const c = { x: (CARD.x + CARD.w / 2) * view.z + view.tx, y: (CARD.y + CARD.h / 2) * view.z + view.ty };
+  if (state.probe) { c.x = (CARD.x + state.probe.u * CARD.w / BASE_W) * view.z + view.tx; c.y = (CARD.y + state.probe.v * CARD.h / BASE_H) * view.z + view.ty; }
+  zoomAt(f, c.x, c.y); updateMetricsUI(); drawDesk();
+}
+$('btn-zoom-in').addEventListener('click', () => zoomButton(1.5));
+$('btn-zoom-out').addEventListener('click', () => zoomButton(1 / 1.5));
+$('btn-zoom-reset').addEventListener('click', () => { resetView(); updateMetricsUI(); drawDesk(); });
+$('btn-loupe-mode').addEventListener('click', () => {
+  loupeMode = loupeMode === 'screen' ? 'float' : 'screen';
+  $('btn-loupe-mode').textContent = loupeMode === 'float' ? '🔎 Floating loupe: on' : '🔎 Floating loupe';
+  drawDesk();
+});
+$('btn-flip').addEventListener('click', () => flipDeskCard(false));
+$('btn-prep').addEventListener('click', () => {
+  const card = deskCard(); if (!card) return;
+  const r = prepCard(card.uid);
+  $('desk-msg').textContent = r.ok ? (r.cleaned ? '🧽 Wiped off the fingerprints and dust. Surface +0.5.' : '🧽 Already clean.') : '❌ ' + r.reason;
+  invalidateCardArt(); updateMetricsUI(); drawDesk();
+});
+
+// ---------- Light: tilt presets + phone gyroscope ----------
+function setLight(v, fromGyro) {
+  state.light = Math.max(-60, Math.min(60, Math.round(v)));
+  document.querySelectorAll('#tilt-seg [data-tilt]').forEach(b => {
+    b.classList.toggle('active', !fromGyro && +b.getAttribute('data-tilt') === state.light);
+  });
+}
+document.querySelectorAll('#tilt-seg [data-tilt]').forEach(b => b.addEventListener('click', () => {
+  if (gyro.on) toggleGyro(false);
+  setLight(+b.getAttribute('data-tilt'));
+  // re-probe so the readout reflects the new light
+  if (state.probe && deskCard()) state.probeInfo = null;
+  updateMetricsUI(); drawDesk();
+}));
+const gyro = { on: false, raf: 0 };
+function onOrient(e) {
+  if (!gyro.on || e.gamma == null) return;
+  setLight(e.gamma * 1.4, true);
+  if (!gyro.raf && typeof requestAnimationFrame === 'function') gyro.raf = requestAnimationFrame(() => { gyro.raf = 0; drawDesk(); });
+}
+async function toggleGyro(on) {
+  const btn = $('btn-gyro');
+  if (on) {
+    if (typeof DeviceOrientationEvent === 'undefined') { $('desk-msg').textContent = 'This device has no motion sensor. Use the light buttons instead.'; return; }
+    try {
+      if (typeof DeviceOrientationEvent.requestPermission === 'function') {
+        const res = await DeviceOrientationEvent.requestPermission();
+        if (res !== 'granted') { $('desk-msg').textContent = 'Motion access was not allowed. Use the light buttons instead.'; return; }
+      }
+    } catch (err) { $('desk-msg').textContent = 'Motion access was not allowed. Use the light buttons instead.'; return; }
+    gyro.on = true; window.addEventListener('deviceorientation', onOrient);
+    $('desk-msg').textContent = '📱 Tilt your phone left or right to rake the light across the card.';
+  } else {
+    gyro.on = false; window.removeEventListener('deviceorientation', onOrient);
+    setLight(state.light);
+  }
+  btn.classList.toggle('on', gyro.on); btn.setAttribute('aria-pressed', String(gyro.on));
+  drawDesk();
+}
+$('btn-gyro').addEventListener('click', () => toggleGyro(!gyro.on));
+
 $('btn-raw').addEventListener('click', () => {
   const card = deskCard(); if (!card) return;
   const r = rawSell(card.uid);
   if (!r.ok) { $('desk-msg').textContent = '❌ ' + r.reason; return; }
-  $('desk-msg').textContent = `💵 Sleeved & sold raw: ${card.name} for ${fmt$(r.amount)}.`;
   refreshStats(); resetInspection(); drawDesk();
+  $('desk-msg').textContent = `💵 Sleeved & sold raw: ${card.name} for ${fmt$(r.amount)}.`;
 });
 $('btn-grade').addEventListener('click', () => {
   const card = deskCard(); if (!card) return;
-  const r = submitGrading(card.uid);
-  if (!r.ok) { $('desk-msg').textContent = '❌ ' + r.reason; return; }
-  refreshStats();
-  showSlabResult(card, r.result);
-  resetInspection(); drawDesk();
+  showTierPicker([card.uid], r => {
+    state.deskUid = null; resetInspection(); drawDesk();
+    if (!r.returned.length) $('desk-msg').textContent = `📮 ${card.name} is off to ${GRADING_TIERS[r.tier].name} grading. Back on day ${card.submission.readyDay}.`;
+  });
 });
 
-function showSlabResult(card, res) {
-  const label = res.grade === 10 ? '💎 GEM MINT 10' : res.grade >= 9 ? '🔥 MINT ' + res.grade : 'Grade ' + res.grade;
-  $('slabbox').innerHTML = `
-    <div style="font-size:15px;color:#9aa3b2">Slabbed &amp; sealed</div>
-    <div style="font-size:28px;font-weight:800;margin:6px 0">${esc(card.name)}</div>
-    <div class="biggrade">${res.grade}</div>
-    <div style="font-weight:700;color:var(--gold)">${label} · ${res.mult}× value${card.variant === '1/1' ? ' · ★ 1 OF 1 ★' : ''}</div>
-    <table>
-      <tr><td>Front Centering</td><td>${res.subs.centering} / 10</td></tr>
-      <tr><td>Corners</td><td>${res.subs.corners} / 10</td></tr>
-      <tr><td>Edges</td><td>${res.subs.edges} / 10</td></tr>
-      <tr><td>Surface</td><td>${res.subs.surface} / 10</td></tr>
-      <tr><td>Base value</td><td>${fmt$(card.base)}</td></tr>
-      <tr><td>Slab value</td><td>${fmt$(res.value)}</td></tr>
-    </table>
-    <button id="btn-slab-ok">Add to Collection</button>`;
+// ---------- Overlay helpers ----------
+function openOverlay(html, cls) {
+  const box = $('slabbox');
+  box.className = 'slabbox' + (cls ? ' ' + cls : '');
+  box.innerHTML = html;
   $('overlay').classList.add('show');
-  $('btn-slab-ok').addEventListener('click', () => {
-    $('overlay').classList.remove('show');
-    showScreen('collection');
-  });
+  return box;
+}
+function closeOverlay() { $('overlay').classList.remove('show'); }
+let toastTimer = null;
+function showToast(html) {
+  const t = $('toast');
+  t.innerHTML = html; t.classList.add('show');
+  clearTimeout(toastTimer); toastTimer = setTimeout(() => t.classList.remove('show'), 3200);
 }
 
+// ---------- Grading service picker ----------
+function showTierPicker(uids, onSent) {
+  const n = uids.length;
+  const rows = TIER_ORDER.map(key => {
+    const t = GRADING_TIERS[key], per = tierFee(key, n), total = per * n;
+    const discounted = per < t.fee;
+    return `<button class="tier ${key}" data-tier="${key}" ${state.cash < total ? 'disabled' : ''}>
+      <span class="t-name">${esc(t.name)}</span>
+      <span class="t-price">${fmt$(per)}${n > 1 ? '<small style="font-size:12px">/card</small>' : ''}${discounted ? `<s>${fmt$(t.fee)}</s>` : ''}</span>
+      <span class="t-note">${t.note}${n > 1 ? ` · total ${fmt$(total)}` : ''}</span>
+    </button>`;
+  }).join('');
+  let hint = '';
+  if (n > 1 && n < BULK_MIN && state.upgrades.bulk) hint = `Add ${BULK_MIN - n} more for the bulk rate.`;
+  else if (n >= BULK_MIN && !state.upgrades.bulk) hint = 'The Bulk Submitter Account (Upgrades) drops this order to $15/card Regular.';
+  const box = openOverlay(`
+    <div class="reveal-head">Grading service</div>
+    <div style="font-size:20px;font-weight:800;margin-top:4px">Send ${n === 1 ? esc(state.inventory.find(c => c.uid === uids[0]).name) : n + ' cards'} to the grader</div>
+    <div class="tiers">${rows}</div>
+    ${hint ? `<p class="sub" style="margin:0 0 10px">${hint}</p>` : ''}
+    <p class="sub" style="margin:0 0 10px">You have ${fmt$(state.cash)}. Days pass when an auction ends or you press End day.</p>
+    <button class="secondary" id="btn-tier-cancel">Cancel</button>`);
+  box.querySelectorAll('[data-tier]').forEach(b => b.addEventListener('click', () => {
+    const r = submitBatch(uids, b.getAttribute('data-tier'));
+    if (!r.ok) { showToast('❌ ' + esc(r.reason)); return; }
+    closeOverlay(); refreshStats();
+    if (onSent) onSent(r);
+    if (r.returned.length) showRevealQueue(r.returned);
+    else showToast(`📮 ${n === 1 ? 'Sent' : n + ' cards sent'} to ${esc(GRADING_TIERS[r.tier].name)} for ${fmt$(r.total)}. Back on <b>day ${r.cards[0].submission.readyDay}</b>${n > 1 ? ' or later' : ''}.`);
+    if (state.screen === 'collection') renderCollection();
+  }));
+  $('btn-tier-cancel').addEventListener('click', closeOverlay);
+}
+
+// ---------- Slab reveal ----------
+function slabLabelHTML(card, res) {
+  const tier = res.label || labelTier(res.grade, res.pristine);
+  const subs = res.subs || {};
+  const word = tier === 'black' ? 'PRISTINE' : (GRADE_NAMES[res.grade] || '').toUpperCase();
+  return `<div class="slab-label tier-${tier}">
+    <div class="l-house">SLAB HOUSE GRADING</div>
+    <div class="l-name">${esc(card.name)}${card.variant === '1/1' ? ' · 1/1' : ''}</div>
+    <div class="l-grade">${res.grade}</div>
+    <div class="l-set">${esc(card.setName)} ${esc(collectorLabel(card))}</div>
+    <div class="l-word">${word}</div>
+    ${res.subs ? `<div class="l-subs"><span>CEN ${subTxt(subs.centering)}</span><span>COR ${subTxt(subs.corners)}</span><span>EDG ${subTxt(subs.edges)}</span><span>SUR ${subTxt(subs.surface)}</span></div>` : ''}
+    <div class="l-cert"><span>${esc((LABEL_TIERS[tier] || LABEL_TIERS.white).name)}</span><span>${esc(res.cert || '')}</span></div>
+  </div>`;
+}
+function cardCanvas(card) {
+  const c = document.createElement('canvas');
+  c.width = BASE_W * 2; c.height = BASE_H * 2;
+  const x = c.getContext('2d'); x.scale(2, 2);
+  drawCardFace(x, 0, 0, BASE_W, BASE_H, card, false);
+  return c;
+}
+function showRevealQueue(items, onDone) {
+  let i = 0;
+  const next = () => {
+    if (i >= items.length) { closeOverlay(); refreshStats(); if (state.screen === 'collection') renderCollection(); if (onDone) onDone(); return; }
+    const { card, result: res } = items[i++];
+    const left = items.length - i;
+    const pop = popCount(card, res.grade), higher = popHigher(card, res.grade);
+    const sparkle = res.label === 'gold' || res.label === 'black';
+    let sparks = '';
+    if (sparkle) for (let k = 0; k < 16; k++) {
+      const ang = (k / 16) * Math.PI * 2, dist = 70 + Math.random() * 60;
+      sparks += `<i style="--dx:${Math.round(Math.cos(ang) * dist)}px;--dy:${Math.round(Math.sin(ang) * dist)}px"></i>`;
+    }
+    const tierName = res.tier ? GRADING_TIERS[res.tier].name : '';
+    const box = openOverlay(`
+      <div class="reveal-head">${items.length > 1 ? `Slab ${i} of ${items.length} · ` : ''}${esc(tierName)} grading is back</div>
+      <div class="slab-stage">
+        <div class="slab" id="rv-slab">${slabLabelHTML(card, res)}<div class="slab-well" id="rv-well"></div></div>
+        <div class="seal" id="rv-seal"><span>SLAB HOUSE · SEALED</span><span class="seal-tap">Tap to crack it open</span></div>
+        <div class="sparks" id="rv-sparks"></div>
+      </div>
+      <div class="reveal-info" id="rv-info">
+        <div style="font-size:22px;font-weight:800">${res.grade} ${esc(res.label === 'black' ? 'Pristine' : GRADE_NAMES[res.grade])} · ${fmt$(slabValue(card))}</div>
+        <div style="margin:6px 0"><span class="pop-pill${pop === 1 && res.grade >= 9 ? ' p1' : ''}">Pop ${pop} at ${res.grade}${higher ? ` · ${higher} higher` : ''}</span></div>
+        ${pop === 1 && res.grade >= 9 ? '<div class="pc" style="color:var(--gold)">The only one at this grade. Scarcity premium applied.</div>' : ''}
+        ${res.popControl ? '<div class="pc">The strict Economy grader knocked it down a grade.</div>' : ''}
+        <button id="rv-next" style="margin-top:10px">${left ? 'Next slab (' + left + ' left)' : 'Add to Collection'}</button>
+      </div>`, 'reveal');
+    $('rv-well').appendChild(cardCanvas(card));
+    const open = () => {
+      $('rv-seal').classList.add('torn');
+      setTimeout(() => { $('rv-slab').classList.add('revealed'); $('rv-sparks').innerHTML = sparks; }, 120);
+      setTimeout(() => $('rv-info').classList.add('show'), 900);
+    };
+    $('rv-seal').addEventListener('click', open, { once: true });
+    $('rv-next').addEventListener('click', next);
+  };
+  next();
+}
+// Backwards-compatible name used by older code paths.
+function showSlabResult(card, res) { showRevealQueue([{ card, result: res }]); }
+
 // ---------- Collection ----------
+let bulkMode = false;
+const bulkSel = new Set();
+function gradeTagHTML(card) {
+  const gr = card.graded, tier = gr.label || labelTier(gr.grade, gr.pristine);
+  const pop = gr.popAware ? popCount(card, gr.grade) : null;
+  return `<div class="mini-label tier-${tier}"><span>★ ${gr.grade} ${esc(tier === 'black' ? 'PRISTINE' : (GRADE_NAMES[gr.grade] || '').toUpperCase())}</span>${pop != null ? `<span>Pop ${pop}</span>` : ''}</div>`;
+}
 function renderCollection() {
   const grid = $('collection-grid');
+  const away = state.inventory.filter(atGrader);
+  const nextDay = away.length ? Math.min(...away.map(c => c.submission.readyDay)) : null;
+  $('queue-summary').innerHTML = away.length
+    ? `🕒 <b>${away.length}</b> at the grader · next back on day ${nextDay} (today is day ${state.day})`
+    : `Day ${state.day} · nothing at the grader`;
+  $('btn-bulk').textContent = bulkMode ? '✕ Exit bulk mode' : '📦 Bulk submit';
+  $('bulk-bar').hidden = !bulkMode;
   if (!state.inventory.length) {
     grid.innerHTML = '<p style="color:#9aa3b2">No cards yet — buy a pack in the Shop.</p>';
-    $('collection-msg').textContent = '';
     return;
   }
-  grid.innerHTML = state.inventory.map(card => `
-    <div class="card frame-${card.set}${card.graded ? ' slabbed' : ''}${card.variant === '1/1' ? ' one-of-one' : ''}" style="border-color:${card.graded ? '#f2b705' : card.variant === '1/1' ? '#f2b705' : frameColor(card)}">
-      ${cardFaceHTML(card)}
-      ${card.graded ? `<div class="grade">★ ${card.graded.grade}</div><div class="vl">Slab value ${fmt$(card.graded.value)}</div>`
-        : `<div class="vl">${card.variant === '1/1' ? '1/1 Value ' + fmt$(cardValue(card)) : 'Base ' + fmt$(card.base)}</div><div class="vl">Ungraded</div>`}
+  grid.innerHTML = state.inventory.map(card => {
+    const away = atGrader(card);
+    const tier = card.graded ? (card.graded.label || labelTier(card.graded.grade, card.graded.pristine)) : null;
+    const selectable = bulkMode && !card.graded && !away;
+    const cls = ['card', 'frame-' + card.set, card.graded ? 'slabbed slab-' + tier : '', card.variant === '1/1' ? 'one-of-one' : '', away ? 'at-grader' : '', selectable ? 'selectable' : '', bulkSel.has(card.uid) ? 'selected' : ''].filter(Boolean).join(' ');
+    const border = card.graded || card.variant === '1/1' ? '#f2b705' : frameColor(card);
+    let body = card.graded ? gradeTagHTML(card) : '';
+    if (selectable) body += `<div class="pick">${bulkSel.has(card.uid) ? '✓' : ''}</div>`;
+    body += cardFaceHTML(card);
+    if (card.graded) body += `<div class="vl">Slab value ${fmt$(cardValue(card))}</div>`;
+    else body += `<div class="vl">${card.variant === '1/1' ? '1/1 Value ' + fmt$(cardValue(card)) : 'Base ' + fmt$(card.base)}</div><div class="vl">Ungraded${card.prepped ? ' · prepped' : ''}</div>`;
+    if (away) body += `<div class="grader-tag">🕒 At ${esc(GRADING_TIERS[card.submission.tier].name)} · back day ${card.submission.readyDay}</div>`;
+    else if (!bulkMode) body += `
       <div class="row">
         <button class="small secondary" data-desk="${card.uid}">🔍 Desk</button>
         <button class="small" data-sell="${card.uid}">Sell ${fmt$(cardValue(card))}</button>
       </div>
-      <div class="row"><button class="small secondary" data-auction="${card.uid}">🔨 Auction</button></div>
-    </div>`).join('');
+      <div class="row"><button class="small secondary" data-auction="${card.uid}">🔨 Auction</button></div>`;
+    return `<div class="${cls}" data-uid="${card.uid}" style="border-color:${border}">${body}</div>`;
+  }).join('');
   grid.querySelectorAll('[data-desk]').forEach(b => b.addEventListener('click', () => {
     state.deskUid = +b.getAttribute('data-desk'); resetInspection(); showScreen('desk');
   }));
@@ -2243,59 +3400,126 @@ function renderCollection() {
     $('collection-msg').textContent = r.ok ? `💵 Sold for ${fmt$(r.amount)}.` : '❌ ' + r.reason;
     refreshStats(); renderCollection();
   }));
-  grid.querySelectorAll('[data-auction]').forEach(b => b.addEventListener('click', () => {
-    startAuctionUI(+b.getAttribute('data-auction'));
+  grid.querySelectorAll('[data-auction]').forEach(b => b.addEventListener('click', () => startAuctionUI(+b.getAttribute('data-auction'))));
+  grid.querySelectorAll('.card.selectable').forEach(el => el.addEventListener('click', () => {
+    const uid = +el.getAttribute('data-uid');
+    if (bulkSel.has(uid)) bulkSel.delete(uid); else bulkSel.add(uid);
+    renderCollection();
+  }));
+  updateBulkBar();
+}
+function updateBulkBar() {
+  if (!bulkMode) return;
+  const n = bulkSel.size;
+  let small;
+  if (!state.upgrades.bulk) small = `Bulk rate ($15/card on ${BULK_MIN}+) needs the Bulk Submitter Account.`;
+  else if (n < BULK_MIN) small = `Select ${BULK_MIN - n} more for $15/card Regular.`;
+  else small = '✅ Bulk rate unlocked: $15/card Regular, $7/card Economy.';
+  $('bulk-info').innerHTML = `<b>${n}</b> selected · Regular ${fmt$(tierFee('regular', n))}/card<small>${small}</small>`;
+  $('btn-bulk-go').disabled = n === 0;
+}
+$('btn-bulk').addEventListener('click', () => { bulkMode = !bulkMode; bulkSel.clear(); renderCollection(); });
+$('btn-bulk-cancel').addEventListener('click', () => { bulkMode = false; bulkSel.clear(); renderCollection(); });
+$('btn-bulk-go').addEventListener('click', () => {
+  const uids = [...bulkSel];
+  showTierPicker(uids, () => { bulkMode = false; bulkSel.clear(); renderCollection(); });
+});
+
+// ---------- Upgrades ----------
+function renderUpgrades() {
+  const away = state.inventory.filter(atGrader).length;
+  $('shop-status').innerHTML = `<span class="stat">📅 Day <b>${state.day}</b></span><span class="stat">🏛️ House fee <b>${Math.round(houseFeeRate() * 100)}%</b></span><span class="stat">🕒 At grader <b>${away}</b></span><span class="stat">🧾 Fees paid <b>${fmt$(state.stats.fees || 0)}</b></span>`;
+  $('upgrades').innerHTML = UPGRADE_ORDER.map(key => {
+    const u = UPGRADES[key], owned = state.upgrades[key];
+    return `<div class="upg${owned ? ' owned' : ''}">
+      <div class="u-icon">${u.icon}</div>
+      <h3>${esc(u.name)}</h3>
+      <p>${esc(u.desc)}</p>
+      <button ${owned ? 'disabled class="secondary"' : ''} data-upg="${key}" ${!owned && state.cash < u.price ? 'disabled' : ''}>${owned ? '✓ Installed' : 'Buy ' + fmt$(u.price)}</button>
+    </div>`;
+  }).join('');
+  $('upgrades').querySelectorAll('[data-upg]').forEach(b => b.addEventListener('click', () => {
+    const key = b.getAttribute('data-upg'), r = buyUpgrade(key);
+    $('upgrades-msg').textContent = r.ok ? `✅ ${UPGRADES[key].name} installed.` : '❌ ' + r.reason;
+    invalidateCardArt(); refreshStats(); renderUpgrades();
   }));
 }
+
+// ---------- End day ----------
+function handleReturns(dayRes) {
+  if (dayRes && dayRes.returned && dayRes.returned.length) {
+    showToast(`📅 Day ${dayRes.day} · <b>${dayRes.returned.length}</b> slab${dayRes.returned.length > 1 ? 's' : ''} back from the grader!`);
+    setTimeout(() => showRevealQueue(dayRes.returned), 600);
+  }
+}
+$('btn-day').addEventListener('click', () => {
+  if (state.auction && !state.auction.over) { showToast('Finish the live auction before closing for the day.'); return; }
+  const r = advanceDay();
+  refreshStats();
+  if (r.returned.length) handleReturns(r);
+  else {
+    const away = state.inventory.filter(atGrader);
+    showToast(`📅 Day ${r.day}. ${away.length ? away.length + ' still at the grader.' : 'Nothing at the grader.'}`);
+  }
+  if (state.screen === 'collection') renderCollection();
+  if (state.screen === 'upgrades') renderUpgrades();
+});
 
 // ---------- Auction UI ----------
 let aucTimer = null;
 function stopAuctionTimer() { if (aucTimer) { clearInterval(aucTimer); aucTimer = null; } }
 function renderAuctionPicks() {
   const el = $('auction-picks');
-  if (!state.inventory.length) {
-    el.innerHTML = '<p style="color:#9aa3b2">No cards to auction — buy a pack first.</p>';
+  const avail = state.inventory.filter(c => !atGrader(c));
+  if (!avail.length) {
+    el.innerHTML = '<p style="color:#9aa3b2">No cards to auction — buy a pack first' + (state.inventory.length ? ', or wait for your grading to come back' : '') + '.</p>';
     return;
   }
-  el.innerHTML = state.inventory.map(card => `
-    <div class="card frame-${card.set}${card.graded ? ' slabbed' : ''}${card.variant === '1/1' ? ' one-of-one' : ''}" style="border-color:${card.graded ? '#f2b705' : card.variant === '1/1' ? '#f2b705' : frameColor(card)}">
+  el.innerHTML = avail.map(card => {
+    const tier = card.graded ? (card.graded.label || labelTier(card.graded.grade, card.graded.pristine)) : null;
+    return `<div class="card frame-${card.set}${card.graded ? ' slabbed slab-' + tier : ''}${card.variant === '1/1' ? ' one-of-one' : ''}" style="border-color:${card.graded || card.variant === '1/1' ? '#f2b705' : frameColor(card)}">
+      ${card.graded ? gradeTagHTML(card) : ''}
       ${cardFaceHTML(card)}
-      <div class="vl">${card.graded ? '★ ' + card.graded.grade + ' slab' : 'Raw'} · ${fmt$(cardValue(card))}</div>
+      <div class="vl">${card.graded ? 'Slab' : 'Raw'} · ${fmt$(cardValue(card))}</div>
       <div class="row"><button class="small" data-apick="${card.uid}">🔨 Auction this card</button></div>
-    </div>`).join('');
+    </div>`;
+  }).join('');
   el.querySelectorAll('[data-apick]').forEach(b => b.addEventListener('click', () => startAuctionUI(+b.getAttribute('data-apick'))));
 }
 function startAuctionUI(uid) {
   const card = state.inventory.find(c => c.uid === uid);
-  if (!card) return;
+  if (!card || atGrader(card)) return;
   stopAuctionTimer();
   state.auction = createAuction(card);
   $('auction-setup').style.display = 'none';
   $('auction-live').style.display = 'block';
   $('auc-chat').innerHTML = '';
+  $('auc-status').innerHTML = state.auction.vip ? '👑 VIP slot: 3% house fee, deeper-pocketed bidders.' : `House fee: ${Math.round(houseFeeRate() * 100)}% of the hammer price.`;
   $('btn-hype').disabled = false; $('btn-gavel').disabled = false;
-  $('auc-card').innerHTML = cardFaceHTML(card) + `
-    <div class="vl">${card.graded ? '★ Grade ' + card.graded.grade + ' slab' : 'Raw card'} · value ${fmt$(cardValue(card))}</div>`;
+  $('auc-card').innerHTML = (card.graded ? gradeTagHTML(card) : '') + cardFaceHTML(card) + `
+    <div class="vl">${card.graded ? 'Slab' : 'Raw card'} · value ${fmt$(cardValue(card))}</div>`;
   showScreen('auction');
   renderAuctionFrame();
-  let lastHype = 0;
   aucTimer = setInterval(() => {
     const a = state.auction;
     if (!a) { stopAuctionTimer(); return; }
     const ended = auctionTick(a, 0.25);
     renderAuctionFrame();
-    if (ended) {
-      stopAuctionTimer();
-      const r = settleAuction(a);
-      $('btn-hype').disabled = true; $('btn-gavel').disabled = true;
-      $('auc-status').innerHTML = r.sold
-        ? `🔨 <b>SOLD</b> to ${esc(r.winner)} for <b>${fmt$(r.amount)}</b>!`
-        : '🔨 Auction ended with no bids — the card is back in your Collection.';
-      refreshStats();
-      setTimeout(() => { $('auction-live').style.display = 'none'; $('auction-setup').style.display = 'block'; renderAuctionPicks(); }, 4000);
-    }
-    lastHype = a.hype;
+    if (ended) { stopAuctionTimer(); finishAuctionUI(settleAuction(a), false); }
   }, 250);
+}
+function finishAuctionUI(r, gavel) {
+  $('btn-hype').disabled = true; $('btn-gavel').disabled = true;
+  renderAuctionFrame();
+  $('auc-status').innerHTML = r.sold
+    ? `🔨 <b>SOLD</b> to ${esc(r.winner)} for <b>${fmt$(r.amount)}</b>. House fee ${fmt$(r.fee)}, you net <b>${fmt$(r.net)}</b>.`
+    : (gavel ? '🔨 Gavel slammed — no bids, the card is back in your Collection.' : '🔨 Auction ended with no bids — the card is back in your Collection.');
+  refreshStats();
+  if (r.day) setTimeout(() => {
+    showToast(`📅 Day ${r.day.day} begins.`);
+    handleReturns(r.day);
+  }, 1200);
+  setTimeout(() => { $('auction-live').style.display = 'none'; $('auction-setup').style.display = 'block'; renderAuctionPicks(); }, 4000);
 }
 function renderAuctionFrame() {
   const a = state.auction;
@@ -2314,21 +3538,19 @@ $('btn-hype').addEventListener('click', () => {
 $('btn-gavel').addEventListener('click', () => {
   const a = state.auction; if (!a || a.over) return;
   gavelSlam(a);
-  const r = settleAuction(a);
   stopAuctionTimer();
-  $('btn-hype').disabled = true; $('btn-gavel').disabled = true;
-  renderAuctionFrame();
-  $('auc-status').innerHTML = r.sold
-    ? `🔨 <b>SOLD</b> to ${esc(r.winner)} for <b>${fmt$(r.amount)}</b>!`
-    : '🔨 Gavel slammed — no bids, the card is back in your Collection.';
-  refreshStats();
-  setTimeout(() => { $('auction-live').style.display = 'none'; $('auction-setup').style.display = 'block'; renderAuctionPicks(); }, 4000);
+  finishAuctionUI(settleAuction(a), true);
 });
 
 // ---------- Tabs ----------
-for (const s of ['shop', 'desk', 'collection', 'auction']) {
+for (const s of SCREENS) {
   $('tab-' + s).addEventListener('click', () => showScreen(s));
 }
+let resizeT = null;
+window.addEventListener('resize', () => {
+  clearTimeout(resizeT);
+  resizeT = setTimeout(() => { if (layoutDesk() && state.screen === 'desk') { updateMetricsUI(); drawDesk(); } }, 120);
+});
 
 // ---------- Self-test (in-page ?autotest=1, and headless harness) ----------
 function selfTest() {
@@ -2336,7 +3558,9 @@ function selfTest() {
   const ok = (name, cond) => out.push((cond ? 'PASS' : 'FAIL') + ' ' + name);
   try {
     setSeed(12345);
-    state.cash = 500; state.inventory = []; state.stats = { packs: 0, graded: 0, sold: 0, auctions: 0, earned: 0 };
+    state.cash = 500; state.inventory = []; state.stats = defaultStats();
+    state.day = 1; state.upgrades = defaultUpgrades(); state.pop = {}; state.light = 0;
+    layoutDesk(1000); resetView();
     // 1. Buy pack
     const buy = buyPack('gridiron');
     ok('buy pack ok', buy.ok && buy.cards.length === 5 && state.cash === 470);
@@ -2350,17 +3574,22 @@ function selfTest() {
     const rough = { base: 100, grades: { centering: { lr: 70, tb: 70 }, corners: [true, true, true, true], edges: 6, surface: 4 } };
     const gr = gradeCard(rough);
     ok('rough card grades <= 4', gr.grade <= 4 && gr.mult < 1);
-    // 4. Inspection: simulate loupe over all zones of first card
+    // 4. Inspection: front zones, then the light, then flip for the back
     state.deskUid = buy.cards[0].uid; resetInspection();
     const card = deskCard();
-    const zones = [[CARD.x + 10, CARD.y + 10], [CARD.x + CARD.w - 10, CARD.y + 10],
-      [CARD.x + 10, CARD.y + CARD.h - 10], [CARD.x + CARD.w - 10, CARD.y + CARD.h - 10],
-      [CARD.x + CARD.w / 2, CARD.y + 5], [CARD.x + CARD.w / 2, CARD.y + CARD.h - 5],
-      [CARD.x + 5, CARD.y + CARD.h / 2], [CARD.x + CARD.w - 5, CARD.y + CARD.h / 2],
-      [CARD.x + 100, CARD.y + 22]];
-    for (const [x, y] of zones) inspectAt(x, y);
-    state.light = 40; inspectAt(CARD.x + CARD.w / 2, CARD.y + CARD.h / 2);
-    ok('inspection reveals all 4 metrics', Object.values(state.inspected).every(Boolean));
+    const at = (u, v) => [CARD.x + u * CARD.w / BASE_W, CARD.y + v * CARD.h / BASE_H];
+    const frontZones = [[10, 10], [240, 10], [10, 340], [240, 340], [125, 5], [125, 345], [5, 175], [245, 175], [100, 22]];
+    for (const [u, v] of frontZones) inspectAt(...at(u, v));
+    inspectAt(...at(125, 175)); // face at 0° light: not enough
+    ok('surface needs the light tilted (or the lamp)', !state.inspected.surface);
+    state.light = 30; inspectAt(...at(125, 175));
+    ok('front-only inspection leaves centering + corners open', state.inspected.edges && state.inspected.surface && !state.inspected.centering && !state.inspected.corners);
+    ok('grade button stays locked until the back is checked', $('btn-grade').disabled === true);
+    ok('flip turns the card to the back', flipDeskCard(true) && state.side === 'back');
+    for (const [u, v] of [[10, 10], [240, 10], [10, 340], [240, 340], [100, 22]]) inspectAt(...at(u, v));
+    ok('inspection reveals all 4 subgrades after the flip', Object.values(state.inspected).every(Boolean));
+    ok('back face does not count as surface', (() => { state.inspect.face = false; recomputeInspected(); inspectAt(...at(125, 175)); const r = !state.inspected.surface; flipDeskCard(true); inspectAt(...at(125, 175)); return r && state.inspected.surface; })());
+    ok('desk draws front and back without errors', (() => { drawDesk(); flipDeskCard(true); drawDesk(); flipDeskCard(true); return true; })());
     // 4b. Offset loupe: the lens never sits under the finger
     setLoupeTouch(true);
     const lcMid = loupeCenter({ x: 215, y: 300 });
@@ -2376,10 +3605,14 @@ function selfTest() {
       // zone detection is driven by the probe (finger), never the lens center
       return zoneAt(95, 75) === 'corner-0' && zoneAt(215, 250) === 'face';
     })());
-    // 5. Submit grading (needs $25)
+    // 5. Submit grading: Regular goes out for a day, Express slabs it now
     const before = state.cash;
     const sub = submitGrading(card.uid);
-    ok('submit grading charges $25 and slabs', sub.ok && state.cash === before - 25 && card.graded && card.graded.grade >= 1 && card.graded.grade <= 10);
+    ok('regular grading charges $25 and sends the card out', sub.ok && state.cash === before - 25 && !card.graded && card.submission && card.submission.readyDay === state.day + 1);
+    ok('cards at the grader cannot be sold', sellCard(card.uid).ok === false && rawSell(card.uid).ok === false);
+    const dayR = advanceDay();
+    ok('next day the slab comes back graded', dayR.returned.length === 1 && dayR.returned[0].card === card && card.graded && card.graded.grade >= 1 && card.graded.grade <= 10 && !card.submission);
+    ok('returned slab has a cert, label and pop', /^SH-\d{7}$/.test(card.graded.cert) && !!LABEL_TIERS[card.graded.label] && card.graded.popAtGrade >= 1);
     // 6. Raw sell
     const raw = buy.cards[1];
     const cashBefore = state.cash;
@@ -2405,8 +3638,11 @@ function selfTest() {
     const a4 = createAuction(aucCard);
     a4.leader = 'whale'; a4.bid = 999; a4.winner = 'whale'; a4.finalBid = 999; a4.over = true;
     const cashB = state.cash;
+    const dayB = state.day;
     const st = settleAuction(a4);
-    ok('settle pays winner bid and removes card', st.ok && st.sold && state.cash === cashB + 999 && !state.inventory.find(c => c.uid === aucCard.uid));
+    ok('settle pays the bid minus the 10% house fee and removes card', st.ok && st.sold && st.fee === 100 && st.net === 899 && state.cash === cashB + 899 && !state.inventory.find(c => c.uid === aucCard.uid));
+    ok('a finished auction moves the shop to the next day', st.day && st.day.day === dayB + 1 && state.day === dayB + 1);
+    ok('an auction cannot be settled twice', settleAuction(a4).ok === false);
     // 12. Trading-card face: pun names unchanged, every Gridiron card has a figure + collector number
     const gridNames = SETS.gridiron.cards.map(c => c.name);
     ok('gridiron pun names unchanged', gridNames.join('|') === 'Brick Wallson|Sammy Slants|Pete Punt|Dash Okafor|Marty Blitz|Tank Ramirez|Rocket Reeves|Blitz McCoy|Gridiron Ghost');
@@ -2568,6 +3804,136 @@ function selfTest() {
         const ty = 118 - 112 * spec.scale - spec.lift * spec.scale;
         return ty + (spec.head.y - spec.head.r) * spec.scale >= 0;
       })));
+    // 20. Subgrades: BGS-style, half-point steps
+    ok('subgrades come in half points and overall is a whole grade', (() => {
+      setSeed(777);
+      for (let i = 0; i < 300; i++) {
+        const c = makeCard('gridiron', RARITY_ORDER[i % 5]), r = gradeCard(c);
+        for (const v of Object.values(r.subs)) if (v * 2 !== Math.round(v * 2) || v < 1 || v > 10) return false;
+        if (!Number.isInteger(r.grade) || r.grade < 1 || r.grade > 10) return false;
+      }
+      return true;
+    })());
+    ok('front centering uses split ratios (55/45 = 9.5, 60/40 = 9)', centeringScore({ lr: 55, tb: 50 }) === 9.5 && centeringScore({ lr: 50, tb: 40 }) === 9 && centeringScore({ lr: 45, tb: 55 }) === 9.5);
+    ok('backs get looser centering (60/40 still a 10)', centeringScore({ lr: 50, tb: 50 }, { lr: 60, tb: 40 }) === 10 && centeringScore({ lr: 50, tb: 50 }, { lr: 75, tb: 50 }) === 9);
+    ok('back corners count less than front corners', cornersScore([true, false, false, false], [false, false, false, false]) === 7.5 && cornersScore([false, false, false, false], [true, false, false, false]) === 9);
+    ok('surface flaw types carry different penalties', surfaceScore({ surfaceDefects: [{ type: 'dimple' }] }) === 7.5 && surfaceScore({ surfaceDefects: [{ type: 'roller' }] }) === 8 && surfaceScore({ surfaceDefects: [{ type: 'print' }, { type: 'scratch' }] }) === 7 && surfaceScore({ surfaceDefects: [], dust: true }) === 9.5);
+    ok('micro-scratches are hidden without the lamp', surfaceScore({ surfaceDefects: [{ type: 'micro' }] }, true) === 10 && surfaceScore({ surfaceDefects: [{ type: 'micro' }] }) === 9.5);
+    ok('legacy print-line counts still score', surfaceScore(2) === 7 && surfaceDefectsOf({ surface: 2 }).length === 2);
+    ok('one weak subgrade caps the slab', overallFromSubs({ centering: 10, corners: 10, edges: 10, surface: 5 }) === 7 && overallFromSubs({ centering: 10, corners: 10, edges: 10, surface: 8.5 }) === 9);
+    ok('label colors: black quad 10, gold 10, silver 9, red 8', labelTier(10, true) === 'black' && labelTier(10, false) === 'gold' && labelTier(9, false) === 'silver' && labelTier(8, false) === 'red' && labelTier(6, false) === 'white');
+    ok('a perfect card is a Pristine Black Label', (() => { const r = gradeCard(perfect); return r.pristine && r.label === 'black'; })());
+    ok('economy grader applies pop control sometimes', (() => {
+      setSeed(42); let hits = 0;
+      for (let i = 0; i < 200; i++) if (gradeCard(perfect, { tier: 'economy' }).popControl) hits++;
+      return hits > 40 && hits < 160;
+    })());
+    // 21. Service tiers, bulk, days
+    ok('service tiers: Economy $10, Regular $25, Express $75', GRADING_TIERS.economy.fee === 10 && GRADING_TIERS.regular.fee === 25 && GRADING_TIERS.express.fee === 75);
+    ok('express slabs instantly for $75', (() => {
+      state.cash = 1000; const c = makeCard('gridiron', 'common'); state.inventory.push(c);
+      const r = submitGrading(c.uid, 'express');
+      return r.ok && state.cash === 925 && r.returned.length === 1 && !!c.graded && c.graded.tier === 'express';
+    })());
+    ok('economy takes 3-5 days', (() => {
+      state.cash = 1000; setSeed(9);
+      for (let i = 0; i < 20; i++) {
+        const c = makeCard('gridiron', 'common'); state.inventory.push(c);
+        const r = submitGrading(c.uid, 'economy');
+        const d = c.submission.readyDay - state.day;
+        if (!r.ok || d < 3 || d > 5) return false;
+      }
+      return true;
+    })());
+    ok('bulk rate is $15/card for 10+ cards with the bulk account', (() => {
+      state.cash = 5000;
+      const cs = []; for (let i = 0; i < 10; i++) { const c = makeCard('gridiron', 'common'); state.inventory.push(c); cs.push(c); }
+      const noAcct = tierFee('regular', 10);
+      state.upgrades.bulk = true;
+      const r = submitBatch(cs.map(c => c.uid), 'regular');
+      state.upgrades.bulk = false;
+      return noAcct === 25 && r.ok && r.per === 15 && r.total === 150 && tierFee('regular', 9) === 25;
+    })());
+    ok('all due orders come back when the day ends', (() => {
+      let r; for (let i = 0; i < 6; i++) r = advanceDay();
+      return !state.inventory.some(c => c.submission);
+    })());
+    // 22. Pop report
+    ok('pop 1 Gem Mint pays a premium, a flooded grade pays less', popMult(10, 1) === 2.5 && popMult(10, 60) < 0.7 && popMult(9, 1) === 1.5 && popMult(7, 1) > popMult(7, 50));
+    ok('commons have a bigger market pop than secrets', (() => {
+      const cm = makeCard('gridiron', 'common'), sc = makeCard('gridiron', 'secret');
+      return marketPop(cm, 10, 1) > marketPop(sc, 10, 1);
+    })());
+    ok('a 1/1 is always pop 1 at its grade', (() => {
+      state.cash = 1000; const c = makeCard('gridiron', 'rare'); c.variant = '1/1'; state.inventory.push(c);
+      submitGrading(c.uid, 'express');
+      return popCount(c, c.graded.grade) === 1;
+    })());
+    ok('slab value drops as more copies are graded', (() => {
+      const c = state.inventory.find(x => x.graded && x.graded.popAware && x.variant !== '1/1');
+      const v1 = slabValue(c);
+      const k = popKey(c); state.pop[k][c.graded.grade] += 40;
+      const v2 = slabValue(c);
+      state.pop[k][c.graded.grade] -= 40;
+      return v2 < v1;
+    })());
+    ok('pop grows as days pass', (() => { const c = makeCard('gridiron', 'common'); return marketPop(c, 9, 30) > marketPop(c, 9, 1); })());
+    // 23. Upgrades
+    ok('upgrades cost cash and install once', (() => {
+      state.cash = 3000;
+      const r1 = buyUpgrade('lamp'), r2 = buyUpgrade('lamp');
+      return r1.ok && !r2.ok && state.upgrades.lamp && state.cash === 2600;
+    })());
+    ok('the lamp shows every surface flaw at 0°', (() => { state.light = 0; return defectVisible({ type: 'micro' }) && defectVisible({ type: 'dimple' }); })());
+    ok('without the lamp, flaws need ±25° and micro never shows', (() => {
+      state.upgrades.lamp = false; state.light = 0;
+      const a0 = defectVisible({ type: 'print' }); state.light = 30;
+      const r = !a0 && defectVisible({ type: 'print' }) && !defectVisible({ type: 'micro' });
+      state.light = 0; return r;
+    })());
+    ok('calipers measure centering when a side faces up', (() => {
+      state.cash = 1000; buyUpgrade('calipers');
+      const c = makeCard('gridiron', 'common'); state.inventory.push(c); state.deskUid = c.uid; resetInspection();
+      const f = state.inspect.border.front && !state.inspect.border.back;
+      flipDeskCard(true);
+      return f && state.inspect.border.back && state.inspected.centering;
+    })());
+    ok('prep station wipes dust for +0.5 surface', (() => {
+      const c = makeCard('gridiron', 'common'); c.grades.dust = true; c.grades.surfaceDefects = []; state.inventory.push(c);
+      const no = prepCard(c.uid);
+      state.upgrades.prep = true;
+      const s0 = surfaceScore(c.grades), r = prepCard(c.uid), s1 = surfaceScore(c.grades);
+      return !no.ok && r.ok && r.cleaned && s1 - s0 === 0.5;
+    })());
+    ok('VIP slots cut the house fee to 3%', (() => { const f0 = houseFeeRate(); state.upgrades.vip = true; const f1 = houseFeeRate(); state.upgrades.vip = false; return f0 === 0.10 && f1 === 0.03; })());
+    // 24. Old saves load
+    ok('a v1 save migrates with defaults', (() => {
+      const v1 = { cash: 321, nextUid: 50, stats: { packs: 2, graded: 1, sold: 0, auctions: 0, earned: 0 },
+        inventory: [Object.assign(JSON.parse(JSON.stringify(legacy)), { uid: 7, graded: { grade: 9, subs: { centering: 9, corners: 9, edges: 9, surface: 9 }, mult: 3, value: 15 } })] };
+      const migrated = applySave(v1);
+      const c = state.inventory[0];
+      return migrated && state.cash === 321 && state.day === 1 && state.upgrades.lamp === false && state.stats.fees === 0 &&
+        c.grades.back && c.grades.back.corners.length === 4 && c.graded.label === 'silver' && slabValue(c) === 15 && Array.isArray(c.grades.surfaceDefects);
+    })());
+    ok('legacy slab still renders in the collection', (() => { const html = gradeTagHTML(state.inventory[0]); return html.indexOf('tier-silver') !== -1 && html.indexOf('undefined') === -1; })());
+    // 25. Desk geometry: zoom and the phone layout
+    ok('zoom keeps zones locked to the card', (() => {
+      resetView(); const [dx, dy] = at(8, 8);
+      zoomAt(2.5, dx, dy);
+      const fz = zoneAt(dx, dy), [mx, my] = at(125, 175);
+      const mid = toCardLocal((mx) * view.z + view.tx, (my) * view.z + view.ty);
+      resetView();
+      return fz === 'corner-0' && Math.abs(mid.u - 125) < 0.01 && Math.abs(mid.v - 175) < 0.01;
+    })());
+    ok('phone layout: jeweler screen above a big card, all on the desk', (() => {
+      layoutDesk(412);
+      const r = deskLayout === 'narrow' && INSET.y + INSET.s < CARD.y && CARD.y + CARD.h <= desk.height - 40 && CARD.x >= 20 && CARD.x + CARD.w <= desk.width - 20 && CARD.w / CARD.h === BASE_W / BASE_H;
+      const c = makeCard('gridiron', 'rare'); state.inventory.push(c); state.deskUid = c.uid; resetInspection();
+      inspectAt(...at(10, 10)); drawDesk();
+      const z = zoneAt(...at(10, 10));
+      layoutDesk(1000);
+      return r && z === 'corner-0';
+    })());
     // 11. Not enough cash blocks pack
     state.cash = 5;
     ok('insufficient cash blocks pack', buyPack('kaiju').ok === false);
@@ -2583,7 +3949,8 @@ function selfTest() {
 load();
 renderShop();
 refreshStats();
-updateMetricsUI();
+layoutDesk();
+resetInspection();
 drawDesk();
 if (typeof window !== 'undefined' && window.location && window.location.search.indexOf('autotest') !== -1) {
   const result = selfTest();
@@ -2604,6 +3971,9 @@ window.SHT = {
   figureSpec, artProfile, artSignature, sceneSVG, habitatSVG, drawScene, drawHabitat,
   frameColor, inkFor, hashRand, torsoAnchors, rotPt, habitatFor, SCENE_COLORS,
   loupeCenter, setLoupeTouch, drawCardBack, drawDesk,
+  GRADING_TIERS, UPGRADES, submitBatch, advanceDay, buyUpgrade, prepCard, tierFee, popCount, popMult, slabValue,
+  labelTier, gradeSubs, overallFromSubs, applySave, flipDeskCard, layoutDesk, houseFeeRate, drawCardReverse,
+  showRevealQueue, showTierPicker, renderCollection, renderUpgrades, showScreen,
 };
 </script>
 </body>
