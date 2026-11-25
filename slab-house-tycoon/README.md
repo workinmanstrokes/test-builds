@@ -7,6 +7,21 @@ then sell raw, sell slabbed, or run a Whatnot-style live auction.
 All sets, players, and creatures are **original parody content** — no
 real athletes, teams, or copyrighted characters.
 
+## Game Test Lab re-review
+
+The Lab's first review scored the build 2.7/10 (F): "a title and a
+genre, not a testable game — define the slab loop before building
+anything else." The response is the one-page
+[build sheet](docs/build-sheet.md): what "slab" means (a graded card
+sealed in a plastic case — this is a card-shop tycoon, not a
+house-building game), the 60-second loop in three verbs
+(**BUY → INSPECT → FLIP**), how money is made and spent, and the
+first three unlocks. The one-loop phone prototype and the 30-second
+capture script are in [docs/mobile-loop-test.md](docs/mobile-loop-test.md)
+— the two-minute run (buy a pack → inspect → grade → sell/auction)
+has not been run on a real phone yet; that doc is the checklist, not
+a claim it passed.
+
 ## Play the web version (instant, no install)
 
 Open `index.html` in any browser (double-click it, or serve the folder).
@@ -212,5 +227,7 @@ slab-house-tycoon/
   main.tscn             Godot main scene
   scripts/              Godot GDScript systems (see table above)
   docs/controls.md      PC controls + mobile touch-pass checklist
+  docs/build-sheet.md   one-page build sheet for Lab re-review
+  docs/mobile-loop-test.md  two-minute phone loop + 30s capture script
   README.md             this file
 ```
