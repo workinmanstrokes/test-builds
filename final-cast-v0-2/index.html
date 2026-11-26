@@ -25,6 +25,16 @@
   .tab-panel { background: #123a4d; padding: 10px; margin-top: 6px; min-height: 80px; }
   .hidden { display: none; }
   #playtest-log { white-space: pre-wrap; font-size: .8rem; }
+  #save-status { font-size: .8rem; color: #9fd8ef; }
+  /* First-launch tutorial overlay (Lab fix #4). */
+  #tutorial { position: fixed; inset: 0; background: rgba(4, 20, 30, .92); display: flex; align-items: center; justify-content: center; padding: 16px; z-index: 10; }
+  #tutorial.hidden { display: none; }
+  #tutorial .card { background: #123a4d; border: 3px solid #ffb703; padding: 16px; max-width: 420px; }
+  #tutorial h2 { margin-top: 0; }
+  #tutorial ol { padding-left: 20px; }
+  #tutorial li { margin-bottom: 8px; }
+  /* Low-memory mode (Lab fix #3): no pulsing animation. */
+  .low-memory #bite-cue { animation: none; }
 </style>
 </head>
 <body>
@@ -48,6 +58,7 @@
       <div>Coins: <strong id="coins">0</strong></div>
       <div>Fish: <strong id="fish-count">0</strong></div>
       <div>Quest: <strong id="quest-name">—</strong></div>
+      <div>Save: <strong id="save-status">—</strong></div>
       <button id="cast-btn">Cast Line</button>
       <button id="hook-btn" disabled>Hookset</button>
     </section>
@@ -75,6 +86,20 @@
     </section>
   </main>
 </div>
+
+<div id="tutorial" class="hidden" role="dialog" aria-label="First cast tutorial">
+  <div class="card">
+    <h2>Your first 10 minutes</h2>
+    <ol>
+      <li><strong>Cast your line</strong> — the idle line catches small fish on its own.</li>
+      <li><strong>When BITE! flashes, tap Hookset fast</strong> — that's your first hand-fought fish.</li>
+      <li><strong>Chase the Silver King</strong> — the first legend, at Boulder Run in Cedar Creek at dusk.</li>
+    </ol>
+    <p>Your progress saves automatically on this device — no account, no button to remember. The save time shows under your coins.</p>
+    <button id="tutorial-done">Start fishing</button>
+  </div>
+</div>
+
 <script type="module" src="src/main.js"></script>
 <script>
   // PWA offline cache: register only over http(s); file:// preview still plays.

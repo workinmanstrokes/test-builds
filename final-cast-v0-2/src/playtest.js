@@ -1,4 +1,5 @@
-// Final Cast v0.2 — hookset success/fail logging by fish size.
+// Final Cast v0.2.1 — hookset success/fail logging by fish size, plus
+// pacing and crash logging for the Game Test Lab review (2026-11-25).
 // No telemetry leaves the device: logs stay in localStorage until the
 // player exports them from Settings. Telemetry is off on localhost and
 // whenever Do Not Track is set (see main.js).
@@ -8,11 +9,18 @@ const KEY = 'finalcast.playtest.v0_2';
 export function newSession({ phoneModel = 'unknown', playerType = 'first-time' } = {}) {
   const session = {
     app: 'Final Cast',
-    version: '0.2.0',
+    version: '0.2.1',
     startedAt: new Date().toISOString(),
     phoneModel,
     playerType,
+    // Device RAM bucket (navigator.deviceMemory, GB) — recorded so
+    // low-memory shutdowns can be reproduced by device (Lab fix #3).
+    deviceMemoryGB: typeof navigator !== 'undefined' ? (navigator.deviceMemory ?? null) : null,
     attempts: [],
+    // Pacing markers (Lab fix #5): ms from session start to each event.
+    pacing: {},
+    // Crash / error log, each entry tagged with device RAM (Lab fix #3).
+    crashes: [],
   };
   localStorage.setItem(KEY, JSON.stringify(session));
   return session;
@@ -24,6 +32,16 @@ export function currentSession() {
   } catch {
     return newSession();
   }
+}
+
+// Fill in device RAM for sessions started before it was recorded.
+export function recordDevice() {
+  const session = currentSession();
+  if (session.deviceMemoryGB == null && typeof navigator !== 'undefined') {
+    session.deviceMemoryGB = navigator.deviceMemory ?? null;
+    localStorage.setItem(KEY, JSON.stringify(session));
+  }
+  return session;
 }
 
 // Record one hookset attempt. `size` is one of small | medium | large | legend.
@@ -42,6 +60,32 @@ export function logHooksetAttempt({ size, success, reactionMs, windowMs, firstAt
   });
   localStorage.setItem(KEY, JSON.stringify(session));
   return session.attempts[session.attempts.length - 1];
+}
+
+// Record a pacing milestone as milliseconds since the session started.
+// Known events: 'first_hand_catch' (first hand-fought fish landed),
+// 'first_legend' (first legend fish landed — the "first boss" equivalent).
+export function logPacingEvent(name) {
+  const session = currentSession();
+  if (session.pacing[name] != null) return session.pacing[name]; // first occurrence only
+  const startedAt = Date.parse(session.startedAt);
+  session.pacing[name] = Number.isFinite(startedAt) ? Date.now() - startedAt : null;
+  localStorage.setItem(KEY, JSON.stringify(session));
+  return session.pacing[name];
+}
+
+// Record an error/crash with the device RAM bucket, so low-memory
+// shutdowns can be grouped by device (Lab fix #3).
+export function logCrash({ message, source = '' }) {
+  const session = currentSession();
+  session.crashes.push({
+    at: new Date().toISOString(),
+    message: String(message || 'unknown error'),
+    source: String(source || ''),
+    deviceMemoryGB: session.deviceMemoryGB ?? (typeof navigator !== 'undefined' ? (navigator.deviceMemory ?? null) : null),
+  });
+  localStorage.setItem(KEY, JSON.stringify(session));
+  return session.crashes[session.crashes.length - 1];
 }
 
 // Success/fail rate grouped by fish size — the numbers the bite/hookset

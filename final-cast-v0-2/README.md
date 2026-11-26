@@ -4,6 +4,10 @@
 
 Final Cast v0.2 is the next update to the existing pixel-art idle fishing game by Diddlerrr. Your line fishes for you; when something big bites you take the rod and fight it by hand. This update applies the game tester's fixes in priority order after a 5.0/10 (grade C) review.
 
+## Build 0.2.1 — Game Test Lab review (4.8/10, grade D)
+
+The Lab's 2026-11-25 review scored the game 4.8/10. Build 0.2.1 answers its five fixes in priority order: a one-page build sheet ([`docs/build-sheet.md`](docs/build-sheet.md)), automatic unmissable saving, a low-memory guard with crash logging by device RAM, a first-launch tutorial into the first hand-fought fish and the Silver King, and pacing logging (free, no ads — ad frequency is zero). The delete-and-reinstall restore test, the lowest-spec Android 6.0 test, and the recorded playtest still need a real device — see the build sheet. (Note: the Lab text calls this a "castle-defense" game; Final Cast is an idle fishing game, and the fixes are applied to the fishing game as shipped.)
+
 ## What it is
 
 - **Idle fishing line** that catches common fish automatically, with hand-fishing when something big bites.
@@ -44,9 +48,13 @@ npx cap open android   # build the debug APK from Android Studio
 
 The debug APK is also built by CI. Install it on a phone and run the recorded playtest (see `src/playtest.js`).
 
+## Saving
+
+Progress saves **automatically** on this device — on every catch, every settings change, and whenever the page is hidden or closed. The HUD shows "Saved ✓ time" after every save, and the first-launch tutorial states that saving is automatic. There is no cloud save yet: a delete-and-reinstall currently loses progress unless the device backup restores it. That restore test is still open — see [`docs/build-sheet.md`](docs/build-sheet.md).
+
 ## Tuning
 
-Bite and hookset windows live in [`src/tuning.json`](src/tuning.json) — one table per fish size, plus the first-attempt grace period and the miss penalty. Change the numbers there, not in code. Hookset attempts are logged by fish size in [`src/playtest.js`](src/playtest.js); export a session and use it to retune.
+Bite and hookset windows live in [`src/tuning.json`](src/tuning.json) — one table per fish size, plus the first-attempt grace period and the miss penalty. Change the numbers there, not in code. Hookset attempts are logged by fish size in [`src/playtest.js`](src/playtest.js); export a session and use it to retune. Pacing (time to first hand-fought catch, time to first legend) and crashes (tagged with device RAM) are logged in the same session.
 
 ## Endgame and monetization
 

@@ -1,8 +1,13 @@
-// Final Cast v0.2 — idle fishing with hand-fought big bites.
+// Final Cast v0.2.1 — idle fishing with hand-fought big bites.
 // Vanilla JS, no dependencies. Tuning lives in src/tuning.json; hookset
-// logging lives in src/playtest.js. Saves live in localStorage.
+// logging lives in src/playtest.js.
+//
+// Saves live in localStorage and are written automatically — on every
+// catch, every settings change, and whenever the page is hidden or
+// unloaded (Lab fix #2, the save trap: no button to remember, and the HUD
+// shows "Saved ✓ time" after every save so autosave is visible).
 
-import { logHooksetAttempt, successRateBySize, exportSession, newSession } from './playtest.js';
+import { logHooksetAttempt, logPacingEvent, logCrash, recordDevice, successRateBySize, exportSession, newSession } from './playtest.js';
 
 const $ = (id) => document.getElementById(id);
 const SAVE_KEY = 'finalcast.save.v0_2';
@@ -22,10 +27,12 @@ const DEFAULT_TUNING = {
   hooksetWindowMsBySize: { small: 900, medium: 700, large: 550, legend: 450 },
   firstAttemptGraceMs: 250,
   missPenalty: { type: 'lineSlack', slackSeconds: 8, spotCooldownSeconds: 30 },
+  performance: { lowMemoryGB: 2, lowMemoryBuzzMs: 30 },
 };
 
 const save = loadSave();
 let tuning = DEFAULT_TUNING;
+let lowMemory = false;
 let biteTimer = null;
 let biteStartedAt = 0;
 let currentBite = null; // { size, fish, firstAttempt }
@@ -33,19 +40,43 @@ let idleTimer = null;
 let fightValue = 50;
 
 function loadSave() {
+  let s;
   try {
-    return JSON.parse(localStorage.getItem(SAVE_KEY)) || freshSave();
+    s = JSON.parse(localStorage.getItem(SAVE_KEY)) || freshSave();
   } catch {
-    return freshSave();
+    s = freshSave();
   }
+  // Migrate older saves: new fields default instead of breaking.
+  s.coins ??= 0;
+  s.fishCaught ??= 0;
+  s.handCaught ??= 0;
+  s.questIndex ??= 0;
+  s.water ??= 'Millpond';
+  s.collection ??= [];
+  s.legends ??= [];
+  s.haptics ??= true;
+  s.createdAt ??= Date.now();
+  s.lastSavedAt ??= null;
+  s.sawTutorial ??= false;
+  return s;
 }
 
 function freshSave() {
-  return { coins: 0, fishCaught: 0, questIndex: 0, water: 'Millpond', collection: [], legends: [], haptics: true };
+  return { coins: 0, fishCaught: 0, handCaught: 0, questIndex: 0, water: 'Millpond', collection: [], legends: [], haptics: true, createdAt: Date.now(), lastSavedAt: null, sawTutorial: false };
 }
 
 function persist() {
-  localStorage.setItem(SAVE_KEY, JSON.stringify(save));
+  save.lastSavedAt = Date.now();
+  try {
+    localStorage.setItem(SAVE_KEY, JSON.stringify(save));
+  } catch {
+    // Storage full / unavailable: say so instead of silently losing progress.
+    const el = $('save-status');
+    if (el) el.textContent = 'Save failed — storage unavailable';
+    return;
+  }
+  const el = $('save-status');
+  if (el) el.textContent = 'Saved ✓ ' + new Date(save.lastSavedAt).toLocaleTimeString();
 }
 
 async function loadTuning() {
@@ -58,7 +89,9 @@ async function loadTuning() {
 }
 
 function buzz(pattern = 40) {
-  if (save.haptics && navigator.vibrate) navigator.vibrate(pattern);
+  if (!save.haptics || !navigator.vibrate) return;
+  // Low-memory mode: one short pulse instead of a vibration pattern.
+  navigator.vibrate(lowMemory ? (tuning.performance?.lowMemoryBuzzMs ?? 30) : pattern);
 }
 
 function sizeOf(fish) {
@@ -165,10 +198,16 @@ function hookset() {
       clearInterval(fight);
       $('fight-bar').classList.add('hidden');
       if (fightValue >= 100) {
+        const firstHandCatch = save.handCaught === 0;
+        save.handCaught += 1;
         save.fishCaught += 1;
         save.coins += size === 'legend' ? 100 : 25;
         save.collection.includes(fish) || save.collection.push(fish);
-        if (size === 'legend') save.legends.push(fish);
+        if (size === 'legend') {
+          save.legends.push(fish);
+          if (save.legends.length === 1) logPacingEvent('first_legend');
+        }
+        if (firstHandCatch) logPacingEvent('first_hand_catch');
         alert(`Caught ${fish}! (+${size === 'legend' ? 100 : 25} coins)`);
       } else {
         alert(`${fish} broke the line.`);
@@ -192,7 +231,32 @@ function initTabs() {
 
 async function init() {
   await loadTuning();
+  // Low-memory mode (Lab fix #3): on small-RAM devices, cap effects —
+  // one short haptic pulse, no pulsing bite-cue animation (see CSS
+  // .low-memory). The RAM bucket is recorded in the playtest session.
+  const ramGB = typeof navigator.deviceMemory === 'number' ? navigator.deviceMemory : null;
+  const lowGB = tuning.performance?.lowMemoryGB ?? 2;
+  lowMemory = ramGB !== null && ramGB <= lowGB;
+  if (lowMemory) document.getElementById('app').classList.add('low-memory');
+  recordDevice();
   if (!localStorage.getItem('finalcast.playtest.v0_2')) newSession();
+  // Crash logging by device RAM (Lab fix #3). Logging must never break the game.
+  window.addEventListener('error', (e) => {
+    try { logCrash({ message: String((e && e.message) || 'unknown error'), source: (e && e.filename) || '' }); } catch { /* ignore */ }
+  });
+  // Autosave (Lab fix #2): persist whenever the page is hidden or unloaded,
+  // so a background kill or reinstall-era tab close never loses progress.
+  document.addEventListener('visibilitychange', () => { if (document.hidden) persist(); });
+  window.addEventListener('pagehide', persist);
+  // First-launch tutorial (Lab fix #4): unmissable, and it names the first
+  // hand-fought fish and the first legend so the first 10 minutes have a
+  // goal players can remember. It also states that saving is automatic.
+  if (!save.sawTutorial) $('tutorial').classList.remove('hidden');
+  $('tutorial-done').addEventListener('click', () => {
+    save.sawTutorial = true;
+    persist();
+    $('tutorial').classList.add('hidden');
+  });
   $('cast-btn').addEventListener('click', () => {
     $('cast-btn').disabled = true;
     setTimeout(() => { $('cast-btn').disabled = false; }, 1500);
@@ -206,6 +270,7 @@ async function init() {
   $('export-playtest').addEventListener('click', () => { $('playtest-log').textContent = exportSession(); });
   initTabs();
   render();
+  persist(); // show "Saved ✓" on launch so autosave is visible from the start
   scheduleIdleBite();
   if (window.matchMedia('(orientation: landscape)').matches) {
     document.getElementById('app').classList.replace('portrait', 'landscape');
