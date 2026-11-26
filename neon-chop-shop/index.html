@@ -56,11 +56,11 @@ const WIRES = [
 ];
 const BLUEPRINTS = [
   { id: "optics2",  name: "Optics Mk II",        cost: 200, desc: "+25% surgery payout" },
-  { id: "neural2",  name: "Neural Link Mk II",   cost: 200, desc: "Start ICE battles with +2 RAM" },
+  { id: "neural2",  name: "Neural Link Mk II",   cost: 200, desc: "Start ICE battles with +2 RAM", frozen: true },
   { id: "reflex2",  name: "Reflex Booster Mk II",cost: 200, desc: "Surgery generates 20% less Heat" },
-  { id: "cloakfw",  name: "Cloak Firmware",      cost: 300, desc: "Cloak cards cut Trace by 25 (was 15)" },
+  { id: "cloakfw",  name: "Cloak Firmware",      cost: 300, desc: "Cloak cards cut Trace by 25 (was 15)", frozen: true },
   { id: "ocgov",    name: "Overclock Governor",  cost: 300, desc: "Overclock Heat penalty halved" },
-  { id: "plaspool", name: "PLA+ Spool",          cost: 150, desc: "Draw 5 cards per ICE turn (was 4)" },
+  { id: "plaspool", name: "PLA+ Spool",          cost: 150, desc: "Draw 5 cards per ICE turn (was 4)", frozen: true },
 ];
 const CARDS = [
   { id: "spike",      name: "SPIKE",      cost: 2, dmg: 3, trace: 0,   desc: "3 damage to one ICE node." },
@@ -628,6 +628,10 @@ function triggerRaid(reason) {
 function buyBlueprint(id) {
   const bp = BLUEPRINTS.find(b => b.id === id);
   if (!bp || hasBlueprint(id)) return false;
+  // Frozen while the card heist is a prototype (VEX 3/10 scope cut):
+  // heist-only blueprints are not sold. Blueprints bought before the
+  // freeze still work (hasBlueprint checks are unchanged).
+  if (bp.frozen) { log(">> " + bp.name + " is FROZEN — the card heist is a prototype."); return false; }
   if (S.save.banked < bp.cost) { log(">> Not enough banked credits for " + bp.name + "."); return false; }
   S.save.banked -= bp.cost;
   S.save.blueprints[id] = true;
@@ -782,7 +786,7 @@ function renderTitle() {
   ctx.restore();
   neonText("NEON", 360, 210, 110, "#22d3ee", "center", 26);
   neonText("CHOP SHOP", 360, 320, 74, "#e879f9", "center", 26);
-  neonText("cyber-surgery • ice hacking • one wrong wire = raid", 360, 400, 19, "#94a3b8");
+  neonText("cyber-surgery — one wrong wire = raid", 360, 400, 19, "#94a3b8");
   neonText("BANKED  " + S.save.banked + "cr    •    JOBS " + S.save.jobs +
            "    •    RAIDS " + S.save.raids, 360, 470, 20, "#fbbf24");
   neonText("REP " + S.save.reputation + "    •    SHIFTS WON " + S.save.shiftsWon + " / LOST " + S.save.shiftsLost,
@@ -842,7 +846,7 @@ function renderWorkbench() {
   ctx.fillStyle = "#07070f"; ctx.fillRect(0, 0, W, H);
   drawTopBar();
   neonText("3D PRINTER — WORKBENCH", 360, 110, 30, "#4ade80", "center", 12);
-  neonText("Blueprints persist through raids. Buy with banked credits.", 360, 148, 17, "#94a3b8");
+  neonText("Surgery blueprints only — heist ones are frozen (prototype).", 360, 148, 17, "#94a3b8");
   BLUEPRINTS.forEach((bp, i) => {
     const y = 180 + i * 148;
     const owned = hasBlueprint(bp.id);
@@ -850,8 +854,8 @@ function renderWorkbench() {
            owned ? "#4ade80" : "#1e3a5f");
     neonText(bp.name, 64, y + 32, 24, owned ? "#4ade80" : "#e2e8f0", "left", owned ? 8 : 0);
     neonText(bp.desc, 64, y + 66, 17, "#94a3b8", "left");
-    neonText(owned ? "OWNED ✓" : bp.cost + " cr", 64, y + 100, 18, owned ? "#4ade80" : "#fbbf24", "left");
-    if (!owned) {
+    neonText(owned ? "OWNED ✓" : (bp.frozen ? "FROZEN — HEIST PROTOTYPE" : bp.cost + " cr"), 64, y + 100, 18, owned ? "#4ade80" : (bp.frozen ? "#94a3b8" : "#fbbf24"), "left");
+    if (!owned && !bp.frozen) {
       clickables.push(button(500, y + 40, 150, 56, "PRINT", {
         id: "buy-" + bp.id, action: () => buyBlueprint(bp.id),
         enabled: S.save.banked >= bp.cost, size: 20,
@@ -1363,16 +1367,26 @@ if (params.get("selftest") === "1") {
       t("malfunction job still banks and advances the shift", S.screen === "jobdone");
 
       // --- Workbench + persistence ---
+      // Scope cut (VEX 3/10): the three heist-only blueprints are frozen
+      // while the card heist is a prototype — they cannot be bought.
+      t("frozen heist blueprints cannot be bought",
+        buyBlueprint("plaspool") === false && buyBlueprint("neural2") === false &&
+        buyBlueprint("cloakfw") === false && !hasBlueprint("plaspool"));
+      // A heist blueprint bought before the freeze still works.
+      S.save.blueprints.plaspool = true; S.save.blueprints.cloakfw = true; persist();
+      t("pre-freeze heist blueprint still works",
+        hasBlueprint("plaspool") && cloakTraceCut() === 25);
+      delete S.save.blueprints.plaspool; delete S.save.blueprints.cloakfw; persist();
       const bankedBefore = S.save.banked;
       t("buy blueprint with banked credits",
-        buyBlueprint("plaspool") === true && hasBlueprint("plaspool") && S.save.banked === bankedBefore - 150);
+        buyBlueprint("optics2") === true && hasBlueprint("optics2") && S.save.banked === bankedBefore - 200);
       const reloaded = store.load();
-      t("blueprint persists in localStorage", !!(reloaded && reloaded.blueprints && reloaded.blueprints.plaspool));
-      t("cannot buy an owned blueprint twice", buyBlueprint("plaspool") === false);
+      t("blueprint persists in localStorage", !!(reloaded && reloaded.blueprints && reloaded.blueprints.optics2));
+      t("cannot buy an owned blueprint twice", buyBlueprint("optics2") === false);
       t("cannot buy without enough credits", (() => {
         S.save.banked = 0; persist();
-        const ok = buyBlueprint("optics2") === false;
-        S.save.banked = bankedBefore - 150; persist();
+        const ok = buyBlueprint("reflex2") === false;
+        S.save.banked = bankedBefore - 200; persist();
         return ok;
       })());
 
@@ -1384,11 +1398,11 @@ if (params.get("selftest") === "1") {
       addHeat(5, "selftest");
       t("heat 100 triggers Raid", S.screen === "raid", "screen=" + S.screen);
       t("raid wipes unbanked credits", S.unbanked === 0);
-      t("raid keeps banked credits", S.save.banked === bankedBefore - 150);
-      t("raid PRESERVES blueprints", hasBlueprint("plaspool") === true);
+      t("raid keeps banked credits", S.save.banked === bankedBefore - 200);
+      t("raid PRESERVES blueprints", hasBlueprint("optics2") === true);
       t("raid counted in save", S.save.raids === 1);
       const reloaded2 = store.load();
-      t("post-raid save still has blueprint", !!(reloaded2 && reloaded2.blueprints.plaspool));
+      t("post-raid save still has blueprint", !!(reloaded2 && reloaded2.blueprints.optics2));
 
       // --- Raid: trace path ---
       S.screen = "title";
@@ -1405,7 +1419,7 @@ if (params.get("selftest") === "1") {
       S.ice.trace = 99;
       endTurn();
       t("trace 100 triggers Raid", S.screen === "raid", "screen=" + S.screen);
-      t("blueprint still owned after trace raid", hasBlueprint("plaspool") === true);
+      t("blueprint still owned after trace raid", hasBlueprint("optics2") === true);
 
       // --- Jack Out path ---
       S.screen = "title";

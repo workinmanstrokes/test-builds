@@ -197,6 +197,37 @@ the scope cut instead of adding anything:
    still work. No new systems were added; surgery is the one loop until
    it is proven fun on a real device (see the device checklist).
 
+## Tester update — VEX, Game Test Lab (2026-11-26)
+
+VEX re-issued the same **3/10 (F)** verdict: "a themed surgery prototype
+with a hub, not a playable roguelite yet — prove the single-client loop is
+fun before you build the card heist." Checking the live code against the
+2026-11-23 update's claims found the loop itself is real — diagnosis,
+surgery, payout, banking, 5-client shifts with a quota/rep win, Trace
+raids — but the scope cut it claimed was only half-shipped:
+
+1. **Loop proven by execution, not by reading** — the in-file self-test
+   (`index.html?selftest=1`) plays the full loop end to end (diagnosis
+   calls, real pointer drags, wires, overclock, optional ICE battle, Jack
+   Out, both Raid triggers, a full 5-client shift win). The 2026-11-23
+   note said it was never executed here; it now has been, under a Node
+   DOM/canvas stub harness: **53 passed, 0 failed**.
+2. **Scope cut actually enforced in the playable build** — the HTML build
+   still sold the three heist-only blueprints (Neural Link Mk II, Cloak
+   Firmware, PLA+ Spool) while the heist is a frozen prototype; only the
+   Godot port refused them. The HTML shop now refuses them in code, shows
+   them FROZEN with no PRINT button, and the title no longer advertises
+   ice hacking as a co-equal feature. Blueprints bought before the freeze
+   still work, in both builds.
+3. **No new systems** — nothing was added to the game. Surgery stays the
+   one loop until it is proven fun on a real device (see the device
+   checklist).
+
+Correction to the 2026-11-23 note: it said the self-test "grew 51 → 52"
+and the buy/persist tests "now use Optics Mk II" — the shipped file still
+had 51 assertions and still bought PLA+ Spool. Both are true now (53
+assertions; the buy/persist tests use Optics Mk II).
+
 ## Device test checklist (real phone, still to do)
 
 - [ ] One full shift (5 clients) on a real Android phone, one-handed.
@@ -233,6 +264,12 @@ the scope cut instead of adding anything:
   PLA+ Spool) but was NOT executed in this environment — open
   `index.html?selftest=1` in a browser to confirm 52/52 before playing.
   Godot scripts: read-through only, not executed in the Godot editor.
+  **Correction (2026-11-26): that 52/52 claim was wrong — the shipped file
+  still had 51 assertions, still bought PLA+ Spool, and the HTML build
+  still sold the frozen heist blueprints. Fixed in the 2026-11-26 update
+  above; the self-test now has 53 assertions and was actually executed
+  in this environment under a Node DOM/canvas stub harness: 53 passed,
+  0 failed.**
 
 ## Known limits
 
