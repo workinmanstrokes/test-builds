@@ -1,0 +1,70 @@
+Slab House Tycoon - locked economy model (spreadsheet)
+Source of every number: scripts/card_data.gd (rarity weights, base values, condition rolls), scripts/grading.gd (fee, grade multipliers), scripts/economy.gd (start cash, pack prices), scripts/tycoon.gd (rent, Neon Sign). Godot build model; the web build layers parallels, 1/1 chase, pop multipliers and four grading companies on top, so web expected values are higher.
+Monetization (locked): paid one-time, no ads, no in-app purchases. No timers, no pay-to-win hooks. The maker can change this, but the numbers below are balanced as a buy-once game.
+,,,,,,
+STARTING ECONOMY,,,,
+Item,Value,Notes,,,
+Start cash,$500,scripts/economy.gd START_CASH,,,
+Daily rent,$15/day,paid on End day; never drives cash below $0 (shortfall reported),,,
+Pack - Pocket Kaiju,$25,5 cards; last card guaranteed Rare or better,,,
+Pack - Gridiron Legends,$30,5 cards; last card guaranteed Rare or better,,,
+Pack - Mythic Marvels,$35,5 cards; last card guaranteed Rare or better,,,
+Grading fee (Godot),$25,flat; web build: Economy $10 / Regular $25 / Express $75,,,
+,,,,,,
+RARITY TABLE (Godot),,,,,
+Rarity,Pull weight,Share,Base value range,Expected base value,How computed
+Common,55,55%,$2-$8,$5.00,midpoint of range
+Uncommon,25,25%,$8-$25,$16.50,midpoint of range
+Rare,12,12%,$25-$80,$52.50,midpoint of range
+Ultra,6,6%,$80-$250,$165.00,midpoint of range
+Secret,2,2%,$250-$800,$525.00,midpoint of range
+Expected value of one random pull,,,$33.58,55%*$5 + 25%*$16.50 + 12%*$52.50 + 6%*$165 + 2%*$525
+Expected value of the guaranteed last card (Rare 55% / Ultra 32% / Secret 13%),,,$149.93,55%*$52.50 + 32%*$165 + 13%*$525
+Expected raw value of one pack (sell all 5 raw),,,$284.23,4*$33.58 + $149.93
+,,,,,,
+GRADE MATH (Godot),,,,,
+Subgrade,Expected score,How computed,,,
+Centering,7.22,"10 - E[dev]/2.5; E[dev]=6.95 from the dev roll (0:25, 5:35, 10:22, 15:12, 20:6)",,,
+Corners,6.78,"10 - 2.5*E[whitened]; E[whitened]=1.29 from (0:30, 1:32, 2:22, 3:11, 4:5)",,,
+Edges,8.06,"10 - E[wear]; E[wear]=1.94 from (0:25, 1:22, 2:20, 3:14, 4:9, 5:6, 6:4)",,,
+Surface,7.48,"10 - 2*E[lines]; E[lines]=1.26 from (0:35, 1:28, 2:20, 3:10, 4:7)",,,
+Expected grade,7.34 -> 7,"round(0.30*7.22 + 0.25*6.78 + 0.20*8.06 + 0.25*7.48)",,,
+,,,,,,
+GRADING BREAK-EVEN (fee $25; grade only if base value is above this),,,,,
+Grade,Slab multiplier,Break-even base value,Rule,,,
+10,5.0x,$6.25,fee / (mult - 1) = $25 / 4.0,,,
+9,3.0x,$12.50,$25 / 2.0,,,
+8,2.0x,$25.00,$25 / 1.0,,,
+7,1.5x,$50.00,$25 / 0.5,,,
+6,1.2x,$125.00,$25 / 0.2,,,
+5,1.0x,never pays,grading a 5 returns the raw value minus the fee,,,
+4 and below,0.7x and worse,never pays,slab is worth less than the raw card,,,
+Reading,At the expected grade of 7 only cards worth $50+ (Rare and up) profit from grading; a 10 pays on almost anything. That is the inspection skill: read the desk, grade the $50+ cards, sell the rest raw.,,,,
+,,,,,,
+UPGRADES (first three unlocks, then the rest),,,,,
+Unlock,Cost,Effect,Why it matters,,,
+1. Neon Sign,$150,+15% buyer demand on raw sales, slab sales and fixed offers,First buy: affordable after the first profitable pack; pays for itself in ~1 day at 15% of ~$410/day sales,,,
+2. High-Lumen Lamp,see web build,Every surface flaw visible at any light angle,Fewer surprise low grades,,,
+3. Prep Station,see web build,+0.5 surface subgrade (wipe fingerprints),Turns borderline 9s into 10s,,,
+Later: Digital Calipers,see web build,Centering locks the moment a side faces up,,,,
+Later: Bulk Submitter Account,see web build,10+ cards at $15 Regular / $7 Economy,,,,
+Later: VIP Auction Slots,see web build,House fee 10% -> 3%, bigger bidders,,,,
+Later: UV Blacklight,$200,Catches fake cards and fake slabs at the Card Show,,,,
+,,,,,,
+10-DAY SIMULATION (expected values; one Gridiron pack/day, grade the guaranteed card at grade 7, sell the other 4 raw, buy Neon Sign on day 1, rent $15/day),,,,,
+Day,Cash at start,Pack,Grading fee,Raw sales (4 cards),Slab sale,Neon Sign,Rent,Cash at end
+1,$500.00,-$30.00,-$25.00,$134.30,$224.89,-$150.00,-$15.00,$639.19
+2,$639.19,-$30.00,-$25.00,$154.44,$258.62,$0.00,-$15.00,$982.25
+3,$982.25,-$30.00,-$25.00,$154.44,$258.62,$0.00,-$15.00,$1325.32
+4,$1325.32,-$30.00,-$25.00,$154.44,$258.62,$0.00,-$15.00,$1668.38
+5,$1668.38,-$30.00,-$25.00,$154.44,$258.62,$0.00,-$15.00,$2011.45
+6,$2011.45,-$30.00,-$25.00,$154.44,$258.62,$0.00,-$15.00,$2354.52
+7,$2354.52,-$30.00,-$25.00,$154.44,$258.62,$0.00,-$15.00,$2697.58
+8,$2697.58,-$30.00,-$25.00,$154.44,$258.62,$0.00,-$15.00,$3040.65
+9,$3040.65,-$30.00,-$25.00,$154.44,$258.62,$0.00,-$15.00,$3383.71
+10,$3383.71,-$30.00,-$25.00,$154.44,$258.62,$0.00,-$15.00,$3726.78
+Note,Days 2+ use the Neon Sign 1.15x demand multiplier on all sales. All values are expected values (averages over many packs), rounded to cents; any single pack varies a lot - a Secret pull or a grade 10 swings a day by hundreds.,,,,,,,
+,,,,,,
+TUNING NOTE (what the spreadsheet actually found),,,,,
+Finding,"A $30 pack returns $284.23 on average if every card is sold raw - about 9.5x the pack cost. After grading the best card and buying the Neon Sign, the shop nets about $343/day against $15/day rent. Cash is never the binding constraint; the skill is picking which cards are worth the $25 grading fee, and the pacing is the day cycle, not affordability.",,,,,
+Implication,"If the Lab wants a tighter early game, the levers are pack price, base-value ranges, or the guaranteed-card odds - not the grading fee, which is already the decision point. No numbers were changed in this update; this note is here so the next balance pass starts from measured numbers, not a guess.",,,,,

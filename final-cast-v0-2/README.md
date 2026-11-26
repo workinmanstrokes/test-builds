@@ -4,6 +4,12 @@
 
 Final Cast v0.2 is the next update to the existing pixel-art idle fishing game by Diddlerrr. Your line fishes for you; when something big bites you take the rod and fight it by hand. This update applies the game tester's fixes in priority order after a 5.0/10 (grade C) review.
 
+**Not Final Castle, and not a tower-defence game.** Final Cast is a pixel-art idle fishing game — there are no towers, waves, or castle defences in it. The Lab and VEX reviews both describe a tower-defence game by a similar name; their fixes are applied here to the fishing game as shipped (see `docs/build-sheet.md` for the item-by-item mapping).
+
+## Build 0.2.2 — VEX review (4.5/10, grade D)
+
+The VEX review (2026-11-26) scored the game 4.5/10. Build 0.2.2 answers its sixteen items: a full build sheet ([`docs/build-sheet.md`](docs/build-sheet.md)) with build number, what is playable, devices tested, the first 10 minutes, and known bugs; a slower low-memory mode for low-end Android 6.0–8 phones (longer idle gaps, slower fight ticks, crash logging by device RAM); a first-launch warning that deleting the app loses progress plus a Settings → Back up save download (there is still no cloud save); a named first-session differentiator (you fight the big bites by hand, then chase the Silver King); day-1 / day-7 retention logging in the exported playtest session; and the monetization statement written out in the game itself — free, no ads, no in-app purchases. The review's 3.26-star public record, version 2.6.2, and April 2019 launch date belong to the tower-defence game the tester confused this with: Final Cast has no public store listing, so there is no rating to beat and no review sentiment to track yet. The recorded real-phone playtest and the lowest-spec Android 6.0 device test still need a real device — see the build sheet.
+
 ## Build 0.2.1 — Game Test Lab review (4.8/10, grade D)
 
 The Lab's 2026-11-25 review scored the game 4.8/10. Build 0.2.1 answers its five fixes in priority order: a one-page build sheet ([`docs/build-sheet.md`](docs/build-sheet.md)), automatic unmissable saving, a low-memory guard with crash logging by device RAM, a first-launch tutorial into the first hand-fought fish and the Silver King, and pacing logging (free, no ads — ad frequency is zero). The delete-and-reinstall restore test, the lowest-spec Android 6.0 test, and the recorded playtest still need a real device — see the build sheet. (Note: the Lab text calls this a "castle-defense" game; Final Cast is an idle fishing game, and the fixes are applied to the fishing game as shipped.)
@@ -50,15 +56,15 @@ The debug APK is also built by CI. Install it on a phone and run the recorded pl
 
 ## Saving
 
-Progress saves **automatically** on this device — on every catch, every settings change, and whenever the page is hidden or closed. The HUD shows "Saved ✓ time" after every save, and the first-launch tutorial states that saving is automatic. There is no cloud save yet: a delete-and-reinstall currently loses progress unless the device backup restores it. That restore test is still open — see [`docs/build-sheet.md`](docs/build-sheet.md).
+Progress saves **automatically** on this device — on every catch, every settings change, and whenever the page is hidden or closed. The HUD shows "Saved ✓ time" after every save, and the first-launch tutorial states that saving is automatic. There is no cloud save yet: a delete-and-reinstall currently loses progress unless the device backup restores it. That restore test is still open — see [`docs/build-sheet.md`](docs/build-sheet.md). **Back up your save yourself:** Settings → Back up save downloads your progress as `final-cast-save.json`. The tutorial warns about this on first launch.
 
 ## Tuning
 
-Bite and hookset windows live in [`src/tuning.json`](src/tuning.json) — one table per fish size, plus the first-attempt grace period and the miss penalty. Change the numbers there, not in code. Hookset attempts are logged by fish size in [`src/playtest.js`](src/playtest.js); export a session and use it to retune. Pacing (time to first hand-fought catch, time to first legend) and crashes (tagged with device RAM) are logged in the same session.
+Bite and hookset windows live in [`src/tuning.json`](src/tuning.json) — one table per fish size, plus the first-attempt grace period and the miss penalty. Change the numbers there, not in code. Hookset attempts are logged by fish size in [`src/playtest.js`](src/playtest.js); export a session and use it to retune. Pacing (time to first hand-fought catch, time to first legend), retention (day-1 / day-7 return), and crashes (tagged with device RAM) are logged in the same session.
 
 ## Endgame and monetization
 
-After quest 12 and legend 3, the game offers collection completion, harder legend variants, and daily/spot rotation — see the Endgame section in [`docs/quests.md`](docs/quests.md). Monetization decision: **free, no ads** (recorded in the game settings; change it explicitly if that ever changes).
+After quest 12 and legend 3, the game offers collection completion, harder legend variants, and daily/spot rotation — see the Endgame section in [`docs/quests.md`](docs/quests.md). Monetization decision: **free, no ads, no in-app purchases** (recorded in the game settings; change it explicitly if that ever changes).
 
 ## Build milestones
 

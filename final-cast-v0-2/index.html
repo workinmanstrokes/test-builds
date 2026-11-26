@@ -4,6 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#0e2a3a">
+<meta name="description" content="Final Cast v0.2 — a pixel-art idle fishing game. Not Final Castle and not a tower-defence game: cast an idle line, fight the big bites by hand, and chase three legend fish across three waters. Free, no ads, no in-app purchases.">
 <title>Final Cast v0.2 — Pixel-Art Idle Fishing</title>
 <style>
   * { box-sizing: border-box; }
@@ -79,7 +80,9 @@
       <div id="panel-settings" class="tab-panel hidden">
         <label><input type="checkbox" id="opt-haptics" checked> Haptics</label>
         <label><input type="checkbox" id="opt-telemetry"> Telemetry (off on localhost / with Do Not Track)</label>
-        <p>Monetization: <strong>free, no ads</strong>.</p>
+        <p>Monetization: <strong>free, no ads</strong>. No in-app purchases.</p>
+        <p>Your save lives on this device only — deleting the app deletes your progress. Back it up before you uninstall.</p>
+        <button id="backup-save">Back up save</button>
         <button id="export-playtest">Export playtest log</button>
         <pre id="playtest-log"></pre>
       </div>
@@ -90,12 +93,14 @@
 <div id="tutorial" class="hidden" role="dialog" aria-label="First cast tutorial">
   <div class="card">
     <h2>Your first 10 minutes</h2>
+    <p>What makes Final Cast different from other idle fishing games: the line fishes for you, but the big ones you fight by hand — when BITE! flashes, the rod is yours.</p>
     <ol>
       <li><strong>Cast your line</strong> — the idle line catches small fish on its own.</li>
       <li><strong>When BITE! flashes, tap Hookset fast</strong> — that's your first hand-fought fish.</li>
       <li><strong>Chase the Silver King</strong> — the first legend, at Boulder Run in Cedar Creek at dusk.</li>
     </ol>
     <p>Your progress saves automatically on this device — no account, no button to remember. The save time shows under your coins.</p>
+    <p><strong>Warning: there is no cloud backup yet.</strong> Deleting the app deletes your progress. Back it up from Settings → Back up save.</p>
     <button id="tutorial-done">Start fishing</button>
   </div>
 </div>

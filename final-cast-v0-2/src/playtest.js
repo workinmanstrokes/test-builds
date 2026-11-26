@@ -1,5 +1,6 @@
-// Final Cast v0.2.1 — hookset success/fail logging by fish size, plus
-// pacing and crash logging for the Game Test Lab review (2026-11-25).
+// Final Cast v0.2.2 — hookset success/fail logging by fish size, plus
+// pacing, retention and crash logging for the Game Test Lab reviews
+// (2026-11-25) and the VEX review (2026-11-26).
 // No telemetry leaves the device: logs stay in localStorage until the
 // player exports them from Settings. Telemetry is off on localhost and
 // whenever Do Not Track is set (see main.js).
@@ -9,7 +10,7 @@ const KEY = 'finalcast.playtest.v0_2';
 export function newSession({ phoneModel = 'unknown', playerType = 'first-time' } = {}) {
   const session = {
     app: 'Final Cast',
-    version: '0.2.1',
+    version: '0.2.2',
     startedAt: new Date().toISOString(),
     phoneModel,
     playerType,
@@ -19,6 +20,14 @@ export function newSession({ phoneModel = 'unknown', playerType = 'first-time' }
     attempts: [],
     // Pacing markers (Lab fix #5): ms from session start to each event.
     pacing: {},
+    // Retention (VEX fix #5): which calendar days the game was opened,
+    // and whether the player came back 1 day and 7 days after their
+    // first day. Day-1 / day-7 return is the retention signal the
+    // review asked for; review sentiment cannot be measured in-game —
+    // Final Cast has no public store listing (see docs/build-sheet.md).
+    firstDay: null,
+    daysPlayed: [],
+    retention: {},
     // Crash / error log, each entry tagged with device RAM (Lab fix #3).
     crashes: [],
   };
@@ -41,6 +50,22 @@ export function recordDevice() {
     session.deviceMemoryGB = navigator.deviceMemory ?? null;
     localStorage.setItem(KEY, JSON.stringify(session));
   }
+  return session;
+}
+
+// Record that the game was opened today, and flag day-1 / day-7 return.
+// Call once per launch (main.js init). Dates are YYYY-MM-DD in UTC.
+export function recordPlayDay() {
+  const session = currentSession();
+  const today = new Date().toISOString().slice(0, 10);
+  session.firstDay ??= today;
+  session.daysPlayed ??= [];
+  if (!session.daysPlayed.includes(today)) session.daysPlayed.push(today);
+  const dayIndex = Math.round((Date.parse(today) - Date.parse(session.firstDay)) / 86400000);
+  session.retention ??= {};
+  if (dayIndex >= 1) session.retention.day1 = true;
+  if (dayIndex >= 7) session.retention.day7 = true;
+  localStorage.setItem(KEY, JSON.stringify(session));
   return session;
 }
 

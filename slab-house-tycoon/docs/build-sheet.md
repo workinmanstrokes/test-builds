@@ -41,3 +41,44 @@ The two-minute phone loop in [`docs/mobile-loop-test.md`](mobile-loop-test.md): 
 - **Sets/IP:** original parody content only — no real athletes, teams, or licensed characters.
 - **Business model:** paid one-time, no ads, no IAP. The economy is balanced as a buy-once game.
 - **Auction:** single-player against AI bidders only. No real-money multiplayer is planned.
+
+## How this differs from House Builder, Home Builder 3D and Real Estate Tycoon
+
+The Lab's comparators (House Builder 3.6 stars, Real Estate Tycoon 3.7) are
+build/sell/rent **house** games. Slab House Tycoon is not one — the name is
+the shop's name, and the "slab" is a graded card in a plastic case. The
+table below is the differentiation, cut to one thing: the grading skill
+loop. Everything that is not that loop is depth on top of it, not a
+second game.
+
+| Comparator | Their core loop | What Slab House does instead |
+|---|---|---|
+| House Builder / Home Builder 3D | Claim a plot, build a house, sell or rent it, customize it | No plots, no houses, no renters. **BUY → INSPECT → FLIP:** buy a pack, read a card's real condition at the desk, decide if the $25 grading fee pays, sell the slab or run the auction |
+| Merge Building DIY | Merge items to build | No merging. The skill is **reading condition** — centering split ratios, whitened corners, edge chipping, typed surface flaws — and knowing the break-even grade before paying |
+| Real Estate Tycoon | Buy property, collect rent, expand territory | Rent here is a **cost** ($15/day), not income. Income is flipping slabs: pop reports, fakes at the Card Show, Hobby News price moves, and a live auction with AI bidders |
+
+The one differentiator, in one sentence: **you do not build houses, you
+judge cardboard** — the game is won by spotting a card the market
+undervalues, proving it at the desk, and slabbing it before anyone else
+notices. The numbers behind that claim are tested in
+[`docs/economy.csv`](economy.csv): at the expected grade of 7, only cards
+worth $50+ profit from grading.
+
+## Replay hooks & endgame
+
+What brings a player back after the first houses — here, after the first
+slabs:
+
+- **Daily events:** Hobby News moves prices most days (breakouts up to
+  2.5×, injuries down to 0.55×, hype bubbles that crash two days later);
+  the Card Show restocks four tables of singles every day.
+- **Goals:** the upgrade ladder (Neon Sign → Lamp → Prep Station →
+  Calipers → Bulk Submitter → VIP Auction Slots → UV Blacklight), a Pop 1
+  Gem Mint 10 (worth 2.5× a normal 10), and the 1/1 chase (1% of packs).
+- **Collection endgame:** complete all 9 parody sets; chase low-pop
+  slabs; own every upgrade. There is no final boss and no story ending —
+  the endgame is a complete collection and a shop that runs at a profit.
+- **Honest gap:** there is **no offline income** — the shop earns only
+  while you play. That is a design choice, not an oversight, and it is
+  stated here so the Lab does not have to guess: if offline earnings are
+  wanted, they are a new system, not a tuning change.

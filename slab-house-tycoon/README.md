@@ -20,7 +20,10 @@ first three unlocks. The one-loop phone prototype and the 30-second
 capture script are in [docs/mobile-loop-test.md](docs/mobile-loop-test.md)
 — the two-minute run (buy a pack → inspect → grade → sell/auction)
 has not been run on a real phone yet; that doc is the checklist, not
-a claim it passed.
+a claim it passed. The locked economy is tested in
+[docs/economy.csv](docs/economy.csv): expected pack value, grade
+break-evens, and a 10-day simulation, all computed from the game's own
+numbers.
 
 ## Play the web version (instant, no install)
 
@@ -229,5 +232,6 @@ slab-house-tycoon/
   docs/controls.md      PC controls + mobile touch-pass checklist
   docs/build-sheet.md   one-page build sheet for Lab re-review
   docs/mobile-loop-test.md  two-minute phone loop + 30s capture script
+  docs/economy.csv        locked economy model: pack EV, grade break-evens, 10-day simulation
   README.md             this file
 ```

@@ -1,4 +1,4 @@
-// Final Cast v0.2.1 — idle fishing with hand-fought big bites.
+// Final Cast v0.2.2 — idle fishing with hand-fought big bites.
 // Vanilla JS, no dependencies. Tuning lives in src/tuning.json; hookset
 // logging lives in src/playtest.js.
 //
@@ -6,8 +6,11 @@
 // catch, every settings change, and whenever the page is hidden or
 // unloaded (Lab fix #2, the save trap: no button to remember, and the HUD
 // shows "Saved ✓ time" after every save so autosave is visible).
+// There is still no cloud save: the first-launch tutorial warns that
+// deleting the app deletes progress, and Settings offers "Back up save",
+// which downloads the save as a JSON file (VEX fix #3).
 
-import { logHooksetAttempt, logPacingEvent, logCrash, recordDevice, successRateBySize, exportSession, newSession } from './playtest.js';
+import { logHooksetAttempt, logPacingEvent, logCrash, recordDevice, recordPlayDay, successRateBySize, exportSession, newSession } from './playtest.js';
 
 const $ = (id) => document.getElementById(id);
 const SAVE_KEY = 'finalcast.save.v0_2';
@@ -27,7 +30,7 @@ const DEFAULT_TUNING = {
   hooksetWindowMsBySize: { small: 900, medium: 700, large: 550, legend: 450 },
   firstAttemptGraceMs: 250,
   missPenalty: { type: 'lineSlack', slackSeconds: 8, spotCooldownSeconds: 30 },
-  performance: { lowMemoryGB: 2, lowMemoryBuzzMs: 30 },
+  performance: { lowMemoryGB: 2, lowMemoryBuzzMs: 30, lowMemoryIdleDelayMs: 9000, lowMemoryFightTickMs: 200 },
 };
 
 const save = loadSave();
@@ -79,6 +82,22 @@ function persist() {
   if (el) el.textContent = 'Saved ✓ ' + new Date(save.lastSavedAt).toLocaleTimeString();
 }
 
+// Back up the save (VEX fix #3): there is no cloud save yet, so the player
+// can download their save as a file and keep it themselves. Deleting the
+// app without a backup still loses progress — the tutorial says so.
+function backupSave() {
+  persist();
+  const blob = new Blob([JSON.stringify(save, null, 2)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'final-cast-save.json';
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
+
 async function loadTuning() {
   try {
     const res = await fetch('src/tuning.json');
@@ -119,6 +138,12 @@ function render() {
 
 function scheduleIdleBite() {
   clearTimeout(idleTimer);
+  // Low-memory mode (VEX fix #2): on small-RAM devices the idle line waits
+  // a fixed, longer gap between bites, so the busiest moments do less
+  // work per second on a low-end Android 6.0–8 phone.
+  const delay = lowMemory
+    ? (tuning.performance?.lowMemoryIdleDelayMs ?? 9000)
+    : 4000 + Math.random() * 5000;
   idleTimer = setTimeout(() => {
     const water = WATERS[save.water];
     const fish = water.fish[Math.floor(Math.random() * water.fish.length)];
@@ -133,7 +158,7 @@ function scheduleIdleBite() {
       return;
     }
     startBite(fish);
-  }, 4000 + Math.random() * 5000);
+  }, delay);
 }
 
 function startBite(fish) {
@@ -190,6 +215,8 @@ function hookset() {
   fightValue = 50;
   $('fight-bar').classList.remove('hidden');
   $('fight-text').textContent = `Fighting ${fish}! Tap the bar to reel.`;
+  // Low-memory mode (VEX fix #2): tick the fight bar slower on small-RAM devices.
+  const tickMs = lowMemory ? (tuning.performance?.lowMemoryFightTickMs ?? 200) : 120;
   const fight = setInterval(() => {
     fightValue += (Math.random() - 0.45) * 12;
     fightValue = Math.max(0, Math.min(100, fightValue));
@@ -216,7 +243,7 @@ function hookset() {
       render();
       scheduleIdleBite();
     }
-  }, 120);
+  }, tickMs);
   $('fight-bar').onclick = () => { fightValue += 14; };
 }
 
@@ -240,6 +267,9 @@ async function init() {
   if (lowMemory) document.getElementById('app').classList.add('low-memory');
   recordDevice();
   if (!localStorage.getItem('finalcast.playtest.v0_2')) newSession();
+  // Retention tracking (VEX fix #5): record today's play day so day-1 /
+  // day-7 return can be read from the exported session.
+  recordPlayDay();
   // Crash logging by device RAM (Lab fix #3). Logging must never break the game.
   window.addEventListener('error', (e) => {
     try { logCrash({ message: String((e && e.message) || 'unknown error'), source: (e && e.filename) || '' }); } catch { /* ignore */ }
@@ -268,6 +298,7 @@ async function init() {
   $('opt-telemetry').checked = !TELEMETRY_OFF;
   $('opt-telemetry').disabled = TELEMETRY_OFF;
   $('export-playtest').addEventListener('click', () => { $('playtest-log').textContent = exportSession(); });
+  $('backup-save').addEventListener('click', backupSave);
   initTabs();
   render();
   persist(); // show "Saved ✓" on launch so autosave is visible from the start

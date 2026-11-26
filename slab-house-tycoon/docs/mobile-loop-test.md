@@ -42,3 +42,20 @@ Record one continuous 30-second screen recording on the real device — no emula
 ## Known gap (do not claim otherwise)
 
 The Godot build's desk currently handles mouse input only (`InspectionDesk._gui_input`); touch in the Godot export is pending this pass (emulate-mouse-from-touch is the expected route). The web build is the touch reference until then. See [`docs/controls.md`](controls.md) for the full PC key map and the touch-pass checklist.
+
+## Performance notes to record during the capture
+
+The 30-second capture is also the first performance evidence. Record
+these alongside the video and do not claim any of them until measured:
+
+- **Device:** model, Android version, and whether the game ran in the
+  browser or an installed wrapper.
+- **Frame rate:** note any visible stutter during the pack flip-in and
+  the auction countdown; if the device can show it, record the FPS
+  (target 60, acceptable 30 — unmeasured until this run).
+- **Load time:** seconds from tap to the shop front being usable.
+- **Fit:** every button reachable without zooming in/out; the desk canvas
+  already scales to viewport width (`#desk { max-width:100%;
+  height:auto; }`), so confirm it holds on this device.
+- **Touch latency:** any lag between a loupe drag and the magnified
+  window following the finger.
