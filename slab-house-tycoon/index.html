@@ -285,6 +285,42 @@
   .bulk-bar { position:sticky; bottom:8px; z-index:20; margin-top:12px; display:flex; gap:10px; align-items:center; background:linear-gradient(180deg,#3a2b16,#241a0e); border:1px solid #8a6a2a; border-radius:14px; padding:10px 12px; box-shadow:0 10px 30px rgba(0,0,0,.6); }
   .bulk-bar .grow { flex:1; font-size:13px; color:var(--ink); }
   .bulk-bar .grow small { display:block; color:var(--mut); }
+  /* ---- High-end slab case: frosted acrylic, label bar, ranked type ---- */
+  .mini, .card { background:linear-gradient(160deg, rgba(255,255,255,.10), rgba(255,255,255,.02) 42%, rgba(18,13,7,.92)), linear-gradient(180deg,#1d150c,#120d07);
+    border:2px solid rgba(255,255,255,.30);
+    box-shadow:inset 0 0 0 2px rgba(0,0,0,.28), inset 0 1px 0 rgba(255,255,255,.28), 0 4px 12px rgba(0,0,0,.45); }
+  .mini[data-parallel="rainbow"], .card[data-parallel="rainbow"] { box-shadow:inset 0 0 0 2px rgba(0,0,0,.28), inset 0 1px 0 rgba(255,255,255,.28), 0 0 18px rgba(160,120,255,.45); }
+  .mini[data-parallel="black-gold"], .card[data-parallel="black-gold"] { box-shadow:inset 0 0 0 2px rgba(0,0,0,.28), inset 0 1px 0 rgba(255,255,255,.28), 0 0 16px rgba(242,183,5,.5); }
+  .mini[data-parallel="refractor"], .card[data-parallel="refractor"] { box-shadow:inset 0 0 0 2px rgba(0,0,0,.28), inset 0 1px 0 rgba(255,255,255,.28), 0 0 14px rgba(90,160,255,.35); }
+  .mini[data-parallel="silver"], .card[data-parallel="silver"] { box-shadow:inset 0 0 0 2px rgba(0,0,0,.28), inset 0 1px 0 rgba(255,255,255,.28), 0 0 12px rgba(220,225,235,.3); }
+  .mini[data-parallel="prizm"], .card[data-parallel="prizm"] { box-shadow:inset 0 0 0 2px rgba(0,0,0,.28), inset 0 1px 0 rgba(255,255,255,.28), 0 0 20px rgba(242,183,5,.6); }
+  .tc-name { display:flex; align-items:baseline; gap:6px; font-size:14px; letter-spacing:.2px; }
+  .tc-name .tc-house { flex:0 0 auto; font-size:8.5px; font-weight:900; letter-spacing:1.6px; color:var(--gold); border:1px solid rgba(242,183,5,.6); border-radius:4px; padding:1px 4px; }
+  .tc-name .tc-nm { flex:1 1 auto; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .tc-name .tc-grade { flex:0 0 auto; font-size:17px; font-weight:900; color:var(--gold); line-height:1; }
+  .tc-name .tc-grade.raw { font-size:12px; color:var(--mut); font-weight:800; }
+  .tc-name .one-tag, .tc-name .par-tag { float:none; flex:0 0 auto; }
+  .tc-name.tc-name--cert { margin-top:0; }
+  .tc-cert { font-size:9.5px; letter-spacing:1.2px; color:#d8c08a; background:rgba(0,0,0,.35); border-bottom:1px solid #4a3a24; padding:3px 6px; margin:-8px -8px 0; text-align:left; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .card .tc-cert { margin:-10px -10px 0; }
+  .tc-foot .tc-val { color:var(--gold); font-weight:800; }
+  .tc-art { box-shadow:inset 0 0 0 1px rgba(255,255,255,.14), inset 0 -18px 24px rgba(0,0,0,.28); }
+  .tc-art.par-common { box-shadow:inset 0 0 0 1px rgba(0,0,0,.35), inset 0 -18px 24px rgba(0,0,0,.28); }
+  /* ---- Story panel (shop screen) ---- */
+  .story { background:linear-gradient(180deg,#2a2013,#1e160d); border:1px solid #6a5028; border-radius:12px; padding:10px 12px; margin:0 0 12px; }
+  .story-h { font-size:12px; font-weight:800; letter-spacing:.6px; text-transform:uppercase; color:var(--gold); }
+  .story-cur { font-size:15px; font-weight:800; margin:4px 0 2px; }
+  .story-sub { font-size:13px; color:var(--mut); line-height:1.4; }
+  .story-bar { height:8px; border-radius:99px; background:#171008; border:1px solid #4a3a24; overflow:hidden; margin:8px 0 4px; }
+  .story-bar i { display:block; height:100%; background:linear-gradient(90deg,#e69e00,#ffd94a); }
+  .story-list summary { cursor:pointer; font-size:13px; font-weight:700; color:var(--gold); padding:4px 0; }
+  .story-ch { display:flex; gap:8px; padding:6px 0; border-top:1px solid #3a2d18; font-size:13px; line-height:1.35; }
+  .story-ch .st-ico { flex:0 0 20px; text-align:center; }
+  .story-ch.done .st-t { color:var(--green); }
+  .story-ch.locked { opacity:.55; }
+  .story-ch .st-rw { margin-left:auto; white-space:nowrap; color:var(--gold); font-weight:800; font-size:12px; }
+  .finale-stats { display:grid; grid-template-columns:1fr 1fr; gap:6px 14px; text-align:left; font-size:14px; margin:12px 0; }
+  .finale-stats b { color:var(--gold); }
   /* ---- Upgrades ---- */
   /* Hobby News and the Card Show */
   .news { background:linear-gradient(180deg,#221810,#171008); border:1px solid #4a3a24; border-radius:12px; padding:8px 10px; margin:0 0 12px; }
@@ -363,6 +399,7 @@
       <div class="stat">Slabs: <b id="stat-slabs">0</b></div>
       <div class="stat">Sold: <b id="stat-sold">0</b></div>
       <div class="stat">Earned: <b id="stat-earned">$0</b></div>
+      <div class="stat" id="stat-legend" hidden>🏆 Legend ×<b id="stat-legends">0</b></div>
       <button class="stat day-chip" id="btn-day" title="Close the shop for the night. Grading orders come back as days pass.">📅 Day <b id="stat-day">1</b><span class="end">· End day ▸</span></button>
     </div>
   </header>
@@ -378,6 +415,7 @@
     <h2>Pack Shop</h2>
     <p class="sub">Buy a pack, pull 5 cards. Every pack guarantees at least one Rare or better. No timers, no energy — just money.</p>
     <div class="news" id="news"></div>
+    <div class="story" id="story"></div>
     <div class="packs" id="packs"></div>
     <div class="msg" id="shop-msg"></div>
     <div id="pulls"></div>
@@ -1095,6 +1133,26 @@ function playerFigureSVG(card) {
 // refractor / rainbow / black-gold / prizm) so a parallel is recognizable
 // at a glance and testable. The day/dusk/night variant is baked into the
 // scene palette — no more flat tint veil on top.
+// ---------- Slab spec: the one shared description of a card's slab ----------
+// Both renderers — the HTML tile (cardFaceHTML) and the canvas desk card
+// (drawFaceLocal) — read the same spec, so the slab label, grade, cert and
+// parallel can never drift apart between tile and desk.
+const PARALLEL_KIND = { common: 'plain', uncommon: 'silver', rare: 'refractor', ultra: 'rainbow', secret: 'black-gold' };
+function slabSpec(card) {
+  const g = card.graded || null;
+  const P = parallelOf(card);
+  const one = card.variant === '1/1';
+  return {
+    house: 'SLAB HOUSE',
+    grade: g ? g.grade : null,
+    gradeWord: g ? gradeWord(g) : null,
+    cert: g ? (g.cert || '') : null,
+    graderShort: g ? graderOf(g.grader || 'slab').short : null,
+    parallelKind: one ? 'prizm' : (PARALLEL_KIND[card.rarity] || 'plain'),
+    parallelColor: one ? '#f2b705' : (P ? P.color : rarityColor(card.rarity)),
+    raw: !g,
+  };
+}
 function cardArtHTML(card) {
   const foil = card.rarity === 'ultra' ? ' foil-ultra' : card.rarity === 'secret' ? ' foil-secret' : '';
   const rarCls = ' rar-' + (card.rarity || 'common');
@@ -1108,7 +1166,7 @@ function cardArtHTML(card) {
     + (card.auto ? `<span class="auto-sig">${esc(card.name)}</span>` : '')
     + (card.exposed ? '<span class="fake-stamp">FAKE</span>' : '');
   const pll = P ? ` pll pll-${card.parallel}" style="--pll:${P.color}` : '';
-  const parKind = one ? 'prizm' : ({ common: 'plain', uncommon: 'silver', rare: 'refractor', ultra: 'rainbow', secret: 'black-gold' })[card.rarity] || 'plain';
+  const parKind = one ? 'prizm' : (PARALLEL_KIND[card.rarity] || 'plain');
   if (hasFigure(card)) {
     const sport = sportFor(card);
     const arena = sport === 'football' ? 'stadium arena-football' : 'arena-' + sport;
@@ -1128,8 +1186,14 @@ function cardFaceHTML(card) {
   const oneTag = card.variant === '1/1' ? '<span class="one-tag">1 OF 1</span>'
     : P ? `<span class="par-tag" style="--pll:${P.color}">${esc(parallelName(card))}</span>` : '';
   const fc = frameColor(card);
+  const spec = slabSpec(card);
+  const gradeChip = spec.grade != null
+    ? `<span class="tc-grade" title="${esc(spec.graderShort)} ${spec.grade}">${spec.grade}</span>`
+    : `<span class="tc-grade raw" title="Raw — ungraded">${raritySymbol(card.rarity)}</span>`;
+  const certStrip = spec.cert
+    ? `<div class="tc-cert">${esc(spec.graderShort)} · ${esc(spec.cert)}${spec.gradeWord ? ' · ' + esc(spec.gradeWord.toUpperCase()) : ''}</div>` : '';
   const nameStyle = card.variant === '1/1' ? ' style="background:#14161c;color:#f5f1e6"' : ` style="background:${fc};color:${inkFor(fc)}"`;
-  return `<div class="tc-name"${nameStyle}>${esc(card.name)}${oneTag}</div>
+  return `${certStrip}<div class="tc-name${spec.cert ? ' tc-name--cert' : ''}"${nameStyle}><span class="tc-house">SH</span><span class="tc-nm">${esc(card.name)}</span>${oneTag}${gradeChip}</div>
   ${cardArtHTML(card)}
   <div class="tc-type">${esc(card.title)}</div>
   ${flavor}
@@ -1866,7 +1930,7 @@ function rarityColor(r) { return RARITY[r].color; }
 // ---------- Game state & economy ----------
 const START_CASH = 500;
 const SAVE_KEY = 'slab-house-tycoon-v1'; // same key: old saves migrate in place
-const SAVE_VERSION = 3;
+const SAVE_VERSION = 4;
 
 // Grading services. Days are shop days: one passes per finished auction or
 // when you close the shop with End Day.
@@ -1915,9 +1979,72 @@ const state = {
   worldSeed: Math.floor(Math.random() * 1e9), // drives news and the Card Show, apart from pack luck
   show: { day: 0, listings: [] }, // Card Show singles for today
   stats: defaultStats(),
+  story: defaultStory(),  // story chapters, best sale, legend count
   auction: null,          // live auction engine state (see below)
   screen: 'shop',
 };
+
+// ---------- Story: from a folding table to Slab House Legend ----------
+// Seven chapters, each wired to real game state and completed in order.
+// Rewards are one-time cash bonuses paid when the chapter completes; the
+// finale ends the run with a stats screen and a New Game+ option.
+// Total chapter rewards: $1,225 — small next to the locked pack EV ($284.23
+// per $30 pack), so the arc pays for story, not for the economy.
+const STORY_CHAPTERS = [
+  { id: 'first-pack', title: 'Chapter 1 · The Folding Table', text: 'You open your first pack on a borrowed folding table. The shop is open.', reward: 50, done: s => s.stats.packs >= 1 },
+  { id: 'first-slab', title: 'Chapter 2 · First Slab', text: 'Your first card comes back in a slab. It is a real shop now.', reward: 75, done: s => s.stats.graded >= 1 },
+  { id: 'set-collector', title: 'Chapter 3 · Set Collector', text: 'A complete set, every card on the shelf at once. Collectors start asking for you by name.', reward: 150, done: s => completedSetKey(s) !== null },
+  { id: 'gem-hunter', title: 'Chapter 4 · Gem Hunter', text: 'A Gem Mint 10. The pop report says it all.', reward: 200, done: s => s.inventory.some(c => c.graded && c.graded.grade === 10) },
+  { id: 'big-sale', title: 'Chapter 5 · The Whale\u2019s Table', text: 'One sale over $500. The big bidders know your stream now.', reward: 250, done: s => (s.story.bestSale || 0) >= 500 },
+  { id: 'one-of-one', title: 'Chapter 6 · The One of One', text: 'A 1/1. The only one in the world, and it is in your shop.', reward: 500, done: s => s.inventory.some(c => c.variant === '1/1') },
+  { id: 'legend', title: 'Chapter 7 · Slab House Legend', text: '$7,500 in the till and 15 slabs on the wall. The folding table is long gone — this is the premier shop in town.', reward: 0, done: s => s.cash >= STORY_LEGEND_CASH && s.inventory.filter(c => c.graded).length >= STORY_LEGEND_SLABS },
+];
+const STORY_LEGEND_CASH = 7500, STORY_LEGEND_SLABS = 15;
+function defaultStory() { return { done: [], bestSale: 0, legends: 0, finished: false }; }
+function storyCurrent() { return STORY_CHAPTERS.find(c => !state.story.done.includes(c.id)) || null; }
+function completedSetKey(s) {
+  for (const [key, set] of Object.entries(SETS)) {
+    const have = new Set(s.inventory.filter(c => c.set === key).map(c => c.name));
+    if (set.cards.every(d => have.has(d.name))) return key;
+  }
+  return null;
+}
+function noteSale(amount) {
+  if (!state.story) state.story = defaultStory();
+  if (typeof amount === 'number' && amount > (state.story.bestSale || 0)) state.story.bestSale = amount;
+}
+let storyChecking = false;
+function checkStory() {
+  if (storyChecking || !state.story) return;
+  storyChecking = true;
+  try {
+    for (let i = 0; i < STORY_CHAPTERS.length; i++) {
+      const ch = STORY_CHAPTERS[i];
+      if (state.story.done.includes(ch.id)) continue;
+      if (i > 0 && !state.story.done.includes(STORY_CHAPTERS[i - 1].id)) break;
+      if (!ch.done(state)) break;
+      state.story.done.push(ch.id);
+      if (ch.reward) state.cash += ch.reward;
+      if (ch.id === 'legend') state.story.finished = true;
+      if (typeof showToast === 'function') showToast(`📖 <b>${esc(ch.title)}</b> complete${ch.reward ? ' · +' + fmt$(ch.reward) : ''}!`);
+      if (ch.id === 'legend' && typeof showFinale === 'function') showFinale();
+    }
+  } finally { storyChecking = false; }
+}
+// Old saves have no story data: recompute which chapters their current
+// state already earned. Progress carries over; rewards do NOT pay twice.
+function recomputeStory() {
+  if (!state.story) state.story = defaultStory();
+  const keep = { bestSale: state.story.bestSale || 0, legends: state.story.legends || 0 };
+  state.story.done = [];
+  state.story.finished = false;
+  for (const ch of STORY_CHAPTERS) {
+    if (ch.done(state)) state.story.done.push(ch.id);
+  }
+  state.story.bestSale = keep.bestSale;
+  state.story.legends = keep.legends;
+  state.story.finished = state.story.done.includes('legend');
+}
 
 // ---------- Population report ----------
 // Total pop = the market's graded copies (deterministic per card, growing as
@@ -2016,7 +2143,7 @@ function save() {
   try {
     localStorage.setItem(SAVE_KEY, JSON.stringify({
       version: SAVE_VERSION, cash: state.cash, inventory: state.inventory, stats: state.stats, nextUid,
-      day: state.day, upgrades: state.upgrades, pop: state.pop, market: state.market, show: state.show, nextListingId, worldSeed: state.worldSeed,
+      day: state.day, upgrades: state.upgrades, pop: state.pop, market: state.market, show: state.show, nextListingId, worldSeed: state.worldSeed, story: state.story,
     }));
   } catch (e) { /* private mode / headless: ignore */ }
 }
@@ -2031,6 +2158,8 @@ function applySave(d) {
   state.market = d.market && Array.isArray(d.market.events) ? d.market : { events: [] };
   state.show = d.show && Array.isArray(d.show.listings) ? d.show : { day: 0, listings: [] };
   nextListingId = d.nextListingId || 1;
+  if (d.story && Array.isArray(d.story.done)) state.story = Object.assign(defaultStory(), d.story);
+  else { state.story = defaultStory(); recomputeStory(); }
   state.worldSeed = typeof d.worldSeed === 'number' ? d.worldSeed : Math.floor(Math.random() * 1e9);
   nextUid = d.nextUid || (state.inventory.reduce((m, c) => Math.max(m, c.uid), 0) + 1);
   let migrated = d.version !== SAVE_VERSION;
@@ -2062,6 +2191,7 @@ function buyPack(setKey) {
   const cards = openPack(setKey);
   state.inventory.push(...cards);
   state.stats.packs++;
+  checkStory();
   save();
   return { ok: true, cards };
 }
@@ -2076,6 +2206,7 @@ function rawSell(uid) {
   const amount = cardValue(card);
   state.cash += amount;
   state.stats.sold++; state.stats.earned += amount;
+  noteSale(amount); checkStory();
   removeFromInventory(uid);
   save();
   return { ok: true, amount };
@@ -2157,6 +2288,7 @@ function finishGrading(card, tier, grader) {
   state.pop[k][result.grade] = (state.pop[k][result.grade] || 0) + 1;
   result.popAtGrade = popCount(card, result.grade, null, grader);
   state.stats.graded++;
+  checkStory();
   return { card, result };
 }
 // Close the shop for the day: grading orders that are due come back.
@@ -2191,6 +2323,7 @@ function sellCard(uid) {
   const amount = cardValue(card);
   state.cash += amount;
   state.stats.sold++; state.stats.earned += amount;
+  noteSale(amount); checkStory();
   removeFromInventory(uid);
   save();
   return { ok: true, amount };
@@ -2366,6 +2499,7 @@ function buyListing(id) {
   state.inventory.push(card);
   L.card = null; L.soldName = card.name;
   state.stats.bought++;
+  checkStory();
   save();
   return { ok: true, card, price: L.price };
 }
@@ -2489,6 +2623,7 @@ function settleAuction(a) {
     const net = a.finalBid - fee;
     state.cash += net;
     state.stats.auctions++; state.stats.earned += net; state.stats.fees += fee;
+    noteSale(net);
     removeFromInventory(a.cardUid);
     r = { ok: true, sold: true, amount: a.finalBid, fee, net, winner: BIDDERS[a.winner].name };
   }
@@ -2513,6 +2648,8 @@ function refreshStats() {
   $('stat-sold').textContent = state.stats.sold;
   $('stat-earned').textContent = fmt$(state.stats.earned);
   $('stat-day').textContent = state.day;
+  const lg = $('stat-legend');
+  if (lg) { lg.hidden = !(state.story && state.story.legends > 0); $('stat-legends').textContent = state.story ? state.story.legends : 0; }
   const away = state.inventory.filter(atGrader).length;
   $('btn-day').title = 'Close the shop for the day' + (away ? ' (' + away + ' at the grader)' : '');
 }
@@ -2543,6 +2680,7 @@ function renderMarket() {
     ? news.map(e => `<div class="news-item ${e.tone}"><span>${e.tone === 'up' ? '▲' : '▼'}</span>${esc(e.text)}<small>${e.end > state.day ? (e.end - state.day + 1) + ' days left' : 'last day'}</small></div>`).join('')
     : '<div class="news-item">Quiet market today. Prices sit at book value.</div>');
   renderShow();
+  renderStory();
 }
 function stars(n) { return '★'.repeat(n) + '☆'.repeat(5 - n); }
 function renderShow() {
@@ -2553,7 +2691,7 @@ function renderShow() {
     const c = L.card, book = cardValue(c), off = Math.round((1 - L.price / book) * 100);
     const tier = c.graded ? (c.graded.label || labelTier(c.graded.grade, c.graded.pristine)) : null;
     const checks = Object.values(L.checks).map(r => `<div class="chk ${r.fake ? 'bad' : 'good'}">${r.fake ? '⚠️' : '✅'} ${esc(r.text)}</div>`).join('');
-    return `<div class="card listing frame-${c.set}${c.graded ? ' slabbed slab-' + tier : ''}" style="border-color:${c.graded ? '#f2b705' : frameColor(c)}">
+    return `<div class="card listing frame-${c.set}${c.graded ? ' slabbed slab-' + tier : ''}" data-parallel="${slabSpec(c).parallelKind}" style="border-color:${c.graded ? '#f2b705' : frameColor(c)}">
       <div class="seller">${stars(L.stars)} ${esc(L.seller)}</div>
       ${c.graded ? gradeTagHTML(c) : ''}
       ${cardFaceHTML(c)}
@@ -2596,7 +2734,7 @@ function renderShop() {
   });
 }
 function miniCardHTML(card, withInspect) {
-  return `<div class="mini frame-${card.set}${card.variant === '1/1' ? ' one-of-one' : ''}" style="border-color:${card.variant === '1/1' ? '#f2b705' : frameColor(card)}">
+  return `<div class="mini frame-${card.set}${card.variant === '1/1' ? ' one-of-one' : ''}" data-parallel="${slabSpec(card).parallelKind}" style="border-color:${card.variant === '1/1' ? '#f2b705' : frameColor(card)}">
     ${cardFaceHTML(card)}
     <div class="vl">${valueLine(card)}</div>
     ${withInspect ? `<button class="small" data-inspect="${card.uid}">🔍 Inspect</button>` : ''}
@@ -2927,10 +3065,23 @@ function drawFaceLocal(ctx, card) {
   ctx.fillRect(x + 12 + lrOff, y + 12 + tbOff, w - 24, h - 24);
   ctx.fillStyle = card.variant === '1/1' ? '#14161c' : frameColor(card);
   ctx.fillRect(x + 12 + lrOff, y + 12 + tbOff, w - 24, 26);
+  const spec = slabSpec(card);
   ctx.fillStyle = card.variant === '1/1' ? '#f5f1e6' : inkFor(frameColor(card));
   ctx.font = 'bold ' + Math.round(w * 0.062) + 'px system-ui, sans-serif';
   ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
-  ctx.fillText(card.name, x + 20 + lrOff, y + 25 + tbOff, w - 40);
+  ctx.fillText(card.name, x + 20 + lrOff, y + 25 + tbOff, spec.grade != null ? w - 66 : w - 40);
+  if (spec.grade != null) {
+    if (card.variant !== '1/1') {
+      ctx.fillStyle = '#f2b705';
+      ctx.font = '900 ' + Math.round(w * 0.075) + 'px system-ui, sans-serif';
+      ctx.textAlign = 'right';
+      ctx.fillText(String(spec.grade), x + w - 20 + lrOff, y + 25 + tbOff);
+      ctx.textAlign = 'left';
+    }
+    ctx.fillStyle = card.variant === '1/1' ? '#f5f1e6' : inkFor(frameColor(card));
+    ctx.font = '600 ' + Math.round(w * 0.038) + 'px system-ui, sans-serif';
+    ctx.fillText(spec.graderShort + ' \u00b7 ' + spec.cert, x + 20 + lrOff, y + 37 + tbOff);
+  }
   if (card.variant === '1/1') {
     ctx.fillStyle = '#f2b705';
     ctx.font = 'bold ' + Math.round(w * 0.055) + 'px system-ui, sans-serif';
@@ -2996,6 +3147,18 @@ function drawFaceLocal(ctx, card) {
     ctx.font = 'bold ' + Math.round(w * 0.075) + 'px system-ui, sans-serif';
     ctx.fillText('★ ' + card.graded.grade + ' SLAB ★', x + 20 + lrOff, y + h - 20);
   }
+  // Frosted slab case (same spec the HTML tile reads): acrylic rim, a
+  // parallel-colored hairline and a soft top sheen over the whole face.
+  ctx.save();
+  ctx.strokeStyle = 'rgba(255,255,255,0.38)'; ctx.lineWidth = 3;
+  roundRect(ctx, x + 2, y + 2, w - 4, h - 4, 12); ctx.stroke();
+  ctx.strokeStyle = spec.parallelColor; ctx.globalAlpha = 0.55; ctx.lineWidth = 1;
+  roundRect(ctx, x + 6, y + 6, w - 12, h - 12, 10); ctx.stroke();
+  ctx.globalAlpha = 1;
+  const sheen = ctx.createLinearGradient(x, y, x, y + 60);
+  sheen.addColorStop(0, 'rgba(255,255,255,0.14)'); sheen.addColorStop(1, 'rgba(255,255,255,0)');
+  ctx.fillStyle = sheen; ctx.fillRect(x, y, w, 60);
+  ctx.restore();
   ctx.restore();
 }
 // The back: set-colored pattern, Slab House logo and a stats box. Its border
@@ -3988,7 +4151,7 @@ function renderCollection() {
         <button class="small" data-sell="${card.uid}">Sell ${fmt$(cardValue(card))}</button>
       </div>
       <div class="row"><button class="small secondary" data-auction="${card.uid}">🔨 Auction</button>${card.graded ? `<button class="small secondary" data-cert="${card.uid}">🔎 Cert</button>` : ''}${state.upgrades.uv ? `<button class="small secondary" data-uv="${card.uid}">🔦 UV</button>` : ''}</div>`;
-    return `<div class="${cls}" data-uid="${card.uid}" style="border-color:${border}">${body}</div>`;
+    return `<div class="${cls}" data-uid="${card.uid}" data-parallel="${slabSpec(card).parallelKind}" style="border-color:${border}">${body}</div>`;
   }).join('');
   grid.querySelectorAll('[data-desk]').forEach(b => b.addEventListener('click', () => {
     state.deskUid = +b.getAttribute('data-desk'); resetInspection(); showScreen('desk');
@@ -4055,6 +4218,62 @@ function renderUpgrades() {
   }));
 }
 
+// ---------- Story UI ----------
+function renderStory() {
+  const el = $('story');
+  if (!el) return '';
+  const done = state.story.done.length, total = STORY_CHAPTERS.length;
+  const cur = storyCurrent();
+  const curHtml = cur
+    ? `<div class="story-cur">${esc(cur.title)}</div><div class="story-sub">${esc(cur.text)}</div><div class="story-bar"><i style="width:${Math.round(done / total * 100)}%"></i></div><div class="story-sub">${done} / ${total} chapters · next reward ${cur.reward ? fmt$(cur.reward) : 'the Legend ending'}</div>`
+    : `<div class="story-cur">🏆 Slab House Legend</div><div class="story-sub">The premier shop in town. The story is complete — keep playing, or start a new shop as a Legend.</div><div class="story-bar"><i style="width:100%"></i></div><div class="story-sub">${done} / ${total} chapters · complete</div>`;
+  const list = STORY_CHAPTERS.map(c => {
+    const isDone = state.story.done.includes(c.id);
+    const isCur = cur && c.id === cur.id;
+    const cls = isDone ? 'done' : (isCur ? 'cur' : 'locked');
+    const ico = isDone ? '✅' : (isCur ? '👉' : '🔒');
+    return `<div class="story-ch ${cls}"><span class="st-ico">${ico}</span><span class="st-t"><b>${esc(c.title)}</b><br>${esc(c.text)}</span><span class="st-rw">${c.reward ? '+' + fmt$(c.reward) : '🏆'}</span></div>`;
+  }).join('');
+  el.innerHTML = `<div class="story-h">📖 Your Story</div>${curHtml}<details class="story-list"><summary>All chapters (${done}/${total})</summary>${list}</details>`;
+  return el.innerHTML;
+}
+function showFinale() {
+  const slabs = state.inventory.filter(c => c.graded).length;
+  const best = state.inventory.reduce((m, c) => Math.max(m, cardValue(c)), 0);
+  openOverlay(`
+    <div class="reveal-head">🏆 The End of the Beginning</div>
+    <h2 style="margin:8px 0 2px">Slab House Legend</h2>
+    <p class="sub">From a folding table to the premier card shop in town. The regulars call you the Legend now — and they are not wrong.</p>
+    <div class="finale-stats">
+      <span>Days in business</span><b>${state.day}</b>
+      <span>Packs opened</span><b>${state.stats.packs}</b>
+      <span>Cards graded</span><b>${state.stats.graded}</b>
+      <span>Slabs on the wall</span><b>${slabs}</b>
+      <span>Total earned</span><b>${fmt$(state.stats.earned)}</b>
+      <span>Best single sale</span><b>${fmt$(state.story.bestSale || 0)}</b>
+      <span>Best card in the shop</span><b>${fmt$(best)}</b>
+      <span>Cash</span><b>${fmt$(state.cash)}</b>
+    </div>
+    <div style="display:flex;gap:10px;flex-wrap:wrap;justify-content:center">
+      <button id="finale-keep">Keep playing</button>
+      <button class="secondary" id="finale-ngp">🔄 New Game+ — open a new shop</button>
+    </div>`, 'finale');
+  $('finale-keep').addEventListener('click', closeOverlay);
+  $('finale-ngp').addEventListener('click', () => { closeOverlay(); newGamePlus(); });
+}
+function newGamePlus() {
+  const legends = (state.story && state.story.legends || 0) + 1;
+  state.cash = START_CASH; state.inventory = []; state.stats = defaultStats(); state.day = 1;
+  state.upgrades = defaultUpgrades(); state.pop = {}; state.market = { events: [] };
+  state.show = { day: 0, listings: [] }; state.deskUid = null; state.side = 'front';
+  state.inspect = freshInspect();
+  state.inspected = { centering: false, corners: false, edges: false, surface: false };
+  state.light = 0; state.auction = null;
+  state.story = defaultStory(); state.story.legends = legends;
+  save(); refreshStats(); renderShop(); renderCollection();
+  showToast(`🏆 New shop, same legend — <b>Legend ×${legends}</b>. The folding table is back, but everyone knows your name.`);
+}
+
 // ---------- End day ----------
 function newsToast(dayRes) {
   if (dayRes && dayRes.news) setTimeout(() => showToast(`📰 ${dayRes.news.tone === 'up' ? '▲' : '▼'} ${esc(dayRes.news.text)}`), dayRes.returned && dayRes.returned.length ? 300 : 1800);
@@ -4093,7 +4312,7 @@ function renderAuctionPicks() {
   }
   el.innerHTML = avail.map(card => {
     const tier = card.graded ? (card.graded.label || labelTier(card.graded.grade, card.graded.pristine)) : null;
-    return `<div class="card frame-${card.set}${card.graded ? ' slabbed slab-' + tier : ''}${card.variant === '1/1' ? ' one-of-one' : ''}" style="border-color:${card.graded || card.variant === '1/1' ? '#f2b705' : frameColor(card)}">
+    return `<div class="card frame-${card.set}${card.graded ? ' slabbed slab-' + tier : ''}${card.variant === '1/1' ? ' one-of-one' : ''}" data-parallel="${slabSpec(card).parallelKind}" style="border-color:${card.graded || card.variant === '1/1' ? '#f2b705' : frameColor(card)}">
       ${card.graded ? gradeTagHTML(card) : ''}
       ${cardFaceHTML(card)}
       <div class="vl">${card.graded ? 'Slab' : 'Raw'} · ${fmt$(cardValue(card))}</div>
@@ -4176,12 +4395,13 @@ function selfTest() {
   try {
     setSeed(12345);
     state.cash = 500; state.inventory = []; state.stats = defaultStats();
+    state.story = defaultStory();
     state.day = 1; state.upgrades = defaultUpgrades(); state.pop = {}; state.light = 0;
     state.market = { events: [] }; state.show = { day: 0, listings: [] }; state.worldSeed = 4242;
     layoutDesk(1000); resetView();
     // 1. Buy pack
     const buy = buyPack('gridiron');
-    ok('buy pack ok', buy.ok && buy.cards.length === 5 && state.cash === 470);
+    ok('buy pack ok (chapter 1 pays its $50 reward)', buy.ok && buy.cards.length === 5 && state.cash === 520);
     ok('pack guarantees rare+', buy.cards.some(c => ['rare', 'ultra', 'secret'].includes(c.rarity)));
     ok('cards have hidden grades', buy.cards.every(c => c.grades && c.grades.corners.length === 4));
     // 2. Grade math: perfect card grades 10 with 5x
@@ -4700,7 +4920,7 @@ function selfTest() {
         upgrades: state.upgrades, pop: state.pop, market: state.market, show: state.show, nextListingId, worldSeed: state.worldSeed }));
       state.market = { events: [] }; state.worldSeed = 0;
       applySave(snap);
-      const r = SAVE_VERSION === 3 && state.market.events.length === 1 && state.worldSeed === 31337 && state.show.listings.length === SHOW_SIZE;
+      const r = SAVE_VERSION === 4 && state.market.events.length === 1 && state.worldSeed === 31337 && state.show.listings.length === SHOW_SIZE;
       state.market = { events: [] };
       return r;
     })());
@@ -4729,6 +4949,100 @@ function selfTest() {
       migrateCard(old);
       return old.parallel === null && old.auto === false && old.rookie === true && !isFake(old) && cardValue(old) === Math.round(20 * ROOKIE_MULT);
     })());
+    // 26. Story: chapters complete in order, pay once, end in a finale
+    ok('story has 7 chapters in order', STORY_CHAPTERS.length === 7 && STORY_CHAPTERS[0].id === 'first-pack' && STORY_CHAPTERS[6].id === 'legend');
+    ok('story starts fresh with chapter 1 current', (() => {
+      state.story = defaultStory(); state.cash = 500; state.stats = defaultStats(); state.inventory = [];
+      return state.story.done.length === 0 && storyCurrent().id === 'first-pack' && !state.story.finished;
+    })());
+    ok('chapter 1 completes on the first pack and pays $50', (() => {
+      setSeed(2024); const before = state.cash; const r = buyPack('gridiron');
+      return r.ok && state.story.done.includes('first-pack') && state.cash === before - 30 + 50;
+    })());
+    ok('chapter 2 completes on the first graded card', (() => {
+      const c = state.inventory[0]; const before = state.cash;
+      const r = submitGrading(c.uid, 'express');
+      return r.ok && state.story.done.includes('first-slab') && state.cash === before - 75 + 75;
+    })());
+    ok('chapter 3 completes on a full set', (() => {
+      for (const d of SETS.gridiron.cards) {
+        const c = makeCard('gridiron', d.rarity);
+        Object.assign(c, { name: d.name, title: d.title, position: d.position, team: d.team, number: d.number, flavor: d.flavor });
+        state.inventory.push(c);
+      }
+      checkStory();
+      return state.story.done.includes('set-collector') && completedSetKey(state) === 'gridiron';
+    })());
+    ok('chapter 4 completes on a Gem Mint 10', (() => {
+      const c = makeCard('gridiron', 'rare');
+      c.graded = { grade: 10, subs: { centering: 10, corners: 10, edges: 10, surface: 10 }, mult: 5, value: 500, cert: 'SH-0000001', grader: 'slab', label: 'gold', popAware: true };
+      state.inventory.push(c); checkStory();
+      return state.story.done.includes('gem-hunter');
+    })());
+    ok('chapter 5 completes on a $500+ sale', (() => {
+      noteSale(600); checkStory();
+      return state.story.done.includes('big-sale') && state.story.bestSale === 600;
+    })());
+    ok('chapter 6 completes on a 1/1 pull', (() => {
+      const c = makeCard('gridiron', 'rare'); c.variant = '1/1'; state.inventory.push(c); checkStory();
+      return state.story.done.includes('one-of-one');
+    })());
+    ok('chapter 7 completes at $7,500 cash and 15 slabs', (() => {
+      state.cash = 7500;
+      let n = state.inventory.filter(c => c.graded).length;
+      while (n < 15) {
+        const c = makeCard('gridiron', 'common');
+        c.graded = { grade: 8, subs: { centering: 8, corners: 8, edges: 8, surface: 8 }, mult: 2, value: 20, cert: 'SH-0000002', grader: 'slab', label: 'red', popAware: true };
+        state.inventory.push(c); n++;
+      }
+      checkStory();
+      return state.story.done.includes('legend') && state.story.finished === true;
+    })());
+    ok('chapter rewards pay exactly once', (() => {
+      const before = state.cash; checkStory(); checkStory();
+      return state.cash === before;
+    })());
+    ok('old saves recompute story progress without paying twice', (() => {
+      const snap = { cash: 321, nextUid: 50, stats: { packs: 2, graded: 1, sold: 0, auctions: 0, earned: 0 }, inventory: [] };
+      applySave(snap);
+      return state.story.done.includes('first-pack') && state.story.done.includes('first-slab') && state.cash === 321;
+    })());
+    ok('new game+ keeps the legend badge and resets the run', (() => {
+      newGamePlus();
+      return state.story.legends === 1 && state.cash === 500 && state.inventory.length === 0 && state.day === 1 && state.story.done.length === 0 && !state.story.finished;
+    })());
+    // 27. Slab spec: the HTML tile and the canvas desk card agree
+    ok('slabSpec agrees on grade, cert and parallel for a graded card', (() => {
+      const c = makeCard('gridiron', 'rare');
+      c.graded = { grade: 9, subs: { centering: 9, corners: 9, edges: 9, surface: 9 }, mult: 3, value: 90, cert: 'SH-1234567', grader: 'tux', label: 'silver', popAware: true };
+      const spec = slabSpec(c);
+      const html = cardFaceHTML(c);
+      return spec.grade === 9 && spec.cert === 'SH-1234567' && spec.parallelKind === 'refractor' &&
+        html.indexOf('SH-1234567') !== -1 && html.indexOf('>9<') !== -1 &&
+        miniCardHTML(c, false).indexOf('data-parallel="refractor"') !== -1;
+    })());
+    ok('canvas desk card draws the same grade and cert', (() => {
+      const texts = [];
+      const rec = new Proxy({}, {
+        get(t, p) {
+          if (p === 'createLinearGradient') return () => ({ addColorStop() {} });
+          if (p === 'fillText') return (s) => { texts.push(String(s)); };
+          if (p === 'measureText') return () => ({ width: 10 });
+          return () => {};
+        },
+        set() { return true; },
+      });
+      const c = makeCard('gridiron', 'rare');
+      c.graded = { grade: 9, subs: { centering: 9, corners: 9, edges: 9, surface: 9 }, mult: 3, value: 90, cert: 'SH-1234567', grader: 'tux', label: 'silver', popAware: true };
+      c.grades = { centering: { lr: 50, tb: 50 }, corners: [false, false, false, false], edges: 0, surface: 0 };
+      drawCardFace(rec, 0, 0, 250, 350, c, false);
+      return texts.includes('9') && texts.some(t => t.indexOf('SH-1234567') !== -1);
+    })());
+    ok('tile and desk agree on the parallel kind for every rarity', ['common', 'uncommon', 'rare', 'ultra', 'secret'].every(r => {
+      const c = makeCard('gridiron', r);
+      const kinds = { common: 'plain', uncommon: 'silver', rare: 'refractor', ultra: 'rainbow', secret: 'black-gold' };
+      return slabSpec(c).parallelKind === kinds[r] && miniCardHTML(c, false).indexOf('data-parallel="' + kinds[r] + '"') !== -1;
+    }));
     // 11. Not enough cash blocks pack
     state.cash = 5; state.upgrades = defaultUpgrades();
     ok('insufficient cash blocks pack', buyPack('kaiju').ok === false);
@@ -4756,6 +5070,7 @@ if (typeof window !== 'undefined' && window.location && window.location.search.i
 // Testable API (used by the headless harness)
 window.SHT = {
   state, SETS, RARITY, buyPack, openPack, makeCard, gradeCard, cardValue, rawSell, submitGrading, sellCard,
+  slabSpec, PARALLEL_KIND, STORY_CHAPTERS, storyCurrent, checkStory, recomputeStory, noteSale, completedSetKey, newGamePlus, renderStory, showFinale, defaultStory,
   createAuction, auctionTick, hypeChat, gavelSlam, settleAuction, finishAuction,
   inspectAt, resetInspection, deskCard, setSeed, selfTest, CARD, zoneAt,
   playerFigureSVG, cardFaceHTML, miniCardHTML, poseFor, collectorLabel,
