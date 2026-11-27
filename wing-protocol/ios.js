@@ -75,7 +75,13 @@
     w.addEventListener('load', function () {
       var hadController = !!navigator.serviceWorker.controller;
       navigator.serviceWorker.register(swUrl).then(function (reg) {
-        reg.update && reg.update();
+        // reg.update() returns a promise that rejects when sw.js can't be fetched (offline, flaky
+        // signal, host hiccup). That is harmless: the game keeps running and the next check retries.
+        // Catch it so it doesn't surface as an unhandled error.
+        var check = function () {
+          try { var p = reg.update && reg.update(); if (p && p.catch) p.catch(function () {}); } catch (e) {}
+        };
+        check();
         if (reg.waiting && navigator.serviceWorker.controller) ready(reg.waiting);
         reg.addEventListener('updatefound', function () {
           var nw = reg.installing;
@@ -94,7 +100,6 @@
         });
         // An old home-screen install only discovers the new build when the worker is
         // re-checked: poll while the page is open, and on every foregrounding.
-        var check = function () { try { reg.update && reg.update(); } catch (e) {} };
         w.setInterval(check, 60000);
         d.addEventListener('visibilitychange', function () { if (!d.hidden) check(); });
       }).catch(function () {});
