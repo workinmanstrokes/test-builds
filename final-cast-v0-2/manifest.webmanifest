@@ -1,0 +1,18 @@
+{
+  "name": "Final Cast \u2014 Idle Fishing",
+  "short_name": "Final Cast",
+  "description": "Final Cast is a pixel-art idle fishing game. Your line fishes for you \u2014 when something big bites, you take the rod and fight it by hand. Three waters, twelve quests, three legend fish. Free, no ads, no in-app purchases. Not Final Castle, not a tower-defence game.",
+  "start_url": "index.html",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#0e2a3a",
+  "theme_color": "#0e2a3a",
+  "icons": [
+    {
+      "src": "icon.svg",
+      "sizes": "512x512",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ]
+}

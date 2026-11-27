@@ -1,4 +1,4 @@
-// Final Cast v0.2.2 — idle fishing with hand-fought big bites.
+// Final Cast v0.2.3 — idle fishing with hand-fought big bites.
 // Vanilla JS, no dependencies. Tuning lives in src/tuning.json; hookset
 // logging lives in src/playtest.js.
 //
@@ -10,7 +10,7 @@
 // deleting the app deletes progress, and Settings offers "Back up save",
 // which downloads the save as a JSON file (VEX fix #3).
 
-import { logHooksetAttempt, logPacingEvent, logCrash, recordDevice, recordPlayDay, successRateBySize, exportSession, newSession } from './playtest.js';
+import { logHooksetAttempt, logPacingEvent, logCrash, recordDevice, recordPlayDay, recordLoadTime, startFrameMonitor, sampleMemory, successRateBySize, exportSession, newSession } from './playtest.js';
 
 const $ = (id) => document.getElementById(id);
 const SAVE_KEY = 'finalcast.save.v0_2';
@@ -186,7 +186,7 @@ function missBite(message) {
   endBite();
   // Stated miss penalty (src/tuning.json): line goes slack, spot rests.
   const penalty = tuning.missPenalty;
-  alert(`${message}\nMiss penalty: line slack for ${penalty.slackSeconds}s; this spot rests for ${penalty.spotCooldownSeconds}s. No coins or tackle lost.`);
+  alert(`${message}\\nMiss penalty: line slack for ${penalty.slackSeconds}s; this spot rests for ${penalty.spotCooldownSeconds}s. No coins or tackle lost.`);
   setTimeout(scheduleIdleBite, penalty.slackSeconds * 1000);
 }
 
@@ -270,6 +270,12 @@ async function init() {
   // Retention tracking (VEX fix #5): record today's play day so day-1 /
   // day-7 return can be read from the exported session.
   recordPlayDay();
+  // Performance logging for the low-end test pass (Lab 3.8 fix #3):
+  // load time once, frame drops for the first 10 minutes, JS heap
+  // sampled every 30 s while the game runs. All on-device, exported
+  // with the playtest session from Settings.
+  try { recordLoadTime(); startFrameMonitor(); } catch { /* logging must never break the game */ }
+  setInterval(() => { try { sampleMemory(); } catch { /* ignore */ } }, 30000);
   // Crash logging by device RAM (Lab fix #3). Logging must never break the game.
   window.addEventListener('error', (e) => {
     try { logCrash({ message: String((e && e.message) || 'unknown error'), source: (e && e.filename) || '' }); } catch { /* ignore */ }

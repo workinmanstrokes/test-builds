@@ -4,8 +4,10 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#0e2a3a">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" type="image/svg+xml" href="icon.svg">
 <meta name="description" content="Final Cast v0.2 — a pixel-art idle fishing game. Not Final Castle and not a tower-defence game: cast an idle line, fight the big bites by hand, and chase three legend fish across three waters. Free, no ads, no in-app purchases.">
-<title>Final Cast v0.2 — Pixel-Art Idle Fishing</title>
+<title>Final Cast — Idle Fishing</title>
 <style>
   * { box-sizing: border-box; }
   body { margin: 0; background: #0e2a3a; color: #eaf6ff; font-family: monospace; }
@@ -80,7 +82,7 @@
       <div id="panel-settings" class="tab-panel hidden">
         <label><input type="checkbox" id="opt-haptics" checked> Haptics</label>
         <label><input type="checkbox" id="opt-telemetry"> Telemetry (off on localhost / with Do Not Track)</label>
-        <p>Monetization: <strong>free, no ads</strong>. No in-app purchases.</p>
+        <p>Monetization: <strong>free, no ads, no in-app purchases</strong>. There are no ads in this game — no rewarded ads, no interruptive ads, no ad placement anywhere, and no ad SDK in the build, so ad frequency is zero. Nothing costs real money: coins are earned only by catching fish, and nothing stalls the idle loop — no timer, energy, or ad gate between casts. The first legend (Silver King) is reached by fishing, never by paying.</p>
         <p>Your save lives on this device only — deleting the app deletes your progress. Back it up before you uninstall.</p>
         <button id="backup-save">Back up save</button>
         <button id="export-playtest">Export playtest log</button>
