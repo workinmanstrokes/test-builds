@@ -21,6 +21,10 @@ window/stretch/aspect="keep"
 [input_devices]
 
 pointing/emulate_touch_from_mouse=true
+; Touch on the Android/iOS export generates the mouse-button/motion
+; events InspectionDesk._gui_input already handles, so the loupe drag
+; works with a finger. Still unrun on a real phone — see docs/controls.md.
+pointing/emulate_mouse_from_touch=true
 
 [rendering]
 

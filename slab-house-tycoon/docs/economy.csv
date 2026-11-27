@@ -1,5 +1,5 @@
 Slab House Tycoon - locked economy model (spreadsheet)
-Source of every number: scripts/card_data.gd (rarity weights, base values, condition rolls), scripts/grading.gd (fee, grade multipliers), scripts/economy.gd (start cash, pack prices), scripts/tycoon.gd (rent, Neon Sign). Godot build model; the web build layers parallels, 1/1 chase, pop multipliers and four grading companies on top, so web expected values are higher.
+Source of every number: scripts/card_data.gd (rarity weights, base values, condition rolls), scripts/grading.gd (fee, grade multipliers), scripts/economy.gd (start cash, pack prices), scripts/tycoon.gd (rent, Neon Sign). Upgrade prices are the web build's UPGRADES table in index.html (Neon Sign $150 is Godot-only, scripts/tycoon.gd). Godot build model; the web build layers parallels, 1/1 chase, pop multipliers and four grading companies on top, so web expected values are higher.
 Monetization (locked): paid one-time, no ads, no in-app purchases. No timers, no pay-to-win hooks. The maker can change this, but the numbers below are balanced as a buy-once game.
 ,,,,,,
 STARTING ECONOMY,,,,
@@ -44,12 +44,13 @@ Reading,At the expected grade of 7 only cards worth $50+ (Rare and up) profit fr
 UPGRADES (first three unlocks, then the rest),,,,,
 Unlock,Cost,Effect,Why it matters,,,
 1. Neon Sign,$150,+15% buyer demand on raw sales, slab sales and fixed offers,First buy: affordable after the first profitable pack; pays for itself in ~1 day at 15% of ~$410/day sales,,,
-2. High-Lumen Lamp,see web build,Every surface flaw visible at any light angle,Fewer surprise low grades,,,
-3. Prep Station,see web build,+0.5 surface subgrade (wipe fingerprints),Turns borderline 9s into 10s,,,
-Later: Digital Calipers,see web build,Centering locks the moment a side faces up,,,,
-Later: Bulk Submitter Account,see web build,10+ cards at $15 Regular / $7 Economy,,,,
-Later: VIP Auction Slots,see web build,House fee 10% -> 3%, bigger bidders,,,,
+2. High-Lumen Lamp,$400,Every surface flaw visible at any light angle,Fewer surprise low grades,,,
+3. Prep Station,$250,+0.5 surface subgrade (wipe fingerprints),Turns borderline 9s into 10s,,,
+Later: Digital Calipers,$300,Centering locks the moment a side faces up,,,,
+Later: Bulk Submitter Account,$350,10+ cards at $15 Regular / $7 Economy,,,,
+Later: VIP Auction Slots,$750,House fee 10% -> 3%, bigger bidders,,,,
 Later: UV Blacklight,$200,Catches fake cards and fake slabs at the Card Show,,,,
+Full upgrade ladder (all 7),$2400,$150 Neon + $400 Lamp + $250 Prep + $300 Calipers + $350 Bulk + $750 VIP + $200 UV,,,,
 ,,,,,,
 10-DAY SIMULATION (expected values; one Gridiron pack/day, grade the guaranteed card at grade 7, sell the other 4 raw, buy Neon Sign on day 1, rent $15/day),,,,,
 Day,Cash at start,Pack,Grading fee,Raw sales (4 cards),Slab sale,Neon Sign,Rent,Cash at end

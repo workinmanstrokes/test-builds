@@ -41,7 +41,7 @@ Record one continuous 30-second screen recording on the real device — no emula
 
 ## Known gap (do not claim otherwise)
 
-The Godot build's desk currently handles mouse input only (`InspectionDesk._gui_input`); touch in the Godot export is pending this pass (emulate-mouse-from-touch is the expected route). The web build is the touch reference until then. See [`docs/controls.md`](controls.md) for the full PC key map and the touch-pass checklist.
+The Godot build's desk handles mouse input (`InspectionDesk._gui_input`), and `project.godot` now sets `pointing/emulate_mouse_from_touch=true` explicitly, so a finger on the Android/iOS export generates the same mouse-button/motion events the desk already handles — that wiring has still **not** been run on a real phone, so touch is configured, not tested. The web build is the touch reference until then. See [`docs/controls.md`](controls.md) for the full PC key map and the touch-pass checklist.
 
 ## Performance notes to record during the capture
 

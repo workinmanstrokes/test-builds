@@ -43,7 +43,9 @@ zoom, double-tap reset, light presets, and phone-tilt glare.
 4. Preview grading, submit, crack the slab, and sell or auction it.
 5. End the day and confirm the save survives a reload.
 
-**Known gap:** the Godot build's desk currently handles mouse input
-only (`InspectionDesk._gui_input`); touch in the Godot export is
-pending this pass (emulate-mouse-from-touch is the expected route).
-The web build is the touch reference until then.
+**Known gap:** the Godot build's desk handles mouse input
+(`InspectionDesk._gui_input`), and `project.godot` now sets
+`pointing/emulate_mouse_from_touch=true`, so touch on the mobile
+export generates the mouse events the desk already handles — but
+that wiring has still **not** been run on a real phone. The web
+build is the touch reference until then.

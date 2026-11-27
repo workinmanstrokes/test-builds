@@ -27,10 +27,10 @@ A **slab** is a trading card sealed in a hard plastic grading case — the thing
 ## The first three unlocks
 
 1. **Neon Sign — $150.** +15% buyer demand on raw sales, slab sales, and fixed offers. The first thing a profitable shop buys.
-2. **High-Lumen Lamp.** Every surface flaw (micro-scratches included) becomes visible at any light angle — fewer surprise low grades.
-3. **Prep Station.** +0.5 surface subgrade by wiping fingerprints before submission — turns borderline 9s into 10s.
+2. **High-Lumen Lamp — $400.** Every surface flaw (micro-scratches included) becomes visible at any light angle — fewer surprise low grades.
+3. **Prep Station — $250.** +0.5 surface subgrade by wiping fingerprints before submission — turns borderline 9s into 10s.
 
-Later unlocks: Digital Calipers (centering locks the moment a side faces up), Bulk Submitter Account (10+ cards at $15 Regular / $7 Economy), VIP Auction Slots (house fee 10% → 3%, bigger bidders), UV Blacklight ($200, catches fake cards and fake slabs at the Card Show).
+Later unlocks: Digital Calipers — $300 (centering locks the moment a side faces up), Bulk Submitter Account — $350 (10+ cards at $15 Regular / $7 Economy), VIP Auction Slots — $750 (house fee 10% → 3%, bigger bidders), UV Blacklight ($200, catches fake cards and fake slabs at the Card Show). Full ladder: $2,400 for all seven upgrades (see docs/economy.csv).
 
 ## What to test in re-review
 
