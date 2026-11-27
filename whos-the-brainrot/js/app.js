@@ -323,11 +323,13 @@ function how() {
   <p><b>No repeats:</b> a secret character never comes up twice in one night.</p>
   <p><b>Scoring:</b> Brainrot win +2 each. Crew win +1 each, +1 more if you voted for a Brainrot.</p>
   <p><b>Modes:</b> 👯 Two Imposters (5+), 🤫 Silent Round (gesture clues, no talking), 🔄 Reverse (only one player knows; everyone else hunts them).</p>
+  <p><b>Brainrot help:</b> picked in Game setup. <b>None</b> — the Brainrot gets nothing and bluffs cold. <b>Hint word</b> — the Brainrot gets one vague word about the secret (the character's first clue hook). <b>Decoy secret</b> — the Brainrot is shown a different character and doesn't know they're the Brainrot.</p>
+  <p><b>Clip mode:</b> turn it on in ⚙️ before a round — a 3-2-1 countdown, captions and a watermark on the reveal, so a screen recording is ready to post as a Short or TikTok.</p>
   <button class="btn big primary" data-act="close">Got it</button>`);
 }
 function packsModal() {
   const buy = billingAvailable() && !save.noAds;
-  modal(`<h2>Packs</h2><p class="dim small">Starter is free forever. Watch a short ad to unlock any other pack for ${ADS.unlockHours} hours.</p>
+  modal(`<h2>Packs</h2><p class="dim small">Starter is free forever — your first party night needs no purchase and no ads. Watch a short ad to unlock any other pack for ${ADS.unlockHours} hours.</p>
   <div class="col">${PACKS.map(p => { const un = isUnlocked(save, p.id); const left = Math.ceil((unlockedUntil(save, p.id) - Date.now()) / 3600e3);
     return `<div class="panel row"><span class="e" style="--pc:${p.color}" aria-hidden="true">${charSVG(p.chars[0], { size: 40, bg: false })}</span><div class="grow"><b>${p.name}</b><div class="small dim">${p.chars.length} characters · ${p.free ? 'Free' : save.noAds ? 'Owned' : un ? `Unlocked · ${left}h left` : 'Locked'}</div></div>
     ${un ? '✅' : `<button class="btn sm yel" data-act="unlock" data-id="${p.id}" id="unlock-${p.id}">▶ 24h</button>`}</div>`; }).join('')}</div>

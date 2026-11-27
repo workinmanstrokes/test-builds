@@ -57,8 +57,10 @@
 
   // Boss runtime state: a tiny state machine the game loop drives.
   // update(bossState, dt, ctx) returns events the loop should act on.
+  // stunned is seconds of stun remaining (Grump King, after every third
+  // slam) — the loop deals no boss damage and double squad damage then.
   function createBossState(boss) {
-    return { boss: boss, hp: boss.hp, maxHp: boss.hp, timer: 0, phase: 'idle', rush: false, clones: 0, slamCount: 0 };
+    return { boss: boss, hp: boss.hp, maxHp: boss.hp, timer: 0, phase: 'idle', rush: false, clones: 0, slamCount: 0, stunned: 0 };
   }
   function updateBossState(state, dt) {
     state.timer += dt;

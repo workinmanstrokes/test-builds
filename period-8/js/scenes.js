@@ -162,8 +162,11 @@ function hallRight(P, S) { // face 1 (x 1000-2000): fountain, bulletin board, cl
   P.at('door8').rect(1530, 270, 180, 552, '#5b4a3b', INK, 3); P.rect(1542, 282, 156, 540, C.wood, INK, 2.5); P.hatch([[1542, 282], [1698, 282], [1698, 822], [1542, 822]], 18, '#4b2e17', 0.12, 1.4);
   P.rect(1595, 330, 50, 150, '#2c3946', INK, 2); c.save(); c.globalAlpha = 0.25; P.line(1600, 470, 1640, 340, 3, '#cfe3ef'); c.restore();
   P.rect(1555, 540, 14, 40, '#c9a64a', INK, 1.5);
-  c.save(); if (S.plaque !== '8') { c.translate(1756, 344); c.rotate(0.16); c.translate(-1756, -344); }
-  P.rect(1718, 340, 76, 96, '#2e3a5a', INK, 2.5); P.text('ROOM', 1756, 357, 13, '#e9e2c8', 'center', 'system-ui, sans-serif', 700); P.text(S.plaque, 1756, 402, 56, '#f4eed6', 'center', 'system-ui, sans-serif', 900); c.restore();
+  // Door plaque, enlarged for the Room 9 rework (readability rework 2026-11-27): the wrong
+  // number is bigger and the plaque hangs crooked; the floor mat repeats the number large.
+  c.save(); if (S.plaque !== '8') { c.translate(1756, 390); c.rotate(0.16); c.translate(-1756, -390); }
+  P.rect(1712, 336, 88, 108, '#2e3a5a', INK, 2.5); P.text('ROOM', 1756, 354, 14, '#e9e2c8', 'center', 'system-ui, sans-serif', 700); P.text(S.plaque, 1756, 406, 64, '#f4eed6', 'center', 'system-ui, sans-serif', 900); c.restore();
+  if (S.plaque !== '8') { P.at('mat').rect(1530, 830, 180, 44, '#7a2f22', INK, 2); P.text(S.plaque, 1620, 862, 34, '#f4eed6', 'center', 'system-ui, sans-serif', 900); }
   // portrait of the founder
   frameBox(P.at('portrait'), 1812, 262, 136, 176, '#5b6b5e', '#b48a3a', 14);
   P.poly([[1830, 438], [1845, 380], [1915, 380], [1930, 438]], '#2c2c34', INK, 2); P.poly([[1868, 380], [1880, 410], [1892, 380]], '#f2efe6', INK, 1.5);
@@ -187,13 +190,21 @@ function hallLeft(P, S) { // face 3 (x 3000-4000): lockers, trophy case, window 
     P.rect(x, 250, lw, 560, i % 2 ? C.locker : C.locker2, INK, 3);
     for (let k = 0; k < 4; k++) P.line(x + 8, 280 + k * 10, x + lw - 8, 280 + k * 10, 1.6);
     P.rect(x + lw - 13, 500, 6, 34, '#c9c9c9', INK, 1); P.rect(x + lw / 2 - 11, 340, 22, 13, '#f1ead2', INK, 1); P.text(String(101 + i), x + lw / 2, 347, 8.5, INK, 'center', 'system-ui, sans-serif', 700);
+    if (n === 13 && i === n - 1) { // 13th locker stands open a crack (readability rework 2026-11-27)
+      P.rect(x + lw - 9, 250, 9, 560, '#0f0d12', null);
+      P.poly([[x + lw - 9, 250], [x + lw + lw * 0.22, 242], [x + lw + lw * 0.22, 818], [x + lw - 9, 810]], C.locker2, INK, 2);
+    }
   }
   P.rect(3030, 810, 480, 12, '#2b2522', null);
   if (S.hallPass) { c.save(); c.translate(3171, 420); c.rotate(-0.12); P.at('pass').rect(-25, -16, 50, 32, '#f2c94c', '#8a6a12', 2.5); P.text('PASS', 0, 1, 13, '#5a3d00', 'center', 'system-ui, sans-serif', 900); c.restore(); P.rect(3156, 400, 30, 7, 'rgba(255,255,255,0.6)', null); }
   // trophy case
   frameBox(P.at('trophy'), 3548, 300, 146, 312, '#3a3240', C.wood2, 10); c.save(); c.globalAlpha = 0.18; P.line(3560, 600, 3680, 320, 6, '#fff'); c.restore();
   P.line(3548, 404, 3694, 404, 3, C.wood2); P.line(3548, 508, 3694, 508, 3, C.wood2);
+  // Trophy: tilts and catches a glint when the plaque says YOU (readability rework 2026-11-27).
+  c.save(); if (S.trophyYou) { c.translate(3595, 378); c.rotate(0.14); c.translate(-3595, -378); }
   P.poly([[3580, 360], [3610, 360], [3604, 384], [3586, 384]], '#d9b44a', INK, 1.5); P.rect(3588, 384, 14, 14, '#d9b44a', INK, 1); P.rect(3580, 396, 30, 8, '#6b4a2a', INK, 1);
+  c.restore();
+  if (S.trophyYou) { c.save(); c.strokeStyle = '#fff8d6'; c.lineWidth = 2.5; c.beginPath(); c.moveTo(3616, 338); c.lineTo(3616, 364); c.moveTo(3603, 351); c.lineTo(3629, 351); c.stroke(); c.restore(); }
   P.circle(3655, 372, 12, '#c0c0c8', INK, 1.5); P.rect(3646, 384, 18, 16, '#6b4a2a', INK, 1);
   P.rect(3560, 444, 122, 60, '#b07a3a', INK, 1.5); P.rect(3566, 452, 110, 32, '#e8d8a8', INK, 1); P.text(S.trophyYou ? 'YOU' : 'CHAMPS 1987', 3621, 470, S.trophyYou ? 36 : 15, S.trophyYou ? '#9a1f18' : INK, 'center', 'Georgia, serif', 900);
   P.poly([[3600, 540], [3640, 540], [3632, 586], [3608, 586]], '#cf9b52', INK, 1.5); P.rect(3596, 586, 48, 14, '#6b4a2a', INK, 1);
@@ -250,7 +261,10 @@ function classFront(P, S) { // face 0: clock, chalkboard, teacher desk
   P.at('chalktext');
   if (S.board === 'repeat') { for (let i = 0; i < 7; i++) P.chalk('I will stay after class.', 160, 262 + i * 42, 28); }
   else {
-    P.chalk('Period 8 · Ms. Alvarez', 160, 262, 30); P.chalk(S.board === 'date' ? 'Fri. Oct 32' : 'Fri. Oct 16', 860, 310, 54, undefined, 'right'); if (S.board === 'date') { c.save(); c.strokeStyle = 'rgba(240,240,230,0.85)'; c.lineWidth = 4; c.beginPath(); c.ellipse(830, 312, 44, 34, -0.1, 0, 7); c.stroke(); c.restore(); }
+    // Wrong date chalked large across the top of the board (readability rework 2026-11-27);
+    // the dated corner entry stays, circled, as the first tell.
+    if (S.board === 'date') P.chalk('OCTOBER 32', 160, 262, 58); else P.chalk('Period 8 · Ms. Alvarez', 160, 262, 30);
+    P.chalk(S.board === 'date' ? 'Fri. Oct 32' : 'Fri. Oct 16', 860, 310, 54, undefined, 'right'); if (S.board === 'date') { c.save(); c.strokeStyle = 'rgba(240,240,230,0.85)'; c.lineWidth = 4; c.beginPath(); c.ellipse(830, 312, 44, 34, -0.1, 0, 7); c.stroke(); c.restore(); }
     P.chalk('Review: The Water Cycle', 160, 318, 32);
     const k = 'rgba(240,240,230,0.85)'; c.save(); c.strokeStyle = k; c.lineWidth = 3; c.globalAlpha = 0.8;
     for (const [x, y, r] of [[300, 420, 30], [335, 405, 36], [372, 422, 28]]) { c.beginPath(); c.arc(x, y, r, Math.PI * 0.9, Math.PI * 2.1); c.stroke(); }
@@ -265,7 +279,9 @@ function classFront(P, S) { // face 0: clock, chalkboard, teacher desk
   // teacher desk
   P.at('tdesk').rect(560, 640, 340, 30, '#a6764a', INK, 3); P.rect(575, 670, 310, 150, '#8d6038', INK, 3); P.rect(600, 690, 120, 40, '#7d5434', INK, 2); P.rect(740, 690, 120, 40, '#7d5434', INK, 2);
   P.rect(680, 622, 70, 18, '#f7f2e4', INK, 1.5); P.rect(684, 614, 64, 10, '#f1ecdf', INK, 1);
-  if (S.apple === 'core') { P.poly([[612, 638], [618, 602], [630, 600], [624, 618], [636, 638]], '#f1e7c4', INK, 2); P.circle(624, 600, 10, '#c0392b', INK, 2); P.circle(624, 636, 9, '#c0392b', INK, 2); }
+  if (S.apple === 'core') { P.poly([[612, 638], [618, 602], [630, 600], [624, 618], [636, 638]], '#f1e7c4', INK, 2); P.circle(624, 600, 10, '#c0392b', INK, 2); P.circle(624, 636, 9, '#c0392b', INK, 2);
+    // Crumbs scattered on the desk (readability rework 2026-11-27): the tell is bigger than the apple.
+    for (const [cx, cy, r] of [[580, 652, 3], [662, 648, 2.5], [692, 660, 3], [640, 664, 2], [706, 646, 2.5]]) P.circle(cx, cy, r, '#d8c9a0', INK, 1); }
   else { P.circle(624, 620, 20, '#c0392b', INK, 2.5); P.line(624, 600, 628, 590, 3, '#5a3b1f'); P.ellipse(636, 592, 8, 4, '#5a8f3a', INK, 1.5, -0.4); }
   if (!S.globe) globe(c, P, 820, 560, 0);
   P.rect(810, 610, 20, 30, '#5b4a3b', INK, 2);
@@ -356,7 +372,9 @@ export const fx = { reduceFlash: false };
 export function drawDynamic(ctx, S, t, camX, clockBase) {
   const P = new Pen(ctx);
   if (S.scene === 'hall') {
-    clockHands(ctx, 1620, 196, 66, S.clock === 'back' ? clockBase - t * 40 : clockBase + t);
+    // 'thirteen': every hand points at the 13 (second tell — readability rework 2026-11-27;
+    // clockFace already squeezes a red 13 onto the face, the hands confirm it).
+    clockHands(ctx, 1620, 196, 66, S.clock === 'back' ? clockBase - t * 40 : S.clock === 'thirteen' ? 0 : clockBase + t);
     if (S.portrait === 'blink' && (t % 1.5) < 0.3) { for (const s of [-1, 1]) P.at('lid' + s).ellipse(1880 + s * 11.6, 337, 9, 7.5, '#e9c7a6', INK, 2); }
     if (S.portrait === 'watch') { const d = wrapDelta(camX, 1880), lx = Math.max(-1, Math.min(1, d / 350)); for (const s of [-1, 1]) { P.at('pw' + s).ellipse(1880 + s * 13, 335, 11.5, 10, '#fbf8ef', INK, 2.4); ctx.fillStyle = INK; ctx.beginPath(); ctx.arc(1880 + s * 13 + lx * 5.5, 335, 5.8, 0, 7); ctx.fill(); } }
     // Reduced flash (Settings): the flicker anomaly becomes a slow dim instead of rapid on/off strobing.

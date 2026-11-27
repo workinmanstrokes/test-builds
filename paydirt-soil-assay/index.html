@@ -16,9 +16,14 @@
       <h1>Paydirt</h1>
       <p class="sub">Soil &amp; Gold Assay</p>
     </div>
-    <button id="mute" class="icon" type="button" aria-label="Mute sound" aria-pressed="false">
-      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9v6h4l5 4V5L8 9H4z"/><path class="wave" d="M16 8.5a5 5 0 010 7M18.5 6a8.5 8.5 0 010 12" fill="none" stroke-width="1.8" stroke-linecap="round"/><path class="cross" d="M16 9l5 6M21 9l-5 6" fill="none" stroke-width="1.8" stroke-linecap="round"/></svg>
-    </button>
+    <div class="actions">
+      <button id="restart" class="icon" type="button" aria-label="Restart the run" disabled>
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5V1L7 6l5 5V7a6 6 0 1 1-6 6H4a8 8 0 1 0 8-8z"/></svg>
+      </button>
+      <button id="mute" class="icon" type="button" aria-label="Mute sound" aria-pressed="false">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9v6h4l5 4V5L8 9H4z"/><path class="wave" d="M16 8.5a5 5 0 010 7M18.5 6a8.5 8.5 0 010 12" fill="none" stroke-width="1.8" stroke-linecap="round"/><path class="cross" d="M16 9l5 6M21 9l-5 6" fill="none" stroke-width="1.8" stroke-linecap="round"/></svg>
+      </button>
+    </div>
   </header>
 
   <section class="stats" aria-label="Ante status">
@@ -52,7 +57,7 @@
       <p class="eyebrow">Sixty seconds. One quota. Lose it and the run is over.</p>
       <h2>Hit the quota or bust</h2>
       <ul class="how">
-        <li><b class="t">Probe</b> a tile to read how many of its neighbours hold gold. You get 5 probes per ante — they break no ground.</li>
+        <li><b class="t">Probe</b> a tile to read how many of its neighbours hold gold — 0 is cold, 1–2 is warm, 3–4 is hot. You get 5 probes per ante — they break no ground.</li>
         <li><b class="dig">Dig</b> where the readings point. You get 3 shovel digs per ante, and gold only counts once it is out of the ground.</li>
         <li>Read the numbers: a probe that reads <b class="dig">2</b> with only 2 untouched neighbours means both hold gold — dig them.</li>
         <li>Weigh in at <b class="dig">12.0 g</b> to clear Ante 1. Each ante raises the quota — miss it and the run ends on the spot.</li>
@@ -68,6 +73,7 @@
       <h2 id="a-title">Ante 1 cleared</h2>
       <dl class="tally">
         <div><dt>Gold this ante</dt><dd id="a-gold">0.0 g</dd></div>
+        <div><dt>In troy ounces</dt><dd id="a-oz">0.00 oz</dd></div>
         <div><dt>Quota</dt><dd id="a-quota">12.0 g</dd></div>
         <div><dt>Run total</dt><dd id="a-run">0.0 g</dd></div>
         <div><dt>Next quota</dt><dd id="a-next">17.0 g</dd></div>
@@ -83,6 +89,7 @@
       <p class="record" id="r-record" hidden>New best ante</p>
       <dl class="tally">
         <div><dt>Gold this ante</dt><dd id="r-gold">0.0 g</dd></div>
+        <div><dt>In troy ounces</dt><dd id="r-oz">0.00 oz</dd></div>
         <div><dt>Quota</dt><dd id="r-quota">12.0 g</dd></div>
         <div><dt>Missed by</dt><dd id="r-left">0.0 g</dd></div>
         <div><dt>Best ante</dt><dd id="r-found">Ante 1</dd></div>

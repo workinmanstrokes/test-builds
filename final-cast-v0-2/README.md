@@ -6,6 +6,36 @@ Final Cast v0.2 is the next update to the existing pixel-art idle fishing game b
 
 **Not Final Castle, and not a tower-defence game.** Final Cast is a pixel-art idle fishing game — there are no towers, waves, or castle defences in it. The Lab and VEX reviews both describe a tower-defence game by a similar name; their fixes are applied here to the fishing game as shipped (see `docs/build-sheet.md` for the item-by-item mapping).
 
+## Build 0.2.6 — VEX 5.0 follow-up (suggestion 497)
+
+The VEX 5.0 follow-up re-picked one red flag: the 12-quest arc had no
+described pacing, economy or difficulty tuning, so repetition and burnout
+were a live risk. Build 0.2.6 writes the tuning down in
+[`src/tuning.json`](src/tuning.json) (`pacing`, `economy`) and in the
+quest table in [`docs/quests.md`](docs/quests.md): target minutes and
+active share per quest (quests 1–2 in the first 10 minutes, first legend
+in session 2, full arc 3–5 sessions / about 2–3 hours), the coin economy
+as shipped (idle +5, hand +25, legend +100, completion bonuses of 25
+coins × quest number), and a difficulty ramp (windows ×1.00 on quests
+3–5, ×0.95 on 6–8, ×0.90 on 9–12) — plus anti-burnout rules (every quest
+adds something new, no quest more than 70% idle waiting). The idle gap,
+window ramp and coin rewards are wired in `src/main.js` from tuning.
+These are design targets, not measurements: the pacing log is still empty
+until a real 1–12 playthrough fills it, and quest-completion bonuses pay
+nothing yet because in-game quest tracking is still a placeholder. See
+[`docs/build-sheet.md`](docs/build-sheet.md).
+
+## Build 0.2.5 — VEX review (5.0/10, grade C)
+
+This is the review the v0.2 plan was built from. Build 0.2.5 answers all fifteen of its items — see [`docs/build-sheet.md`](docs/build-sheet.md) and the build-numbered audit in [`docs/bug-audit.md`](docs/bug-audit.md):
+
+- **Timing numbers, written down and wired in:** `src/tuning.json` now holds the per-size bite/hookset windows, the 250 ms first-attempt grace, a forgiving first-quest window (1800 ms bite / 1200 ms hookset on quests 1–2), legend-fight difficulty 3/4/5 by water, and the stated retrieve-speed trade-off (slow x1.25 window, fewer bites; fast x0.8 window, more bites). The bite cue is now three channels — visual BITE! banner, two-tone audio beep, haptic buzz — and legends fight at their per-water difficulty.
+- **Multi-phone playtest, ready to run:** [`docs/playtest-protocol.md`](docs/playtest-protocol.md) is the 3–5 phone matrix (different sizes and ages, full session per phone: bite hits/misses, haptic feel, portrait/landscape touch targets, frame drops, offline PWA). The game logs it: per-phone session details (Settings → phone model / Android version), bite hit/miss logging, and quest idle-vs-active timing.
+- **Quest variety, stated:** [`docs/quests.md`](docs/quests.md) now gives every quest a type and a story beat per water, plus an empty pacing log to fill from a real 1–12 playthrough.
+- **Visuals:** each water has its own pond palette with a swimming pixel fish on the canvas (Millpond dawn, Cedar Creek dusk, Ember Lake night).
+- **Release path:** the release checklist in the build sheet lays out the signed release APK and store listing; the monetization decision stays **free, no ads, no in-app purchases**.
+- **Still open (not claimed as done):** no real phone has been tested yet, no 1–12 playthrough recorded, and the release APK + store listing need maker steps (signing keystore, Play developer account). The bite/hookset windows are still the v0.2.0 defaults until a real-phone session retunes them.
+
 ## Build 0.2.4 — VEX items 772–773 (store identity + monetization, shipped in the game)
 
 Build 0.2.3 answered the Lab's items 5 (monetization rules) and 6 (store identity) in `docs/build-sheet.md` only. Build 0.2.4 ships them in the game itself: `manifest.webmanifest` carries the exact store title **"Final Cast — Idle Fishing"**, the description that opens "pixel-art idle fishing game — not a tower-defence game", and the icon (`icon.svg`, a pixel-art rod over a still pond at dawn — no castle, no tower); `index.html` links the manifest and icon and its `<title>` is now the exact store title. The Settings panel now states the full monetization rules in the game: free, no ads, no in-app purchases, no ad placement anywhere, ad frequency zero, coins only from catching fish, and nothing stalling the idle loop. The five store screenshots remain a shot list in the build sheet — there is no listing yet to attach them to.
@@ -29,7 +59,7 @@ The Lab's 2026-11-25 review scored the game 4.8/10. Build 0.2.1 answers its five
 - **Three waters** — Millpond, Cedar Creek, Ember Lake — each with a legend fish tied to one spot and time of day.
 - **12 quests** across the three waters, each unlocking tackle, lures, waters, or a new mechanic. No pure catch-X grind quests.
 - **Upgrades**: rod, line, reel, and tackle, plus lure unlocks.
-- **Fairness aid**: an unmistakable bite cue, a short grace period on the first hookset attempt, and a small, stated penalty for missing.
+- **Fairness aid**: an unmistakable bite cue (visual BITE! banner, audio beep, haptic buzz), a short grace period on the first hookset attempt, a forgiving window on quests 1–2, and a small, stated penalty for missing.
 - **PWA offline cache**, portrait and landscape layouts, haptics, and a Capacitor Android wrap. Telemetry is off on localhost and with Do Not Track.
 
 ## Tester priorities (in order)
@@ -60,7 +90,7 @@ npx cap sync android
 npx cap open android   # build the debug APK from Android Studio
 ```
 
-The debug APK is also built by CI. Install it on a phone and run the recorded playtest (see `src/playtest.js`).
+The debug APK is also built by CI. Install it on a phone and run the recorded playtest (see `src/playtest.js` and `docs/playtest-protocol.md` for the 3–5 phone matrix).
 
 ## Saving
 
@@ -68,11 +98,11 @@ Progress saves **automatically** on this device — on every catch, every settin
 
 ## Tuning
 
-Bite and hookset windows live in [`src/tuning.json`](src/tuning.json) — one table per fish size, plus the first-attempt grace period and the miss penalty. Change the numbers there, not in code. Hookset attempts are logged by fish size in [`src/playtest.js`](src/playtest.js); export a session and use it to retune. Pacing (time to first hand-fought catch, time to first legend), retention (day-1 / day-7 return), and crashes (tagged with device RAM) are logged in the same session.
+Bite and hookset windows live in [`src/tuning.json`](src/tuning.json) — one table per fish size, plus the first-attempt grace period, the forgiving first-quest window (quests 1–2), per-water legend-fight difficulty, the retrieve-speed trade-off, and the miss penalty. Change the numbers there, not in code. Hookset attempts are logged by fish size in [`src/playtest.js`](src/playtest.js); export a session and use it to retune. Pacing (time to first hand-fought catch, time to first legend), retention (day-1 / day-7 return), and crashes (tagged with device RAM) are logged in the same session. Pacing, economy and difficulty tuning for the 12-quest arc — target minutes and active share per quest, coin rewards, the quest-band window ramp, and the anti-burnout rules — are in the same file (`pacing`, `economy`) and in the quest table in [`docs/quests.md`](docs/quests.md); they are design targets until a real 1–12 playthrough fills the pacing log.
 
 ## Endgame and monetization
 
-After quest 12 and legend 3, the game offers collection completion, harder legend variants, and daily/spot rotation — see the Endgame section in [`docs/quests.md`](docs/quests.md). Monetization decision: **free, no ads, no in-app purchases** (recorded in the game settings; change it explicitly if that ever changes).
+After quest 12 and legend 3, the game offers collection completion, harder legend variants, and daily/spot rotation — see the Endgame section in [`docs/quests.md`](docs/quests.md). Monetization decision: **free, no ads, no in-app purchases** (recorded in the game settings; change it explicitly if that ever changes). The release path — signed release APK and store listing — is in the release checklist in [`docs/build-sheet.md`](docs/build-sheet.md).
 
 ## Build milestones
 

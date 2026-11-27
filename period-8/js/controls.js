@@ -33,14 +33,17 @@ export const MOUSE = [
 
 // --- Keyboard (desktop browser) ---
 // ArrowLeft / ArrowRight look is implemented in view.js (velocity pan).
-// The decision keys below are the documented scheme for this update; the
-// view.js keydown handler binds them to the same prompt the touch buttons use.
+// The decision keys below are bound in www/js/app.js (web keyboard handler),
+// to the same KEEP GOING / TURN BACK buttons the touch UI uses. The two-step
+// turn-back prompt (open, then confirm) is still to be wired: choose('back')
+// decides on one press for now, and the Playwright smoke test depends on that,
+// so the prompt change needs a test run first (see BUILD-PLAN.md milestone 5).
 export const KEYBOARD = [
   { key: 'ArrowLeft / ArrowRight', action: 'Look left / right', status: 'implemented' },
-  { key: 'Enter', action: 'KEEP GOING — the room is normal (forward)', status: 'to wire in view.js' },
-  { key: 'Backspace or B', action: 'TURN BACK — open the report prompt', status: 'to wire in view.js' },
-  { key: 'H', action: 'Use a hint (rewarded highlight of the anomaly region)', status: 'to wire in view.js' },
-  { key: 'Escape', action: 'Cancel the open prompt / pause menu — never decides for you', status: 'to wire in view.js' },
+  { key: 'Enter', action: 'KEEP GOING — the room is normal (forward)', status: 'implemented in app.js' },
+  { key: 'Backspace or B', action: 'TURN BACK — open the report prompt', status: 'implemented in app.js' },
+  { key: 'H', action: 'Use a hint (rewarded highlight of the anomaly region)', status: 'implemented in app.js' },
+  { key: 'Escape', action: 'Cancel the open prompt / pause menu — never decides for you', status: 'implemented in app.js' },
 ];
 
 export const TURN_BACK_KEYS = ['Backspace', 'b', 'B'];

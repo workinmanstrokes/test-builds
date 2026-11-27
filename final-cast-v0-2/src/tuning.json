@@ -1,1 +1,188 @@
-{"biteWindowMsBySize":{"large":750,"legend":600,"medium":1000,"small":1400},"firstAttemptGraceMs":250,"hooksetWindowMsBySize":{"large":550,"legend":450,"medium":700,"small":900},"legendWindows":{"Cedar Creek":{"legend":"Silver King","spot":"Boulder Run","timeOfDay":"dusk"},"Ember Lake":{"legend":"Emberfin","spot":"Hot Spring Inlet","timeOfDay":"night"},"Millpond":{"legend":"Old Mossback","spot":"Sunken Log","timeOfDay":"dawn"}},"missPenalty":{"description":"Missing a hookset spooks the fish: the line goes slack for 8 seconds and that spot will not bite again for 30 seconds. No coins or tackle are lost.","slackSeconds":8,"spotCooldownSeconds":30,"type":"lineSlack"},"note":"All bite/hookset numbers live here, not in code. Tune from real-phone playtest logs (src/playtest.js), never from a guess.","performance":{"lowMemoryBuzzMs":30,"lowMemoryFightTickMs":200,"lowMemoryGB":2,"lowMemoryIdleDelayMs":9000,"note":"Devices reporting navigator.deviceMemory at or below lowMemoryGB run in low-memory mode: one short haptic pulse instead of a pattern, and no pulsing bite-cue animation. In low-memory mode the idle line also waits a fixed lowMemoryIdleDelayMs between bites (instead of the normal 4-9 s random gap) and the fight bar ticks at lowMemoryFightTickMs instead of 120 ms, so a low-end Android 6.0-8 phone does less work per second during the busiest moments. Crashes are logged with device RAM in src/playtest.js so low-memory shutdowns can be reproduced by device."},"retrieveSpeeds":["slow","medium","fast"],"version":"0.2.2","wormDepths":["shallow","mid","deep"]}
+{
+  "biteCue": {
+    "audio": "Two-tone WebAudio beep, 880 Hz then 1320 Hz, 90 ms each; no audio asset, plays when the bite starts.",
+    "haptic": "Vibration pattern [60, 40, 60] ms; one 30 ms pulse in low-memory mode.",
+    "visual": "Amber BITE! banner (#ffb703) with a pulsing animation; static in low-memory mode."
+  },
+  "biteWindowMsBySize": {
+    "large": 750,
+    "legend": 600,
+    "medium": 1000,
+    "small": 1400
+  },
+  "firstAttemptGraceMs": 250,
+  "firstQuestWindowMs": {
+    "biteMs": 1800,
+    "hooksetMs": 1200,
+    "note": "Forgiving first-quest window (VEX 5.0 item 2): while the player is on quest 1 or 2 the bite window is 1800 ms and the hookset window is 1200 ms, so a first-time player succeeds most big bites without it feeling automatic. From quest 3 the per-size windows above apply. The first-attempt grace period still adds on top.",
+    "quests": [
+      1,
+      2
+    ]
+  },
+  "hooksetWindowMsBySize": {
+    "large": 550,
+    "legend": 450,
+    "medium": 700,
+    "small": 900
+  },
+  "legendFight": {
+    "Cedar Creek": {
+      "difficulty": 4,
+      "fightDrift": 12,
+      "legend": "Silver King",
+      "note": "First legend most players meet; mid difficulty.",
+      "reelGain": 14,
+      "tickMs": 120
+    },
+    "Ember Lake": {
+      "difficulty": 5,
+      "fightDrift": 14,
+      "legend": "Emberfin",
+      "note": "Hardest legend: fastest drift and fastest fight ticks.",
+      "reelGain": 14,
+      "tickMs": 110
+    },
+    "Millpond": {
+      "difficulty": 3,
+      "fightDrift": 10,
+      "legend": "Old Mossback",
+      "note": "Easiest legend: slowest drift, most generous reel gain.",
+      "reelGain": 16,
+      "tickMs": 120
+    }
+  },
+  "legendWindows": {
+    "Cedar Creek": {
+      "legend": "Silver King",
+      "spot": "Boulder Run",
+      "timeOfDay": "dusk"
+    },
+    "Ember Lake": {
+      "legend": "Emberfin",
+      "spot": "Hot Spring Inlet",
+      "timeOfDay": "night"
+    },
+    "Millpond": {
+      "legend": "Old Mossback",
+      "spot": "Sunken Log",
+      "timeOfDay": "dawn"
+    }
+  },
+  "missPenalty": {
+    "description": "Missing a hookset spooks the fish: the line goes slack for 8 seconds and that spot will not bite again for 30 seconds. No coins or tackle are lost.",
+    "slackSeconds": 8,
+    "spotCooldownSeconds": 30,
+    "type": "lineSlack"
+  },
+  "note": "All bite/hookset numbers live here, not in code. Tune from real-phone playtest logs (src/playtest.js), never from a guess.",
+  "performance": {
+    "lowMemoryBuzzMs": 30,
+    "lowMemoryFightTickMs": 200,
+    "lowMemoryGB": 2,
+    "lowMemoryIdleDelayMs": 9000,
+    "note": "Devices reporting navigator.deviceMemory at or below lowMemoryGB run in low-memory mode: one short haptic pulse instead of a pattern, and no pulsing bite-cue animation. In low-memory mode the idle line also waits a fixed lowMemoryIdleDelayMs between bites (instead of the normal 4-9 s random gap) and the fight bar ticks at lowMemoryFightTickMs instead of 120 ms, so a low-end Android 6.0-8 phone does less work per second during the busiest moments. Crashes are logged with device RAM in src/playtest.js so low-memory shutdowns can be reproduced by device."
+  },
+  "retrieveSpeedTradeoff": {
+    "fast": {
+      "biteChance": "more bites \u2014 aggressive retrieve",
+      "biteWindowMs": "x0.8 the base window",
+      "note": "For confident players: more bites, less time to hookset."
+    },
+    "medium": {
+      "biteChance": "baseline",
+      "biteWindowMs": "x1.0 (the base window)",
+      "note": "The default retrieve."
+    },
+    "slow": {
+      "biteChance": "fewer bites \u2014 fish take their time",
+      "biteWindowMs": "x1.25 the base window",
+      "note": "For new players and legends: more time to react, fewer chances."
+    },
+    "status": "Stated trade-off (VEX 5.0 item 7). The retrieve selector UI ships with the milestone-4 tackle shop; until then the game fishes at the medium baseline."
+  },
+  "retrieveSpeeds": [
+    "slow",
+    "medium",
+    "fast"
+  ],
+  "version": "0.2.6",
+  "wormDepths": [
+    "shallow",
+    "mid",
+    "deep"
+  ],
+  "pacing": {
+    "note": "Design targets for the 12-quest arc (VEX 5.0 follow-up, suggestion 497): pacing, economy and difficulty tuning, written down so repetition and burnout can be checked against numbers instead of a feeling. These are TARGETS, not measurements \u2014 the real 1\u201312 playthrough (docs/quests.md pacing log) is still empty; retune from it when it exists.",
+    "arcTarget": "Quests 1\u20132 inside the first 10 minutes (first session, first hand-fought catch included); quests 3\u20135 inside the first hour; first legend (Silver King, quest 8) in session 2; full 1\u201312 arc across 3\u20135 sessions, about 2\u20133 hours total.",
+    "idleGapMs": {
+      "min": 4000,
+      "max": 9000,
+      "note": "Idle-line gap between bites, as shipped in main.js scheduleIdleBite (low-memory mode uses the fixed lowMemoryIdleDelayMs instead). At the 60% auto-catch rate this is about one idle fish every ~11 s, ~5\u20136 fish a minute, ~25\u201330 coins a minute from the idle line alone."
+    },
+    "targetMinutesByQuest": {
+      "1": 3,
+      "2": 5,
+      "3": 8,
+      "4": 8,
+      "5": 10,
+      "6": 10,
+      "7": 12,
+      "8": 15,
+      "9": 10,
+      "10": 15,
+      "11": 20,
+      "12": 20
+    },
+    "targetActiveShareByQuest": {
+      "1": 0.6,
+      "2": 0.6,
+      "3": 0.5,
+      "4": 0.5,
+      "5": 0.5,
+      "6": 0.4,
+      "7": 0.4,
+      "8": 0.5,
+      "9": 0.4,
+      "10": 0.5,
+      "11": 0.3,
+      "12": 0.5
+    },
+    "difficultyRamp": {
+      "quests3to5": 1,
+      "quests6to8": 0.95,
+      "quests9to12": 0.9,
+      "note": "Multiplier on the bite and hookset windows by quest band, applied in main.js after the forgiving first-quest window (quests 1\u20132 keep 1800/1200 ms). Windows only tighten after quest 5, never while the player is still learning; legend fights already ramp 3/4/5 by water in legendFight."
+    },
+    "antiBurnout": [
+      "Every quest introduces a new mechanic, unlock, water or legend \u2014 no quest is only more of the last one (see the quest table in docs/quests.md).",
+      "No quest is more than 70% idle waiting (target active share above); quest 11 is the one exception \u2014 a background collection quest at 30% active, flagged in the pacing log.",
+      "A quest with a target over 20 minutes is split or given a midpoint reward; quests 11 and 12 are the only 20-minute targets and both pay a completion bonus.",
+      "A first session reaches quest 2 and the first hand-fought catch within 10 minutes; if the pacing log shows otherwise, the early windows widen before any later quest is tuned."
+    ]
+  },
+  "economy": {
+    "note": "Coin values as shipped in main.js (idle +5, hand-fought +25, legend +100). Quest-completion bonuses are design TARGETS: quest completion is not wired in the game yet (in-game quest tracking is a placeholder \u2014 see docs/build-sheet.md), so no bonus is paid today; the bonuses below are what the milestone-4 shop pays when quest tracking ships.",
+    "idleCatchCoins": 5,
+    "handCatchCoins": 25,
+    "legendCatchCoins": 100,
+    "idleCoinsPerMinuteTarget": "25\u201330 (from the 4\u20139 s idle gap at a 60% auto-catch rate)",
+    "activeCoinsPerMinuteTarget": "About double the idle rate when the player hand-fights the big bites and completes quests, so active play is always worth more than leaving the line alone.",
+    "questCompletionBonusCoins": {
+      "1": 25,
+      "2": 50,
+      "3": 75,
+      "4": 100,
+      "5": 125,
+      "6": 150,
+      "7": 175,
+      "8": 200,
+      "9": 225,
+      "10": 250,
+      "11": 275,
+      "12": 300,
+      "note": "25 coins times the quest number. Target only \u2014 see the note above."
+    },
+    "spending": "Coins are spent only on tackle and lures in the milestone-4 upgrade shop (placeholder today); nothing costs real money, and no timer, energy or ad gate ever stalls the idle loop."
+  }
+}

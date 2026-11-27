@@ -1,23 +1,48 @@
-// Final Cast v0.2.3 — hookset success/fail logging by fish size, plus
+// Final Cast v0.2.6 — hookset success/fail logging by fish size, plus
 // pacing, retention, crash and performance logging for the Game Test Lab
-// reviews (2026-11-25, 2026-11-27) and the VEX review (2026-11-26).
+// reviews (2026-11-25, 2026-11-27) and the VEX reviews (2026-11-26, 5.0/10).
+// New in 0.2.6 (VEX 5.0 follow-up, suggestion 497): session version bump
+// only — the pacing targets themselves live in src/tuning.json and are
+// wired in main.js; questSummary() below is what the real 1–12
+// playthrough is judged against (target minutes and active share in
+// docs/quests.md).
+// New in 0.2.5 (VEX 5.0 items 1, 4, 8): per-phone session details for the
+// 3–5 phone playtest matrix (see docs/playtest-protocol.md), bite hit/miss
+// logging separate from hookset attempts, and quest timing (idle vs active
+// minutes, time per quest) so a quest that is only wait, fight, repeat can
+// be found from the numbers instead of a feeling.
 // No telemetry leaves the device: logs stay in localStorage until the
 // player exports them from Settings. Telemetry is off on localhost and
 // whenever Do Not Track is set (see main.js).
 
 const KEY = 'finalcast.playtest.v0_2';
 
-export function newSession({ phoneModel = 'unknown', playerType = 'first-time' } = {}) {
+export function newSession({ phoneModel = 'unknown', androidVersion = 'unknown', screenSize = 'unknown', orientation = 'unknown', playerType = 'first-time' } = {}) {
   const session = {
     app: 'Final Cast',
-    version: '0.2.3',
+    version: '0.2.6',
     startedAt: new Date().toISOString(),
     phoneModel,
+    // Per-phone details for the multi-phone playtest (VEX 5.0 item 1):
+    // model and Android version are entered by the tester in Settings
+    // (setPhoneDetails); screen size and orientation are filled in
+    // automatically at launch (main.js init). One exported session is
+    // one phone's full session — see docs/playtest-protocol.md.
+    phone: { model: phoneModel, androidVersion, screenSize, orientation },
     playerType,
     // Device RAM bucket (navigator.deviceMemory, GB) — recorded so
     // low-memory shutdowns can be reproduced by device (Lab fix #3).
     deviceMemoryGB: typeof navigator !== 'undefined' ? (navigator.deviceMemory ?? null) : null,
     attempts: [],
+    // Bite log (VEX 5.0 item 1): every bite cue shown, and whether the
+    // player hooked it or let it go. A hookset attempt only exists when
+    // the player taps; a bite with no tap is a miss here, not silence.
+    bites: [],
+    // Quest timing (VEX 5.0 item 4): one entry per finished quest, plus
+    // the live clock for the quest in progress. idleMs is time the line
+    // fished on its own; activeMs is time inside a bite or a fight.
+    quests: [],
+    questClock: null,
     // Pacing markers (Lab fix #5): ms from session start to each event.
     pacing: {},
     // Retention (VEX fix #5): which calendar days the game was opened,
@@ -47,6 +72,21 @@ export function currentSession() {
   }
 }
 
+// Fill in the test phone's details (VEX 5.0 item 1). Called from Settings
+// when the tester types the phone model / Android version, and from
+// main.js init for the automatic fields (screen size, orientation).
+// Fields merge — setting one never wipes the others.
+export function setPhoneDetails(details = {}) {
+  const session = currentSession();
+  session.phone ??= {};
+  for (const [key, value] of Object.entries(details)) {
+    if (value !== undefined && value !== null && value !== '') session.phone[key] = value;
+  }
+  if (session.phone.model) session.phoneModel = session.phone.model;
+  localStorage.setItem(KEY, JSON.stringify(session));
+  return session.phone;
+}
+
 // Fill in device RAM for sessions started before it was recorded.
 export function recordDevice() {
   const session = currentSession();
@@ -73,6 +113,43 @@ export function recordPlayDay() {
   return session;
 }
 
+// Record one bite cue. `outcome` is 'shown' (cue appeared), 'hooked'
+// (player tapped Hookset inside the window) or 'missed' (window closed
+// with no successful hookset). `reactionMs` is the time from the bite cue
+// to the tap, or to the window closing for a miss.
+export function logBite({ size, outcome, reactionMs = null, windowMs = null }) {
+  const session = currentSession();
+  session.bites ??= [];
+  session.bites.push({
+    at: new Date().toISOString(),
+    size,
+    outcome,
+    reactionMs: reactionMs == null ? null : Math.round(reactionMs),
+    windowMs,
+  });
+  localStorage.setItem(KEY, JSON.stringify(session));
+  return session.bites[session.bites.length - 1];
+}
+
+// Bite hit/miss rate grouped by fish size — the numbers the multi-phone
+// playtest is judged by. A size with fewer than 5 bites is "not enough data".
+export function biteRateBySize() {
+  const { bites = [] } = currentSession();
+  const bySize = {};
+  for (const b of bites) {
+    if (b.outcome === 'shown') continue; // the cue itself is not a result
+    bySize[b.size] = bySize[b.size] || { bites: 0, hooked: 0 };
+    bySize[b.size].bites += 1;
+    if (b.outcome === 'hooked') bySize[b.size].hooked += 1;
+  }
+  for (const size of Object.keys(bySize)) {
+    const s = bySize[size];
+    s.rate = s.bites ? +(s.hooked / s.bites).toFixed(2) : 0;
+    s.enoughData = s.bites >= 5;
+  }
+  return bySize;
+}
+
 // Record one hookset attempt. `size` is one of small | medium | large | legend.
 // `reactionMs` is the time from the bite cue to the tap; `windowMs` is the
 // hookset window that was in force (from src/tuning.json).
@@ -89,6 +166,72 @@ export function logHooksetAttempt({ size, success, reactionMs, windowMs, firstAt
   });
   localStorage.setItem(KEY, JSON.stringify(session));
   return session.attempts[session.attempts.length - 1];
+}
+
+// Add idle/active milliseconds to the clock for the quest in progress
+// (VEX 5.0 item 4). main.js calls this as the game runs: idle time while
+// the line fishes on its own, active time inside a bite or a fight.
+// `quest` is the 1-based quest number; a new number starts a fresh clock
+// (the old one is kept only if logQuestComplete was called for it).
+export function noteQuestClock({ quest, idleMs = 0, activeMs = 0 }) {
+  const session = currentSession();
+  session.questClock ??= null;
+  if (!session.questClock || session.questClock.quest !== quest) {
+    session.questClock = { quest, startedAt: new Date().toISOString(), idleMs: 0, activeMs: 0 };
+  }
+  session.questClock.idleMs += idleMs;
+  session.questClock.activeMs += activeMs;
+  localStorage.setItem(KEY, JSON.stringify(session));
+  return session.questClock;
+}
+
+// Close out a quest's timing entry when it is completed: moves the live
+// clock into session.quests with minutes split out, ready to read in the
+// export. Call with the same numbers the clock holds; omitting them
+// closes the clock as it stands.
+export function logQuestComplete({ quest, idleMs = null, activeMs = null } = {}) {
+  const session = currentSession();
+  session.quests ??= [];
+  const clock = session.questClock && session.questClock.quest === quest ? session.questClock : null;
+  const done = {
+    quest,
+    startedAt: clock ? clock.startedAt : new Date().toISOString(),
+    completedAt: new Date().toISOString(),
+    idleMs: idleMs ?? clock?.idleMs ?? 0,
+    activeMs: activeMs ?? clock?.activeMs ?? 0,
+  };
+  done.durationMs = done.idleMs + done.activeMs;
+  done.idleMinutes = +(done.idleMs / 60000).toFixed(1);
+  done.activeMinutes = +(done.activeMs / 60000).toFixed(1);
+  session.quests.push(done);
+  if (clock) session.questClock = null;
+  localStorage.setItem(KEY, JSON.stringify(session));
+  return done;
+}
+
+// Per-quest timing summary for the pacing audit: minutes idle vs active
+// and total time per quest. A quest whose active minutes are a small
+// slice of its total — mostly waiting — is the wait, fight, repeat loop
+// the VEX 5.0 review flagged; vary, shorten, or give it a new mechanic.
+export function questSummary() {
+  const { quests = [], questClock = null } = currentSession();
+  const rows = quests.map((q) => ({
+    quest: q.quest,
+    idleMinutes: q.idleMinutes,
+    activeMinutes: q.activeMinutes,
+    totalMinutes: +((q.durationMs ?? q.idleMs + q.activeMs) / 60000).toFixed(1),
+    completed: true,
+  }));
+  if (questClock) {
+    rows.push({
+      quest: questClock.quest,
+      idleMinutes: +(questClock.idleMs / 60000).toFixed(1),
+      activeMinutes: +(questClock.activeMs / 60000).toFixed(1),
+      totalMinutes: +((questClock.idleMs + questClock.activeMs) / 60000).toFixed(1),
+      completed: false,
+    });
+  }
+  return rows;
 }
 
 // Record a pacing milestone as milliseconds since the session started.

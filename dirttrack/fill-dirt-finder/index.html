@@ -1,0 +1,349 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="description" content="Paydirt: Fill-Dirt Finder — a free 60-second timed digging game. Tap or drag across the dirt, find the pay dirt, weigh your gold before the clock runs out. No ads, no subscription.">
+<title>Paydirt: Fill-Dirt Finder</title>
+<style>
+  :root { --dirt:#7a5230; --dirt-dark:#5d3d22; --dug:#3d2a18; --gold:#f5c542; --gold-deep:#c9930a;
+          --cream:#f6f1e4; --ink:#2b2118; --green:#1f3f28; --red:#a33327; }
+  * { box-sizing:border-box; }
+  body { margin:0; font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif; background:var(--cream);
+         color:var(--ink); min-height:100vh; display:flex; flex-direction:column; align-items:center; }
+  header { text-align:center; padding:20px 16px 8px; max-width:640px; }
+  header img { width:96px; height:96px; }
+  h1 { margin:8px 0 0; font-size:2rem; line-height:1.1; }
+  .subtitle { margin:4px 0 0; font-size:1.25rem; font-weight:700; color:var(--green); letter-spacing:.04em; }
+  .tagline { margin:8px 0 0; font-size:1rem; }
+  .not { font-size:.9rem; color:#6b5d4f; margin:6px 0 0; }
+  main { width:100%; max-width:640px; padding:12px 16px 32px; }
+  .screen { display:none; } .screen.active { display:block; }
+  .card { background:#fffdf6; border:1px solid #e2d9c2; border-radius:14px; padding:16px; margin-top:12px;
+          box-shadow:0 2px 8px rgba(43,33,24,.08); }
+  button { font:inherit; cursor:pointer; border:0; border-radius:12px; padding:14px 20px; min-height:48px;
+           background:var(--green); color:#fff; font-weight:700; width:100%; }
+  button.secondary { background:#efe7d3; color:var(--ink); }
+  button:disabled { opacity:.5; cursor:default; }
+  .row { display:flex; gap:10px; } .row > * { flex:1; }
+  .site { text-align:left; margin-top:10px; }
+  .site small { display:block; font-weight:400; opacity:.85; margin-top:2px; }
+  .site .best { display:block; margin-top:4px; font-size:.9rem; color:var(--green); font-weight:700; }
+  .hud { display:flex; justify-content:space-between; align-items:baseline; gap:8px; margin:12px 0 8px;
+         font-weight:700; font-size:1.1rem; }
+  .hud .time.low { color:var(--red); }
+  .grid { display:grid; gap:6px; touch-action:none; user-select:none; -webkit-user-select:none; }
+  .cell { aspect-ratio:1; min-height:44px; border:0; border-radius:8px; padding:0;
+          background:linear-gradient(145deg,var(--dirt),var(--dirt-dark)); cursor:pointer;
+          font-size:1.4rem; line-height:1; }
+  .cell.dug { background:var(--dug); cursor:default; }
+  .cell.gold { background:radial-gradient(circle at 50% 45%, #fff3b0, var(--gold) 55%, var(--gold-deep));
+               animation:flash .6s ease-out; }
+  @keyframes flash { 0% { transform:scale(1.25); filter:brightness(1.6); } 100% { transform:scale(1); } }
+  .result-big { font-size:1.6rem; font-weight:800; margin:6px 0; }
+  .success { color:var(--green); } .fail { color:var(--red); }
+  dl { display:grid; grid-template-columns:auto 1fr; gap:4px 14px; margin:10px 0; }
+  dt { font-weight:700; } dd { margin:0; }
+  .fine { font-size:.85rem; color:#6b5d4f; }
+  .save-note { font-size:.9rem; color:var(--red); }
+  footer { margin-top:auto; padding:16px; text-align:center; font-size:.85rem; color:#6b5d4f; max-width:640px; }
+</style>
+</head>
+<body>
+<header>
+  <img src="logo.svg" alt="Paydirt logo — a gold nugget over a dug patch of dirt" width="96" height="96">
+  <h1>Paydirt</h1>
+  <p class="subtitle">Fill-Dirt Finder</p>
+  <p class="tagline">Dig the dirt. Find the pay dirt. Keep the gold in 60 seconds.</p>
+  <p class="not">A timed digging game — not a tycoon, not an idle game, not a slot.</p>
+</header>
+
+<main>
+  <!-- Landing -->
+  <section class="screen active" id="screen-landing" aria-label="Title screen">
+    <div class="card">
+      <p><strong>How it works:</strong> pick a site, then tap, click, or drag across the dirt to dig it up.
+      Most cells are ordinary dirt. Hidden pay-dirt cells flash gold and add a nugget to your haul.
+      Reach the site's target gold weight before the 60-second timer ends and the haul is yours;
+      run out of time below target and the run ends — your haul is still shown.</p>
+      <p class="fine">Free to play. No ads, no subscription, no account. One file, no network requests —
+      it loads in under 2 seconds. Your best haul per site is saved in this browser only.</p>
+      <div class="row">
+        <button id="btn-play" type="button">Play</button>
+        <button id="btn-how" type="button" class="secondary">How to play</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- Site select -->
+  <section class="screen" id="screen-sites" aria-label="Site select">
+    <div class="card">
+      <h2 style="margin-top:0">Pick a dig site</h2>
+      <p class="fine">Harder sites hide more gold — and demand a bigger haul.</p>
+      <div id="site-list"></div>
+      <p style="margin-top:14px"><button id="btn-back-landing" type="button" class="secondary">Back</button></p>
+    </div>
+  </section>
+
+  <!-- Dig site -->
+  <section class="screen" id="screen-dig" aria-label="Dig site">
+    <div class="hud">
+      <span>⏱ <span class="time" id="hud-time" aria-live="polite">60</span>s</span>
+      <span id="hud-site">Creek Bed</span>
+      <span>🪙 <span id="hud-gold">0</span> nuggets · <span id="hud-weight">0.0</span> g</span>
+    </div>
+    <p class="fine" style="margin:4px 0 8px">Target: <strong id="hud-target">6.0 g</strong> &nbsp;·&nbsp; Tap, click, or drag to dig.</p>
+    <div class="grid" id="grid" role="grid" aria-label="Dirt grid — dig a cell to reveal what is under it"></div>
+    <p style="margin-top:14px"><button id="btn-quit" type="button" class="secondary">End run early</button></p>
+  </section>
+
+  <!-- Haul result -->
+  <section class="screen" id="screen-result" aria-label="Haul result">
+    <div class="card">
+      <p class="result-big" id="result-title"></p>
+      <dl>
+        <dt>Site</dt><dd id="result-site"></dd>
+        <dt>Nuggets found</dt><dd id="result-nuggets"></dd>
+        <dt>Gold weight</dt><dd id="result-weight"></dd>
+        <dt>Haul value</dt><dd id="result-value"></dd>
+        <dt>Target</dt><dd id="result-target"></dd>
+        <dt>Best haul here</dt><dd id="result-best"></dd>
+      </dl>
+      <p class="save-note" id="save-note" hidden></p>
+      <div class="row">
+        <button id="btn-again" type="button">Dig again</button>
+        <button id="btn-sites" type="button" class="secondary">Change site</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- How to play -->
+  <section class="screen" id="screen-how" aria-label="How to play">
+    <div class="card">
+      <h2 style="margin-top:0">How to play</h2>
+      <p><strong>Build spec:</strong> Paydirt: Fill-Dirt Finder is a 60-second timed digging game.
+      You dig — tap, click, or drag — across a grid of dirt cells. Ordinary dirt clears empty;
+      hidden pay-dirt cells flash gold flecks and add a nugget to your haul. Reach the site's target
+      gold weight before the timer ends to succeed; run out of time below target and the run fails,
+      with your haul still shown. Three graded sites (Creek Bed, Old Yard, River Claim) get bigger
+      and richer, and your best haul per site is saved in this browser.</p>
+      <p><strong>Controls:</strong> mouse — click or click-and-drag. Touch — tap or drag a finger.
+      Every cell is at least 44&nbsp;px, so it works on a phone without zooming. The timer is driven
+      by the clock, not by animation frames, so switching apps or a stalled frame cannot freeze or
+      extend a run; the run always ends on time. If saving your best haul fails on this browser,
+      the result screen says so instead of failing silently.</p>
+      <p class="fine">Free entry. No ads, no subscription, no purchases. Single self-contained page —
+      under 2 seconds to playable on a normal connection.</p>
+      <p><button id="btn-how-back" type="button" class="secondary">Back</button></p>
+    </div>
+  </section>
+</main>
+
+<footer>
+  Paydirt: Fill-Dirt Finder — a free timed digging game. No ads, no subscription.
+  Best hauls are stored only in this browser (localStorage) and never leave the device.
+</footer>
+
+<script>
+"use strict";
+/* Paydirt: Fill-Dirt Finder — 60-second timed digging game.
+   Single file, no dependencies. Timer is clock-driven (Date.now) so a
+   throttled tab or stalled frame can neither freeze nor extend a run. */
+var ASSAY_RATE = 65; // dollars per gram — in-game assay rate, not a market price.
+var RUN_SECONDS = 60;
+var SITES = [
+  { id: "creek-bed",  name: "Creek Bed",  difficulty: "Easy",   cols: 6, gold: 8,  target: 6.0,
+    blurb: "36 cells · 8 nuggets hidden · target 6.0 g" },
+  { id: "old-yard",   name: "Old Yard",   difficulty: "Medium", cols: 7, gold: 10, target: 8.0,
+    blurb: "49 cells · 10 nuggets hidden · target 8.0 g" },
+  { id: "river-claim",name: "River Claim",difficulty: "Hard",   cols: 8, gold: 14, target: 12.0,
+    blurb: "64 cells · 14 nuggets hidden · target 12.0 g" }
+];
+var BEST_KEY = "paydirt-fill-dirt-finder-best";
+
+var screens = {};
+["landing", "sites", "dig", "result", "how"].forEach(function (n) {
+  screens[n] = document.getElementById("screen-" + n);
+});
+function show(name) {
+  Object.keys(screens).forEach(function (k) { screens[k].classList.toggle("active", k === name); });
+  window.scrollTo(0, 0);
+}
+
+function loadBest() {
+  try { return JSON.parse(localStorage.getItem(BEST_KEY) || "{}") || {}; }
+  catch (e) { return {}; }
+}
+/* Returns true when the best haul was stored, false when saving failed. */
+function saveBest(siteId, weight) {
+  try {
+    var best = loadBest();
+    if (!(best[siteId] >= weight)) {
+      best[siteId] = Math.round(weight * 10) / 10;
+      localStorage.setItem(BEST_KEY, JSON.stringify(best));
+    }
+    return true;
+  } catch (e) { return false; }
+}
+function fmt(n, d) { return n.toFixed(d === undefined ? 1 : d); }
+function money(grams) { return "$" + (grams * ASSAY_RATE).toFixed(2); }
+
+/* --- Site select --- */
+var siteList = document.getElementById("site-list");
+SITES.forEach(function (site) {
+  var btn = document.createElement("button");
+  btn.type = "button";
+  btn.className = "site";
+  btn.innerHTML = "<strong>" + site.name + "</strong> · " + site.difficulty +
+    "<small>" + site.blurb + "</small>" +
+    '<span class="best" data-best-for="' + site.id + '"></span>';
+  btn.addEventListener("click", function () { startRun(site); });
+  siteList.appendChild(btn);
+});
+function refreshBestLabels() {
+  var best = loadBest();
+  document.querySelectorAll("[data-best-for]").forEach(function (el) {
+    var w = best[el.getAttribute("data-best-for")];
+    el.textContent = w ? "Best haul: " + fmt(w) + " g (" + money(w) + ")" : "No haul yet — be the first.";
+  });
+}
+refreshBestLabels();
+
+/* --- Dig run --- */
+var grid = document.getElementById("grid");
+var hudTime = document.getElementById("hud-time");
+var hudGold = document.getElementById("hud-gold");
+var hudWeight = document.getElementById("hud-weight");
+var run = null; // { site, cells, goldLeft, nuggets, weight, endAt, timer, digging }
+
+function shuffledIndexes(total, count) {
+  var idx = []; for (var i = 0; i < total; i++) idx.push(i);
+  for (var j = idx.length - 1; j > 0; j--) {
+    var k = Math.floor(Math.random() * (j + 1));
+    var t = idx[j]; idx[j] = idx[k]; idx[k] = t;
+  }
+  return idx.slice(0, count);
+}
+function nuggetWeight() { return Math.round((0.6 + Math.random() * 1.2) * 10) / 10; } // 0.6–1.8 g
+
+function startRun(site) {
+  var total = site.cols * site.cols;
+  var goldCells = {};
+  shuffledIndexes(total, site.gold).forEach(function (i) { goldCells[i] = nuggetWeight(); });
+  grid.innerHTML = "";
+  grid.style.gridTemplateColumns = "repeat(" + site.cols + ", 1fr)";
+  var cells = [];
+  for (var i = 0; i < total; i++) {
+    (function (i) {
+      var cell = document.createElement("button");
+      cell.type = "button";
+      cell.className = "cell";
+      cell.dataset.index = i;
+      cell.setAttribute("role", "gridcell");
+      cell.setAttribute("aria-label", "Dirt cell " + (i + 1) + " — not dug yet");
+      cell.addEventListener("pointerdown", function (ev) {
+        ev.preventDefault();
+        run.digging = true;
+        dig(i);
+      });
+      cell.addEventListener("contextmenu", function (ev) { ev.preventDefault(); });
+      grid.appendChild(cell);
+      cells.push(cell);
+    })(i);
+  }
+  document.getElementById("hud-site").textContent = site.name;
+  document.getElementById("hud-target").textContent = fmt(site.target) + " g";
+  run = { site: site, cells: cells, goldCells: goldCells, nuggets: 0, weight: 0,
+          endAt: Date.now() + RUN_SECONDS * 1000, digging: false, timer: null, over: false };
+  updateHud(RUN_SECONDS);
+  show("dig");
+  run.timer = setInterval(tick, 100);
+  tick();
+}
+
+function dig(i) {
+  if (!run || run.over) return;
+  var cell = run.cells[i];
+  if (!cell || cell.classList.contains("dug")) return;
+  cell.classList.add("dug");
+  cell.setAttribute("aria-label", "Dug cell");
+  var w = run.goldCells[i];
+  if (w) {
+    cell.classList.add("gold");
+    cell.textContent = "✦";
+    cell.setAttribute("aria-label", "Pay dirt! Gold nugget, " + fmt(w) + " grams");
+    run.nuggets += 1;
+    run.weight = Math.round((run.weight + w) * 10) / 10;
+    updateHud(timeLeft());
+  }
+}
+
+function timeLeft() {
+  if (!run) return 0;
+  return Math.max(0, Math.ceil((run.endAt - Date.now()) / 1000));
+}
+function updateHud(seconds) {
+  hudTime.textContent = seconds;
+  hudTime.classList.toggle("low", seconds <= 10);
+  hudGold.textContent = run ? run.nuggets : 0;
+  hudWeight.textContent = run ? fmt(run.weight) : "0.0";
+}
+function tick() {
+  if (!run || run.over) return;
+  var left = timeLeft();
+  updateHud(left);
+  if (left <= 0) endRun();
+}
+function endRun() {
+  if (!run || run.over) return;
+  run.over = true;
+  clearInterval(run.timer);
+  var site = run.site, success = run.weight >= site.target;
+  var saved = saveBest(site.id, run.weight);
+  var best = loadBest()[site.id];
+  document.getElementById("result-title").textContent =
+    success ? "🎉 Pay dirt! Target reached." : "⏱ Time! Below target — haul kept.";
+  document.getElementById("result-title").className =
+    "result-big " + (success ? "success" : "fail");
+  document.getElementById("result-site").textContent = site.name + " (" + site.difficulty + ")";
+  document.getElementById("result-nuggets").textContent = run.nuggets + " nuggets";
+  document.getElementById("result-weight").textContent = fmt(run.weight) + " g";
+  document.getElementById("result-value").textContent =
+    money(run.weight) + " at the in-game assay rate of $" + ASSAY_RATE + "/g";
+  document.getElementById("result-target").textContent =
+    fmt(site.target) + " g — " + (success ? "met" : "missed by " + fmt(site.target - run.weight) + " g");
+  document.getElementById("result-best").textContent =
+    best ? fmt(best) + " g (" + money(best) + ")" : "No best haul saved.";
+  var note = document.getElementById("save-note");
+  if (!saved) {
+    note.hidden = false;
+    note.textContent = "Best haul could not be saved in this browser (storage unavailable) — your haul above is still correct.";
+  } else { note.hidden = true; }
+  refreshBestLabels();
+  show("result");
+}
+
+/* --- Drag-digging (attached once): track the pointer across the grid and dig
+   whatever cell is under it. Pointer capture would retarget every event to
+   the first cell, so elementFromPoint is used instead. --- */
+grid.addEventListener("pointermove", function (ev) {
+  if (!run || !run.digging) return;
+  var el = document.elementFromPoint(ev.clientX, ev.clientY);
+  if (el && el.classList && el.classList.contains("cell")) dig(+el.dataset.index);
+});
+window.addEventListener("pointerup", function () { if (run) run.digging = false; });
+window.addEventListener("pointercancel", function () { if (run) run.digging = false; });
+
+/* --- Navigation --- */
+document.getElementById("btn-play").addEventListener("click", function () { refreshBestLabels(); show("sites"); });
+document.getElementById("btn-how").addEventListener("click", function () { show("how"); });
+document.getElementById("btn-how-back").addEventListener("click", function () { show("landing"); });
+document.getElementById("btn-back-landing").addEventListener("click", function () { show("landing"); });
+document.getElementById("btn-quit").addEventListener("click", function () { endRun(); });
+document.getElementById("btn-again").addEventListener("click", function () { startRun(run.site); });
+document.getElementById("btn-sites").addEventListener("click", function () { refreshBestLabels(); show("sites"); });
+/* Safety net: if the interval is throttled away entirely, the run still ends on time. */
+document.addEventListener("visibilitychange", function () { if (!document.hidden) tick(); });
+</script>
+</body>
+</html>

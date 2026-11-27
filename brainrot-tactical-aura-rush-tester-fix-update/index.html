@@ -41,6 +41,7 @@
   <div class="overlay" id="overlay-collection">
     <h2>Collection Log</h2>
     <p id="collection-summary"></p>
+    <p id="daily-challenge"></p>
     <ul id="collection-list"></ul>
     <h2>Best Runs</h2>
     <ul id="best-runs"></ul>
@@ -58,6 +59,10 @@
     <label><input type="checkbox" id="opt-ads" checked> Opt in to rewarded ads (consent required; ads are opt-in only)</label>
     <p>Rewarded ads are opt-in only and never gate progress. Aura is never sold and never appears in ads.</p>
     <p>Session metrics (steering, deaths, frame drops) are recorded on-device only, to fill in <code>docs/PLAYTEST.md</code> after a real-phone playtest.</p>
+    <h2>Save backup</h2>
+    <p>Progress is on-device only — there is no cloud save yet. Copy a backup before reinstalling or switching devices, and import it on the new device.</p>
+    <button class="secondary" id="btn-export-save">Copy save backup</button>
+    <button class="secondary" id="btn-import-save">Import save backup</button>
     <button class="secondary" id="btn-close-settings">Close</button>
   </div>
 </div>
@@ -86,6 +91,10 @@
     var p = game.collection.progress(BrainrotBosses.BOSSES.length);
     document.getElementById('collection-summary').textContent =
       'Bosses beaten: ' + p.beaten + '/' + p.total + ' — Characters recruited: ' + p.characters;
+    var dc = game.collection.dailyChallenge();
+    document.getElementById('daily-challenge').textContent =
+      'Daily challenge (' + dc.date + '): beat ' + BrainrotBosses.getBoss(dc.bossId).name +
+      ' for +' + dc.rewardAura + ' aura — ' + (game.collection.dailyDone(dc.date) ? 'done today.' : 'not done yet.');
     var list = document.getElementById('collection-list');
     list.innerHTML = '';
     BrainrotBosses.BOSSES.forEach(function (b) {
@@ -108,6 +117,20 @@
   document.getElementById('btn-close-collection').addEventListener('click', function () { hide('overlay-collection'); });
   document.getElementById('btn-settings').addEventListener('click', function () { show('overlay-settings'); });
   document.getElementById('btn-close-settings').addEventListener('click', function () { hide('overlay-settings'); });
+
+  document.getElementById('btn-export-save').addEventListener('click', function () {
+    var json = game.exportSave();
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(json).then(function () {
+        alert('Save backup copied. Paste it somewhere safe — progress is on-device only.');
+      }, function () { prompt('Copy your save backup:', json); });
+    } else { prompt('Copy your save backup:', json); }
+  });
+  document.getElementById('btn-import-save').addEventListener('click', function () {
+    var json = prompt('Paste a save backup (JSON):');
+    if (!json) return;
+    alert(game.importSave(json) ? 'Save imported.' : 'That backup could not be read — nothing changed.');
+  });
 
   document.addEventListener('brainrot:gate', function (ev) {
     var d = ev.detail;

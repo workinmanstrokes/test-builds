@@ -102,6 +102,7 @@ if (typeof module !== 'undefined') module.exports = Paydirt;
 /* ---------- Interface ---------- */
 if (typeof document !== 'undefined') (() => {
   const $ = (id) => document.getElementById(id);
+  const oz = (g) => (g / 31.1034768).toFixed(2); // grams -> troy ounces
   const params = new URLSearchParams(location.search);
   const store = {
     get(k, d) { try { const v = localStorage.getItem('paydirt.' + k); return v === null ? d : JSON.parse(v); } catch { return d; } },
@@ -144,7 +145,7 @@ if (typeof document !== 'undefined') (() => {
     let label = `Row ${r}, column ${c}: `;
     if (t.state === 'gold') { b.innerHTML = '<span class="nugget"></span><span class="g">' + t.grams.toFixed(1) + 'g</span>'; label += `gold, ${t.grams} grams`; }
     else if (t.state === 'dirt') { b.innerHTML = reveal && t.pay ? '<span class="nugget ghost"></span>' : ''; label += reveal && t.pay ? 'missed pay dirt' : 'untouched dirt'; }
-    else { b.innerHTML = `<span class="n n${Math.min(t.count, 4)}">${t.count}</span>`; label += `${t.state === 'probed' ? 'probed' : 'dug, empty'}, ${t.count} pay dirt nearby`; }
+    else { b.innerHTML = `<span class="n n${Math.min(t.count, 4)}">${t.count}</span>`; const heat = t.count === 0 ? 'cold' : t.count <= 2 ? 'warm' : 'hot'; label += `${t.state === 'probed' ? 'probed' : 'dug, empty'}, ${t.count} pay dirt nearby (${heat})`; }
     b.setAttribute('aria-label', label);
     b.disabled = over || t.state === 'gold' || t.state === 'empty';
   }
@@ -168,6 +169,7 @@ if (typeof document !== 'undefined') (() => {
     $('bestGold').textContent = bestGold.toFixed(1);
     $('probeLeft').textContent = claim.probes;
     $('digLeft').textContent = claim.digs;
+    $('restart').disabled = over;
     $('tool-probe').classList.toggle('broke', claim.probes <= 0);
     $('tool-dig').classList.toggle('broke', claim.digs <= 0);
   }
@@ -237,6 +239,7 @@ if (typeof document !== 'undefined') (() => {
     if (met) {
       $('a-title').textContent = `Ante ${ante} cleared`;
       $('a-gold').textContent = claim.gold.toFixed(1) + ' g';
+      $('a-oz').textContent = oz(claim.gold) + ' oz troy';
       $('a-quota').textContent = claim.quota.toFixed(1) + ' g';
       $('a-run').textContent = purse.toFixed(1) + ' g';
       $('a-next').textContent = Paydirt.quota(ante + 1).toFixed(1) + ' g';
@@ -246,6 +249,7 @@ if (typeof document !== 'undefined') (() => {
     } else {
       $('r-reason').textContent = reason;
       $('r-gold').textContent = claim.gold.toFixed(1) + ' g';
+      $('r-oz').textContent = oz(claim.gold) + ' oz troy';
       $('r-quota').textContent = claim.quota.toFixed(1) + ' g';
       $('r-left').textContent = Math.max(0, Math.round((claim.quota - claim.gold) * 10) / 10).toFixed(1) + ' g';
       $('r-found').textContent = `Ante ${bestAnte}`;
@@ -275,6 +279,7 @@ if (typeof document !== 'undefined') (() => {
   $('start').addEventListener('click', () => stake(false));
   $('next').addEventListener('click', () => stake(false));
   $('advanceBtn').addEventListener('click', () => stake(true));
+  $('restart').addEventListener('click', () => { if (!over) stake(false); });
   $('mute').addEventListener('click', () => { muted = !muted; store.set('muted', muted); $('mute').setAttribute('aria-pressed', muted); });
   $('mute').setAttribute('aria-pressed', muted);
   document.addEventListener('keydown', (e) => {

@@ -313,7 +313,7 @@ function frame(t) {
   if (mode === 'title') { view.camX = 1640 + Math.sin(t / 1000 * 0.18) * 70; }
   requestAnimationFrame(frame);
 }
-// Keyboard (web): ←/→ or A/D look, ↑/Enter/W keep going, ↓/Backspace/S turn back, H hint, Esc/P pause.
+// Keyboard (web): ←/→ or A/D look, ↑/Enter/W keep going, ↓/Backspace/B/S turn back, H hint, Esc/P pause.
 addEventListener('keydown', e => {
   if (e.repeat) return; const k = e.key, m = !$('#modal').hidden;
   if (m) { if (k === 'Escape') { const r = $('#mResume') || $('#mClose') || $('#mNo'); r?.click(); } return; }
@@ -322,7 +322,7 @@ addEventListener('keydown', e => {
   if (coActive && (k === 'Enter' || k === ' ')) { endColdOpen(); return; }
   if (coActive) return;
   if (['ArrowUp', 'Enter', 'w', 'W'].includes(k)) { e.preventDefault(); choose('forward'); }
-  else if (['ArrowDown', 'Backspace', 's', 'S'].includes(k)) { e.preventDefault(); choose('back'); }
+  else if (['ArrowDown', 'Backspace', 'b', 'B', 's', 'S'].includes(k)) { e.preventDefault(); choose('back'); }
   else if (k === 'h' || k === 'H') hint();
   else if (k === 'Escape' || k === 'p' || k === 'P') pauseMenu();
 });

@@ -29,6 +29,8 @@
   .hidden { display: none; }
   #playtest-log { white-space: pre-wrap; font-size: .8rem; }
   #save-status { font-size: .8rem; color: #9fd8ef; }
+  #panel-settings input[type="text"] { font-family: monospace; padding: 6px; margin: 4px 0; width: 100%; background: #0e2a3a; color: #eaf6ff; border: 1px solid #1d4e6b; }
+  #phone-status { font-size: .8rem; color: #9fd8ef; }
   /* First-launch tutorial overlay (Lab fix #4). */
   #tutorial { position: fixed; inset: 0; background: rgba(4, 20, 30, .92); display: flex; align-items: center; justify-content: center; padding: 16px; z-index: 10; }
   #tutorial.hidden { display: none; }
@@ -86,6 +88,11 @@
         <p>Your save lives on this device only — deleting the app deletes your progress. Back it up before you uninstall.</p>
         <button id="backup-save">Back up save</button>
         <button id="export-playtest">Export playtest log</button>
+        <p><strong>Playtest phone</strong> — for the multi-phone playtest (see <code>docs/playtest-protocol.md</code>). Enter this phone's details before a session so the exported log is that phone's full record. Screen size and orientation are filled in automatically.</p>
+        <label>Phone model <input type="text" id="phone-model" placeholder="e.g. Pixel 7a" autocomplete="off"></label>
+        <label>Android version <input type="text" id="android-version" placeholder="e.g. Android 14" autocomplete="off"></label>
+        <button id="save-phone">Save phone details</button>
+        <p id="phone-status"></p>
         <pre id="playtest-log"></pre>
       </div>
     </section>

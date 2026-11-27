@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 96 96" role="img" aria-label="Paydirt logo — a gold nugget over a dug patch of dirt">
+  <rect x="6" y="52" width="84" height="38" rx="10" fill="#7a5230"/>
+  <rect x="6" y="52" width="84" height="12" rx="6" fill="#8a5f38"/>
+  <circle cx="26" cy="78" r="5" fill="#5d3d22"/>
+  <circle cx="70" cy="80" r="6" fill="#5d3d22"/>
+  <circle cx="52" cy="84" r="4" fill="#5d3d22"/>
+  <path d="M48 10 L66 30 L60 52 L36 52 L30 30 Z" fill="#f5c542" stroke="#c9930a" stroke-width="3" stroke-linejoin="round"/>
+  <path d="M48 18 L56 30 L52 44 L44 44 L40 30 Z" fill="#ffe98a"/>
+  <circle cx="41" cy="30" r="2.5" fill="#fff3b0"/>
+  <circle cx="55" cy="36" r="2" fill="#fff3b0"/>
+</svg>

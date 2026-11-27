@@ -19,7 +19,7 @@ the title promises, and a boss/character collection log as the retention hook.
 - Opt-in rewarded ads only, with consent (see Settings in the app). Ads never gate progress.
 - Poki and CrazyGames portal builds ship the collection log first, to test repeat
   play before the Android launch.
-- Unit tests and smoke test, CI builds a debug APK (see the CI workflow).
+- Unit tests and smoke test (`node tests/smoke.js`), CI builds a debug APK (see the CI workflow).
 
 ## The tactical aura, in one paragraph
 
@@ -39,10 +39,19 @@ always which squad member benefits, not whether to pay.
 - One distinct written and implemented mechanic per boss for all seven cycling
   bosses, starting with Grump King and Espressorilla (see `docs/BOSSES.md`).
 - One gate rule, enemy mix and hazard per zone, so zones are distinguishable
-  without reading the boss name (see the zone table below).
+  without reading the boss name (see the zone table below). Every gate rule
+  is implemented in `src/zones.js` `gateOptions` and every hazard changes the
+  run in `src/game.js` — none is documented-only.
 - Minimal tactical aura: aura earned at gates, spent on one squad choice.
 - Boss/character collection log persisted in `localStorage`, reachable from the
-  main menu, plus a local best-run leaderboard (top 5).
+  main menu, plus a local best-run leaderboard (top 5) and a daily challenge
+  (one boss per day, +20 aura for beating it).
+- Relative-drag steering: the hero follows the finger's movement, not its
+  position, so the thumb never has to cover the hero.
+- Repeat boss cycles get harder (+25% boss HP per full 7-zone cycle).
+- Manual save backup (Settings → Copy/Import save backup): progress is
+  localStorage-only, so a run can be exported as JSON and imported on
+  another device. There is no cloud save yet.
 - Poki and CrazyGames portal builds ship the collection log first.
 
 ## Zone table
@@ -86,6 +95,7 @@ spend it on one squad choice. Reach the end of a zone to fight its boss.
 - `src/collection.js` — collection log and localStorage persistence
 - `docs/PLAYTEST.md` — real-phone playtest log and top three feel fixes
 - `docs/BOSSES.md` — one distinct written mechanic per boss
+- `tests/smoke.js` — node smoke test (`node tests/smoke.js`): zones, bosses, aura, collection
 
 ## Build milestones
 
@@ -109,13 +119,16 @@ spend it on one squad choice. Reach the end of a zone to fight its boss.
 | Item | Status |
 | --- | --- |
 | Real-phone playtest on two Android devices, results recorded | Not done — see `docs/PLAYTEST.md` |
-| Top three feel issues from the playtest fixed | Not done |
+| Top three feel issues from the playtest fixed | Not done — playtest not recorded; relative-drag steering, zone hazards and the Grump King stun are in code, awaiting verification |
 | Distinct mechanic implemented for all seven bosses | Done in code — playtest pending |
 | Zone table implemented (gate rule, enemy mix, hazard per zone) | Done in code — playtest pending |
 | Minimal tactical aura implemented | Done |
 | Collection log shipped to Poki/CrazyGames builds | Not done |
+| Daily challenge (one boss per day, +20 aura) | Done in code |
+| Save export/import (manual backup) | Done in code |
+| Cloud save / portal-to-Android sync | Not done — no backend or account system; manual backup only |
 | Google Play listing published | Not done |
-| Signed release build | Not done |
+| Signed release build | Not done — CI builds a debug APK only |
 | Retention feature chosen next | Done — boss/character collection log |
 
 No new features beyond this list until every "Not done" row above is resolved.

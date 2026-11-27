@@ -20,10 +20,12 @@ button:focus-visible { outline: 2px solid var(--gold-hi); outline-offset: 2px; }
   display: flex; flex-direction: column; gap: 14px;
 }
 .top { display: flex; justify-content: space-between; align-items: center; }
+.top .actions { display: flex; gap: 8px; }
 h1 { margin: 0; font: 700 34px/1 var(--serif); letter-spacing: .5px; color: var(--gold); text-shadow: 0 2px 0 #5a3d0c; }
 .sub { margin: 4px 0 0; font-size: 13px; color: var(--muted); letter-spacing: .4px; }
 .icon { width: 48px; height: 48px; border-radius: 14px; border: 1px solid var(--line); background: var(--panel); display: grid; place-items: center; }
 .icon svg { width: 24px; height: 24px; fill: var(--cream); stroke: var(--cream); }
+.icon:disabled { opacity: .45; cursor: default; }
 .icon .cross, .icon[aria-pressed="true"] .wave { display: none; }
 .icon[aria-pressed="true"] .cross { display: block; }
 

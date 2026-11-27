@@ -90,5 +90,64 @@
     return 'chaser';
   }
 
-  global.BrainrotZones = { ZONES: ZONES, getZone: getZone, getZoneByBoss: getZoneByBoss, pickEnemy: pickEnemy };
+  // Gate options for a zone: two gates, each with a value, a label the
+  // canvas draws, and an effect passGate() applies. Every gateRule in
+  // ZONES has its own pair here — no rule is documented-but-unimplemented.
+  // n is the base squad value and grows with the zone index.
+  function gateOptions(zone, zoneIndex) {
+    var n = 2 + zoneIndex;
+    switch (zone.gateRule) {
+      case 'multiply': return [
+        { x: 0.25, value: n, label: 'x2', effect: 'multiply-2' },
+        { x: 0.75, value: n, label: 'x3', effect: 'multiply-3' }
+      ];
+      case 'aura': return [
+        { x: 0.25, value: 5, label: '+5 aura', effect: 'aura' },
+        { x: 0.75, value: 8, label: '+8 aura', effect: 'aura' }
+      ];
+      case 'sacrifice': return [
+        { x: 0.25, value: n, label: '+' + n, effect: 'add' },
+        { x: 0.75, value: n + 3, label: '+' + (n + 3) + ' (-1)', effect: 'sacrifice' }
+      ];
+      case 'shield': return [
+        { x: 0.25, value: n, label: '+' + n + ' +shield', effect: 'shield-grant' },
+        { x: 0.75, value: n, label: '+' + n + ' -shield', effect: 'shield-strip' }
+      ];
+      case 'speed': return [
+        { x: 0.25, value: n, label: '+' + n + ' slow', effect: 'speed-slow' },
+        { x: 0.75, value: n, label: '+' + n + ' fast (-1)', effect: 'speed-fast' }
+      ];
+      case 'heal': return [
+        { x: 0.25, value: n, label: '+' + n + ' heal', effect: 'heal' },
+        { x: 0.75, value: n, label: '+' + n + ' TRAP', effect: 'trap' }
+      ];
+      default: return [ // 'add'
+        { x: 0.25, value: n, label: '+' + n, effect: 'add' },
+        { x: 0.75, value: n + 1, label: '+' + (n + 1), effect: 'add' }
+      ];
+    }
+  }
+
+  // Hazard factors for the runner loop, from the zone's hazard id.
+  // t is seconds into the zone (distance / 60). Returns:
+  // { steer (1 = normal, <1 = sluggish), drift (px/s sideways push),
+  //   enemySpeed (multiplier), flip (steering mirrored), slide, mirror }
+  function hazardFactors(zone, t) {
+    var f = { steer: 1, drift: 0, enemySpeed: 1, flip: false, slide: false, mirror: false };
+    switch (zone.hazard) {
+      case 'mud-patches': f.steer = 0.6; break;                    // steering 40% slower
+      case 'sand-gusts': f.drift = 40 * Math.sin(t / 1.5); break;  // gusts push sideways in pulses
+      case 'coffee-spills': f.enemySpeed = 1.5; break;             // enemies +50% speed
+      case 'dance-floor': f.flip = Math.floor(t / 2) % 2 === 0; break; // steering flips 2s on / 2s off
+      case 'undertow': f.drift = -25; break;                       // drags toward the reef (left) edge
+      case 'ice-sheets': f.slide = true; f.steer = 0.45; break;    // low friction: sluggish, overshoots
+      case 'silver-mirrors': f.mirror = true; break;               // mirror blockers spawn (see game.js)
+    }
+    return f;
+  }
+
+  global.BrainrotZones = {
+    ZONES: ZONES, getZone: getZone, getZoneByBoss: getZoneByBoss, pickEnemy: pickEnemy,
+    gateOptions: gateOptions, hazardFactors: hazardFactors
+  };
 })(typeof window !== 'undefined' ? window : globalThis);

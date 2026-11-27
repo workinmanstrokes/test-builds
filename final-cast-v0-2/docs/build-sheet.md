@@ -1,12 +1,132 @@
 # Final Cast — build sheet (one page)
 
-**Build 0.2.4** · 2026-11-27 · repo `workinmanstrokes/final-cast-v0-2` · branch `main`
-· based on commit `f3bc1093ee97452ba499e1e38da5b820b5d7b688` (v0.2.3)
-· Game Test Lab review: **3.8/10 (grade D)** — this build answers that review, item by item below.
+**Build 0.2.6** · 2026-11-27 · repo `workinmanstrokes/final-cast-v0-2` · branch `main`
+· based on commit `ec72f14cf1985ca8a4621e87c1829b13d152f12c` (v0.2.4) — 0.2.5 shipped on top of it (see below)
+· VEX review: **5.0/10 (grade C)** — this build answers that review, item by item below.
+· Game Test Lab review: **3.8/10 (grade D)** — answered in 0.2.3, kept here.
 · VEX review (2026-11-26): **4.5/10 (grade D)** — answered in 0.2.2, kept here.
 · Game Test Lab review (2026-11-25): **4.8/10 (grade D)** — answered in 0.2.1, kept here.
 
 **Read this first: the tester reviewed the wrong game — again.** The Lab's 3.8 text describes a Grow Castle-style tower-defence Android game — "place a tower or hero, clear a wave, spend the reward, start the next wave", Google Cloud save, ads, a public store listing. Final Cast is a pixel-art idle fishing game: no towers, no waves, no heroes, no castle, no ads, no store listing, no cloud save. The mapping below applies each Lab item to the fishing game as shipped and says plainly where an item belongs to the other game instead. No tower-defence content was added.
+
+## What changed in 0.2.6 (VEX 5.0 follow-up, suggestion 497)
+
+The VEX 5.0 follow-up re-picked one red flag from the 5.0 review: the
+12-quest idle-then-fight arc had no described pacing, economy or
+difficulty tuning, so repetition and burnout were a live risk. Build
+0.2.6 writes the tuning down and wires what can be wired:
+
+- **Pacing, economy and difficulty targets** in `src/tuning.json`
+  (`pacing`, `economy`) and in the quest table in `docs/quests.md`:
+  target minutes and target active share per quest (arc: quests 1–2 in
+  the first 10 minutes, 3–5 inside the first hour, first legend in
+  session 2, full arc 3–5 sessions / about 2–3 hours); coin economy as
+  shipped (idle +5, hand +25, legend +100) with quest-completion bonuses
+  of 25 coins × quest number; difficulty ramp ×1.00 on quests 3–5,
+  ×0.95 on 6–8, ×0.90 on 9–12.
+- **Wired in `src/main.js`:** the idle gap now comes from
+  `pacing.idleGapMs` (4–9 s as shipped), bite/hookset windows are
+  multiplied by the quest-band ramp after the forgiving first-quest
+  window, and coin rewards come from `tuning.economy`. The per-size
+  windows and legend-fight table are unchanged.
+- **Anti-burnout rules** in `docs/quests.md`: every quest adds a new
+  mechanic, unlock, water or legend; no quest is more than 70% idle
+  waiting (quest 11, the background collection quest, is the flagged
+  exception at 30% active); no quest targets over 20 minutes without a
+  completion bonus; the first session reaches quest 2 inside 10 minutes.
+- **Honest limits:** the targets are design targets, not measurements —
+  the pacing log in `docs/quests.md` is still empty until a real 1–12
+  playthrough fills it. Quest-completion bonuses are targets only:
+  in-game quest tracking is still a placeholder, so no bonus is paid
+  today; the bonuses are what the milestone-4 shop pays when quest
+  tracking ships.
+
+## What changed in 0.2.5 (VEX 5.0 items, in the tester's order)
+
+The 5.0 review is the one the v0.2 plan was built from. Build 0.2.5
+answers all fifteen of its items; the full build-numbered audit is in
+[`docs/bug-audit.md`](docs/bug-audit.md). Anything marked "still open"
+below needs a real phone, a real playthrough, or a maker step — it is
+not claimed as done.
+
+| # | VEX 5.0 item | What 0.2.5 does |
+|---|---|---|
+| 1 | Put the CI debug APK on 3–5 real Android phones of different sizes and ages; record a full session per phone: bite hits/misses, haptic feel, portrait/landscape touch targets, frame drops, offline PWA | Protocol + logging in: `docs/playtest-protocol.md` (3–5 phone matrix, per-phone record, pass bar); `src/playtest.js` records per-phone details, bite hits/misses (`logBite`), and frame drops; Settings has a phone model / Android version field so one exported log is one phone's session. No phone tested yet — the test itself is still open. |
+| 2 | Write down and tune the actual timing numbers — bite-window length, hookset grace period, legend-fight difficulty by water and quest — then add a forgiving first-quest window and a clear visual/audio bite cue | Numbers written down and wired in: `src/tuning.json` holds per-size bite/hookset windows, the 250 ms first-attempt grace, `firstQuestWindowMs` (1800 ms bite / 1200 ms hookset on quests 1–2), and `legendFight` difficulty 3/4/5 by water; `src/main.js` applies the first-quest window, plays a two-tone audio beep with the visual BITE! banner and haptic buzz, and fights legends at their per-water difficulty. Retuning from real-phone logs is still open. |
+| 3 | Re-test the old v0.1 bug list against the current build, mark each item fixed or unfixed with the build number, and stop carrying the stale review forward | `docs/bug-audit.md` now carries the build-numbered VEX 5.0 audit. The authoritative v0.1 bug list still has no source — nothing from it can be marked fixed until it is imported. |
+| 4 | Play quests 1–12 in sequence and log minutes idle versus active, time per quest and where the loop repeats; vary, shorten or add a new mechanic to any quest that is just wait, fight, repeat | Logging in: `src/playtest.js` `noteQuestClock` / `logQuestComplete` / `questSummary()` split idle vs active minutes per quest; `docs/quests.md` has the pacing-log table to fill from a real playthrough. No 1–12 playthrough recorded yet. |
+| 5 | Decide the release and monetisation model — free web/PWA, paid, ads or IAP — and produce a release APK and PWA/store listing instead of stopping at a CI debug APK | Decision recorded (free, no ads, no IAP) in Settings, `docs/quests.md`, and below. Release checklist below lays out the release APK and store-listing steps; the release build and the listing itself still need maker steps (signing keystore, store account). |
+| 6 | Across 12 quests the loop is the same idle wait, big bite, hand fight; no quest-type variety, new mechanic per water, or story beat is described | Described in `docs/quests.md`: every quest now carries a type (tutorial / timing / experiment / exploration / economy / upgrade / unlock / legend / collection) and a story beat per water (Millpond dawn, Cedar Creek dusk chase, Ember Lake night trial). |
+| 7 | Hand-fishing fairness cannot be judged: no bite-window duration, hookset forgiveness, retrieve-speed trade-off, failure penalty or assist option is stated | Stated in `src/tuning.json`: windows by size, 250 ms grace, 1800/1200 ms first-quest window, `retrieveSpeedTradeoff` (slow x1.25 window, fewer bites; medium baseline; fast x0.8 window, more bites), miss penalty (8 s line slack, 30 s spot rest, nothing lost). |
+| 8 | No real-phone playtest is recorded, so portrait/landscape layouts, touch targets, haptics and bite readability are claimed but unproven on device | Still open — protocol and logging in 0.2.5 (item 1), no session recorded yet. |
+| 9 | Bug status is stale: the review was against the v0.1 prototype, some bugs are said to be fixed, and what remains unfixed is unverified | Answered by the build-numbered audit in `docs/bug-audit.md` (item 3): open items stay open until retested. |
+| 10 | Visual and feedback detail is thin: no fish animation, bite cue, UI clarity or visual distinction between waters is described | Fixed in 0.2.5 — see "Visual and feedback detail" below: per-water pond palettes with a swimming pixel fish, and a three-channel bite cue (visual + audio + haptic). |
+| 11 | No monetisation, pricing or store presence is described, so the path from a CI debug APK to a player finding and sustaining the game is missing | Decision + path in 0.2.5: free, no ads, no IAP (in the game and the docs); release checklist below is the path to a player finding it. No listing exists yet. |
+| 12 | Red flag: no real-phone playtest recorded despite haptics and precise timing being core to the hand-fishing loop | Still open — same as item 8. |
+| 13 | Red flag: remaining bugs are unverified because the design review was written against the v0.1 prototype | Answered in 0.2.5 — same as item 9. |
+| 14 | Red flag: only a debug APK from CI is described — no release build, store listing or launch path | Still open — release checklist below; release APK and listing need maker steps. |
+| 15 | Red flag: no monetisation model is described, leaving the release with no sustainability plan | Decision fixed in 0.2.5 — free, no ads, no IAP, recorded in Settings, `docs/quests.md`, and below. |
+
+## Visual and feedback detail (VEX 5.0 item 10)
+
+What the player actually sees and feels, as shipped in 0.2.5:
+
+- **Per-water pond**: the canvas is painted per water, not one generic
+  gradient — Millpond at dawn (green–teal), Cedar Creek at dusk
+  (indigo–blue), Ember Lake at night (ember orange–near-black). The
+  water label in the HUD names the water and time of day.
+- **Fish animation**: one pixel fish (body, tail triangle, eye) swims
+  across the pond on a gentle sine path, drawn on the canvas in the
+  water's accent colour. In low-memory mode it is drawn once and does
+  not animate, so a small-RAM phone does less work per second.
+- **Bite cue, three channels**: visual — amber BITE! banner (`#ffb703`,
+  pulsing; static in low-memory mode); audio — two-tone WebAudio beep
+  (880 Hz then 1320 Hz, 90 ms each, no audio asset); haptic — buzz
+  pattern `[60, 40, 60]` ms, one 30 ms pulse in low-memory mode. All
+  three fire on the same bite, so a miss feels fair, not random — the
+  player was told by sight, sound, and touch.
+- **Fight feedback**: the fight bar fills green as the player taps to
+  reel; the bar's drift and the reel gain come from the legend-fight
+  table (`src/tuning.json`), so the Silver King and the Emberfin
+  genuinely fight harder than the Old Mossback.
+- **Miss feedback**: the stated penalty is shown on screen — 8 s line
+  slack, 30 s spot rest, no coins or tackle lost.
+
+## Release checklist (VEX 5.0 item 5)
+
+Monetization decision: **free, no ads, no in-app purchases** — recorded
+in the game Settings, `docs/quests.md`, and the monetization rules
+below. The release path from the CI debug APK is:
+
+1. **Release APK** (not the CI debug APK): build a signed release in
+   Android Studio (`Build → Generate Signed App Bundle / APK`) from the
+   Capacitor Android project. Needs a release keystore — **maker step**:
+   create it once in Android Studio and keep the keystore file and
+   passwords safe; a lost keystore means the app can never be updated
+   under the same listing. Do not commit the keystore to the repo.
+2. **PWA / web release**: the web build is already the release — serve
+   this folder over HTTPS with the service worker (`sw.js`) so the PWA
+   installs and plays offline. Confirm the manifest title, description,
+   and icon (shipped in 0.2.4) before pointing players at it.
+3. **Store listing**: create the listing with the store identity in this
+   sheet (exact title "Final Cast — Idle Fishing", pixel-art rod-over-pond
+   icon, five screenshots, description opening "pixel-art idle fishing
+   game — not a tower-defence game"). Needs a Google Play developer
+   account — **maker step**. No listing exists yet.
+4. **Before listing**: the multi-phone playtest (`docs/playtest-protocol.md`)
+   must have at least one recorded session, and the quest pacing log
+   (`docs/quests.md`) must have a 1–12 playthrough — a listing that
+   points at an unproven build repeats the 5.0 review.
+
+## What is playable in 0.2.5
+
+- Idle line that catches small fish on its own; big bites hand you the rod.
+- Hand-fishing loop: BITE! cue (visual + audio beep + haptic buzz), hookset timing with a first-attempt grace period and a forgiving first-quest window (1800/1200 ms on quests 1–2), a stated miss penalty (8 s line slack, 30 s spot rest, nothing lost), lure retrieves at three speeds, worm depth, fishing-spot choice.
+- Three waters (Millpond, Cedar Creek, Ember Lake), each with its own pond palette and legend fish tied to one spot and time of day; 12 quests with types and story beats; collection and legend log.
+- First 10 minutes: cast the idle line, hookset on the BITE! cue for the first hand-fought fish, then chase the Silver King (first legend, Boulder Run, Cedar Creek, dusk) — the one thing players can name and remember.
+- PWA offline cache, portrait and landscape layouts, haptics, Capacitor Android wrap. Telemetry off on localhost and with Do Not Track.
+- Performance logging for the low-end test pass: load time, frame drops and memory use are recorded in the exported playtest session (new in 0.2.3).
+- Playtest logging for the multi-phone pass: bite hits/misses, hookset attempts by fish size, quest idle vs active minutes, and per-phone details (new in 0.2.5).
 
 ## What changed in 0.2.4 (VEX items 772–773, re-picked from the Lab 3.8 review)
 
@@ -16,22 +136,6 @@ Build 0.2.3 answered Lab items 5 and 6 in this sheet only. 0.2.4 ships them in t
 |---|---|---|
 | 772 | Clarify store identity: exact title, icon, screenshots, and description that separate Final Cast from Final Castle, Final Squad, and The Finals | The identity now ships in the build, not just in this sheet: `manifest.webmanifest` carries the exact title **"Final Cast — Idle Fishing"**, the description that opens "pixel-art idle fishing game — not a tower-defence game", and the icon (`icon.svg`: pixel-art fishing rod over a still pond at dawn, teal water, gold hook — no castle, no tower). `index.html` links the manifest and icon, and its `<title>` is now the exact store title. The five screenshots are still a shot list in this sheet — there is no listing yet to attach them to, and no screenshots were staged. Renaming the game is still a maker decision, not taken here. |
 | 773 | No monetization or ad plan described: the analogue is free and contains ads, with no placement, reward, or progression pacing shown for this build | The full monetization and ad rules now appear in the game itself (Settings panel), not just in this sheet: free, no ads, no in-app purchases; no rewarded ads, no interruptive ads, no ad placement anywhere, no ad SDK, ad frequency zero; coins earned only by catching fish; nothing stalls the idle loop (no timer, energy, or ad gate between casts); the first legend is reached by fishing, never by paying. The analogue's ads belong to the other game — Final Cast has never had ads. |
-
-## What is playable in 0.2.4
-
-- Idle line that catches small fish on its own; big bites hand you the rod.
-- Hand-fishing loop: BITE! cue, hookset timing with a first-attempt grace
-  period, a stated miss penalty (8 s line slack, 30 s spot rest, nothing lost),
-  lure retrieves at three speeds, worm depth, fishing-spot choice.
-- Three waters (Millpond, Cedar Creek, Ember Lake), each with a legend fish
-  tied to one spot and time of day; 12 quests; collection and legend log.
-- First 10 minutes: cast the idle line, hookset on the BITE! cue for the
-  first hand-fought fish, then chase the Silver King (first legend, Boulder
-  Run, Cedar Creek, dusk) — the one thing players can name and remember.
-- PWA offline cache, portrait and landscape layouts, haptics, Capacitor
-  Android wrap. Telemetry off on localhost and with Do Not Track.
-- Performance logging for the low-end test pass: load time, frame drops
-  and memory use are recorded in the exported playtest session (new in 0.2.3).
 
 ## What changed in 0.2.3 (Lab 3.8 items, in the tester's order)
 
@@ -122,27 +226,33 @@ Proposed identity for when Final Cast is listed. No listing exists yet.
 | Low-memory idle/fight throttling, save backup download, day-1/day-7 retention logging, no-IAP statement, title disambiguation | Finished (0.2.2) |
 | Load-time / frame-drop / memory logging for the low-end test pass, 60-second capture script, monetization rules, proposed store identity | Finished (0.2.3) |
 | Store identity in the shipped build (manifest, icon, exact title) and full monetization/ad rules in the Settings panel | Finished (0.2.4) |
+| VEX 5.0 fixes: first-quest forgiving window, audio bite cue, per-water legend-fight difficulty, retrieve-speed trade-off stated, quest types + story beats, build-numbered bug audit, release checklist | Finished (0.2.5) |
+| Multi-phone playtest protocol + per-phone session logging + bite hit/miss logging + quest idle/active timing | Finished (0.2.5) — protocol and logging; no phone tested yet |
+| Pacing, economy and difficulty tuning for the 12-quest arc (targets + anti-burnout rules, idle gap / window ramp / coin rewards wired from tuning.json) | Finished (0.2.6) — targets, not measurements; pacing log still empty until a real 1–12 playthrough |
 | Tackle / upgrade shop (rod, line, reel, lure unlocks) | Placeholder — panel text says "wired in milestone 4" |
 | In-game quest tracking | Placeholder — quest panel points at `docs/quests.md` |
 | Cloud save / cross-device sync | Not built — saves are on-device only (localStorage); manual backup download added in 0.2.2 |
-| Recorded real-phone playtest | Not done — bite/hookset windows are still the v0.2.0 defaults |
+| Recorded real-phone playtest | Not done — bite/hookset windows are still the v0.2.0 defaults until a real-phone session retunes them |
+| Release APK + store listing | Not done — checklist in 0.2.5; needs a signing keystore and a Play developer account (maker steps) |
 
 ## Target devices
 
 - **Web (PWA):** any modern browser; offline via service worker over http(s).
-- **Android (Capacitor debug APK):** a mid-range Android phone for the recorded playtest — model and OS version still to be confirmed (open question).
+- **Android (Capacitor debug APK):** 3–5 real phones of different sizes and ages for the recorded playtest — see `docs/playtest-protocol.md` for the matrix. Models and OS versions still to be confirmed (open question).
 - **Lowest-spec test target:** an Android 6.0 device, the oldest supported — model still to be confirmed.
 
 ## Known issues / not yet proven
 
 - Delete-and-reinstall restore has **not** been tested on a real device. Saves are on-device localStorage; there is no cloud backup yet, so a reinstall currently loses progress unless the player saved a backup file first (Settings → Back up save) or the device backup restores it.
 - No low-memory shutdown has been reproduced; the guard, the idle/fight throttling, and crash logging are in, the Android 6.0 device test is not.
-- No recorded real-phone playtest yet; bite/hookset windows are still the v0.2.0 defaults.
+- No recorded real-phone playtest yet; bite/hookset windows are still the v0.2.0 defaults (the first-quest window is the only tuned value, and it is a design choice, not a measured one).
 - The 60-second capture of the actual loop has not been recorded yet — it needs a real phone.
 - Time to first legend ("first boss" in the Lab's words) is still unmeasured — no recorded playtest yet.
 - The upgrade shop is a placeholder, so pacing to the first rod upgrade is unmeasurable until it ships.
 - The v0.1 bug list still has no authoritative source (see `docs/bug-audit.md`).
 - Day-1 / day-7 retention has no data yet — logging is in, but no player has had 7 days with the build.
+- No 1–12 quest playthrough has been recorded yet — the pacing log in `docs/quests.md` is empty until one is.
+- No release APK or store listing exists yet — see the release checklist above.
 
 ## Pacing and retention audit (VEX item 5)
 
