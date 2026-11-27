@@ -1,1 +1,0 @@
-import{n as e}from"./routes-qVVAkr4U.js";export{e as Capacitor};

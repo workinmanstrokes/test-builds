@@ -23,15 +23,29 @@
     } catch (e) {}
     return 'sw.js';
   })();
-  // 'New version available' prompt: when a new worker is waiting, offer one tap to
-  // reload into it instead of leaving the home-screen install on the old build
-  // (no delete-and-re-add). The worker's SKIP_WAITING handler (sw.js) takes over;
-  // controllerchange reloads once.
-  var bannerShown = false;
-  function promptUpdate(worker) {
-    if (bannerShown || !d.body) return;
-    bannerShown = true;
-    var bar = d.createElement('div');
+  // Update gate: a new build never interrupts a mission.
+  // sw.js installs a new build and lets it wait. The game marks <html data-wp-busy="1"> while a run,
+  // a tower climb or its results are on screen (src/components/game-app.tsx) and fires 'wp-play-state'
+  // when that changes. The new build is applied only when the player is between missions:
+  //  - on the menu, a small "update ready" bar offers one tap to reload into it;
+  //  - leaving the app while on the menu applies it quietly;
+  //  - otherwise it applies on the next launch (the browser switches once every window is closed).
+  // The page reloads only when this page asked for the switch, never on its own.
+  var pending = null; // the waiting worker, or true when another window already switched builds
+  var requested = false;
+  var dismissed = false;
+  var bar = null;
+  function busy() { return d.documentElement.getAttribute('data-wp-busy') === '1'; }
+  function applyUpdate() {
+    if (!pending || busy()) return;
+    requested = true;
+    if (pending === true || !pending.postMessage) { w.location.reload(); return; }
+    pending.postMessage({ type: 'SKIP_WAITING' }); // controllerchange below then reloads once
+  }
+  function hideBar() { if (bar) { bar.remove(); bar = null; } }
+  function showBar() {
+    if (bar || dismissed || !d.body) return;
+    bar = d.createElement('div');
     bar.setAttribute('data-testid', 'sw-update-banner');
     bar.setAttribute('role', 'status');
     bar.style.cssText = 'position:fixed;left:12px;right:12px;bottom:calc(12px + env(safe-area-inset-bottom, 0px));z-index:9999;display:flex;gap:8px;align-items:center;justify-content:space-between;padding:10px 12px;border-radius:12px;background:#18181b;color:#fafafa;border:1px solid #3f3f46;font:600 14px/1.3 system-ui,sans-serif;box-shadow:0 8px 24px rgba(0,0,0,.45)';
@@ -41,33 +55,42 @@
     btn.type = 'button';
     btn.textContent = 'Reload to update';
     btn.style.cssText = 'flex:none;padding:10px 14px;border:0;border-radius:8px;background:#e8c84a;color:#18181b;font:700 14px system-ui,sans-serif';
-    btn.onclick = function () { worker.postMessage({ type: 'SKIP_WAITING' }); };
+    btn.onclick = applyUpdate;
     var later = d.createElement('button');
     later.setAttribute('data-testid', 'sw-update-dismiss');
     later.type = 'button';
     later.textContent = 'Later';
     later.style.cssText = 'flex:none;min-height:36px;padding:0 10px;border:0;background:transparent;color:#a1a1aa;font:600 14px system-ui,sans-serif';
-    later.addEventListener('click', function () { bar.remove(); });
+    later.addEventListener('click', function () { dismissed = true; hideBar(); });
     bar.appendChild(btn);
     bar.appendChild(later);
     d.body.appendChild(bar);
   }
+  // Show the bar only between missions; hide it the moment a run starts.
+  function refresh() { if (pending && !busy()) showBar(); else hideBar(); }
+  function ready(worker) { pending = worker || true; refresh(); }
+  w.addEventListener('wp-play-state', refresh);
+  d.addEventListener('visibilitychange', function () { if (d.hidden && pending && !busy()) applyUpdate(); });
   if (!native && !capHost && topLevel && 'serviceWorker' in navigator && /^https?:$/.test(location.protocol)) {
     w.addEventListener('load', function () {
+      var hadController = !!navigator.serviceWorker.controller;
       navigator.serviceWorker.register(swUrl).then(function (reg) {
         reg.update && reg.update();
-        if (reg.waiting) promptUpdate(reg.waiting);
+        if (reg.waiting && navigator.serviceWorker.controller) ready(reg.waiting);
         reg.addEventListener('updatefound', function () {
           var nw = reg.installing;
           if (!nw) return;
           nw.addEventListener('statechange', function () {
-            // A new worker is ready while an old one still controls this page.
-            if (nw.state === 'installed' && navigator.serviceWorker.controller) promptUpdate(nw);
+            // A new build is ready while an old one still runs this page: hold it until between missions.
+            if (nw.state === 'installed' && navigator.serviceWorker.controller) ready(nw);
           });
         });
         var reloaded = false;
         navigator.serviceWorker.addEventListener('controllerchange', function () {
-          if (!reloaded) { reloaded = true; w.location.reload(); }
+          if (requested) { if (!reloaded) { reloaded = true; w.location.reload(); } return; }
+          // Not asked for here: the first-ever install taking control (nothing to reload), or another
+          // window of the game switching builds. Then treat it like a waiting update.
+          if (hadController) ready(true);
         });
         // An old home-screen install only discovers the new build when the worker is
         // re-checked: poll while the page is open, and on every foregrounding.

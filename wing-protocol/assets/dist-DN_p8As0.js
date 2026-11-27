@@ -1,0 +1,1 @@
+import{n as e}from"./routes-By5p-BFD.js";export{e as Capacitor};
