@@ -80,6 +80,14 @@
   .tc-art.arena-soccer::before { content:''; position:absolute; inset:0; background:radial-gradient(circle at 50% 50%, transparent 0 18px, rgba(255,255,255,.16) 18px 20px, transparent 20px), linear-gradient(180deg, transparent 48%, rgba(255,255,255,.12) 48% 50%, transparent 50%); }
   .tc-art.arena-comic { background:linear-gradient(180deg,#7e22ce 0%,#4c1d95 100%); }
   .tc-art.arena-comic::before { content:''; position:absolute; inset:0; background:repeating-linear-gradient(115deg, transparent 0 18px, rgba(255,255,255,.08) 18px 20px); }
+  .tc-art.arena-golf { background:linear-gradient(180deg,#7ec8e3 0%,#3a9e4f 100%); }
+  .tc-art.arena-golf::before { content:''; position:absolute; inset:0; background:radial-gradient(circle at 78% 22%, rgba(255,255,255,.85) 0 6px, transparent 7px), radial-gradient(circle at 50% 62%, transparent 0 22px, rgba(255,255,255,.14) 22px 24px, transparent 24px); }
+  .tc-art.arena-tennis { background:linear-gradient(180deg,#2563eb 0%,#1e40af 100%); }
+  .tc-art.arena-tennis::before { content:''; position:absolute; inset:0; background:linear-gradient(90deg, transparent 48%, rgba(255,255,255,.20) 48% 50%, transparent 50%), linear-gradient(0deg, transparent 48%, rgba(255,255,255,.20) 48% 50%, transparent 50%); }
+  .tc-art.arena-racing { background:linear-gradient(180deg,#374151 0%,#111827 100%); }
+  .tc-art.arena-racing::before { content:''; position:absolute; inset:0; background:repeating-linear-gradient(0deg, transparent 0 16px, rgba(250,204,21,.35) 16px 18px); }
+  .tc-art.arena-boxing { background:linear-gradient(180deg,#c98a4b 0%,#7c2d12 100%); }
+  .tc-art.arena-boxing::before { content:''; position:absolute; inset:0; background:radial-gradient(circle at 50% 40%, rgba(255,255,255,.16) 0 26px, transparent 27px), repeating-linear-gradient(90deg, transparent 0 26px, rgba(255,255,255,.07) 26px 28px); }
   .tc-art .emoji { font-size:44px; line-height:1; padding-bottom:8px; position:relative; z-index:1; align-self:center; }
   .tc-art svg { position:relative; z-index:1; height:88px; width:auto; display:block; }
   .tc-art svg.hab-svg { position:absolute; inset:0; width:100%; height:100%; }
@@ -101,6 +109,13 @@
   .mini.frame-pitch, .card.frame-pitch { outline:1px dashed rgba(255,255,255,.35); outline-offset:-5px; }
   .mini.frame-panel, .card.frame-panel { box-shadow:4px 4px 0 rgba(0,0,0,.5); }
   .mini.frame-kaiju, .card.frame-kaiju, .mini.frame-mythic, .card.frame-mythic, .mini.frame-critter, .card.frame-critter { border-width:3px; }
+  .mini.frame-fairway, .card.frame-fairway { border-width:4px; }
+  .mini.frame-court, .card.frame-court { border-radius:4px; box-shadow:inset 0 0 0 2px rgba(255,255,255,.30); }
+  .mini.frame-asphalt, .card.frame-asphalt { border-style:dashed; border-width:2px; }
+  .mini.frame-knockout, .card.frame-knockout { box-shadow:5px 5px 0 rgba(0,0,0,.55); }
+  .mini.frame-cosmic, .card.frame-cosmic { box-shadow:inset 0 0 12px rgba(129,140,248,.55); }
+  .mini.frame-dungeon, .card.frame-dungeon { border-style:groove; border-width:4px; }
+  .mini.frame-haunted, .card.frame-haunted { border-style:double; border-width:4px; }
   .tc-art.one-of-one { background:linear-gradient(180deg,#1a1a1a 0%,#2e2405 55%,#0a0800 100%) !important; border-color:#f2b705; }
   .tc-art.one-of-one::after { content:''; position:absolute; inset:0; background:linear-gradient(115deg, transparent 30%, rgba(242,183,5,.45) 45%, rgba(255,255,255,.20) 55%, transparent 70%); background-size:220% 100%; animation:foilSweep 2.6s linear infinite; pointer-events:none; }
   .one-stamp { position:absolute; top:5px; right:5px; z-index:2; background:#f2b705; color:#111; font-size:10px; font-weight:800; padding:2px 6px; border-radius:4px; transform:rotate(6deg); box-shadow:0 1px 4px rgba(0,0,0,.5); }
@@ -691,6 +706,104 @@ const SETS = {
       { name: 'Magma Dragonet', title: 'Dragon · Magma Roar', rarity: 'secret', art: '🐲', position: 'Dragon', team: null, number: 99, flavor: "Small dragon. Big lava." },
     ],
   },
+  fairway: {
+    name: 'Fairway Kings', packPrice: 30, color: '#4d7c0f', desc: 'Parody golf greats from the fictional Metro League.',
+    cards: [
+      { name: 'Bogey Briggs', title: 'Golfer · Metro Mammoths', rarity: 'common', art: '⛳', position: 'Golfer', team: 'Metro Mammoths', number: 14, flavor: 'Par is a suggestion. Bogey is a lifestyle.' },
+      { name: 'Divot Dan', title: 'Putter · Bay Breakers', rarity: 'common', art: '🏌️', position: 'Putter', team: 'Bay Breakers', number: 7, flavor: 'He reads greens like other people read menus.' },
+      { name: 'Mulligan Moe', title: 'Golfer · Desert Vipers', rarity: 'common', art: '🔄', position: 'Golfer', team: 'Desert Vipers', number: 21, flavor: 'Every shot deserves a second chance. He takes three.' },
+      { name: 'Sand Trap Sal', title: 'Chipper · Ironwood Bears', rarity: 'uncommon', art: '🏖️', position: 'Chipper', team: 'Ironwood Bears', number: 33, flavor: 'The bunker is her office. She never leaves.' },
+      { name: 'Birdie Burt', title: 'Golfer · Metro Mammoths', rarity: 'uncommon', art: '🐦', position: 'Golfer', team: 'Metro Mammoths', number: 5, flavor: 'Three under par? He calls that Tuesday.' },
+      { name: 'Eagle Eddie', title: 'Putter · Bay Breakers', rarity: 'rare', art: '🦅', position: 'Putter', team: 'Bay Breakers', number: 18, flavor: 'Two under par on the last hole. The crowd went quiet.' },
+      { name: 'Caddie Carl', title: 'Caddie · Desert Vipers', rarity: 'rare', art: '🎒', position: 'Caddie', team: 'Desert Vipers', number: 9, flavor: 'He knows the yardage. He knows your swing. He knows.' },
+      { name: 'Albatross Al', title: 'Golfer · Ironwood Bears', rarity: 'ultra', art: '🌊', position: 'Golfer', team: 'Ironwood Bears', number: 1, flavor: 'Three under par. Once in a lifetime. Twice for him.' },
+      { name: 'The Golden Putter', title: 'Legendary Golfer · Hall of Fame', rarity: 'secret', art: '✨', position: 'Legendary Golfer', team: 'Hall of Fame', number: 0, flavor: 'Retired in 1962. Still sinks them from anywhere.' },
+    ],
+  },
+  court: {
+    name: 'Court Kings', packPrice: 30, color: '#1d4ed8', desc: 'Parody tennis aces from the fictional Metro League.',
+    cards: [
+      { name: 'Ace Annie', title: 'Singles Star · Metro Mammoths', rarity: 'common', art: '🎾', position: 'Singles Star', team: 'Metro Mammoths', number: 1, flavor: 'Her serve has its own zip code.' },
+      { name: 'Lob Larry', title: 'Baseline Boss · Bay Breakers', rarity: 'common', art: '🎾', position: 'Baseline Boss', team: 'Bay Breakers', number: 12, flavor: 'He lobs. You run. He lobs again.' },
+      { name: 'Net Cord Nate', title: 'Doubles Ace · Desert Vipers', rarity: 'common', art: '🎾', position: 'Doubles Ace', team: 'Desert Vipers', number: 7, flavor: 'The net is his best friend. And his worst enemy.' },
+      { name: 'Topspin Tina', title: 'Singles Star · Ironwood Bears', rarity: 'uncommon', art: '🌀', position: 'Singles Star', team: 'Ironwood Bears', number: 4, flavor: 'Her forehand kicks like a mule in cleats.' },
+      { name: 'Slice Sid', title: 'Baseline Boss · Metro Mammoths', rarity: 'uncommon', art: '🔪', position: 'Baseline Boss', team: 'Metro Mammoths', number: 9, flavor: 'His slice stays low. Your return stays lower.' },
+      { name: 'Volley Vic', title: 'Doubles Ace · Bay Breakers', rarity: 'rare', art: '⚡', position: 'Doubles Ace', team: 'Bay Breakers', number: 3, flavor: 'At the net before the ball knows it left.' },
+      { name: 'Smash Sue', title: 'Singles Star · Desert Vipers', rarity: 'rare', art: '💥', position: 'Singles Star', team: 'Desert Vipers', number: 6, flavor: 'Overheads are not a shot. They are a sentence.' },
+      { name: 'Deuce Dex', title: 'Baseline Boss · Ironwood Bears', rarity: 'ultra', art: '🎯', position: 'Baseline Boss', team: 'Ironwood Bears', number: 2, flavor: 'Forty-all is where he does his best work.' },
+      { name: 'The Grand Slammer', title: 'Legendary Ace · Hall of Fame', rarity: 'secret', art: '🏆', position: 'Legendary Ace', team: 'Hall of Fame', number: 0, flavor: 'Four majors. One summer. No one has matched it.' },
+    ],
+  },
+  asphalt: {
+    name: 'Asphalt Aces', packPrice: 35, color: '#0f172a', desc: 'Parody motorsport drivers from the fictional Metro League.',
+    cards: [
+      { name: 'Nitro Nick', title: 'Driver · Metro Mammoths', rarity: 'common', art: '🏎️', position: 'Driver', team: 'Metro Mammoths', number: 7, flavor: 'He brakes for nothing. Not even the finish line.' },
+      { name: 'Pit Stop Percy', title: 'Pit Boss · Bay Breakers', rarity: 'common', art: '🔧', position: 'Pit Boss', team: 'Bay Breakers', number: 22, flavor: 'Four tires in two seconds. He counts the lug nuts.' },
+      { name: 'Draft Don', title: 'Driver · Desert Vipers', rarity: 'common', art: '💨', position: 'Driver', team: 'Desert Vipers', number: 14, flavor: 'He lives in your slipstream. Rent free.' },
+      { name: 'Turbo Tess', title: 'Sprinter · Ironwood Bears', rarity: 'uncommon', art: '⚡', position: 'Sprinter', team: 'Ironwood Bears', number: 9, flavor: 'Zero to sixty before the light turns green.' },
+      { name: 'Checkered Chet', title: 'Flagger · Metro Mammoths', rarity: 'uncommon', art: '🏁', position: 'Flagger', team: 'Metro Mammoths', number: 5, flavor: 'He waves the flag. History listens.' },
+      { name: 'Apex Andy', title: 'Driver · Bay Breakers', rarity: 'rare', art: '📐', position: 'Driver', team: 'Bay Breakers', number: 3, flavor: 'He hits the apex. Every lap. Every time.' },
+      { name: 'Pole Position Polly', title: 'Driver · Desert Vipers', rarity: 'rare', art: '🥇', position: 'Driver', team: 'Desert Vipers', number: 1, flavor: 'Saturday she qualifies first. Sunday she stays there.' },
+      { name: 'The Speed Phantom', title: 'Sprinter · Ironwood Bears', rarity: 'ultra', art: '👻', position: 'Sprinter', team: 'Ironwood Bears', number: 88, flavor: 'You hear the engine. You never see the car.' },
+      { name: 'The Checkered King', title: 'Legendary Driver · Hall of Fame', rarity: 'secret', art: '🏆', position: 'Legendary Driver', team: 'Hall of Fame', number: 0, flavor: 'Seven titles. Zero rivals. The trophy room is his.' },
+    ],
+  },
+  knockout: {
+    name: 'Knockout Kings', packPrice: 30, color: '#92400e', desc: 'Parody boxers from the fictional Metro League.',
+    cards: [
+      { name: 'Jab Jack', title: 'Featherweight · Metro Mammoths', rarity: 'common', art: '🥊', position: 'Featherweight', team: 'Metro Mammoths', number: 12, flavor: "His jab is a metronome. You just can't dance to it." },
+      { name: 'Hook Hal', title: 'Heavyweight · Bay Breakers', rarity: 'common', art: '🥊', position: 'Heavyweight', team: 'Bay Breakers', number: 9, flavor: 'One hook. Lights out. Goodnight.' },
+      { name: 'Canvas Cam', title: 'Middleweight · Desert Vipers', rarity: 'common', art: '🥊', position: 'Middleweight', team: 'Desert Vipers', number: 21, flavor: "He's been down. He's never stayed down." },
+      { name: 'Southpaw Seth', title: 'Featherweight · Ironwood Bears', rarity: 'uncommon', art: '🥊', position: 'Featherweight', team: 'Ironwood Bears', number: 7, flavor: 'Left hand leads. Right hand ends the debate.' },
+      { name: 'The Bell Ringer', title: 'Heavyweight · Metro Mammoths', rarity: 'uncommon', art: '🔔', position: 'Heavyweight', team: 'Metro Mammoths', number: 33, flavor: 'When the bell rings, so do your ears.' },
+      { name: 'Counterpunch Cal', title: 'Middleweight · Bay Breakers', rarity: 'rare', art: '🎯', position: 'Middleweight', team: 'Bay Breakers', number: 5, flavor: 'You throw first. He throws last. You fall first.' },
+      { name: 'Rope-a-Dope Rob', title: 'Heavyweight · Desert Vipers', rarity: 'rare', art: '🪢', position: 'Heavyweight', team: 'Desert Vipers', number: 8, flavor: 'He leans on the ropes. You lean on the canvas.' },
+      { name: 'The Golden Glove', title: 'Featherweight · Ironwood Bears', rarity: 'ultra', art: '🏆', position: 'Featherweight', team: 'Ironwood Bears', number: 1, flavor: 'Ten title defenses. One dented trophy case.' },
+      { name: 'Iron Jaw Joe', title: 'Legendary Champ · Hall of Fame', rarity: 'secret', art: '👑', position: 'Legendary Champ', team: 'Hall of Fame', number: 0, flavor: 'Fifty fights. Fifty wins. Never knocked down.' },
+    ],
+  },
+  cosmic: {
+    name: 'Cosmic Voyagers', packPrice: 35, color: '#312e81', desc: 'Spacefarers, robots and star-beings from beyond the belt.',
+    cards: [
+      { name: 'Blip Blorp', title: 'Alien · Plasma Pop', rarity: 'common', art: '👽', position: 'Alien', team: null, number: 1, flavor: 'It came in peace. It left with your snacks.' },
+      { name: 'Rusty Rivets', title: 'Robot · Bolt Bash', rarity: 'common', art: '🤖', position: 'Robot', team: null, number: 2, flavor: 'Rust is not a flaw. It is a paint job.' },
+      { name: 'Comet Casey', title: 'Cosmic · Tail Spin', rarity: 'common', art: '☄️', position: 'Cosmic', team: null, number: 3, flavor: 'A comet with a fan club. It signs autographs in the sky.' },
+      { name: 'Nova Nell', title: 'Star · Supernova', rarity: 'uncommon', art: '🌟', position: 'Star', team: null, number: 4, flavor: 'She burns twice as bright. She plans to keep it up.' },
+      { name: 'Orbit Owen', title: 'Pilot · Gravity Loop', rarity: 'uncommon', art: '🧑‍🚀', position: 'Pilot', team: null, number: 5, flavor: 'He has orbited the planet 4,000 times. He still waves.' },
+      { name: 'Moon Mabel', title: 'Alien · Crater Hop', rarity: 'rare', art: '🌙', position: 'Alien', team: null, number: 6, flavor: 'She hops craters like other kids hop puddles.' },
+      { name: 'Laser Lex', title: 'Robot · Beam Blast', rarity: 'rare', art: '🔫', position: 'Robot', team: null, number: 7, flavor: 'Its laser is set to stun. And to dazzle.' },
+      { name: 'The Void Walker', title: 'Cosmic · Event Horizon', rarity: 'ultra', art: '🕳️', position: 'Cosmic', team: null, number: 8, flavor: 'It walks where light gives up.' },
+      { name: 'Captain Quasar', title: 'Star · Galaxy Guard', rarity: 'secret', art: '✨', position: 'Star', team: null, number: 9, flavor: 'Guardian of the galaxy. First of her name. Last of her shift.' },
+    ],
+  },
+  dungeon: {
+    name: 'Dungeon Delvers', packPrice: 35, color: '#292524', desc: 'Knights, wizards and rogues who go down and come back rich.',
+    cards: [
+      { name: 'Sir Bumbles', title: 'Knight · Sword Oath', rarity: 'common', art: '⚔️', position: 'Knight', team: null, number: 1, flavor: 'He has never lost a duel. He has lost several horses.' },
+      { name: 'Glimmer Gob', title: 'Goblin · Sneak Stab', rarity: 'common', art: '👺', position: 'Goblin', team: null, number: 2, flavor: 'It steals your coins. It leaves a thank-you note.' },
+      { name: 'Wanda the Wobbly', title: 'Wizard · Wobble Wand', rarity: 'common', art: '🧙', position: 'Wizard', team: null, number: 3, flavor: 'Her spells wobble. Her aim does not.' },
+      { name: 'Rogue Ray', title: 'Rogue · Shadow Step', rarity: 'uncommon', art: '🗡️', position: 'Rogue', team: null, number: 4, flavor: 'You never see him. You only notice the empty chest.' },
+      { name: 'Potion Pat', title: 'Healer · Brew Blessing', rarity: 'uncommon', art: '🧪', position: 'Healer', team: null, number: 5, flavor: 'One sip and you are fighting fit. Two sips and you glow.' },
+      { name: 'Paladin Pam', title: 'Paladin · Holy Hammer', rarity: 'rare', art: '🛡️', position: 'Paladin', team: null, number: 6, flavor: 'Her hammer rings like a church bell. For justice.' },
+      { name: 'Warlock Walt', title: 'Warlock · Hex Howl', rarity: 'rare', art: '🔮', position: 'Warlock', team: null, number: 7, flavor: 'His hexes howl. His refunds never do.' },
+      { name: 'Bard Barry', title: 'Bard · Lute Loot', rarity: 'ultra', art: '🎵', position: 'Bard', team: null, number: 8, flavor: 'His songs open doors. And wallets. Mostly wallets.' },
+      { name: 'Ash the Ancient', title: 'Dragon · Inferno Wing', rarity: 'secret', art: '🐉', position: 'Dragon', team: null, number: 9, flavor: 'It has guarded the hoard since the first torch was lit.' },
+    ],
+  },
+  haunted: {
+    name: 'Haunted Hollow', packPrice: 25, color: '#450a0a', desc: 'Ghosts, ghouls and things that go bump in the night.',
+    cards: [
+      { name: 'Boo Benson', title: 'Ghost · Midnight Wail', rarity: 'common', art: '👻', position: 'Ghost', team: null, number: 1, flavor: 'He says boo. He means it. He practices.' },
+      { name: 'Vicky the Vampire', title: 'Vampire · Fang Frolic', rarity: 'common', art: '🧛', position: 'Vampire', team: null, number: 2, flavor: 'She only comes out at night. And at brunch.' },
+      { name: 'Wendy the Witch', title: 'Witch · Broom Zoom', rarity: 'common', art: '🧙‍♀️', position: 'Witch', team: null, number: 3, flavor: 'Her broom has a speedometer. It has been clocked.' },
+      { name: 'Zed the Zombie', title: 'Zombie · Brain Munch', rarity: 'uncommon', art: '🧟', position: 'Zombie', team: null, number: 4, flavor: 'He wants your brains. He will settle for a snack.' },
+      { name: 'Perry the Pumpkin', title: 'Pumpkin · Patch Patrol', rarity: 'uncommon', art: '🎃', position: 'Pumpkin', team: null, number: 5, flavor: 'King of the patch. Ruler of nothing else. Content.' },
+      { name: 'Wally the Werewolf', title: 'Werewolf · Howl Prowl', rarity: 'rare', art: '🐺', position: 'Werewolf', team: null, number: 6, flavor: 'He howls at the moon. The moon howls back. It is awkward.' },
+      { name: 'Manny the Mummy', title: 'Mummy · Wrap Rap', rarity: 'rare', art: '🧻', position: 'Mummy', team: null, number: 7, flavor: 'Wrapped for three thousand years. Still fresh.' },
+      { name: 'Sally the Skeleton', title: 'Skeleton · Bone Zone', rarity: 'ultra', art: '💀', position: 'Skeleton', team: null, number: 8, flavor: 'She rattles when she laughs. She laughs a lot.' },
+      { name: 'The Grim Renter', title: 'Reaper · Lease of Life', rarity: 'secret', art: '🪦', position: 'Reaper', team: null, number: 9, flavor: 'He collects the rent. And the souls. Mostly the rent.' },
+    ],
+  },
 };
 
 // ---------- Team colors & humanoid player figures (Gridiron Legends) ----------
@@ -710,16 +823,19 @@ function jerseyInk(jersey) { return (jersey === '#eab308' || jersey === '#e8d27a
 const SKIN_TONES = ['#e8b98a', '#c98d5f', '#8d5a3b', '#f0c8a0'];
 function skinFor(card) { return SKIN_TONES[(card.number || 0) % SKIN_TONES.length]; }
 // Sport per set: figure sets (sports + comic) vs emoji sets (creatures).
-const SET_SPORT = { gridiron: 'football', hardwood: 'basketball', diamond: 'baseball', frozen: 'hockey', pitch: 'soccer', panel: 'comic' };
+const SET_SPORT = { gridiron: 'football', hardwood: 'basketball', diamond: 'baseball', frozen: 'hockey', pitch: 'soccer', panel: 'comic', fairway: 'golf', court: 'tennis', asphalt: 'racing', knockout: 'boxing' };
 function sportFor(card) { return card.sport || SET_SPORT[card.set] || null; }
 function hasFigure(card) { return !!sportFor(card); }
-// Headwear by sport: helmet (football/hockey), headband (basketball),
-// cap (baseball), hair (soccer), mask (comic).
+// Headwear by sport: helmet (football/hockey/racing), headband (basketball/tennis),
+// cap (baseball/golf), hair (soccer/boxing), mask (comic).
 function headwearFor(card) {
   switch (sportFor(card)) {
     case 'basketball': return 'headband';
+    case 'tennis': return 'headband';
     case 'baseball': return 'cap';
+    case 'golf': return 'cap';
     case 'soccer': return 'hair';
+    case 'boxing': return 'hair';
     case 'comic': return 'mask';
     default: return 'helmet';
   }
@@ -732,6 +848,10 @@ const ART_BACKDROPS = {
   frozen: ['#bae6fd', '#7dd3fc'],
   pitch: ['#15803d', '#14532d'],
   panel: ['#7e22ce', '#4c1d95'],
+  fairway: ['#7ec8e3', '#3a9e4f'],
+  court: ['#2563eb', '#1e40af'],
+  asphalt: ['#374151', '#111827'],
+  knockout: ['#c98a4b', '#7c2d12'],
 };
 // Deterministic day/dusk/night art-window variant, so two cards from the
 // same set never share an identical backdrop. Derived from set + name.
@@ -880,6 +1000,23 @@ const POSE_PARTS = {
   'cm-hero':    { torso: { cx: 50, cy: 54, w: 34, h: 38, rot: 0 }, head: { x: 50, y: 27, r: 7.5 }, scale: 1.1, ax: 0.5, lift: 0, motion: [], arms: [[[36,44],[28,58],[40,66]], [[64,44],[72,58],[60,66]]], legs: [[[44,72],[40,104]], [[56,72],[60,104]]], cleats: [[36,106],[64,106]], ball: null, cape: true },
   'cm-fly':     { torso: { cx: 52, cy: 52, w: 34, h: 36, rot: 65 }, head: { x: 30, y: 44, r: 7.5 }, scale: 1.15, ax: 0.5, lift: 14, capeFlip: true, motion: [[80, 40, 96, 36], [78, 58, 94, 56]], arms: [[[36,44],[16,40]], [[64,44],[72,58]]], legs: [[[44,72],[74,58],[88,50]], [[56,72],[72,68],[86,64]]], cleats: [[90,52],[88,66]], ball: null, cape: true },
   'cm-punch':   { torso: { cx: 50, cy: 55, w: 34, h: 38, rot: 20 }, head: { x: 54, y: 29, r: 7.5 }, scale: 1.1, ax: 0.5, lift: 0, motion: [[86, 44, 94, 42]], arms: [[[36,44],[26,60]], [[64,44],[86,44]]], legs: [[[44,72],[30,90],[32,104]], [[56,72],[68,88],[66,102]]], cleats: [[30,106],[68,104]], ball: null, cape: true },
+  // --- Golf (club + white ball; putter is a short club) ---
+  'golf-swing':  { torso: { cx: 50, cy: 55, w: 32, h: 38, rot: -18 }, head: { x: 46, y: 28, r: 7.5 }, scale: 1.05, ax: 0.5, lift: 0, motion: [[88, 20, 96, 14]], arms: [[[36,44],[52,58]], [[64,44],[56,58]]], legs: [[[44,72],[38,104]], [[56,72],[64,104]]], cleats: [[36,106],[66,106]], stick: [[54,56],[86,92]], stickKind: 'golf', ball: [90, 98], ballKind: 'round', ballColor: '#f5f5f5' },
+  'golf-putt':   { torso: { cx: 50, cy: 58, w: 32, h: 36, rot: 25 }, head: { x: 56, y: 34, r: 7.5 }, scale: 1, ax: 0.5, lift: 0, motion: [], arms: [[[36,44],[50,60]], [[64,44],[56,60]]], legs: [[[44,72],[40,104]], [[56,72],[60,104]]], cleats: [[38,106],[62,106]], stick: [[53,58],[60,100]], stickKind: 'golf', ball: [64, 104], ballKind: 'round', ballColor: '#f5f5f5' },
+  'golf-chip':   { torso: { cx: 50, cy: 55, w: 32, h: 38, rot: -10 }, head: { x: 48, y: 28, r: 7.5 }, scale: 1.05, ax: 0.5, lift: 0, motion: [[86, 18, 94, 12]], arms: [[[36,44],[50,56]], [[64,44],[54,56]]], legs: [[[44,72],[40,104]], [[56,72],[66,88],[70,96]]], cleats: [[38,106],[72,98]], stick: [[52,54],[80,88]], stickKind: 'golf', ball: [84, 94], ballKind: 'round', ballColor: '#f5f5f5' },
+  'golf-carry':  { torso: { cx: 50, cy: 55, w: 32, h: 38, rot: 8 }, head: { x: 52, y: 29, r: 7.5 }, scale: 1, ax: 0.5, lift: 0, motion: [], arms: [[[36,44],[24,60]], [[64,44],[76,52]]], legs: [[[44,72],[38,104]], [[56,72],[62,104]]], cleats: [[36,106],[64,106]], ball: null },
+  // --- Tennis (racket + yellow-green ball) ---
+  'tennis-serve':    { torso: { cx: 50, cy: 54, w: 32, h: 38, rot: -8 }, head: { x: 50, y: 27, r: 7.5 }, scale: 1.1, ax: 0.5, lift: 6, motion: [[70, 4, 78, 0]], arms: [[[36,44],[26,50]], [[64,44],[76,16]]], legs: [[[44,72],[40,104]], [[56,72],[62,92],[66,102]]], cleats: [[38,106],[68,104]], stick: [[74,18],[86,6]], stickKind: 'tennis', ball: [62, 8], ballKind: 'round', ballColor: '#c8e64a' },
+  'tennis-forehand': { torso: { cx: 50, cy: 55, w: 32, h: 38, rot: 22 }, head: { x: 54, y: 30, r: 7.5 }, scale: 1.05, ax: 0.5, lift: 0, motion: [[96, 40, 104, 36]], arms: [[[36,44],[30,58]], [[64,44],[84,52]]], legs: [[[44,72],[34,104]], [[56,72],[66,104]]], cleats: [[32,106],[68,106]], stick: [[82,50],[94,44]], stickKind: 'tennis', ball: [98, 38], ballKind: 'round', ballColor: '#c8e64a' },
+  'tennis-volley':   { torso: { cx: 50, cy: 55, w: 32, h: 38, rot: 5 }, head: { x: 50, y: 28, r: 7.5 }, scale: 1, ax: 0.5, lift: 0, motion: [], arms: [[[36,44],[24,52]], [[64,44],[80,44]]], legs: [[[44,72],[38,104]], [[56,72],[62,104]]], cleats: [[36,106],[64,106]], stick: [[78,44],[90,38]], stickKind: 'tennis', ball: null },
+  // --- Motorsport racing (helmet headwear; flagger waves a checkered flag) ---
+  'race-stand':  { torso: { cx: 50, cy: 55, w: 32, h: 38, rot: 0 }, head: { x: 50, y: 28, r: 7.5 }, scale: 1.05, ax: 0.5, lift: 0, motion: [], arms: [[[36,44],[28,62]], [[64,44],[72,58]]], legs: [[[44,72],[40,104]], [[56,72],[60,104]]], cleats: [[38,106],[62,106]], ball: null },
+  'race-podium': { torso: { cx: 50, cy: 54, w: 32, h: 38, rot: 6 }, head: { x: 50, y: 27, r: 7.5 }, scale: 1.05, ax: 0.5, lift: 4, motion: [[20, 30, 12, 28], [80, 30, 88, 28]], arms: [[[36,44],[24,16]], [[64,44],[76,16]]], legs: [[[44,72],[40,104]], [[56,72],[60,104]]], cleats: [[38,106],[62,106]], ball: null },
+  'race-flag':   { torso: { cx: 50, cy: 55, w: 32, h: 38, rot: -8 }, head: { x: 48, y: 28, r: 7.5 }, scale: 1.05, ax: 0.5, lift: 0, motion: [], arms: [[[36,44],[26,52]], [[64,44],[78,20]]], legs: [[[44,72],[40,104]], [[56,72],[60,104]]], cleats: [[38,106],[62,106]], stick: [[76,22],[76,4]], stickKind: 'flag', ball: null },
+  // --- Boxing (red gloves on every pose) ---
+  'box-jab':   { torso: { cx: 50, cy: 55, w: 32, h: 38, rot: 12 }, head: { x: 54, y: 29, r: 7.5 }, scale: 1.05, ax: 0.5, lift: 0, motion: [[88, 40, 96, 38]], arms: [[[36,44],[28,52]], [[64,44],[86,40]]], legs: [[[44,72],[36,104]], [[56,72],[64,104]]], cleats: [[34,106],[66,106]], gloves: true, ball: null },
+  'box-hook':  { torso: { cx: 50, cy: 55, w: 34, h: 38, rot: 25 }, head: { x: 55, y: 30, r: 7.5 }, scale: 1.1, ax: 0.5, lift: 0, motion: [[88, 52, 96, 48]], arms: [[[36,44],[30,58]], [[64,44],[84,52]]], legs: [[[44,72],[32,104]], [[56,72],[68,104]]], cleats: [[30,106],[70,106]], gloves: true, ball: null },
+  'box-guard': { torso: { cx: 50, cy: 56, w: 34, h: 38, rot: 0 }, head: { x: 50, y: 29, r: 7.5 }, scale: 1.05, ax: 0.5, lift: 0, motion: [], arms: [[[36,44],[30,44]], [[64,44],[70,44]]], legs: [[[44,72],[38,104]], [[56,72],[62,104]]], cleats: [[36,106],[64,106]], gloves: true, ball: null },
 };
 // ---------- Drawn scenes (200x120 scene space, shared by SVG + canvas) ----------
 // A real trading card is a photo: a dominant action shot in a real place.
@@ -893,6 +1030,10 @@ const SCENE_COLORS = {
   hockey:     { sky: { day: '#9fc8e8', dusk: '#c98a7a', night: '#141a30' }, ground: { day: '#cfe8f5', dusk: '#a8c8d8', night: '#7a9ab0' }, crowd: '#1c2433' },
   soccer:     { sky: { day: '#7ec8e3', dusk: '#e07a4a', night: '#0b1030' }, ground: { day: '#2e8b47', dusk: '#2a7a3e', night: '#1d5c2e' }, crowd: '#141a26' },
   comic:      { sky: { day: '#8a3fd1', dusk: '#c93a6b', night: '#1a0b2e' }, ground: { day: '#241a33', dusk: '#1c1226', night: '#0d0817' }, crowd: null },
+  golf:       { sky: { day: '#7ec8e3', dusk: '#e07a4a', night: '#0b1030' }, ground: { day: '#3a9e4f', dusk: '#2f7d40', night: '#235c2f' }, crowd: null },
+  tennis:     { sky: { day: '#7ec8e3', dusk: '#e07a4a', night: '#0b1030' }, ground: { day: '#2563eb', dusk: '#1e40af', night: '#172554' }, crowd: '#141a26' },
+  racing:     { sky: { day: '#7ec8e3', dusk: '#e07a4a', night: '#0b1030' }, ground: { day: '#374151', dusk: '#2a2a2a', night: '#111827' }, crowd: '#141a26' },
+  boxing:     { sky: { day: '#c98a4b', dusk: '#8a4a3a', night: '#241a2e' }, ground: { day: '#7c2d12', dusk: '#5a2010', night: '#3a1408' }, crowd: '#1c2433' },
 };
 const CROWD_COLORS = ['#f5f5f5', '#f2b705', '#e5484d', '#4a90e2', '#3fb950', '#f0883e'];
 function svgDots(seed, n, x0, y0, x1, y1, r, colors) {
@@ -954,6 +1095,26 @@ function sceneSVG(card) {
       return `<rect x="0" y="0" width="200" height="46" fill="${sky}"/>${stars}${lights}<rect x="0" y="16" width="200" height="26" fill="${pal.crowd}"/>` + svgDots(seed + 'crowd', 24, 2, 18, 198, 40, 1.6, CROWD_COLORS) +
         `<rect x="0" y="46" width="200" height="74" fill="${ground}"/>${stripes}<circle cx="100" cy="96" r="14" fill="none" stroke="rgba(255,255,255,0.5)" stroke-width="1.5"/><circle cx="100" cy="96" r="1.5" fill="rgba(255,255,255,0.6)"/><g data-el="goal"><rect x="170" y="56" width="26" height="26" fill="none" stroke="#f5f1e6" stroke-width="2"/><path d="M170 63 L196 63 M170 70 L196 70 M170 77 L196 77 M178 56 L178 82 M187 56 L187 82" stroke="#f5f1e6" stroke-width="0.8" opacity="0.6"/></g><g data-el="flag"><rect x="6" y="48" width="2" height="14" fill="#f5f1e6"/><path d="M8 48 L16 51 L8 54 Z" fill="#f2b705"/></g>`;
     }
+    case 'golf': {
+      const stripes = [20, 60, 100, 140, 180].map(x => `<rect x="${x}" y="46" width="20" height="74" fill="rgba(255,255,255,0.05)"/>`).join('');
+      const trees = [[14, 70, 22], [186, 68, 24], [30, 96, 18]].map(([x, y, s]) => `<path d="M${x} ${y} L${x + s / 2} ${y - s} L${x + s} ${y} Z" fill="#1d4d2b"/>`).join('');
+      return `<rect x="0" y="0" width="200" height="46" fill="${sky}"/>${stars}${lights}<rect x="0" y="46" width="200" height="74" fill="${ground}"/>${stripes}${trees}<ellipse cx="70" cy="102" rx="22" ry="6" fill="#e8d27a" opacity="0.85"/><ellipse cx="140" cy="92" rx="30" ry="10" fill="#5cb85c"/><g data-el="flag"><rect x="140" y="52" width="2" height="40" fill="#f5f1e6"/><path d="M142 52 L156 57 L142 62 Z" fill="#e5484d"/></g><circle cx="128" cy="98" r="2.5" fill="#f5f1e6"/>`;
+    }
+    case 'tennis': {
+      return `<rect x="0" y="0" width="200" height="46" fill="${sky}"/>${stars}${lights}<rect x="0" y="16" width="200" height="26" fill="${pal.crowd}"/>` + svgDots(seed + 'crowd', 24, 2, 18, 198, 40, 1.6, CROWD_COLORS) +
+        `<rect x="0" y="46" width="200" height="74" fill="${ground}"/><rect x="20" y="52" width="160" height="62" fill="none" stroke="rgba(255,255,255,0.7)" stroke-width="1.5"/><line x1="20" y1="66" x2="180" y2="66" stroke="rgba(255,255,255,0.5)" stroke-width="1"/><line x1="20" y1="100" x2="180" y2="100" stroke="rgba(255,255,255,0.5)" stroke-width="1"/><line x1="100" y1="52" x2="100" y2="114" stroke="rgba(255,255,255,0.5)" stroke-width="1"/><g data-el="net"><rect x="18" y="76" width="4" height="14" fill="#2b3140"/><rect x="178" y="76" width="4" height="14" fill="#2b3140"/><rect x="22" y="78" width="156" height="10" fill="none" stroke="#f5f1e6" stroke-width="1.5"/><path d="M22 83 L178 83 M60 78 L60 88 M100 78 L100 88 M140 78 L140 88" stroke="#f5f1e6" stroke-width="0.8" opacity="0.6"/></g>`;
+    }
+    case 'racing': {
+      const dashes = [60, 80, 100].map(y => `<rect x="0" y="${y}" width="200" height="2" fill="rgba(250,204,21,0.5)"/>`).join('');
+      const checks = [];
+      for (let r = 0; r < 8; r++) for (let c = 0; c < 2; c++) if ((r + c) % 2 === 0) checks.push(`<rect x="${160 + c * 5}" y="${46 + r * 9}" width="5" height="9" fill="#111827"/>`);
+      return `<rect x="0" y="0" width="200" height="46" fill="${sky}"/>${stars}<rect x="0" y="16" width="200" height="26" fill="${pal.crowd}"/>` + svgDots(seed + 'crowd', 24, 2, 18, 198, 40, 1.6, CROWD_COLORS) +
+        `<rect x="0" y="46" width="200" height="74" fill="${ground}"/>${dashes}${[0, 1, 2, 3, 4, 5, 6, 7, 8, 9].map(i => `<rect x="${i * 20}" y="112" width="20" height="8" fill="${i % 2 ? '#f5f1e6' : '#e5484d'}"/>`).join('')}<g data-el="finish-line"><rect x="160" y="46" width="10" height="72" fill="#f5f1e6"/>${checks.join('')}</g><rect x="0" y="46" width="200" height="3" fill="#f2b705"/>`;
+    }
+    case 'boxing': {
+      return `<rect x="0" y="0" width="200" height="58" fill="${sky}"/>${stars}<rect x="0" y="16" width="200" height="24" fill="${pal.crowd}"/>` + svgDots(seed + 'crowd', 24, 2, 18, 198, 38, 1.6, CROWD_COLORS) +
+        `<rect x="0" y="58" width="200" height="62" fill="${ground}"/><rect x="30" y="66" width="140" height="48" fill="#d9b380"/><rect x="30" y="66" width="140" height="48" fill="none" stroke="#7c2d12" stroke-width="2"/><g data-el="ring"><rect x="34" y="70" width="4" height="40" fill="#2b3140"/><rect x="162" y="70" width="4" height="40" fill="#2b3140"/><path d="M38 74 L162 74 M38 90 L162 90 M38 106 L162 106" stroke="#e5484d" stroke-width="2"/><path d="M38 82 L162 82 M38 98 L162 98" stroke="#f5f1e6" stroke-width="1.5"/></g>`;
+    }
     case 'comic': {
       const burst = [];
       for (let i = 0; i < 12; i++) {
@@ -979,8 +1140,17 @@ function sceneSVG(card) {
 // ---------- Creature habitats ----------
 // Kaiju / critter cards keep their big emoji, but the window behind it is
 // a real habitat drawn from the card's element (title or position).
+// Habitat per element for the new genre sets, keyed by set so the old
+// sets keep their title-based mapping (e.g. Mythic Marvels' Rogue stays arcane).
+const HABITAT_BY_SET = {
+  cosmic: { alien: 'alien', robot: 'robot', cosmic: 'space', star: 'space', pilot: 'space' },
+  dungeon: { knight: 'dungeon', wizard: 'dungeon', rogue: 'dungeon', goblin: 'dungeon', healer: 'dungeon', paladin: 'dungeon', warlock: 'dungeon', bard: 'dungeon', dragon: 'dragon' },
+  haunted: { ghost: 'haunted', vampire: 'haunted', witch: 'haunted', zombie: 'haunted', pumpkin: 'haunted', werewolf: 'haunted', mummy: 'haunted', skeleton: 'haunted', reaper: 'haunted' },
+};
 function habitatFor(card) {
   if (card.set === 'critter') return (card.position || 'arcane').toLowerCase();
+  const bySet = HABITAT_BY_SET[card.set];
+  if (bySet) return bySet[(card.position || '').toLowerCase()] || 'arcane';
   const el = (card.title || '').split(' · ')[0].toLowerCase();
   return ['fire', 'water', 'grass', 'electric', 'ice', 'psychic', 'dragon'].includes(el) ? el : 'arcane';
 }
@@ -1003,6 +1173,16 @@ function habitatSVG(card) {
       return `<svg class="hab-svg" viewBox="0 0 200 120" xmlns="http://www.w3.org/2000/svg" data-habitat="psychic"><rect x="0" y="0" width="200" height="120" fill="#2a1150"/>${stars}<circle cx="160" cy="26" r="12" fill="#f5f1e6"/><circle cx="166" cy="22" r="10" fill="#2a1150"/><circle cx="60" cy="80" r="3" fill="#a371f7"/><circle cx="90" cy="66" r="2" fill="#f2b705"/><circle cx="130" cy="88" r="2.5" fill="#a371f7"/></svg>`;
     case 'dragon':
       return `<svg class="hab-svg" viewBox="0 0 200 120" xmlns="http://www.w3.org/2000/svg" data-habitat="dragon"><rect x="0" y="0" width="200" height="120" fill="#e07a4a"/><ellipse cx="50" cy="26" rx="22" ry="7" fill="rgba(255,255,255,0.5)"/><ellipse cx="150" cy="18" rx="26" ry="8" fill="rgba(255,255,255,0.45)"/><path d="M0 120 L50 52 L100 120 Z" fill="#5a3a5e"/><path d="M70 120 L130 40 L190 120 Z" fill="#3a2a4a"/><path d="M150 120 L185 66 L200 84 L200 120 Z" fill="#5a3a5e"/></svg>`;
+    case 'alien':
+      return `<svg class="hab-svg" viewBox="0 0 200 120" xmlns="http://www.w3.org/2000/svg" data-habitat="alien"><rect x="0" y="0" width="200" height="120" fill="#2a1150"/>${stars}<circle cx="150" cy="26" r="16" fill="#a371f7"/><ellipse cx="150" cy="26" rx="26" ry="6" fill="none" stroke="#f2b705" stroke-width="2" transform="rotate(-18 150 26)"/><rect x="0" y="84" width="200" height="36" fill="#3a8b42"/><circle cx="40" cy="98" r="8" fill="#2e7d32"/><circle cx="120" cy="104" r="6" fill="#2e7d32"/><circle cx="170" cy="96" r="9" fill="#2e7d32"/><circle cx="70" cy="20" r="5" fill="#7ee787"/></svg>`;
+    case 'robot':
+      return `<svg class="hab-svg" viewBox="0 0 200 120" xmlns="http://www.w3.org/2000/svg" data-habitat="robot"><rect x="0" y="0" width="200" height="120" fill="#1c2433"/><path d="M0 30 L200 30 M0 90 L200 90 M40 0 L40 120 M160 0 L160 120" stroke="rgba(255,255,255,0.10)" stroke-width="1"/><circle cx="40" cy="30" r="3" fill="#f2b705"/><circle cx="160" cy="90" r="3" fill="#f2b705"/><circle cx="160" cy="30" r="3" fill="#7ee787"/><circle cx="40" cy="90" r="3" fill="#7ee787"/><circle cx="100" cy="60" r="18" fill="#2b3140" stroke="#f2b705" stroke-width="2"/><circle cx="100" cy="60" r="8" fill="#f2b705"/></svg>`;
+    case 'space':
+      return `<svg class="hab-svg" viewBox="0 0 200 120" xmlns="http://www.w3.org/2000/svg" data-habitat="space"><rect x="0" y="0" width="200" height="120" fill="#0b1030"/>${stars}<ellipse cx="60" cy="90" rx="40" ry="10" fill="rgba(163,113,247,0.25)"/><ellipse cx="140" cy="40" rx="30" ry="8" fill="rgba(242,183,5,0.18)"/><circle cx="150" cy="30" r="18" fill="#e07a4a"/><circle cx="142" cy="24" r="4" fill="#c95a2a"/><circle cx="158" cy="36" r="3" fill="#c95a2a"/><circle cx="40" cy="26" r="8" fill="#f5f1e6"/><circle cx="46" cy="22" r="6" fill="#0b1030"/></svg>`;
+    case 'dungeon':
+      return `<svg class="hab-svg" viewBox="0 0 200 120" xmlns="http://www.w3.org/2000/svg" data-habitat="dungeon"><rect x="0" y="0" width="200" height="120" fill="#292524"/><path d="M0 20 L200 20 M0 50 L200 50 M0 80 L200 80" stroke="rgba(0,0,0,0.4)" stroke-width="2"/><path d="M50 0 L50 20 M150 0 L150 20 M100 20 L100 50 M40 50 L40 80 M160 50 L160 80" stroke="rgba(0,0,0,0.4)" stroke-width="2"/><rect x="0" y="92" width="200" height="28" fill="#1c1917"/><path d="M80 120 L80 92 A20 20 0 0 1 120 92 L120 120 Z" fill="#0d0b0a" stroke="#57534e" stroke-width="2"/><path d="M20 60 L26 44 L32 60 Z" fill="#ff6b35"/><path d="M168 60 L174 44 L180 60 Z" fill="#ff6b35"/><circle cx="26" cy="66" r="3" fill="#ffb35c"/><circle cx="174" cy="66" r="3" fill="#ffb35c"/></svg>`;
+    case 'haunted':
+      return `<svg class="hab-svg" viewBox="0 0 200 120" xmlns="http://www.w3.org/2000/svg" data-habitat="haunted"><rect x="0" y="0" width="200" height="120" fill="#1a0b2e"/><circle cx="160" cy="26" r="16" fill="#f5f1e6"/><path d="M60 120 L60 84 L76 84 L76 72 L88 60 L100 72 L100 84 L116 84 L116 120 Z" fill="#0d0817"/><rect x="86" y="96" width="10" height="24" fill="#1a0b2e" stroke="#f2b705" stroke-width="1"/><rect x="66" y="88" width="6" height="6" fill="#f2b705" opacity="0.8"/><rect x="102" y="88" width="6" height="6" fill="#f2b705" opacity="0.8"/><rect x="0" y="104" width="200" height="16" fill="#0d0817"/><rect x="20" y="96" width="14" height="10" rx="4" fill="#57534e"/><rect x="140" y="98" width="14" height="8" rx="4" fill="#57534e"/><path d="M30 30 Q36 24 42 30 Q48 24 54 30" fill="none" stroke="#1c2433" stroke-width="2"/><path d="M110 16 Q116 10 122 16 Q128 10 134 16" fill="none" stroke="#1c2433" stroke-width="2"/></svg>`;
     default: // arcane (mythic heroes without an element)
       return `<svg class="hab-svg" viewBox="0 0 200 120" xmlns="http://www.w3.org/2000/svg" data-habitat="arcane"><rect x="0" y="0" width="200" height="120" fill="#3a1f6b"/>${stars}<path d="M100 30 A28 28 0 1 1 72 58 A22 22 0 1 0 100 30" fill="none" stroke="#a371f7" stroke-width="2" opacity="0.7"/><circle cx="150" cy="84" r="4" fill="#f2b705"/><circle cx="52" cy="90" r="3" fill="#a371f7"/></svg>`;
   }
@@ -1037,6 +1217,31 @@ function poseFor(card) {
         case 'Defender': return 'sc-header';
         case 'Midfielder': return 'sc-dribble';
         default: return 'sc-kick'; // Striker, Legendary Striker
+      }
+    case 'golf':
+      switch (card.position) {
+        case 'Putter': return 'golf-putt';
+        case 'Chipper': return 'golf-chip';
+        case 'Caddie': return 'golf-carry';
+        default: return 'golf-swing'; // Golfer, Legendary Golfer
+      }
+    case 'tennis':
+      switch (card.position) {
+        case 'Doubles Ace': return 'tennis-volley';
+        case 'Baseline Boss': return 'tennis-forehand';
+        default: return 'tennis-serve'; // Singles Star, Legendary Ace
+      }
+    case 'racing':
+      switch (card.position) {
+        case 'Sprinter': case 'Legendary Driver': return 'race-podium';
+        case 'Flagger': return 'race-flag';
+        default: return 'race-stand'; // Driver, Pit Boss
+      }
+    case 'boxing':
+      switch (card.position) {
+        case 'Featherweight': return 'box-jab';
+        case 'Heavyweight': return 'box-hook';
+        default: return 'box-guard'; // Middleweight, Legendary Champ
       }
     case 'comic':
       switch (card.position) {
@@ -1083,8 +1288,13 @@ function playerFigureSVG(card) {
   const torso = `<g transform="rotate(${t.rot} ${t.cx} ${t.cy})"><rect x="${t.cx - t.w / 2}" y="${t.cy - t.h / 2}" width="${t.w}" height="${t.h}" rx="8" fill="${spec.jersey}"/><ellipse cx="${t.cx - t.w / 2 + 2}" cy="${t.cy - t.h / 2 + 4}" rx="7" ry="5" fill="${spec.jersey}"/><ellipse cx="${t.cx + t.w / 2 - 2}" cy="${t.cy - t.h / 2 + 4}" rx="7" ry="5" fill="${spec.jersey}"/></g>`;
   const stick = parts.stick
     ? `<path d="M${parts.stick[0][0]} ${parts.stick[0][1]} L${parts.stick[1][0]} ${parts.stick[1][1]}" stroke="${parts.stickKind === 'bat' ? '#d9b380' : '#c9a06a'}" stroke-width="${parts.stickKind === 'bat' ? 5 : 3.5}" stroke-linecap="round" fill="none"/>` +
-      (parts.stickKind === 'hockey' ? `<path d="M${parts.stick[1][0]} ${parts.stick[1][1]} L${parts.stick[1][0] + 9} ${parts.stick[1][1] + 2}" stroke="#c9a06a" stroke-width="4" stroke-linecap="round" fill="none"/>` : '')
+      (parts.stickKind === 'hockey' ? `<path d="M${parts.stick[1][0]} ${parts.stick[1][1]} L${parts.stick[1][0] + 9} ${parts.stick[1][1] + 2}" stroke="#c9a06a" stroke-width="4" stroke-linecap="round" fill="none"/>` : '') +
+      (parts.stickKind === 'golf' ? `<path d="M${parts.stick[1][0]} ${parts.stick[1][1]} L${parts.stick[1][0] + 6} ${parts.stick[1][1] + 2}" stroke="#c9a06a" stroke-width="3.5" stroke-linecap="round" fill="none"/>` : '') +
+      (parts.stickKind === 'tennis' ? `<ellipse cx="${parts.stick[1][0]}" cy="${parts.stick[1][1]}" rx="7" ry="9" fill="none" stroke="#c9a06a" stroke-width="2.5" transform="rotate(30 ${parts.stick[1][0]} ${parts.stick[1][1]})"/><path d="M${parts.stick[1][0] - 4} ${parts.stick[1][1] - 2} L${parts.stick[1][0] + 4} ${parts.stick[1][1] + 2} M${parts.stick[1][0] - 4} ${parts.stick[1][1] + 2} L${parts.stick[1][0] + 4} ${parts.stick[1][1] - 2}" stroke="#c9a06a" stroke-width="1" opacity="0.7"/>` : '') +
+      (parts.stickKind === 'flag' ? `<rect x="${parts.stick[1][0]}" y="${parts.stick[1][1]}" width="16" height="12" fill="#f5f1e6" stroke="#111827" stroke-width="0.5"/><path d="M${parts.stick[1][0] + 4} ${parts.stick[1][1]} h4 v4 h-4 z M${parts.stick[1][0] + 12} ${parts.stick[1][1]} h4 v4 h-4 z M${parts.stick[1][0]} ${parts.stick[1][1] + 4} h4 v4 h-4 z M${parts.stick[1][0] + 8} ${parts.stick[1][1] + 4} h4 v4 h-4 z M${parts.stick[1][0] + 4} ${parts.stick[1][1] + 8} h4 v4 h-4 z M${parts.stick[1][0] + 12} ${parts.stick[1][1] + 8} h4 v4 h-4 z" fill="#111827"/>` : '')
     : '';
+  // Boxing gloves: red circles at the hand end of each arm.
+  const gloves = parts.gloves ? parts.arms.map(a => { const p = a[a.length - 1]; return `<circle cx="${p[0]}" cy="${p[1]}" r="5" fill="#c0392b"/>`; }).join('') : '';
   const ball = (() => {
     if (!parts.ball) return '';
     const [bx, by] = parts.ball;
@@ -1124,7 +1334,7 @@ function playerFigureSVG(card) {
   }
   const shadow = `<ellipse cx="${(axFrac * 200).toFixed(1)}" cy="116" rx="${(26 * s).toFixed(1)}" ry="4" fill="rgba(0,0,0,0.35)"/>`;
   const afroBack = (headwear === 'hair' && spec.hair === 'afro') ? `<circle cx="${hx}" cy="${hy - 4}" r="12" fill="${spec.hairColor}"/>` : '';
-  return `<svg viewBox="0 0 200 120" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="${esc(card.name)}" data-sport="${sport}" data-pose="${spec.pose}" data-headwear="${headwear}" data-scene="${sport}" data-variant="${spec.scene}" data-anchor="${spec.anchor}" data-hair="${spec.hair}"${parts.cape ? ' data-cape="1"' : ''}${parts.skates ? ' data-skates="1"' : ''}${parts.stick ? ' data-stick="1"' : ''}${parts.ball ? ' data-ball="' + (parts.ballKind || 'football') + '"' : ''}>${sceneSVG(card)}${shadow}<g transform="translate(${tx.toFixed(1)} ${ty.toFixed(1)}) scale(${s})"><g${op}${lean ? ` transform="rotate(${lean} 50 75)"` : ''}>${glow}${motion}${cape}${legs}${cleats}${torso}${arms}${stick}<text x="${t.cx}" y="${t.cy + 5}" text-anchor="middle" font-size="15" font-weight="800" fill="${jerseyInk(spec.jersey)}" font-family="system-ui, sans-serif">${spec.num}</text>${neck}${afroBack}<circle cx="${hx}" cy="${hy}" r="${hr}" fill="${spec.skin}"/>${head}${ball}</g></g></svg>`;
+  return `<svg viewBox="0 0 200 120" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="${esc(card.name)}" data-sport="${sport}" data-pose="${spec.pose}" data-headwear="${headwear}" data-scene="${sport}" data-variant="${spec.scene}" data-anchor="${spec.anchor}" data-hair="${spec.hair}"${parts.cape ? ' data-cape="1"' : ''}${parts.skates ? ' data-skates="1"' : ''}${parts.stick ? ' data-stick="1"' : ''}${parts.gloves ? ' data-gloves="1"' : ''}${parts.ball ? ' data-ball="' + (parts.ballKind || 'football') + '"' : ''}>${sceneSVG(card)}${shadow}<g transform="translate(${tx.toFixed(1)} ${ty.toFixed(1)}) scale(${s})"><g${op}${lean ? ` transform="rotate(${lean} 50 75)"` : ''}>${glow}${motion}${cape}${legs}${cleats}${torso}${arms}${gloves}${stick}<text x="${t.cx}" y="${t.cy + 5}" text-anchor="middle" font-size="15" font-weight="800" fill="${jerseyInk(spec.jersey)}" font-family="system-ui, sans-serif">${spec.num}</text>${neck}${afroBack}<circle cx="${hx}" cy="${hy}" r="${hr}" fill="${spec.skin}"/>${head}${ball}</g></g></svg>`;
 }
 // Art window content for the HTML card face. Figure cards get the full
 // drawn scene (playerFigureSVG carries scene + figure in one SVG); creature
@@ -1331,6 +1541,61 @@ function drawScene(ctx, ax, ay, aw, ah, card) {
     ctx.fillStyle = '#f5f1e6'; ctx.fillRect(6, 48, 2, 14);
     ctx.fillStyle = '#f2b705';
     ctx.beginPath(); ctx.moveTo(8, 48); ctx.lineTo(16, 51); ctx.lineTo(8, 54); ctx.closePath(); ctx.fill();
+  } else if (sport === 'golf') {
+    floodlight(12); floodlight(185);
+    ctx.fillStyle = ground; ctx.fillRect(0, 46, 200, 74);
+    ctx.fillStyle = 'rgba(255,255,255,0.05)';
+    for (const x of [20, 60, 100, 140, 180]) ctx.fillRect(x, 46, 20, 74);
+    ctx.fillStyle = '#1d4d2b';
+    for (const [x, y, s] of [[14, 70, 22], [186, 68, 24], [30, 96, 18]]) {
+      ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(x + s / 2, y - s); ctx.lineTo(x + s, y); ctx.closePath(); ctx.fill();
+    }
+    ctx.fillStyle = 'rgba(232,210,122,0.85)';
+    ctx.beginPath(); ctx.ellipse(70, 102, 22, 6, 0, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = '#5cb85c';
+    ctx.beginPath(); ctx.ellipse(140, 92, 30, 10, 0, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = '#f5f1e6'; ctx.fillRect(140, 52, 2, 40);
+    ctx.fillStyle = '#e5484d';
+    ctx.beginPath(); ctx.moveTo(142, 52); ctx.lineTo(156, 57); ctx.lineTo(142, 62); ctx.closePath(); ctx.fill();
+    ctx.fillStyle = '#f5f1e6';
+    ctx.beginPath(); ctx.arc(128, 98, 2.5, 0, Math.PI * 2); ctx.fill();
+  } else if (sport === 'tennis') {
+    floodlight(12); floodlight(185);
+    crowdBand(16, 42);
+    ctx.fillStyle = ground; ctx.fillRect(0, 46, 200, 74);
+    ctx.strokeStyle = 'rgba(255,255,255,0.7)'; ctx.lineWidth = 1.5;
+    ctx.strokeRect(20, 52, 160, 62);
+    ctx.strokeStyle = 'rgba(255,255,255,0.5)'; ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(20, 66); ctx.lineTo(180, 66); ctx.moveTo(20, 100); ctx.lineTo(180, 100); ctx.moveTo(100, 52); ctx.lineTo(100, 114); ctx.stroke();
+    ctx.fillStyle = '#2b3140';
+    ctx.fillRect(18, 76, 4, 14); ctx.fillRect(178, 76, 4, 14);
+    ctx.strokeStyle = '#f5f1e6'; ctx.lineWidth = 1.5;
+    ctx.strokeRect(22, 78, 156, 10);
+    ctx.lineWidth = 0.8; ctx.globalAlpha = 0.6;
+    ctx.beginPath(); ctx.moveTo(22, 83); ctx.lineTo(178, 83); ctx.moveTo(60, 78); ctx.lineTo(60, 88); ctx.moveTo(100, 78); ctx.lineTo(100, 88); ctx.moveTo(140, 78); ctx.lineTo(140, 88); ctx.stroke();
+    ctx.globalAlpha = 1;
+  } else if (sport === 'racing') {
+    crowdBand(16, 42);
+    ctx.fillStyle = ground; ctx.fillRect(0, 46, 200, 74);
+    ctx.fillStyle = 'rgba(250,204,21,0.5)';
+    for (const y of [60, 80, 100]) ctx.fillRect(0, y, 200, 2);
+    for (let i = 0; i < 10; i++) { ctx.fillStyle = i % 2 ? '#f5f1e6' : '#e5484d'; ctx.fillRect(i * 20, 112, 20, 8); }
+    ctx.fillStyle = '#f5f1e6'; ctx.fillRect(160, 46, 10, 72);
+    ctx.fillStyle = '#111827';
+    for (let r = 0; r < 8; r++) for (let c = 0; c < 2; c++) if ((r + c) % 2 === 0) ctx.fillRect(160 + c * 5, 46 + r * 9, 5, 9);
+    ctx.fillStyle = '#f2b705'; ctx.fillRect(0, 46, 200, 3);
+  } else if (sport === 'boxing') {
+    crowdBand(16, 40);
+    ctx.fillStyle = ground; ctx.fillRect(0, 58, 200, 62);
+    ctx.fillStyle = '#d9b380'; ctx.fillRect(30, 66, 140, 48);
+    ctx.strokeStyle = '#7c2d12'; ctx.lineWidth = 2;
+    ctx.strokeRect(30, 66, 140, 48);
+    ctx.fillStyle = '#2b3140';
+    ctx.fillRect(34, 70, 4, 40); ctx.fillRect(162, 70, 4, 40);
+    ctx.strokeStyle = '#e5484d'; ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.moveTo(38, 74); ctx.lineTo(162, 74); ctx.moveTo(38, 90); ctx.lineTo(162, 90); ctx.moveTo(38, 106); ctx.lineTo(162, 106); ctx.stroke();
+    ctx.strokeStyle = '#f5f1e6'; ctx.lineWidth = 1.5;
+    ctx.beginPath(); ctx.moveTo(38, 82); ctx.lineTo(162, 82); ctx.moveTo(38, 98); ctx.lineTo(162, 98); ctx.stroke();
   } else if (sport === 'comic') {
     ctx.strokeStyle = 'rgba(255,255,255,0.10)'; ctx.lineWidth = 3;
     for (let i = 0; i < 12; i++) {
@@ -1446,6 +1711,88 @@ function drawHabitat(ctx, ax, ay, aw, ah, card) {
     ctx.beginPath(); ctx.moveTo(70, 120); ctx.lineTo(130, 40); ctx.lineTo(190, 120); ctx.closePath(); ctx.fill();
     ctx.fillStyle = '#5a3a5e';
     ctx.beginPath(); ctx.moveTo(150, 120); ctx.lineTo(185, 66); ctx.lineTo(200, 84); ctx.lineTo(200, 120); ctx.closePath(); ctx.fill();
+  } else if (hab === 'alien') {
+    ctx.fillStyle = '#2a1150'; ctx.fillRect(0, 0, 200, 120);
+    canvasDots(ctx, seed + 'stars', 12, 4, 2, 196, 40, 1.1, ['#ffffff']);
+    ctx.fillStyle = '#a371f7';
+    ctx.beginPath(); ctx.arc(150, 26, 16, 0, Math.PI * 2); ctx.fill();
+    ctx.strokeStyle = '#f2b705'; ctx.lineWidth = 2;
+    ctx.save(); ctx.translate(150, 26); ctx.rotate(-18 * Math.PI / 180);
+    ctx.beginPath(); ctx.ellipse(0, 0, 26, 6, 0, 0, Math.PI * 2); ctx.stroke(); ctx.restore();
+    ctx.fillStyle = '#3a8b42'; ctx.fillRect(0, 84, 200, 36);
+    ctx.fillStyle = '#2e7d32';
+    ctx.beginPath(); ctx.arc(40, 98, 8, 0, Math.PI * 2); ctx.fill();
+    ctx.beginPath(); ctx.arc(120, 104, 6, 0, Math.PI * 2); ctx.fill();
+    ctx.beginPath(); ctx.arc(170, 96, 9, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = '#7ee787';
+    ctx.beginPath(); ctx.arc(70, 20, 5, 0, Math.PI * 2); ctx.fill();
+  } else if (hab === 'robot') {
+    ctx.fillStyle = '#1c2433'; ctx.fillRect(0, 0, 200, 120);
+    ctx.strokeStyle = 'rgba(255,255,255,0.10)'; ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(0, 30); ctx.lineTo(200, 30); ctx.moveTo(0, 90); ctx.lineTo(200, 90); ctx.moveTo(40, 0); ctx.lineTo(40, 120); ctx.moveTo(160, 0); ctx.lineTo(160, 120); ctx.stroke();
+    ctx.fillStyle = '#f2b705';
+    ctx.beginPath(); ctx.arc(40, 30, 3, 0, Math.PI * 2); ctx.fill();
+    ctx.beginPath(); ctx.arc(160, 90, 3, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = '#7ee787';
+    ctx.beginPath(); ctx.arc(160, 30, 3, 0, Math.PI * 2); ctx.fill();
+    ctx.beginPath(); ctx.arc(40, 90, 3, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = '#2b3140';
+    ctx.beginPath(); ctx.arc(100, 60, 18, 0, Math.PI * 2); ctx.fill();
+    ctx.strokeStyle = '#f2b705'; ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.arc(100, 60, 18, 0, Math.PI * 2); ctx.stroke();
+    ctx.fillStyle = '#f2b705';
+    ctx.beginPath(); ctx.arc(100, 60, 8, 0, Math.PI * 2); ctx.fill();
+  } else if (hab === 'space') {
+    ctx.fillStyle = '#0b1030'; ctx.fillRect(0, 0, 200, 120);
+    canvasDots(ctx, seed + 'stars', 12, 4, 2, 196, 40, 1.1, ['#ffffff']);
+    ctx.fillStyle = 'rgba(163,113,247,0.25)';
+    ctx.beginPath(); ctx.ellipse(60, 90, 40, 10, 0, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = 'rgba(242,183,5,0.18)';
+    ctx.beginPath(); ctx.ellipse(140, 40, 30, 8, 0, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = '#e07a4a';
+    ctx.beginPath(); ctx.arc(150, 30, 18, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = '#c95a2a';
+    ctx.beginPath(); ctx.arc(142, 24, 4, 0, Math.PI * 2); ctx.fill();
+    ctx.beginPath(); ctx.arc(158, 36, 3, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = '#f5f1e6';
+    ctx.beginPath(); ctx.arc(40, 26, 8, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = '#0b1030';
+    ctx.beginPath(); ctx.arc(46, 22, 6, 0, Math.PI * 2); ctx.fill();
+  } else if (hab === 'dungeon') {
+    ctx.fillStyle = '#292524'; ctx.fillRect(0, 0, 200, 120);
+    ctx.strokeStyle = 'rgba(0,0,0,0.4)'; ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.moveTo(0, 20); ctx.lineTo(200, 20); ctx.moveTo(0, 50); ctx.lineTo(200, 50); ctx.moveTo(0, 80); ctx.lineTo(200, 80); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(50, 0); ctx.lineTo(50, 20); ctx.moveTo(150, 0); ctx.lineTo(150, 20); ctx.moveTo(100, 20); ctx.lineTo(100, 50); ctx.moveTo(40, 50); ctx.lineTo(40, 80); ctx.moveTo(160, 50); ctx.lineTo(160, 80); ctx.stroke();
+    ctx.fillStyle = '#1c1917'; ctx.fillRect(0, 92, 200, 28);
+    ctx.fillStyle = '#0d0b0a';
+    ctx.beginPath(); ctx.moveTo(80, 120); ctx.lineTo(80, 92); ctx.arc(100, 92, 20, Math.PI, 0); ctx.lineTo(120, 120); ctx.closePath(); ctx.fill();
+    ctx.strokeStyle = '#57534e'; ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.moveTo(80, 120); ctx.lineTo(80, 92); ctx.arc(100, 92, 20, Math.PI, 0); ctx.lineTo(120, 120); ctx.stroke();
+    ctx.fillStyle = '#ff6b35';
+    ctx.beginPath(); ctx.moveTo(20, 60); ctx.lineTo(26, 44); ctx.lineTo(32, 60); ctx.closePath(); ctx.fill();
+    ctx.beginPath(); ctx.moveTo(168, 60); ctx.lineTo(174, 44); ctx.lineTo(180, 60); ctx.closePath(); ctx.fill();
+    ctx.fillStyle = '#ffb35c';
+    ctx.beginPath(); ctx.arc(26, 66, 3, 0, Math.PI * 2); ctx.fill();
+    ctx.beginPath(); ctx.arc(174, 66, 3, 0, Math.PI * 2); ctx.fill();
+  } else if (hab === 'haunted') {
+    ctx.fillStyle = '#1a0b2e'; ctx.fillRect(0, 0, 200, 120);
+    ctx.fillStyle = '#f5f1e6';
+    ctx.beginPath(); ctx.arc(160, 26, 16, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = '#0d0817';
+    ctx.beginPath(); ctx.moveTo(60, 120); ctx.lineTo(60, 84); ctx.lineTo(76, 84); ctx.lineTo(76, 72); ctx.lineTo(88, 60); ctx.lineTo(100, 72); ctx.lineTo(100, 84); ctx.lineTo(116, 84); ctx.lineTo(116, 120); ctx.closePath(); ctx.fill();
+    ctx.strokeStyle = '#f2b705'; ctx.lineWidth = 1;
+    ctx.strokeRect(86, 96, 10, 24);
+    ctx.fillStyle = 'rgba(242,183,5,0.8)';
+    ctx.fillRect(66, 88, 6, 6); ctx.fillRect(102, 88, 6, 6);
+    ctx.fillStyle = '#0d0817'; ctx.fillRect(0, 104, 200, 16);
+    ctx.fillStyle = '#57534e';
+    ctx.beginPath(); ctx.ellipse(27, 101, 7, 5, 0, Math.PI, 0); ctx.fill();
+    ctx.fillRect(20, 96, 14, 10);
+    ctx.beginPath(); ctx.ellipse(147, 102, 7, 4, 0, Math.PI, 0); ctx.fill();
+    ctx.fillRect(140, 98, 14, 8);
+    ctx.strokeStyle = '#1c2433'; ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.moveTo(30, 30); ctx.quadraticCurveTo(36, 24, 42, 30); ctx.quadraticCurveTo(48, 24, 54, 30); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(110, 16); ctx.quadraticCurveTo(116, 10, 122, 16); ctx.quadraticCurveTo(128, 10, 134, 16); ctx.stroke();
   } else { // arcane
     ctx.fillStyle = '#3a1f6b'; ctx.fillRect(0, 0, 200, 120);
     canvasDots(ctx, seed + 'stars', 12, 4, 2, 196, 40, 1.1, ['#ffffff']);
@@ -1529,7 +1876,14 @@ function drawPlayerFigure(ctx, ax, ay, aw, ah, card) {
     for (let i = 1; i < a.length; i++) ctx.lineTo(a[i][0], a[i][1]);
     ctx.stroke();
   }
-  if (parts.stick) { // bat (baseball) or stick + blade (hockey)
+  if (parts.gloves) { // boxing gloves: red circles at the hand end of each arm
+    ctx.fillStyle = '#c0392b';
+    for (const a of parts.arms) {
+      const p = a[a.length - 1];
+      ctx.beginPath(); ctx.arc(p[0], p[1], 5, 0, Math.PI * 2); ctx.fill();
+    }
+  }
+  if (parts.stick) { // bat (baseball), stick + blade (hockey), club (golf), racket (tennis), flag (racing)
     ctx.strokeStyle = parts.stickKind === 'bat' ? '#d9b380' : '#c9a06a';
     ctx.lineWidth = parts.stickKind === 'bat' ? 5 : 3.5;
     ctx.beginPath(); ctx.moveTo(parts.stick[0][0], parts.stick[0][1]);
@@ -1538,6 +1892,22 @@ function drawPlayerFigure(ctx, ax, ay, aw, ah, card) {
       ctx.lineWidth = 4;
       ctx.beginPath(); ctx.moveTo(parts.stick[1][0], parts.stick[1][1]);
       ctx.lineTo(parts.stick[1][0] + 9, parts.stick[1][1] + 2); ctx.stroke();
+    } else if (parts.stickKind === 'golf') {
+      ctx.lineWidth = 3.5;
+      ctx.beginPath(); ctx.moveTo(parts.stick[1][0], parts.stick[1][1]);
+      ctx.lineTo(parts.stick[1][0] + 6, parts.stick[1][1] + 2); ctx.stroke();
+    } else if (parts.stickKind === 'tennis') {
+      ctx.save(); ctx.translate(parts.stick[1][0], parts.stick[1][1]); ctx.rotate(30 * Math.PI / 180);
+      ctx.strokeStyle = '#c9a06a'; ctx.lineWidth = 2.5;
+      ctx.beginPath(); ctx.ellipse(0, 0, 7, 9, 0, 0, Math.PI * 2); ctx.stroke();
+      ctx.lineWidth = 1; ctx.globalAlpha = 0.7;
+      ctx.beginPath(); ctx.moveTo(-4, -2); ctx.lineTo(4, 2); ctx.moveTo(-4, 2); ctx.lineTo(4, -2); ctx.stroke();
+      ctx.globalAlpha = 1; ctx.restore();
+    } else if (parts.stickKind === 'flag') {
+      const fx = parts.stick[1][0], fy = parts.stick[1][1];
+      ctx.fillStyle = '#f5f1e6'; ctx.fillRect(fx, fy, 16, 12);
+      ctx.fillStyle = '#111827';
+      for (const [sx, sy] of [[4, 0], [12, 0], [0, 4], [8, 4], [4, 8], [12, 8]]) ctx.fillRect(fx + sx, fy + sy, 4, 4);
     }
   }
   const jnum = spec.num;
@@ -1822,7 +2192,7 @@ const ROOKIE_MULT = 1.6;
 const AUTO_MULT = 3;
 const AUTO_ODDS = { sports: 0.03, other: 0.015 };
 // A player's first card carries the RC logo. One or two per sports set.
-const ROOKIES = new Set(['Dash Okafor', 'Rocket Reeves', 'Crossover Cole', 'Fadeaway Fred', 'Fastball Phil', 'Changeup Chuck', 'Puck Norris', 'Power Play Paul', 'Nutmeg Ned', 'Striker Steve']);
+const ROOKIES = new Set(['Dash Okafor', 'Rocket Reeves', 'Crossover Cole', 'Fadeaway Fred', 'Fastball Phil', 'Changeup Chuck', 'Puck Norris', 'Power Play Paul', 'Nutmeg Ned', 'Striker Steve', 'Bogey Briggs', 'Eagle Eddie', 'Ace Annie', 'Volley Vic', 'Nitro Nick', 'Apex Andy', 'Jab Jack', 'Counterpunch Cal']);
 function isSportsCard(card) { const s = sportFor(card); return !!s && s !== 'comic'; }
 function rollParallel() {
   const r = rand(); let acc = 0;
@@ -4503,24 +4873,53 @@ function selfTest() {
       return html.indexOf('tc-name') !== -1 && html.indexOf('tc-art stadium') !== -1 && html.indexOf('<svg') !== -1 &&
         html.indexOf('tc-flavor') !== -1 && html.indexOf('#' + c.collectorNo + '/9') !== -1;
     })());
-    // 13. New sets: 9 sets, 9 cards each, 3/2/2/1/1 rarity split
-    ok('nine sets present', Object.keys(SETS).length === 9);
-    ok('every set has 9 cards except mythic (8)', Object.values(SETS).every(s => s.cards.length === 9) || (SETS.mythic.cards.length === 8 && Object.values(SETS).filter(s => s.cards.length === 9).length === 8));
-    ok('new sets follow the 3/2/2/1/1 rarity split', ['hardwood', 'diamond', 'frozen', 'pitch', 'panel', 'critter'].every(k => {
+    // 13. New sets: 16 sets, 9 cards each, 3/2/2/1/1 rarity split
+    ok('sixteen sets present', Object.keys(SETS).length === 16);
+    ok('every set has 9 cards except mythic (8)', Object.values(SETS).every(s => s.cards.length === 9) || (SETS.mythic.cards.length === 8 && Object.values(SETS).filter(s => s.cards.length === 9).length === 15));
+    ok('new sets follow the 3/2/2/1/1 rarity split', ['hardwood', 'diamond', 'frozen', 'pitch', 'panel', 'critter', 'fairway', 'court', 'asphalt', 'knockout', 'cosmic', 'dungeon', 'haunted'].every(k => {
       const counts = {};
       for (const c of SETS[k].cards) counts[c.rarity] = (counts[c.rarity] || 0) + 1;
       return counts.common === 3 && counts.uncommon === 2 && counts.rare === 2 && counts.ultra === 1 && counts.secret === 1;
     }));
     ok('existing sets unchanged (kaiju 9, mythic 8, gridiron 9)', SETS.kaiju.cards.length === 9 && SETS.mythic.cards.length === 8 && SETS.gridiron.cards.length === 9);
-    ok('new sports/comic cards have figures with headwear + number', ['hardwood', 'diamond', 'frozen', 'pitch', 'panel'].every(k => SETS[k].cards.every(d => {
+    ok('new sports/comic cards have figures with headwear + number', ['hardwood', 'diamond', 'frozen', 'pitch', 'panel', 'fairway', 'court', 'asphalt', 'knockout'].every(k => SETS[k].cards.every(d => {
       const svg = playerFigureSVG({ name: d.name, position: d.position, team: d.team, number: d.number, set: k, sport: SET_SPORT[k] });
       return svg.indexOf('<svg') === 0 && svg.indexOf(String(d.number).padStart(2, '0')) !== -1 && svg.indexOf('data-headwear=') !== -1;
     })));
-    ok('each sport has at least 3 distinct poses', ['hardwood', 'diamond', 'frozen', 'pitch', 'panel'].every(k => {
+    ok('each sport has at least 3 distinct poses', ['hardwood', 'diamond', 'frozen', 'pitch', 'panel', 'fairway', 'court', 'asphalt', 'knockout'].every(k => {
       const poses = new Set(SETS[k].cards.map(d => poseFor({ name: d.name, position: d.position, set: k, sport: SET_SPORT[k] })));
       return poses.size >= 3;
     }));
-    ok('no real names in new sets', ['hardwood', 'diamond', 'frozen', 'pitch', 'panel', 'critter'].every(k => SETS[k].cards.every(d => !/(lebron|jordan|curry|kobe|messi|ronaldo|ohtani|pikachu|charizard|batman|superman|yankees|lakers)/i.test(d.name + ' ' + d.title + ' ' + (d.team || '')))));
+    ok('no real names in new sets', ['hardwood', 'diamond', 'frozen', 'pitch', 'panel', 'critter', 'fairway', 'court', 'asphalt', 'knockout', 'cosmic', 'dungeon', 'haunted'].every(k => SETS[k].cards.every(d => !/(lebron|jordan|curry|kobe|messi|ronaldo|ohtani|pikachu|charizard|batman|superman|yankees|lakers|tiger woods|federer|nadal|djokovic|hamilton|verstappen|senna|schumacher|tyson|mayweather|pacquiao)/i.test(d.name + ' ' + d.title + ' ' + (d.team || '')))));
+    ok('new card names unique across all 16 sets (143 total)', (() => {
+      const names = Object.values(SETS).flatMap(s => s.cards.map(c => c.name));
+      return names.length === 143 && new Set(names).size === 143;
+    })());
+    ok('new genre sets render emoji on a habitat scene', (() => {
+      for (const k of ['cosmic', 'dungeon', 'haunted']) {
+        for (let i = 0; i < 9; i++) {
+          const c = makeCard(k, RARITY_ORDER[i % RARITY_ORDER.length]);
+          const html = cardFaceHTML(c);
+          if (html.indexOf(c.art) === -1 || html.indexOf('hab-') === -1) return false;
+        }
+      }
+      return true;
+    })());
+    ok('new sport scenes carry their landmark element', (() => {
+      const mark = { fairway: 'flag', court: 'net', asphalt: 'finish-line', knockout: 'ring' };
+      return Object.entries(mark).every(([k, el]) => {
+        const c = makeCard(k, 'common');
+        return sceneSVG(c).indexOf('data-el="' + el + '"') !== -1;
+      });
+    })());
+    ok('boxing cards wear gloves', (() => {
+      return SETS.knockout.cards.every(d => {
+        const svg = playerFigureSVG({ name: d.name, position: d.position, team: d.team, number: d.number, set: 'knockout', sport: 'boxing' });
+        return svg.indexOf('data-gloves="1"') !== -1;
+      });
+    })());
+    ok('new pack prices sit in the 25-35 band', ['fairway', 'court', 'asphalt', 'knockout', 'cosmic', 'dungeon', 'haunted'].every(k => SETS[k].packPrice >= 25 && SETS[k].packPrice <= 35));
+    ok('shop lists all 16 sets', (() => { renderShop(); return $('packs').querySelectorAll('.pack').length === 16; })());
     ok('critter clash keeps emoji art on a habitat scene', (() => {
       for (let i = 0; i < 9; i++) {
         const c = makeCard('critter', RARITY_ORDER[i % RARITY_ORDER.length]);
@@ -4530,7 +4929,7 @@ function selfTest() {
       return true;
     })());
     ok('makeCard collector numbers valid for new sets', (() => {
-      for (const k of ['hardwood', 'diamond', 'frozen', 'pitch', 'panel', 'critter']) {
+      for (const k of ['hardwood', 'diamond', 'frozen', 'pitch', 'panel', 'critter', 'fairway', 'court', 'asphalt', 'knockout', 'cosmic', 'dungeon', 'haunted']) {
         for (let i = 0; i < 10; i++) {
           const c = makeCard(k, RARITY_ORDER[i % RARITY_ORDER.length]);
           if (!(c.collectorNo >= 1 && c.collectorNo <= 9)) return false;
@@ -4972,6 +5371,17 @@ function selfTest() {
       }
       checkStory();
       return state.story.done.includes('set-collector') && completedSetKey(state) === 'gridiron';
+    })());
+    ok('chapter 3 set-completion counts a NEW set (haunted)', (() => {
+      // A fresh inventory holding ONLY the haunted set: completedSetKey must
+      // return 'haunted', not null — the chapter's done() predicate is
+      // set-agnostic (completedSetKey(s) !== null), so any completed set fires it.
+      const inv = SETS.haunted.cards.map(d => {
+        const c = makeCard('haunted', d.rarity);
+        Object.assign(c, { name: d.name, title: d.title, position: d.position, team: d.team, number: d.number, flavor: d.flavor });
+        return c;
+      });
+      return completedSetKey({ inventory: inv }) === 'haunted';
     })());
     ok('chapter 4 completes on a Gem Mint 10', (() => {
       const c = makeCard('gridiron', 'rare');
