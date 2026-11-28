@@ -2,7 +2,8 @@
 // Economy = deepthinker's character-upgrades plan §3.1 (docs/DESIGN.md). Every tap = (1 + Tap Power) x Glow-Up x Halos x boost.
 // Fast taps build a streak; with Rizz Combo, a 20+ streak pays x1.5 into a "streak pot" that banks when you ease off.
 // Tap too hard and you OVERHEAT: the pot is lost and tapping locks briefly, unless you revive (rewarded ad).
-// Progress is a 9-floor tower: each wall shows its aura requirement; a new theme (skin stage) every 3rd floor.
+// Progress is a 9-floor tower: each wall shows its aura requirement; a new theme (skin stage) every 3rd floor,
+// and one new twist per theme (wisps 3, pulse 6, Ascension glow 9).
 
 export const SAVE_KEY = 'plus1aura.save.v1';   // key kept; the data version inside is 2 (v1 saves migrate)
 export const COMBO_WINDOW = 0.9;   // s without a tap before the streak ends and the pot banks (+0.1 s per Rizz level)
@@ -26,10 +27,18 @@ export const FLOOR_REQ = [0, 60, 230, 900, 3000, 8700, 25000, 70000, 240000];
 export const FLOORS = FLOOR_REQ.length;          // 9 floors = 3 themes x 3
 export const FLOORS_PER_THEME = 3;
 export const themeOf = floor => Math.min(2, Math.floor(floor / FLOORS_PER_THEME));
-// One twist per theme (introduced on floors 3 and 6): golden wisps to catch, then a perfect-timing pulse.
-export const TWIST = { wisps: 3, pulse: 6 };
+// One twist per theme: golden wisps to catch (floor 3), a perfect-timing pulse (floor 6), then
+// Ascension glow on the top floor (floor 9, index 8): wisps pay double and the PERFECT window doubles.
+export const TWIST = { wisps: 3, pulse: 6, glow: 8 };
 export const hasTwist = (s, k) => s.floor >= TWIST[k];
 export const PULSE_PERIOD = 4, PULSE_WINDOW = 0.18, PULSE_MULT = 3;
+export const GLOW_WISP_MULT = 2;          // floor-9 Ascension glow: wisps pay double
+export const GLOW_PULSE_WINDOW_MULT = 2;  // ...and the PERFECT window is twice as wide
+// Daily Aura goal (VEX return hook): earn one minute of income per UTC day; the first tap
+// after midnight UTC pays double (from the day after install — the install day's first tap
+// stays a plain +1); one overheat per day keeps the streak instead of dropping it.
+export const FIRST_TAP_MULTIPLIER = 2;
+export const STREAK_SAVES_PER_DAY = 1;
 
 export function newState(now = Date.now()) {
   return {
@@ -37,6 +46,7 @@ export function newState(now = Date.now()) {
     floor: 0, stage: 0, curStage: 0, skipped: [],
     up: { tap: 0, farm: 0, glow: 0, rizz: 0, lucky: 0 },
     halos: 0, ascends: 0,
+    goal: { day: '', target: 0, earned: 0, claimed: false, done: false, firstTapUsed: false, saveUsed: false },
     boostUntil: 0, installedAt: now, lastSeen: now, lastDayLogged: 0, dailyDay: -1,
     ads: { day: '', count: 0, lastReward: 0, earned: 0, last: {} },
     settings: { sound: true, vibe: true, analytics: false, social: false, ghostUpload: false, sfx: 0.8, reduceMotion: false, bigText: false },
@@ -86,29 +96,39 @@ export const auraTier = s => Math.min(AURA_TIERS.length - 1, Math.floor((s.up.ta
 export const levelNeed = L => Math.floor(40 * Math.pow(L, 2.2));
 export function levelFor(ever) { let L = 1; while (ever >= levelNeed(L)) L++; return L; }
 
-function gain(s, n) { s.aura += n; s.lifetime += n; s.ever += n; }
+function gain(s, n, now = Date.now()) { s.aura += n; s.lifetime += n; s.ever += n; noteGoalGain(s, n, now); }
 
 /** One tap. Returns a result the UI turns into juice, or null if locked. rnd injectable for tests.
  *  opts.perfect: the tap landed on the floor-6 pulse (x3). */
 export function tap(s, now = Date.now(), rnd = Math.random, opts = {}) {
   const rt = s.rt;
   if (now < rt.lockUntil) return { locked: true };
+  rollGoal(s, now);
+  const goalWasDone = s.goal.done;
   rt.combo++; rt.sinceTap = 0; s.taps++;
   s.best.combo = Math.max(s.best.combo, rt.combo);
   const base = basePerTap(s, now);
   const crit = rnd() < critChance(s);
   const perfect = !!opts.perfect && hasTwist(s, 'pulse');
-  const immediate = Math.round(base * (crit ? 10 : 1) * (perfect ? PULSE_MULT : 1));
+  // First tap of a new UTC day (after install day) pays double — the return hook.
+  const firstTap = !s.goal.firstTapUsed;
+  if (firstTap) s.goal.firstTapUsed = true;
+  const immediate = Math.round(base * (crit ? 10 : 1) * (perfect ? PULSE_MULT : 1) * (firstTap ? FIRST_TAP_MULTIPLIER : 1));
   const mult = comboMult(s);
   const bonus = Math.round(base * (mult - 1));
-  gain(s, immediate);
+  gain(s, immediate, now);
   rt.pot += bonus;
   rt.heat += heatPerTap(s);
-  const res = { value: immediate, bonus, crit, perfect, combo: rt.combo, mult, events: [] };
+  const res = { value: immediate, bonus, crit, perfect, firstTap, combo: rt.combo, mult, events: [] };
   const every = T(s, 'chainEvery', 0);
   if (every && s.up.rizz > 0 && rt.combo % every === 0) { const c = Math.round(base * T(s, 'chainBonus', 1)); rt.pot += c; res.events.push({ type: 'chain', value: c, n: rt.combo / every }); }
-  if (rt.heat >= 100) { overheat(s, now); res.events.push({ type: 'overheat', lost: rt.lostPot }); }
+  if (rt.heat >= 100 && !s.goal.saveUsed) {
+    // Once per day, an overheat keeps the streak instead of dropping it.
+    s.goal.saveUsed = true; rt.heat = 50;
+    res.events.push({ type: 'streak_saved' });
+  } else if (rt.heat >= 100) { overheat(s, now); res.events.push({ type: 'overheat', lost: rt.lostPot }); }
   checkProgress(s, res.events);
+  if (!goalWasDone && s.goal.done) res.events.push({ type: 'goal_done', target: s.goal.target });
   return res;
 }
 
@@ -120,7 +140,7 @@ export function overheat(s, now) {
 /** Rewarded revive: refund the lost pot, cool down, unlock immediately. */
 export function revive(s, now = Date.now()) {
   const rt = s.rt; const refund = rt.lostPot;
-  gain(s, refund); rt.lostPot = 0; rt.heat = 0; rt.lockUntil = 0; rt.overheatAt = 0;
+  gain(s, refund, now); rt.lostPot = 0; rt.heat = 0; rt.lockUntil = 0; rt.overheatAt = 0;
   const events = []; checkProgress(s, events); return { refund, events };
 }
 export const canRevive = (s, now, windowMs) => s.rt.lostPot > 0 && s.rt.overheatAt && now - s.rt.overheatAt < windowMs;
@@ -128,15 +148,17 @@ export const canRevive = (s, now, windowMs) => s.rt.lostPot > 0 && s.rt.overheat
 /** Per-frame update. dt in seconds. Returns events (bank, floor_up, stage_unlock, level_up). */
 export function update(s, dt, now = Date.now()) {
   const rt = s.rt, events = [];
+  const goalWasDone = !!(s.goal && s.goal.done);
   rt.sinceTap += dt;
   if (now >= rt.lockUntil) rt.heat = Math.max(0, rt.heat - HEAT_DECAY * dt * (rt.lockUntil && now - rt.lockUntil < 1500 ? 3 : 1));
   if (rt.sinceTap > comboWindow(s) && rt.combo > 0) {
-    if (rt.pot > 0) { const n = rt.pot; gain(s, n); events.push({ type: 'bank', value: n, combo: rt.combo }); }
+    if (rt.pot > 0) { const n = rt.pot; gain(s, n, now); events.push({ type: 'bank', value: n, combo: rt.combo }); }
     rt.pot = 0; rt.combo = 0;
   }
   const a = autoPerSec(s, now) * dt;
-  if (a > 0) { s._autoFrac = (s._autoFrac || 0) + a; const w = Math.floor(s._autoFrac); if (w) { s._autoFrac -= w; gain(s, w); } }
+  if (a > 0) { s._autoFrac = (s._autoFrac || 0) + a; const w = Math.floor(s._autoFrac); if (w) { s._autoFrac -= w; gain(s, w, now); } }
   checkProgress(s, events);
+  if (!goalWasDone && s.goal && s.goal.done) events.push({ type: 'goal_done', target: s.goal.target });
   return events;
 }
 
@@ -189,15 +211,52 @@ export function offlineGain(s, now, capHours, eff) {
   const rate = farmRate(s.up.farm) * glowMult(s) * haloMult(s);
   return { secs, value: Math.floor(rate * secs * eff) };
 }
-export function grant(s, n) { const e = []; gain(s, n); checkProgress(s, e); return e; }
+export function grant(s, n, now = Date.now()) {
+  const e = [];
+  const goalWasDone = !!(s.goal && s.goal.done);
+  gain(s, n, now); checkProgress(s, e);
+  if (!goalWasDone && s.goal && s.goal.done) e.push({ type: 'goal_done', target: s.goal.target });
+  return e;
+}
 
 /** Daily gift (menu > Daily): one minute of your current income (3 taps/s + farm), at least 100. Once per calendar day. */
 export const dailyValue = (s, now) => Math.max(100, Math.round(60 * (3 * basePerTap(s, 0) + autoPerSec(s, 0))));
 export const canClaimDaily = (s, now) => s.dailyDay !== dayIndex(s, now);
-export function claimDaily(s, now, mult = 1) { if (!canClaimDaily(s, now)) return null; const v = dailyValue(s, now) * mult; s.dailyDay = dayIndex(s, now); return { value: v, events: grant(s, v) }; }
+export function claimDaily(s, now, mult = 1) { if (!canClaimDaily(s, now)) return null; const v = dailyValue(s, now) * mult; s.dailyDay = dayIndex(s, now); return { value: v, events: grant(s, v, now) }; }
 
 export const dayIndex = (s, now) => Math.floor((startOfDay(now) - startOfDay(s.installedAt)) / 864e5);
 function startOfDay(t) { const d = new Date(t); d.setHours(0, 0, 0, 0); return d.getTime(); }
+
+// ---- Daily Aura goal (VEX return hook, wired into tap/overheat above) ----
+// One goal per UTC day: earn `target` Aura (one minute of current income, at least 100).
+// The goal rolls over at midnight UTC; every Aura gained that day counts toward it.
+export const goalDay = (now = Date.now()) => new Date(now).toISOString().slice(0, 10);
+export function rollGoal(s, now = Date.now()) {
+  if (!s.goal) s.goal = { day: '', target: 0, earned: 0, claimed: false, done: false, firstTapUsed: false, saveUsed: false };
+  const day = goalDay(now);
+  if (s.goal.day === day) return s.goal;
+  const firstDay = !s.goal.day; // a brand-new player: no first-tap bonus on install day (first tap stays +1)
+  s.goal = { day, target: dailyValue(s, now), earned: 0, claimed: false, done: false, firstTapUsed: firstDay, saveUsed: false };
+  return s.goal;
+}
+export function goalProgress(s, now = Date.now()) {
+  const g = rollGoal(s, now);
+  return { day: g.day, target: g.target, earned: g.earned, claimed: g.claimed, done: g.done, firstTapUsed: g.firstTapUsed, saveUsed: g.saveUsed };
+}
+function noteGoalGain(s, n, now = Date.now()) {
+  if (!s.goal || !(n > 0)) return;
+  rollGoal(s, now);
+  s.goal.earned += n;
+  if (!s.goal.done && s.goal.earned >= s.goal.target) s.goal.done = true;
+}
+/** Claim the daily-goal reward (the target amount again) once the goal is done. Returns null unless claimable. */
+export function claimGoal(s, now = Date.now()) {
+  const g = rollGoal(s, now);
+  if (!g.done || g.claimed) return null;
+  g.claimed = true;
+  const v = g.target;
+  return { value: v, events: grant(s, v, now) };
+}
 
 // ---- save ----
 const V1 = { power: { base: 15, growth: 1.55 }, auto: { base: 40, growth: 1.6 }, combo: { base: 120, growth: 2.1 }, cool: { base: 70, growth: 1.8 }, crit: { base: 250, growth: 1.85 } };
@@ -215,7 +274,7 @@ export function deserialize(str, now = Date.now()) {
   try {
     let d = JSON.parse(str); if (!d || (d.v !== 1 && d.v !== 2)) return base;
     if (d.v === 1) d = migrateV1(d);
-    const s = { ...base, ...d, up: { ...base.up, ...pick(d.up, UP_IDS) }, ads: { ...base.ads, ...d.ads, last: { ...(d.ads?.last || {}) } }, settings: { ...base.settings, ...d.settings }, flags: { ...base.flags, ...d.flags }, best: { ...base.best, ...d.best }, escape: { ...base.escape, ...d.escape }, cos: { ...base.cos, ...d.cos }, rt: freshRuntime() };
+    const s = { ...base, ...d, up: { ...base.up, ...pick(d.up, UP_IDS) }, ads: { ...base.ads, ...d.ads, last: { ...(d.ads?.last || {}) } }, settings: { ...base.settings, ...d.settings }, flags: { ...base.flags, ...d.flags }, best: { ...base.best, ...d.best }, escape: { ...base.escape, ...d.escape }, cos: { ...base.cos, ...d.cos }, goal: { ...base.goal, ...(d.goal || {}) }, rt: freshRuntime() };
     for (const k of Object.keys(base.escape)) if (!Number.isFinite(s.escape[k]) || s.escape[k] < 0) s.escape[k] = 0;
     for (const k of ['aura', 'lifetime', 'ever', 'taps', 'halos']) if (!Number.isFinite(s[k]) || s[k] < 0) s[k] = 0;
     for (const id of UP_IDS) s.up[id] = Math.min(UPGRADES[id].max, Math.max(0, s.up[id] | 0));

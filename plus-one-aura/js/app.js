@@ -173,13 +173,13 @@ window.addEventListener('keydown', e => {
 
 let hinted = s.taps > 30, wisp = null, nextWispAt = 0;
 const pulsePhase = t => (t % G.PULSE_PERIOD) / G.PULSE_PERIOD;       // 0..1, beat at 0/1
-const onBeat = t => { const ph = (t % G.PULSE_PERIOD); return Math.min(ph, G.PULSE_PERIOD - ph) < G.PULSE_WINDOW; };
+const onBeat = (t, win = G.PULSE_WINDOW) => { const ph = (t % G.PULSE_PERIOD); return Math.min(ph, G.PULSE_PERIOD - ph) < win; };
 function doTap(x, y) {
   if (!$('modal').hidden || paused) return;
   if (screen === 'title') { startPlay('tap'); fx.hop(); }   // the first tap is the first jump
   now = Date.now();
   if (wisp && Math.hypot(x - wisp.x, y - wisp.y) < 44) return catchWisp();
-  const r = G.tap(s, now, Math.random, { perfect: G.hasTwist(s, 'pulse') && onBeat(performance.now() / 1000) }); gameplayStart();
+  const r = G.tap(s, now, Math.random, { perfect: G.hasTwist(s, 'pulse') && onBeat(performance.now() / 1000, G.hasTwist(s, 'glow') ? G.PULSE_WINDOW * G.GLOW_PULSE_WINDOW_MULT : G.PULSE_WINDOW) }); gameplayStart();
   const st = skin.stages[s.curStage];
   if (r.locked) { fx.float(x, y, '🔥', '#ff6a5a', 24); return; }
   if (!hinted && s.taps > 12) { hinted = true; $('tapHint').classList.add('gone'); }
@@ -196,11 +196,12 @@ function doTap(x, y) {
   if (r.crit) { fx.float(fx.target().x, fx.target().y - fx.target().r * 1.5, skin.text.burst, '#fff', 30, { life: 1.3, vy: -60 }); fx.ring('#fff', 1.6); fx.shake(0.5); fx.flash(st.glow, .8); sfx('burst'); buzz('heavy'); }
   bumpTotal();
   handle(r.events);
+  if (r.firstTap) toast('First tap of the day: x2 Aura!');
   if (ptSession && !r.locked) PT.recordTap(ptSession);
 }
 // floor-3 twist: golden wisps drift across; catching one pays a few seconds of income
 function catchWisp() {
-  const v = Math.max(10, Math.round(GAME.wispValueSec * (3 * G.basePerTap(s, now) + G.autoPerSec(s, now))));
+  const v = Math.max(10, Math.round((G.hasTwist(s, 'glow') ? G.GLOW_WISP_MULT : 1) * GAME.wispValueSec * (3 * G.basePerTap(s, now) + G.autoPerSec(s, now))));
   const e = G.grant(s, v); fx.float(wisp.x, wisp.y - 20, `WISP +${G.fmt(v)}`, '#ffd23f', 28, { life: 1.2 }); fx.burst(wisp.x, wisp.y, ['#ffd23f', '#fff'], 18, 260, 4);
   sfx('bank'); buzz('success'); track('wisp_catch', { floor: s.floor }); wisp = null; bumpTotal(); handle(e);
 }
@@ -223,6 +224,12 @@ function handle(events) {
       fx.shake(1); fx.flash('#ff2a1a', 1); sfx('overheat'); buzz('error'); track('overheat', { lost: e.lost, stage: s.stage });
       if (ptSession) PT.recordOverheat(ptSession);
       if (e.lost > 0) showOverheat(e.lost); else toast('Overheated! Cool down…');
+    } else if (e.type === 'streak_saved') {
+      toast('Streak saved! Your once-a-day save kept the streak — heat cooled, pot kept.');
+      sfx('bank'); buzz('success'); track('streak_saved', { floor: s.floor });
+    } else if (e.type === 'goal_done') {
+      banner('DAILY GOAL DONE!'); toast('Daily Aura goal complete — claim the reward in Daily!');
+      sfx('unlock'); track('daily_goal_done', { target: e.target }); save();
     } else if (e.type === 'chain') {
       const t = fx.target(); fx.float(t.x, t.y - t.r * 2.4, `${skin.text.chain ? skin.text.chain(e.n) : 'CHAIN!'} +${G.fmt(e.value)}`, st.accent, 24, { life: 1, vy: -50 }); sfx('chain');
     } else if (e.type === 'level_up') {
@@ -237,7 +244,7 @@ function handle(events) {
       const t = fx.target(); fx.burst(t.x, t.y, skin.stages[e.stage].colors, 60, 520, 6); fx.flash('#fff', 1); fx.shake(.6);
       track('stage_unlock', { stage: e.stage, stage_name: nm, via: e.via, seconds_played: Math.round((Date.now() - s.installedAt) / 1000) }); save();
     } else if (e.type === 'twist') {
-      setTimeout(() => toast(e.twist === 'wisps' ? 'NEW: catch the golden wisps!' : 'NEW: tap as the ring lands for PERFECT x3'), 2300);
+      setTimeout(() => toast(e.twist === 'wisps' ? 'NEW: catch the golden wisps!' : e.twist === 'pulse' ? 'NEW: tap as the ring lands for PERFECT x3' : 'NEW: Ascension glow — wisps pay double, PERFECT window doubled!'), 2300);
       if (e.twist === 'wisps') nextWispAt = performance.now() / 1000 + 4;
     }
   }
@@ -362,12 +369,28 @@ function openLooks() {
 }
 
 function openDaily() {
-  if (!G.canClaimDaily(s, Date.now())) { modal(`<h2>Daily gift</h2><p>Already claimed today. Come back tomorrow!</p><button class="btn" id="mClose">OK</button>`); $('mClose').onclick = closeModal; return; }
+  // Daily goal (return hook) + daily gift share one screen: the goal is always
+  // visible, the gift only while unclaimed. Exact trigger rules are in the README.
+  const g = G.goalProgress(s, Date.now());
+  const giftReady = G.canClaimDaily(s, Date.now());
   const v = G.dailyValue(s, Date.now());
-  modal(`<h2>Daily gift 🎁</h2><p>A minute of your ${skin.text.currency}: <b>+${G.fmt(v)}</b></p><div class="row"><button class="btn primary" id="mDDouble"><span class="tv">AD</span>Double it (+${G.fmt(v * 2)})</button><button class="btn" id="mDClaim">Claim</button></div>`);
-  const done = m => { const r = G.claimDaily(s, Date.now(), m); if (r) { handle(r.events); bumpTotal(); sfx('bank'); fx.burst(innerWidth / 2, innerHeight * .3, skin.stages[s.curStage].colors, 30, 300, 4); track('daily_claim', { value: r.value, doubled: m > 1 }); save(); } closeModal(); };
-  $('mDClaim').onclick = () => done(1);
-  $('mDDouble').onclick = async () => { $('mDDouble').disabled = true; const g = rewardGate(s, 'daily'); const ok = g.ok && await showRewarded(s, 'daily'); done(ok ? 2 : 1); };
+  const goalHtml = g.claimed
+    ? `<p>🎯 Daily goal done — <b>${G.fmt(g.earned)} / ${G.fmt(g.target)}</b> ${skin.text.currency} · reward claimed ✅</p>`
+    : g.done
+      ? `<p>🎯 Daily goal complete! <b>${G.fmt(g.earned)} / ${G.fmt(g.target)}</b> ${skin.text.currency} — claim <b>+${G.fmt(g.target)}</b> below.</p>`
+      : `<p>🎯 Daily goal: earn <b>${G.fmt(g.target)}</b> ${skin.text.currency} today — <b>${G.fmt(g.earned)} / ${G.fmt(g.target)}</b><br><small>First tap after midnight UTC pays x2${g.firstTapUsed ? ' (used)' : ''} · one overheat streak-save per day${g.saveUsed ? ' (used)' : ''}</small></p>`;
+  const giftHtml = giftReady
+    ? `<p>🎁 Daily gift: a minute of your ${skin.text.currency} — <b>+${G.fmt(v)}</b></p><div class="row"><button class="btn primary" id="mDDouble"><span class="tv">AD</span>Double it (+${G.fmt(v * 2)})</button><button class="btn" id="mDClaim">Claim gift</button></div>`
+    : `<p>🎁 Daily gift already claimed today. Come back tomorrow!</p>`;
+  const claimHtml = (g.done && !g.claimed) ? `<div class="row"><button class="btn primary" id="mDGoal">Claim goal +${G.fmt(g.target)}</button></div>` : '';
+  modal(`<h2>Daily 🎯🎁</h2>${goalHtml}${claimHtml}${giftHtml}<div class="row"><button class="btn" id="mClose">Close</button></div>`);
+  $('mClose').onclick = closeModal;
+  if (g.done && !g.claimed) $('mDGoal').onclick = () => { const r = G.claimGoal(s, Date.now()); if (r) { handle(r.events); bumpTotal(); sfx('bank'); fx.burst(innerWidth / 2, innerHeight * .3, skin.stages[s.curStage].colors, 30, 300, 4); track('daily_goal_claim', { value: r.value }); save(); } closeModal(); };
+  if (giftReady) {
+    const done = m => { const r = G.claimDaily(s, Date.now(), m); if (r) { handle(r.events); bumpTotal(); sfx('bank'); fx.burst(innerWidth / 2, innerHeight * .3, skin.stages[s.curStage].colors, 30, 300, 4); track('daily_claim', { value: r.value, doubled: m > 1 }); save(); } closeModal(); };
+    $('mDClaim').onclick = () => done(1);
+    $('mDDouble').onclick = async () => { $('mDDouble').disabled = true; const gg = rewardGate(s, 'daily'); const ok = gg.ok && await showRewarded(s, 'daily'); done(ok ? 2 : 1); };
+  }
 }
 
 function openSettings() {

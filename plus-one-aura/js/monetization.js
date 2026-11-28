@@ -33,7 +33,12 @@ export const SPEED_ESCAPE_BONUS = Object.freeze({
   rewardPerSecondSurvived: 5,
 });
 
-/** Daily hook rules (see README "Status — Playtest Retune Update"). */
+/**
+ * Daily hook rules (see README "Status — Playtest Retune Update").
+ * Implemented in www/js/game.js (rollGoal / the tap first-tap bonus / the
+ * overheat streak-save) and wired to the Daily screen in www/js/app.js
+ * openDaily(): the constants here and the code there must agree.
+ */
 export const DAILY_HOOK = Object.freeze({
   goalResetsUtc: true,
   firstTapMultiplier: 2, // first tap of a new UTC day pays double Aura, once per day
